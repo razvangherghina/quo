@@ -16,11 +16,10 @@ This repository is the protocol itself, and nothing else: the text, the
 licence, and no implementation.
 
 - **[constitution.md](constitution.md)** — the whole of what binds an
-  implementation. The world, the arithmetic, the voice, the envelope and
-  the door, references, rights, succession, blueprints, contracts, the
-  ground, custody, and the refusals.
-- **[channels.md](channels.md)** — published beside it and part of the
-  same law: everything two strangers need to exchange bytes of any size.
+  implementation, in eleven articles. The world, the arithmetic, the
+  voice, the envelope, the door, the seat and the one act that moves it,
+  custody and its honest limits, the ask, the carriage, the refusals, and
+  the proof.
 
 Read it at **[quo.is](https://quo.is)**, where the same law is presented
 with worked examples.
@@ -48,8 +47,14 @@ else. Nothing outside the constitution binds an implementation.
 Where bytes are pinned they are pinned exactly; where a choice is left
 open it is named as open.
 
-A conformance suite exists and runs against the first implementation. It
-is not published yet; it goes out as the protocol approaches 1.0.0. If
+A conformance suite exists: a vector corpus of worlds described in words
+and exchanges pinned to the byte, so that a silence in this text becomes a
+vector nobody can write down. It runs today against three independent
+implementations in two languages — one of them written from this document
+alone, by someone shown no existing code — and all three pass every
+article. That is the only shape in which passing means anything.
+
+It is not published yet; it goes out as the protocol approaches 1.0.0. If
 you are implementing now and want it sooner, say so.
 
 ## Licence and ownership
