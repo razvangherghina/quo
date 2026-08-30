@@ -1,0 +1,46 @@
+# Both kits, on every push. The claim this repository makes is that two
+# independent implementations of one text agree; a red kit is that claim
+# failing, so neither is allowed to go quietly red.
+name: kits
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  js:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ['20', '22', '24']
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ matrix.node }}
+      # Zero dependencies is the kit's own rule, so there is nothing to
+      # install and no lockfile to cache. If an install step ever becomes
+      # necessary here, the rule has been broken somewhere.
+      - run: npm test
+        working-directory: kits/js
+
+  go:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: kits/go/go.mod
+      - name: gofmt
+        working-directory: kits/go
+        run: test -z "$(gofmt -l .)"
+      - run: go vet ./...
+        working-directory: kits/go
+      - run: go test -count=1 ./...
+        working-directory: kits/go

@@ -1,0 +1,51 @@
+{
+  "name": "@quo-systems/js",
+  "version": "0.0.2",
+  "description": "The Quo kit written from the constitution alone: the canonical blueprint notation, the wire encoding of the closed types, the arithmetic and the envelope",
+  "keywords": [
+    "quo",
+    "protocol",
+    "capability",
+    "authority",
+    "zero-dependency"
+  ],
+  "license": "Apache-2.0",
+  "author": {
+    "name": "Razvan Gherghina",
+    "url": "https://www.linkedin.com/in/razvangh/"
+  },
+  "homepage": "https://quo.systems",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/razvangherghina/quo.git",
+    "directory": "kits/js"
+  },
+  "bugs": {
+    "url": "https://github.com/razvangherghina/quo/issues"
+  },
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.js",
+    "./door": "./src/door.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "src",
+    "vectors",
+    "LICENSE",
+    "NOTICE",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "node --test \"bench/*.test.js\"",
+    "vectors": "node emit-vectors.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  }
+}

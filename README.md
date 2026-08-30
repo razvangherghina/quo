@@ -1,84 +1,97 @@
 # Quo
 
-**Quo is a small, open protocol for proving by whose authority a message
-was sent** — with keys and sealed letters instead of accounts, logins and
-master keys.
+**Quo is a small, open protocol for proving by whose authority a message was
+sent** — with keys and sealed letters instead of accounts, logins and master
+keys.
 
-It answers exactly one question — _by whose authority?_ — and refuses
-every other. You are keys, not an account. Your software lives in its own
-house, with one door. Standing is granted by invitation, spent once, and
-taken back in one act. Every message is a signed, sealed letter.
-Strangers get silence, not an explanation of the locks. And no master key
-exists — a system where override is possible is owned by whoever holds
-the override, so Quo made it impossible, structurally.
+It answers exactly one question — _by whose authority?_ — and refuses every
+other. You are keys, not an account. Your software lives in its own house, with
+one door. Standing is granted by invitation, spent once, and taken back in one
+act. Every message is a signed, sealed letter. Strangers get silence, not an
+explanation of the locks. And no master key exists — a system where override is
+possible is owned by whoever holds the override, so Quo made it impossible,
+structurally.
 
-This repository is the protocol itself, and nothing else: the text, the
-licence, and no implementation.
+Read it with worked examples, a conformance proof and a demo that runs in your
+own tab at **[quo.systems](https://quo.systems)**.
 
-- **[constitution.md](constitution.md)** — the whole of what binds an
-  implementation, in eleven articles. The world, the arithmetic, the
-  voice, the envelope, the door, the seat and the one act that moves it,
-  custody and its honest limits, the ask, the carriage, the refusals, and
-  the proof.
+## What is here
 
-Read it at **[quo.is](https://quo.is)**, where the same law is presented
-with worked examples.
+- **[constitution.md](https://github.com/razvangherghina/quo/blob/main/constitution.md)**
+  — the whole of what binds an implementation, in eleven articles. The world,
+  the arithmetic, the voice, the envelope, the door, the seat and the one act
+  that moves it, custody and its honest limits, the ask, the carriage, the
+  refusals, and the proof.
+- **[kits/js](https://github.com/razvangherghina/quo/tree/main/kits/js)** — the
+  JavaScript kit, published to npm as
+  [`@quo-systems/js`](https://www.npmjs.com/package/@quo-systems/js). Zero
+  dependencies: WebCrypto and `Uint8Array`, so the core runs unchanged in a
+  browser tab, an edge worker or Node. Only the listening door touches Node.
+- **[kits/go](https://github.com/razvangherghina/quo/tree/main/kits/go)** — the
+  Go kit, written from the constitution's text alone by builders who had not
+  seen the first kit.
+
+The two kits exchange real sealed messages over a real socket and derive
+identical digests. That is the proof the constitution is implementable from its
+text rather than from anyone's source.
 
 ## Status: pre-1.0 working draft
 
-The law is written and complete enough to implement from, and it is still
-being argued with — against a working implementation, against a
-conformance suite, and against anyone willing to attack it. Articles have
-moved and more will. Nothing here carries a version number yet.
+The law is written and complete enough to implement from, and it is still being
+argued with — against two working implementations, against a vector corpus, and
+against anyone willing to attack it. Articles have moved and more will.
 
 What that means for you: the ideas are stable enough to build a real
-understanding on, and the exact spellings are not yet stable enough to
-ship a product against without talking to the author first.
+understanding on, and the exact spellings are not yet stable enough to ship a
+product against without talking to the author first. Pin an exact version of any
+kit you depend on.
 
 ## Implementing it
 
-Quo binds exactly one thing: **interoperability**. A builder who
-implements every article, in any language, produces a Quo that speaks to
-every other. What an implementation could do differently without a second
-implementation ever noticing — how it stores, how it hosts, how custody
-is kept — belongs to that implementation's own papers and binds no one
-else. Nothing outside the constitution binds an implementation.
+Quo binds exactly one thing: **interoperability**. A builder who implements
+every article, in any language, produces a Quo that speaks to every other. What
+an implementation could do differently without a second implementation ever
+noticing — how it stores, how it hosts, how custody is kept — belongs to that
+implementation's own papers and binds no one else. Nothing outside the
+constitution binds an implementation.
 
-Where bytes are pinned they are pinned exactly; where a choice is left
-open it is named as open.
+Where bytes are pinned they are pinned exactly; where a choice is left open it
+is named as open.
 
-A conformance suite exists: a vector corpus of worlds described in words
-and exchanges pinned to the byte, so that a silence in this text becomes a
-vector nobody can write down. It runs today against three independent
-implementations in two languages — one of them written from this document
-alone, by someone shown no existing code — and all three pass every
-article. That is the only shape in which passing means anything.
-
-It is not published yet; it goes out as the protocol approaches 1.0.0. If
-you are implementing now and want it sooner, say so.
+Each kit ships the vector corpus it is judged against, under `vectors/`. A third
+implementation in a third language can read those files and prove it agrees on
+the bytes. A corpus pins bytes and cannot pin judgment, so the crossing between
+two kits doing real work is what finds the rest.
 
 ## Licence and ownership
 
-Copyright 2026 Razvan Gherghina. Licensed under the Apache License,
-Version 2.0 — see [LICENSE](LICENSE).
+Copyright 2026 Razvan Gherghina. Licensed under the Apache License, Version 2.0
+— see
+[LICENSE](https://github.com/razvangherghina/quo/blob/main/LICENSE).
 
-**The protocol is held by a person, not by a company**, deliberately. A
-standard owned by the company selling its leading implementation is a
-standard only for as long as that suits the company. Held by a person and
-already published, this cannot be made unfree: anyone may implement it,
-no permission is needed, and no licence already granted can be withdrawn.
+**The protocol is held by a person, not by a company**, deliberately. A standard
+owned by the company selling its leading implementation is a standard only for
+as long as that suits the company. Held by a person and already published, this
+cannot be made unfree: anyone may implement it, no permission is needed, and no
+licence already granted can be withdrawn.
 
-Apache-2.0 is chosen over a documentation licence for its express patent
-grant: implementing Quo carries a licence to whatever patent claims the
-author holds over it, so no implementer can be ambushed later.
+Apache-2.0 is chosen over a documentation licence for its express patent grant:
+implementing Quo carries a licence to whatever patent claims the author holds
+over it, so no implementer can be ambushed later.
 
-Note that copyright covers the text of these documents, not the ideas,
-the wire format, or the field names — a protocol cannot be owned, and
-this one is not trying to be.
+Note that copyright covers the text of these documents, not the ideas, the wire
+format, or the field names — a protocol cannot be owned, and this one is not
+trying to be.
 
 ## Contact
 
-Quo is early, and the arguments it has not survived yet are the ones
-worth having. If you are implementing it, or you think an article is
-wrong, the author would rather hear it now than after 1.0.0:
-[Razvan Gherghina on LinkedIn](https://www.linkedin.com/in/razvangh/).
+Razvan Gherghina — [info@factcurier.ro](mailto:info@factcurier.ro) ·
+[linkedin.com/in/razvangh](https://www.linkedin.com/in/razvangh/) ·
+[quo.systems](https://quo.systems)
+
+Security reports go to the address in
+[SECURITY.md](https://github.com/razvangherghina/quo/blob/main/SECURITY.md).
+How a version is cut is in
+[RELEASING.md](https://github.com/razvangherghina/quo/blob/main/RELEASING.md);
+what is wanted from a contributor is in
+[CONTRIBUTING.md](https://github.com/razvangherghina/quo/blob/main/CONTRIBUTING.md).

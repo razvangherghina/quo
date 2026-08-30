@@ -1,0 +1,69 @@
+# @quo-systems/js
+
+The JavaScript kit for **Quo**, a protocol that answers one question — **by
+whose authority** — and refuses every other one.
+
+Everything arrives at a door signed, sealed to its recipient, and judged by
+whose seal it wears. There is no login, no session and no ambient permission:
+standing is a reference, granted by invitation and spent once.
+
+This kit is written from the Quo constitution alone. It carries the canonical
+blueprint notation, the wire encoding of the closed types, the arithmetic, the
+envelope and a warden that judges what arrives.
+
+**Zero dependencies.** The core is WebCrypto and `Uint8Array`, so a browser tab
+runs it unchanged. Only the listening door touches Node.
+
+> Early release. The protocol is not sealed before 1.0.0 and the wire may still
+> move. Pin an exact version.
+
+## Install
+
+```
+npm install @quo-systems/js
+```
+
+Node 20 or newer.
+
+## Use
+
+The portable half — notation, wire, arithmetic, envelope, warden, carriage:
+
+```js
+import { parse, digest, seal, open, Warden, post } from '@quo-systems/js';
+```
+
+The listening door is a host adapter behind its own export, so a tab or a
+worker can import the kit without importing an API it could never satisfy:
+
+```js
+import { serve } from '@quo-systems/js/door';
+
+const door = await serve(warden, { clock, random, host: '0.0.0.0', port: 8443 });
+console.log(door.hint);
+await door.close();
+```
+
+`serve` binds `127.0.0.1` unless you pass a `host`. Pass a `limit` to hold the
+door to a maximum envelope size; anything larger is met with silence, the same
+as any other refusal.
+
+## Conformance vectors
+
+The published package ships the vectors the kit is judged against, under
+`vectors/`. A second implementation in another language can read them and prove
+it agrees on the bytes.
+
+## The protocol
+
+- **[quo.systems](https://quo.systems)** — the law with worked examples, the
+  conformance proof, and a demo that runs in your own tab.
+- **[github.com/razvangherghina/quo](https://github.com/razvangherghina/quo)**
+  — the constitution and both kits, source of this package.
+
+## License
+
+Apache-2.0. Quo belongs to
+[Razvan Gherghina](https://www.linkedin.com/in/razvangh/) as a private person,
+and is published so anyone may implement it in any language and speak with
+every other implementation as an equal.

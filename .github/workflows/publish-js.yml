@@ -1,0 +1,58 @@
+# Publishing the JS kit to npm, from a tag and from nowhere else.
+#
+# This is the only way @quo-systems/js reaches the registry. A local publish
+# now fails on purpose: the kit's package.json sets publishConfig.provenance,
+# which needs the OIDC token only a CI run has. That is the point — a package
+# doing cryptography should be able to prove which commit it was built from.
+name: publish-js
+
+on:
+  push:
+    tags: ['js-v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to publish, e.g. js-v0.0.2'
+        required: true
+
+permissions:
+  contents: read
+  # Required for npm provenance. Without it the publish fails rather than
+  # silently shipping an unattested package.
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: npm
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          registry-url: 'https://registry.npmjs.org'
+
+      # The tag is the claim; the manifest is the fact. If they disagree, the
+      # release is wrong and stopping here is cheaper than unpublishing.
+      - name: The tag matches the version
+        working-directory: kits/js
+        run: |
+          tag="${{ github.event.inputs.tag || github.ref_name }}"
+          version=$(node -p "require('./package.json').version")
+          if [ "$tag" != "js-v$version" ]; then
+            echo "tag $tag does not match version $version"
+            exit 1
+          fi
+
+      - name: The bench is green
+        working-directory: kits/js
+        run: npm test
+
+      - name: Publish
+        working-directory: kits/js
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
