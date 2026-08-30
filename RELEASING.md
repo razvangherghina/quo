@@ -11,16 +11,18 @@ is a package that proves which commit and which build produced it.
 
 ## The order
 
-1. **Change the kit**, and keep it green where it is developed.
-2. **Bump `version`** in `kits/js/package.json`.
-3. **Write the entry** in `CHANGELOG.md`. The emit refuses to run when the
-   version and the newest entry disagree — a version nobody described is a
+1. **Change the kit** in the source tree, and commit it.
+2. **Write the entry** in `CHANGELOG.md`. It is prose, so no script writes it,
+   and the release refuses to run without it — a version nobody described is a
    version nobody can tell apart from the one before it.
-4. **Emit this repository** from the source tree.
-5. **Commit and tag** `js-v<version>`. The tag must match the manifest exactly;
-   the publish workflow checks it and stops rather than shipping a mismatch.
-6. **Push with `--follow-tags`.** The tag fires `publish-js`, which runs the
-   bench and publishes with provenance.
+3. **Run the release**, which bumps the manifest, runs the bench, emits this
+   repository, commits it and tags `js-v<version>` — annotated, because
+   `git push --follow-tags` silently ignores a lightweight tag.
+4. **Push.** The tag fires `publish-js`, which checks the tag against the
+   manifest, runs the bench and publishes with provenance.
+
+The tag must match the manifest exactly. The workflow stops rather than
+shipping a mismatch.
 
 ## The workflows
 

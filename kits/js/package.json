@@ -1,6 +1,6 @@
 {
   "name": "@quo-systems/js",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "The Quo kit written from the constitution alone: the canonical blueprint notation, the wire encoding of the closed types, the arithmetic and the envelope",
   "keywords": [
     "quo",
@@ -38,7 +38,7 @@
     "README.md"
   ],
   "scripts": {
-    "test": "node --test \"bench/*.test.js\"",
+    "test": "node --test bench/*.test.js",
     "vectors": "node emit-vectors.js"
   },
   "engines": {

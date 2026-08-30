@@ -27,6 +27,11 @@ jobs:
       # Zero dependencies is the kit's own rule, so there is nothing to
       # install and no lockfile to cache. If an install step ever becomes
       # necessary here, the rule has been broken somewhere.
+      #
+      # The test script leaves its glob unquoted so the shell expands it.
+      # Node's own test runner only learned to glob in 22, and the kit
+      # declares engines >=20 — a matrix that cannot run the oldest version
+      # it claims is a claim nobody is checking.
       - run: npm test
         working-directory: kits/js
 
@@ -37,6 +42,9 @@ jobs:
       - uses: actions/setup-go@v6
         with:
           go-version-file: kits/go/go.mod
+          # Zero dependencies here too: there is no go.sum, so there is
+          # nothing to cache and the action should not go looking.
+          cache: false
       - name: gofmt
         working-directory: kits/go
         run: test -z "$(gofmt -l .)"
