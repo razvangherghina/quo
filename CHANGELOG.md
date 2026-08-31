@@ -6,6 +6,34 @@ The JavaScript kit, published as
 Nothing here carries a compatibility promise before 1.0.0. The wire may move,
 and a version is the only safe thing to depend on.
 
+## 0.1.1
+
+The kit as the other four kits speak it. The package published at 0.1.0
+predates the corpus re-pin and disagrees with every other kit on the warden's
+own blueprint digest, so a stranger installing two of them got two protocols.
+Nothing in the source moved for this release that had not already moved; this
+is the published bytes catching up with the tree.
+
+**The re-pin.** A blueprint carries `standing.name` as b32 and `relation.news`
+as an int, so the warden's blueprint digest is now
+`c6e6574d0d2c246a00a10920934eca77acfabec923df4d86fc9fae84d326ebcb`. The
+pinned corpus every kit ships carries the same fact, and all five kits derive
+it.
+
+**A caller takes the road it can speak**, choosing between the carriage and
+the line from what the far house published rather than from what the near one
+prefers.
+
+**The warden offers the verified caller inward, per call**, so a resolver can
+ask whose seal it is answering without identity travelling as a parameter.
+A being reads the standings held at it, never who called.
+
+**A subject can push down a line it accepted**, and stand in the middle of a
+chain rather than only at its end.
+
+**The old door answers only moved**, and an empty hint never erases the way
+back — the way back is refreshed after the seq rather than before it.
+
 ## 0.1.0
 
 The line, the record byte, and the leash. Nothing here is compatible with
