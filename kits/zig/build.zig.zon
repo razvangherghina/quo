@@ -1,6 +1,6 @@
 .{
     .name = .quo,
-    .version = "0.1.0",
+    .version = "0.1.1",
     .minimum_zig_version = "0.16.0",
     .fingerprint = 0x25372a0fad424ef8,
     .dependencies = .{},
@@ -11,5 +11,9 @@
         "test",
         "cmd",
         "README.md",
+        // Only in a published tarball, where the corpus is carried beside the
+        // kit so the bench runs for a stranger. Absent in the tree, where it
+        // is read from the JS kit.
+        "vectors",
     },
 }

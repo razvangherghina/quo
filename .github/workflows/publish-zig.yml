@@ -59,13 +59,23 @@ jobs:
 
       # Built from the commit rather than from the working tree, so nothing the
       # bench left behind — .zig-cache, zig-out — can ride into the tarball.
+      #
+      # The pinned corpus is carried in as `vectors/`, because the tarball is
+      # this kit alone and the corpus sits beside the JS kit in the tree. A
+      # stranger who downloads the kit and cannot run its bench cannot check
+      # it, and checking it is the whole offer. `build.zig` prefers this copy
+      # when it is present and falls back to the tree's when it is not.
       - name: Build the tarball
         id: tarball
         env:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
           name="quo-zig-$VERSION.tar.gz"
-          git archive --format=tar.gz --prefix="quo-zig-$VERSION/" -o "$RUNNER_TEMP/$name" HEAD:kits/zig
+          stage="$RUNNER_TEMP/stage"
+          mkdir -p "$stage/quo-zig-$VERSION/vectors"
+          git archive --format=tar HEAD:kits/zig | tar -x -C "$stage/quo-zig-$VERSION"
+          git archive --format=tar HEAD:kits/js/vectors | tar -x -C "$stage/quo-zig-$VERSION/vectors"
+          tar -czf "$RUNNER_TEMP/$name" -C "$stage" "quo-zig-$VERSION"
           echo "name=$name" >> "$GITHUB_OUTPUT"
           echo "path=$RUNNER_TEMP/$name" >> "$GITHUB_OUTPUT"
 

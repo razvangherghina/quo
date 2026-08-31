@@ -120,12 +120,24 @@ pub fn build(b: *std.Build) void {
 
     // The pinned corpus lives outside this kit: the bytes are the law's, not
     // any kit's. Its absolute path reaches the test as a build option.
+    //
+    // A published tarball is this directory alone, so the corpus is carried
+    // into it as `vectors/` and that copy wins when it is there. A stranger
+    // who cannot run the kit's own bench cannot check the kit, which is the
+    // whole offer.
+    const carried = b.pathJoin(&.{ b.build_root.path.?, "vectors" });
+    const has_carried =
+        if (b.build_root.handle.access(b.graph.io, "vectors", .{})) |_| true else |_| false;
     const vectors = b.addOptions();
     for ([_][]const u8{ "notation", "arithmetic", "material", "wire", "envelope", "warden" }) |area| {
+        const file = b.fmt("{s}.json", .{area});
         vectors.addOption(
             []const u8,
             b.fmt("{s}_path", .{area}),
-            b.pathJoin(&.{ b.build_root.path.?, "..", "js", "vectors", b.fmt("{s}.json", .{area}) }),
+            if (has_carried)
+                b.pathJoin(&.{ carried, file })
+            else
+                b.pathJoin(&.{ b.build_root.path.?, "..", "js", "vectors", file }),
         );
     }
     const vectors_module = vectors.createModule();
