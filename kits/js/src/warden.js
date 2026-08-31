@@ -4,7 +4,16 @@
 // it was — so nothing in here throws outward and nothing narrates.
 import { parse, print, digest } from './notation.js';
 import { encode, decode, decodeAll, encodeAll, recordsOf } from './wire.js';
-import { box, concat, open, seal, unbox } from './envelope.js';
+import {
+  ANSWER as ANSWER_BYTE,
+  box,
+  concat,
+  open,
+  seal,
+  tagged,
+  unbox,
+  untag,
+} from './envelope.js';
 import { commitment as commit, sealingPair, sign, signingPair, verify } from './arithmetic.js';
 import { hex } from './bytes.js';
 
@@ -199,6 +208,46 @@ class Standing extends Marks {
   }
 }
 
+// What one arriving call may hand to the next door. It is not a number the
+// door worked out in advance: the hop count falls by one, and the time budget
+// falls by this door's own dwell — the difference between when the message
+// arrived and when it is handed onward. The second of those two readings
+// cannot be taken until the handing onward happens, so a leash holds the first
+// reading and the clock, and works the rest out at the moment it is spent.
+//
+// Made with nothing it carries nothing and refuses to be spent, which is what
+// a being invoked outside a judgment holds.
+export class Leash {
+  #arrived;
+  #clock;
+
+  constructor(received = null, arrived = 0, clock = null) {
+    // What arrived at this door, for a being that wants to look at it. Nothing
+    // may be sent onward under it.
+    this.received = received;
+    this.#arrived = arrived;
+    this.#clock = clock;
+  }
+
+  // What this call may hand to the next door, read now. A budget that has run
+  // out mid-work is refused here exactly as it would have been at the door:
+  // the caller's allowance is the caller's, and no door beneath may widen it.
+  // A leash that cannot be spent is `null`, the same answer a call that cannot
+  // be made gets everywhere else in this kit.
+  //
+  // A dwell is never negative. Two readings of one clock is what the law asks
+  // for, and a clock that has gone backwards between them is a broken clock,
+  // not a licence to hand on more time than arrived.
+  onward() {
+    if (!this.#clock) return null;
+    const dwell = BigInt(this.#clock() - this.#arrived);
+    const time = this.received.time - (dwell > 0n ? dwell : 0n);
+    const hops = this.received.hops - 1n;
+    if (time <= 0n || hops < 0n) return null;
+    return { time, hops };
+  }
+}
+
 export class Warden {
   // Every draw of randomness is taken as an argument, never reached for: the
   // name, the padlock and the warden's own heir all come from handed seeds.
@@ -221,12 +270,14 @@ export class Warden {
     warden.heir = await signingPair(options.heirSeed);
     // For a warden's own name the heir would spend at itself.
     warden.commitment = await commit(warden.name.pk, warden.heir.pk);
-    for (const text of options.declares ?? []) warden.declares.add(hex(await warden.#learn(text)));
+    for (const text of options.declares ?? []) {
+      warden.declares.add(hex((await warden.#learn(text)).at));
+    }
     return warden;
   }
 
   constructor({ hints = [], limit = 0n } = {}) {
-    this.hints = hints;
+    this.hints = [...hints];
     this.limit = limit;
     this.beings = new Map();
     // Inbound: which voices may reach which beings, keyed by the voice's pk.
@@ -257,12 +308,36 @@ export class Warden {
 
   // Content-addressed text cannot be swapped for something friendlier by
   // whoever carried it, so what the door keeps is the canonical text itself.
+  // The names come back with the digest because they are what the door serves:
+  // a blueprint is parsed once, when it is learned, and never again at
+  // judgment time.
   async #learn(blueprint) {
     const parsed = parse(blueprint);
     const text = print(parsed);
     const at = await digest(parsed);
     this.texts.set(hex(at), text);
-    return at;
+    return { at, declares: new Set(parsed.fields.map((field) => field.name)) };
+  }
+
+  // A warden does not know where it stands until something stands it up: a
+  // door on an ephemeral port has no address until it is listening, and a
+  // domain is the host's fact, not the warden's. So the road is told to the
+  // warden rather than fixed at birth, and every mint after it — a card, an
+  // invitation, an ask, a word — carries the roads that are true then.
+  //
+  // Roads accumulate, because a warden offers as many as it has and none is
+  // authoritative. Telling it the same road twice adds nothing.
+  publish(...hints) {
+    for (const hint of hints) if (!this.hints.includes(hint)) this.hints.push(hint);
+    return this.hints;
+  }
+
+  // A road that has stopped carrying is not a road. Retracting one is not news
+  // on its own: the peers that need to hear it are told by whatever moved the
+  // door, and this only stops the dead road being minted into anything new.
+  retract(...hints) {
+    this.hints = this.hints.filter((hint) => !hints.includes(hint));
+    return this.hints;
   }
 
   // The public being: every warden has one, it is a being like any other, and
@@ -289,6 +364,7 @@ export class Warden {
   async hold(object, { seed, heirSeed, blueprint, cells }) {
     const keys = await signingPair(seed);
     const heir = await signingPair(heirSeed ?? seed);
+    const learned = await this.#learn(blueprint);
     this.beings.set(hex(keys.pk), {
       pk: keys.pk,
       secret: keys.secret,
@@ -296,7 +372,10 @@ export class Warden {
       commitment: await commit(this.name.pk, heir.pk),
       object,
       cells: cells ?? (() => new Uint8Array(0)),
-      digest: await this.#learn(blueprint),
+      digest: learned.at,
+      // The scope of every grant at this being: what its blueprint does not
+      // declare does not exist for it, so the door serves nothing else.
+      declares: learned.declares,
     });
     return keys.pk;
   }
@@ -439,7 +518,7 @@ export class Warden {
     return ref;
   }
 
-  reference(beingPk) {
+  handle(beingPk) {
     for (const row of this.outbound) {
       const ref = row.beings.get(hex(beingPk));
       if (ref) return ref;
@@ -481,14 +560,22 @@ export class Warden {
     commitment = null,
     seq,
     allowance,
+    leash = null,
     being,
     method,
     random,
   }) {
+    // `leash` is the call this ask is made in the course of, when it is one. A
+    // being standing in the middle of a chain hands its own leash straight
+    // back, and the allowance is read off it here, at the moment of sealing —
+    // which is the moment the message is handed onward, and the second of the
+    // two readings the dwell is the difference of. Present, it overrides
+    // `allowance`, so a being under a leash cannot widen one even by mistake.
+    if (leash) allowance = leash.onward();
     // An ask that could not be judged is not made: a hop count below zero or a
     // budget at or below zero is what the far door would meet with silence, so
     // the near door never spends the number on it.
-    if (allowance.hops < 0n || allowance.time <= 0n) return null;
+    if (!allowance || allowance.hops < 0n || allowance.time <= 0n) return null;
     return seal({
       payload: {
         voice: voicePk,
@@ -511,7 +598,15 @@ export class Warden {
   // what a source pushing into a subscriber uses like anything else.
   ask(
     row,
-    { seq, commitment = null, allowance = { time: 5_000n, hops: 8n }, being, method, random },
+    {
+      seq,
+      commitment = null,
+      allowance = { time: 5_000n, hops: 8n },
+      leash = null,
+      being,
+      method,
+      random,
+    },
   ) {
     // The count kept against that far door, so it travels with the relation
     // and the being does not repeat a number after it moves.
@@ -524,6 +619,7 @@ export class Warden {
       commitment,
       seq,
       allowance,
+      leash,
       being,
       method,
       random,
@@ -542,12 +638,16 @@ export class Warden {
   }
 
   async #judge(envelope, clock, random) {
+    // The first of the two readings the dwell is the difference of. It is taken
+    // before anything is unsealed, because what it marks is when the message
+    // arrived and not when the door got round to it.
+    const arrived = clock();
+
     // 1. Unseal with the warden's own secret.
     const { payload, bytes, signature } = await open({
       envelope,
       padlockSecret: this.padlock.secret,
     });
-    const arrived = clock();
 
     // 2. Verify the signature over the payload, using the voice it carries.
     if (!(await verify(bytes, signature, payload.voice))) return null;
@@ -603,10 +703,11 @@ export class Warden {
     if (hops < 0n || time <= 0n) return null;
 
     // Whatever this call reaches onward carries less than it received: the hop
-    // count falls by one, and the time budget by this door's own dwell. Where
-    // either would fall below what a leash may be, the onward ask is refused at
-    // the moment of carrying and the work already routed stands.
-    const onward = () => ({ time: time - BigInt(clock() - arrived), hops: hops - 1n });
+    // count falls by one, and the time budget by this door's own dwell. The
+    // dwell is only known when the handing onward happens, so what the being is
+    // handed carries the arrival reading and the clock rather than a number
+    // worked out now.
+    const leash = new Leash(payload.allowance, arrived, clock);
 
     // 6. Route — being and method, being alone, neither, a method with no being
     // reaching the warden's own being, or the stranger's case; and for a voice
@@ -646,6 +747,9 @@ export class Warden {
 
     const being = this.beings.get(hex(payload.being));
     if (!being) return null;
+    // The blueprint is the scope: a name it never declared is not reached for
+    // on the object at all.
+    if (!being.declares.has(payload.method.name)) return null;
     const field = being.object[payload.method.name];
     if (typeof field !== 'function') return null;
 
@@ -653,7 +757,7 @@ export class Warden {
     // of a chain does its own work before it answers, and reaching another
     // house is asynchronous on every ground, so the door waits for it: what
     // must be bytes or nothing is what the field settles on.
-    const data = await field.call(being.object, payload.method.args, onward());
+    const data = await field.call(being.object, payload.method.args, leash);
     if (data !== undefined && !(data instanceof Uint8Array)) return null;
 
     // 7. Answer. Sealed to the return padlock the payload carried, signed by
@@ -932,21 +1036,27 @@ export class Warden {
   }
 
   async #answer(payload, data, random) {
-    const bytes = encode(ANSWER, { warden: this.name.pk, seq: payload.seq, data }, ANSWER_RECORDS);
+    const bytes = tagged(
+      ANSWER_BYTE,
+      encode(ANSWER, { warden: this.name.pk, seq: payload.seq, data }, ANSWER_RECORDS),
+    );
     // The answer is one sealed box like any other; only what rides in it
     // differs.
     return box(concat([bytes, await sign(bytes, this.name.secret)]), payload.padlock, random);
   }
 }
 
-// Read an answer at the caller's side: unbox, take the last sixty-four bytes
+// Read an answer at the caller's side: unbox with the padlock the ask named,
+// read the record byte, which must say answer, take the last sixty-four bytes
 // as the warden's signature, and believe it only from the name it names —
 // because the caller must know that the door it asked is the door that spoke.
+// Which ask it answers is the caller's own bookkeeping and lives where the
+// asks await.
 export async function readAnswer({ envelope, padlockSecret, wardenPk }) {
   try {
     const { bytes, signature } = await unbox(envelope, padlockSecret);
     if (!(await verify(bytes, signature, wardenPk))) return null;
-    const answer = decodeAnswer(bytes);
+    const answer = decodeAnswer(untag(ANSWER_BYTE, bytes));
     return same(answer.warden, wardenPk) ? answer : null;
   } catch {
     return null;

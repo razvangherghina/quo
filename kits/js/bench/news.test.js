@@ -104,7 +104,7 @@ test('a padlock replacement carries only the padlock, and is believed by the nam
     ),
     true,
   );
-  // The reference is rewritten: a new lock, a new road, the same name.
+  // The handle is rewritten: a new lock, a new road, the same name.
   assert.equal(hex(row.padlock), hex(lock.pk));
   assert.deepEqual(row.hints, ['https://new.example']);
   assert.equal(hex(row.warden), hex(far.name.pk));
@@ -164,7 +164,7 @@ test('a name succession is believed by hashing the successor against the commitm
     ),
   );
   assert.equal(heard1, true);
-  // The reference is rewritten with the new key, the new commitment and the
+  // The handle is rewritten with the new key, the new commitment and the
   // new door — and the outbound record is rekeyed to the name now answering.
   assert.equal(hex(row.warden), hex(far.heir.pk));
   assert.equal(hex(row.commitment), hex(await commitment(far.heir.pk, next.pk)));

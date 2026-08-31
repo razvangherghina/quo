@@ -15,11 +15,11 @@ anybody implements. Nothing else touches the wire, sees a key, or opens
 a seal.
 
 - A **blueprint** is a class. Its digest is its identity.
-- A **being** is an instance: fields, methods, references to other
+- A **being** is an instance: fields, methods, pointers to other
   objects.
 - **Cells** are its data fields — its own memory, nobody else's
   business.
-- A **reference** is a pointer with an owner.
+- A **handle** is a pointer with an owner.
 - A **ground** is a warden and the beings it holds. The process it runs
   in is where it lives, not what it is.
 
@@ -45,12 +45,12 @@ lies between them. **The device never appears**, and no peer may ask
 whether two doors share metal.
 
 **There is no tenancy.** A being never lives under someone else's
-warden; you reach across to theirs by reference. A ground may be as
-small as a page that mints a key, holds a being and dies — that is a
-whole ground for as long as it lasts, and its peers meet silence
-afterwards, which is already a legal answer. **A browser ground's
-sovereignty is loaned, and this law says so rather than hiding it**: the
-page that mints the keys was served by an origin, and whoever
+warden; you reach across to theirs by standing at their door. A ground
+may be as small as a page that mints a key, holds a being and dies —
+that is a whole ground for as long as it lasts, and its peers meet
+silence afterwards, which is already a legal answer. **A browser
+ground's sovereignty is loaned, and this law says so rather than hiding
+it**: the page that mints the keys was served by an origin, and whoever
 administers the origin stands to the tab as a runner stands to a warden,
 able to replace the code that holds the keys. Whoever wants sovereignty
 nobody can revoke runs their warden on metal they control, which was
@@ -139,6 +139,96 @@ none.** TLS is redundant crypto Quo relies on for no guarantee.
 
 Beside the common carriage, any private carriage two consenting grounds
 share binds only those two.
+
+**One more road is named, so that strangers meet on it without
+agreement.** Naming makes a carriage standard, never mandatory: the
+common carriage stays the one every warden answers, because a browser
+tab can open no socket and reach outranks fit. A warden that answers the
+named road answers it exactly as written here, or it has not answered it
+at all.
+
+**The line: framed envelopes over one persistent TCP connection**, for
+the roads where both ends are consenting grounds and TLS and HTTP buy
+nothing. A frame is a length written the way the wire encoding writes an
+`int`, then that many envelope bytes, and nothing else — the length is
+the frame's whole vocabulary, and it does not count itself: the length
+is the envelope's bytes alone. Frames flow both directions on one
+connection and either end may originate an ask, which is what lets a
+ground that cannot be called dial out and be asked down the line it
+holds. Each end reads while it writes — a peer that stops reading to
+finish writing has made a deadlock, and the deadlock is its own.
+
+**An answer returns on the line its ask arrived on**, even where other
+roads stand, and answers return in whatever order the work finishes; a
+line that drops before the answer rode it has lost it, which is weather.
+Correlation lives inside the seal: the payload's leading byte says which
+record arrived, and an answer names its ask by the answering warden and
+the seq, read against the asks awaiting under the padlock that unsealed
+it. Per voice the seq only rises, so no voice collides with itself;
+where two voices, one return padlock, one far warden and one number
+would make two answers indistinguishable, the sender's kit refuses to
+send the second ask while the first waits (Article XII), and distinct
+return padlocks dissolve the collision entirely.
+
+**Silence has no wire form on a line.** The common carriage needs an
+empty body because HTTP forces a response; a line does not — a refused
+ask produces no frame, and the caller's own deadline is its own affair.
+A zero-length frame is therefore malformed here, though a zero length is
+a legal value everywhere else in the encoding. **A well-formed frame
+whose envelope fails the judgment is ordinary silence, and the line
+lives on.** Only a framing fault ends the connection — a length at or
+below zero, or a length above the receiving end's cap — and it ends
+without a word, because a peer that cannot frame cannot be spoken to. A
+body the connection ends before delivering is the fault having already
+happened.
+
+**Each end of a line is a door for what arrives, and each holds a cap —
+one number, that end's own, and the road says it before a byte flows.**
+A bare `tcp://` hint promises the default: that end accepts envelopes to
+16,384 bytes. A door with a different appetite declares its cap in the
+hint it publishes, and a dialer reads it before connecting — no
+handshake, no negotiation on the wire; the road describes itself the way
+it already describes where it is, and a wrong cap costs what a wrong
+address costs. An end that publishes nothing — the dialing end always —
+promises the default. A warden whose published `limit` is under the
+default and whose hint declares no cap does not offer the line. A sender
+stays at or under the cap the far road promised; generosity above it is
+learned by asking `limit`, an ask small enough to fit under any cap a
+door may declare.
+
+**The line is dumb, not defenceless.** It negotiates nothing, keeps
+nothing alive and reconnects for no one; a dropped line is weather, and
+dialing again is the caller's affair. How an end guards its socket —
+reaping idle lines, bounding connections, bounding the asks it holds in
+flight, refusing a frame that arrives one byte a day — is delivery, each
+warden's own under Article II; the list is examples, never a licence,
+and a reaped line is the same weather as a dropped one. Only the
+listening end has a road to publish, and its hint is `tcp://host:port` —
+the host a literal address or a name, an IPv6 literal in brackets, the
+port always written — optionally followed by `?cap=` and the door's cap
+in decimal bytes, and nothing after that. The dialing end is reachable
+down the lines it holds and publishes nothing; news for a peer that
+publishes nothing rides that peer's next line if its sender's delivery
+kept it, and news that finds no line is weather.
+
+**Consent is the road itself, and it gates nothing above the carriage.**
+Publishing the `tcp://` hint is the listener's consent; dialing is the
+dialer's. A door reached over the line owes every caller what any door
+owes, the stranger's case included — an allowlist on the socket is a
+second gate this law does not have. **And the line is a trade, named
+plainly:** the seal concedes nothing, but the road's observer reads what
+the common carriage's TLS hides — the size, count, direction and timing
+of every frame — and anyone on the path may cut the line at will. Both
+ends chose this road; choosing it is choosing that.
+
+**And at distance zero the carriage is a call — two houses in one device
+or one process handing envelope bytes as bytes — which is a private
+carriage like any other, needing no naming because no wire exists to
+disagree about. What is law is this: distance zero waives no step of the
+judgment.** The seal and the signature are what make them two houses,
+and a ground that strips them for being local has rebuilt the ambient
+permission this law exists to end. Within one house there is no carriage
+at all, because there are no strangers.
 
 **A hint is where to send bytes, and Quo never reads one.** It is an
 opaque string the carriage understands and the protocol does not parse.
@@ -617,7 +707,13 @@ one, never reused, naming neither the sender nor the sender's house.
 
 **Inside the seal are two things: the payload, and one signature over
 it.** The signature is the last sixty-four bytes inside the seal — fixed
-size, needing no marker and no length in front of the payload.
+size, needing no length in front of the payload. **The payload begins
+with one byte naming the record it carries — zero for a `say`, one for
+an `answer` — and the signature covers that byte with the rest.**
+Position decides nothing: on a held line an ask and an answer arrive the
+same way, so the payload says what it is, and what it signs can never be
+read as the other record. Any other first byte is silence, and a record
+presented under the wrong byte is silence too.
 
 **The signed payload is one record in Quo's own notation, encoded by the
 notation's own rules.** Not canonical JSON, and not a second binary
@@ -706,8 +802,9 @@ second counter, no identifier, no clock.
 silence and never says which step it was.**
 
 1. **Unseal** with the warden's own secret, and decode what comes out —
-   the `say` and the signature behind it. Decoding is part of unsealing
-   rather than a step of its own.
+   the leading byte, which at a door must say `say`, then the `say` and
+   the signature behind it. Decoding is part of unsealing rather than a
+   step of its own.
 2. **Verify** the signature over the payload, using the voice the
    payload carries.
 3. **Check the recipient.** The name or padlock the payload carries must
@@ -747,6 +844,17 @@ identified by how a call was addressed, so nothing here can diverge.
 **There is no empty ask, because there is a default one: describe.** And
 the describe is the warden's answer, never the being's.
 
+**An answer is judged too, by a shorter road, at the caller's own end.**
+Unseal with the padlock the ask named; the leading byte must say
+`answer`; verify the signature with the `warden` the record carries,
+which must be the warden the ask was sent to; and an ask must be
+awaiting under that padlock, that warden and that seq. **An answer
+spends nothing** — its number is the ask's own, already spent at the far
+door — and an answer nothing awaits is the same silence as every other
+failure, retried never. A caller does not put a second ask on a road
+while an awaiting one would make the two answers indistinguishable; its
+own kit refuses to send it.
+
 ## XIII. Rotation
 
 **Being rotation and warden rotation are two different things.**
@@ -759,7 +867,7 @@ the describe is the warden's answer, never the being's.
   succeeding the **name** itself, the owner's heir spending, reserved
   for a lost or stolen warden.
 
-Every reference carries the current voice and the hash of the heir. A
+Every handle carries the current voice and the hash of the heir. A
 succession must reveal a preimage, so no successor can be named after
 the fact.
 

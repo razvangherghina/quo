@@ -778,6 +778,50 @@ func TestAMethodWithNoBeingReachesTheWardensOwnBeing(t *testing.T) {
 	mustEstate(t, g.answer(g.judge(g.inv.HeirSecret, g.say(g.inv.Heir, 21))))
 }
 
+// TestDistanceZeroWaivesNoStepOfTheJudgment holds Article III's last word: a
+// call handed straight to the judge, same process, no wire, still runs the
+// whole judgment. The well-formed ask answers, and the same ask meets the
+// same silence a stranger's box would when its signature is corrupted or
+// its number has already been spent — distance zero is a carriage, not a
+// shortcut through the steps.
+func TestDistanceZeroWaivesNoStepOfTheJudgment(t *testing.T) {
+	g := stand(t)
+	g.rotate(1)
+
+	// The local road works: a well-formed sealed ask, handed to the judge in
+	// the same process, answers.
+	args, err := wire.Encode(warden.Own, textType(), "milk")
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := g.say(g.inv.Heir, 2)
+	s.Being = &g.being
+	s.Method = &envelope.Method{Name: "add", Args: args}
+	if data := g.answer(g.judge(g.inv.HeirSecret, s)); !bytes.Equal(data, args) {
+		t.Fatalf("the being answered %x", data)
+	}
+
+	// A signature corrupted in transit meets silence even though there was
+	// no transit: the bytes are handed directly, and the judge still checks
+	// every one of them.
+	s = g.say(g.inv.Heir, 3)
+	s.Being = &g.being
+	s.Method = &envelope.Method{Name: "add", Args: args}
+	message, err := envelope.SealSay(secret("ephemeral"), g.w.Padlock(), g.inv.HeirSecret, s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	bent := append([]byte(nil), message...)
+	bent[len(bent)-1] ^= 1
+	g.silent(g.w.Judge(warden.Draws{Ephemeral: secret("answerEphemeral"), Heir: secret("receiveHeir")}, bent))
+
+	// A replayed envelope meets silence too: the same seq handed to the
+	// judge a second time, in the very process that spent it, is still
+	// spent.
+	g.answer(g.judge(g.inv.HeirSecret, g.say(g.inv.Heir, 4)))
+	g.silent(g.judge(g.inv.HeirSecret, g.say(g.inv.Heir, 4)))
+}
+
 func mustEstate(t *testing.T, data []byte) warden.Estate {
 	t.Helper()
 	e, err := warden.DecodeEstate(data)

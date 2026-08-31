@@ -16,6 +16,13 @@ import {
   SIGNATURE,
 } from './arithmetic.js';
 
+// The signed payload begins with one byte naming the record it carries, and
+// the signature covers that byte with the rest. Position decides nothing: on a
+// held line an ask and an answer arrive the same way, so the payload says what
+// it is, and what it signs can never be read as the other record.
+export const SAY = 0;
+export const ANSWER = 1;
+
 // The signed payload is one record in Quo's own notation, encoded by the
 // notation's own rules: a key and a commitment alike are `b32`, thirty-two
 // bare bytes, as a `being` rides; an
@@ -24,9 +31,9 @@ import {
 // pair whose arguments are an opaque, length-prefixed blob. The fields come in
 // the order the envelope section lists them.
 export const PAYLOAD_BLUEPRINT = `Envelope
-  payload(payload payload)
+  say(say say)
 
-payload
+say
   voice b32
   recipient b32
   commitment b32?
@@ -47,7 +54,7 @@ method
 `;
 
 const RECORDS = recordsOf(parse(PAYLOAD_BLUEPRINT));
-const PAYLOAD = { base: 'payload' };
+const PAYLOAD = { base: 'say' };
 
 export function encodePayload(payload) {
   return encode(PAYLOAD, payload, RECORDS);
@@ -93,16 +100,44 @@ export async function unbox(envelope, padlockSecret) {
   };
 }
 
+// The record byte in front of the encoded record: what the signature covers
+// and what a reader judges before it decodes anything.
+export function tagged(tag, record) {
+  return concat([Uint8Array.of(tag), record]);
+}
+
+// And its inverse. Any other first byte is silence, and a record presented
+// under the wrong byte is silence too — which is one refusal, because the
+// reader knows which record it is reading.
+export function untag(tag, bytes) {
+  if (bytes.length < 1 || bytes[0] !== tag) refuse('WRONG_RECORD');
+  return bytes.subarray(1);
+}
+
 export async function seal({ payload, padlock, voiceSecret, random }) {
-  const bytes = encodePayload(payload);
+  const bytes = tagged(SAY, encodePayload(payload));
   return box(concat([bytes, await sign(bytes, voiceSecret)]), padlock, random);
 }
 
 // Step one alone: open the box and read what is in it, without judging the
-// signature. The warden verifies as its own step.
+// signature. The warden verifies as its own step. `bytes` is the signed
+// payload, the record byte included, because that is what was signed.
 export async function open({ envelope, padlockSecret }) {
   const { bytes, signature } = await unbox(envelope, padlockSecret);
-  return { payload: decodePayload(bytes), bytes, signature };
+  return { payload: decodePayload(untag(SAY, bytes)), bytes, signature };
+}
+
+// Which record a sealed envelope carries, read off the byte and nothing else.
+// `null` where the box will not open or the byte names no record — the two
+// answers a reader that must not guess is allowed.
+export async function kindOf({ envelope, padlockSecret }) {
+  try {
+    const { bytes } = await unbox(envelope, padlockSecret);
+    const kind = bytes.length > 0 ? bytes[0] : null;
+    return kind === SAY || kind === ANSWER ? kind : null;
+  } catch {
+    return null;
+  }
 }
 
 export async function unseal({ envelope, padlockSecret }) {

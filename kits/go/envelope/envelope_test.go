@@ -139,8 +139,9 @@ func checkSignature(t *testing.T, v corpus.Vector) {
 	if !arithmetic.Verify(keyOf(t, v, "voice"), payload, got) {
 		t.Fatal("its own signature did not verify")
 	}
-	// The payload the corpus signed is the payload this kit writes.
-	if _, err := envelope.DecodeSay(payload); err != nil {
+	// The payload the corpus signed is the payload this kit writes — the record
+	// byte in front of it included, because that is what the signature covers.
+	if _, err := envelope.DecodeSayPayload(payload); err != nil {
 		t.Fatalf("refused the payload it signed: %v", err)
 	}
 }

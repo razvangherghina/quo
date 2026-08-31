@@ -21,8 +21,14 @@ export {
 } from './arithmetic.js';
 export {
   PAYLOAD_BLUEPRINT,
+  SAY,
+  ANSWER,
   encodePayload,
   decodePayload,
+  tagged,
+  untag,
+  kindOf,
+  concat,
   seal,
   open,
   unseal,
@@ -31,6 +37,7 @@ export {
 } from './envelope.js';
 export {
   Warden,
+  Leash,
   ANSWER_BLUEPRINT,
   WARDEN_BLUEPRINT,
   WARDEN_DIGEST,

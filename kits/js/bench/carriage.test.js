@@ -56,11 +56,10 @@ async function grounds() {
   // supplier rather than reaching for entropy.
   let grain = 100;
   const random = () => fixed((grain += 1) % 251);
+  // The door tells the warden where it ended up: neither address exists until
+  // the socket is bound, and everything minted after this carries them.
   const there = await serve(host, { clock: still, random });
   const here = await serve(guest, { clock: still, random });
-  // The hint a warden published is where to send bytes, and Quo never reads it.
-  host.hints = [there.hint];
-  guest.hints = [here.hint];
   return {
     host,
     guest,
@@ -272,6 +271,65 @@ test('a caller tries the hints it holds, because none is authoritative', async (
   const estate = await readBack(world.guest, world.host, answer, 'describe');
   assert.equal(estate.classes.length, 1);
   assert.equal(hex(estate.classes[0].beings[0].being), hex(world.host.name.pk));
+});
+
+test('a door that learns its address at serve time mints invitations that reach it', async (t) => {
+  // Opened knowing nothing about where it will stand: an ephemeral port has no
+  // address until the socket is bound, so a warden that fixed its roads at
+  // birth could only hand out hints that reach nobody.
+  const house = await Warden.open({
+    nameSeed: fixed(30),
+    padlockSeed: fixed(31),
+    heirSeed: fixed(32),
+  });
+  assert.deepEqual(house.hints, []);
+  const being = await house.hold(todo(), { seed: fixed(33), heirSeed: fixed(34), blueprint: LIST });
+  const caller = await Warden.open({
+    nameSeed: fixed(40),
+    padlockSeed: fixed(41),
+    heirSeed: fixed(42),
+  });
+
+  let grain = 60;
+  const door = await serve(house, { clock: still, random: () => fixed((grain += 1) % 251) });
+  t.after(door.close);
+  assert.deepEqual(house.hints, [door.hint]);
+
+  const invitation = await house.grant(being, { voiceSeed: fixed(43), heirSeed: fixed(44) });
+  assert.deepEqual(invitation.hints, [door.hint]);
+
+  // The proof is not that the strings match but that the road carries: the
+  // holder posts down the hints it was given and a door answers.
+  const row = caller.remember(invitation);
+  const next = await signingPair(fixed(45));
+  const estate = await readBack(
+    caller,
+    house,
+    await reach(
+      row.hints,
+      await caller.ask(row, {
+        seq: 1n,
+        commitment: await commitment(house.name.pk, next.pk),
+        random: RANDOM,
+      }),
+    ),
+    'describe',
+  );
+  const stands = estate.classes.flatMap((one) => one.beings.map((each) => hex(each.being)));
+  assert.ok(stands.includes(hex(being)));
+
+  // A second road is added, never swapped: a warden offers as many as it has.
+  house.publish('https://house.example');
+  const card = house.card();
+  assert.deepEqual(card.hints, [door.hint, 'https://house.example']);
+
+  // And a road that stops carrying stops being minted: the second door is the
+  // whole of a warden moving house, which is open the new road, close the old.
+  const moved = await serve(house, { clock: still, random: () => fixed(7) });
+  t.after(moved.close);
+  assert.deepEqual(house.hints, [door.hint, 'https://house.example', moved.hint]);
+  await moved.close();
+  assert.deepEqual(house.card().hints, [door.hint, 'https://house.example']);
 });
 
 function statusOf(hint, body) {

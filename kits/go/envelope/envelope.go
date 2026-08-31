@@ -100,8 +100,70 @@ type Answer struct {
 	Data   []byte
 }
 
-// EncodeSay writes the payload: the say's fields in the order the envelope
-// section lists them, each by the notation's own rules.
+// The signed payload begins with one byte naming the record it carries, and
+// the signature covers that byte with the rest. Position decides nothing: on a
+// held line an ask and an answer arrive the same way, so the payload says what
+// it is, and what it signs can never be read as the other record.
+const (
+	SayTag    byte = 0
+	AnswerTag byte = 1
+)
+
+// ErrWrongRecord is what any other first byte gets, and what a record
+// presented under the wrong byte gets — one refusal, because the reader always
+// knows which record it is reading.
+var ErrWrongRecord = errors.New("envelope: the payload names another record")
+
+func tagged(tag byte, record []byte) []byte {
+	return append([]byte{tag}, record...)
+}
+
+func untag(tag byte, payload []byte) ([]byte, error) {
+	if len(payload) < 1 || payload[0] != tag {
+		return nil, ErrWrongRecord
+	}
+	return payload[1:], nil
+}
+
+// EncodeSayPayload is what a voice signs: the record byte, then the say.
+func EncodeSayPayload(s Say) ([]byte, error) {
+	record, err := EncodeSay(s)
+	if err != nil {
+		return nil, err
+	}
+	return tagged(SayTag, record), nil
+}
+
+// DecodeSayPayload reads one back, refusing any other byte in front of it.
+func DecodeSayPayload(payload []byte) (Say, error) {
+	record, err := untag(SayTag, payload)
+	if err != nil {
+		return Say{}, err
+	}
+	return DecodeSay(record)
+}
+
+// EncodeAnswerPayload is the answer's own half of the same pair.
+func EncodeAnswerPayload(a Answer) ([]byte, error) {
+	record, err := EncodeAnswer(a)
+	if err != nil {
+		return nil, err
+	}
+	return tagged(AnswerTag, record), nil
+}
+
+// DecodeAnswerPayload reads one back.
+func DecodeAnswerPayload(payload []byte) (Answer, error) {
+	record, err := untag(AnswerTag, payload)
+	if err != nil {
+		return Answer{}, err
+	}
+	return DecodeAnswer(record)
+}
+
+// EncodeSay writes the record alone: the say's fields in the order the
+// envelope section lists them, each by the notation's own rules. What is
+// signed is this with the record byte in front of it.
 func EncodeSay(s Say) ([]byte, error) {
 	return wire.Encode(shapes, sayType, sayValue(s))
 }
@@ -167,7 +229,7 @@ func Unseal(padlockSecret [32]byte, message []byte) ([]byte, error) {
 // signature over it as the last sixty-four bytes inside the seal, and the two
 // of them sealed to the door's padlock.
 func SealSay(ephemeralSecret, padlock, voiceSecret [32]byte, s Say) ([]byte, error) {
-	payload, err := EncodeSay(s)
+	payload, err := EncodeSayPayload(s)
 	if err != nil {
 		return nil, err
 	}
@@ -187,7 +249,7 @@ func OpenSay(padlockSecret [32]byte, message []byte) (Say, error) {
 	if err != nil {
 		return Say{}, err
 	}
-	s, err := DecodeSay(payload)
+	s, err := DecodeSayPayload(payload)
 	if err != nil {
 		return Say{}, err
 	}
@@ -201,7 +263,7 @@ func OpenSay(padlockSecret [32]byte, message []byte) (Say, error) {
 // name, because the caller must know that the door it asked is the door that
 // spoke.
 func SealAnswer(ephemeralSecret, returnPadlock, nameSecret [32]byte, a Answer) ([]byte, error) {
-	payload, err := EncodeAnswer(a)
+	payload, err := EncodeAnswerPayload(a)
 	if err != nil {
 		return nil, err
 	}
@@ -220,7 +282,7 @@ func OpenAnswer(padlockSecret [32]byte, message []byte) (Answer, error) {
 	if err != nil {
 		return Answer{}, err
 	}
-	a, err := DecodeAnswer(payload)
+	a, err := DecodeAnswerPayload(payload)
 	if err != nil {
 		return Answer{}, err
 	}

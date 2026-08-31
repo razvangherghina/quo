@@ -1,6 +1,6 @@
 {
   "name": "@quo-systems/js",
-  "version": "0.0.3",
+  "version": "0.1.0",
   "description": "The Quo kit written from the constitution alone: the canonical blueprint notation, the wire encoding of the closed types, the arithmetic and the envelope",
   "keywords": [
     "quo",
@@ -28,6 +28,7 @@
   "exports": {
     ".": "./src/index.js",
     "./door": "./src/door.js",
+    "./line": "./src/line.js",
     "./package.json": "./package.json"
   },
   "files": [

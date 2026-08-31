@@ -7,8 +7,12 @@ import { writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import {
+  SAY,
   WARDEN_BLUEPRINT,
   agree,
+  box,
+  concat,
+  tagged,
   canonicalBytes,
   commitment,
   decode,
@@ -745,6 +749,47 @@ async function sealed(json, secret, random, opens = true) {
 const askBytes = payloadBytes(askPayload);
 const sealedAsk = await sealed(askPayload, voice.secret, ephemeral);
 
+// What is signed is the record byte and the record together. A door reads that
+// byte before it decodes anything, so these three are the whole of what an
+// envelope carrying the wrong one meets.
+const signedAsk = tagged(SAY, askBytes);
+
+// A payload crafted to decode as both records — the ambiguity the byte kills.
+// Read as a `say` it is the ask below; read as an `answer` its first
+// thirty-two bytes are the warden, the next eight the seq, and the recipient's
+// own bytes make the data present and exactly as long as what remains. Nothing
+// but the byte separates them.
+function ambiguous() {
+  const recipient = new Uint8Array(32).fill(3);
+  // The data's presence byte, then its length: the say is 131 bytes, and the
+  // answer's data begins at 49.
+  recipient[8] = 1;
+  new DataView(recipient.buffer).setBigInt64(9, BigInt(131 - 49), false);
+  const json = {
+    voice: material.voice,
+    recipient: hex(recipient),
+    commitment: null,
+    seq: '1',
+    padlock: material.returnPadlock,
+    hints: [],
+    allowance: { time: '30000', hops: '8' },
+    being: null,
+    method: null,
+  };
+  const bytes = payloadBytes(json);
+  must(bytes.length === 131, 'the crafted payload is not the length it was crafted for');
+  must(decodeAnswer(bytes) !== null, 'the crafted payload does not decode as an answer too');
+  return { json, bytes };
+}
+
+// Sealing arbitrary bytes as the inside of an envelope, which is the only way
+// to write a payload the kit itself would never write.
+async function sealedInside(inside, secret, random) {
+  return box(concat([inside, await sign(inside, secret)]), padlock.pk, random);
+}
+
+const ambiguousPayload = ambiguous();
+
 const answerValues = [
   ['an answer carrying data', { warden: material.wardenName, seq: '1', data: hex(utf8('yes')) }],
   [
@@ -785,10 +830,10 @@ const envelope = [
   {
     name: 'the signature is the last sixty-four bytes inside the seal',
     law: 'The envelope',
-    payload: hex(askBytes),
+    payload: hex(signedAsk),
     voice: material.voice,
     secret: material.voiceSecret,
-    signature: hex(await sign(askBytes, voice.secret)),
+    signature: hex(await sign(signedAsk, voice.secret)),
   },
   {
     name: 'the whole envelope: ephemeral pk, then one ciphertext',
@@ -834,6 +879,44 @@ const envelope = [
     padlockSecret: material.padlockSecret,
     envelope: hex(await sealed(askPayload, successor.secret, ephemeral, false)),
     refuses: true,
+  },
+  {
+    name: 'a say presented under the answer byte',
+    law: 'The envelope',
+    padlockSecret: material.padlockSecret,
+    envelope: hex(await sealedInside(tagged(1, askBytes), voice.secret, ephemeral)),
+    refuses: true,
+  },
+  {
+    name: 'a payload under a byte that names no record',
+    law: 'The envelope',
+    padlockSecret: material.padlockSecret,
+    envelope: hex(await sealedInside(tagged(2, askBytes), voice.secret, ephemeral)),
+    refuses: true,
+  },
+  {
+    name: 'a payload with no byte in front of it at all',
+    law: 'The envelope',
+    padlockSecret: material.padlockSecret,
+    envelope: hex(await sealedInside(askBytes, voice.secret, ephemeral)),
+    refuses: true,
+  },
+  {
+    name: 'a payload that decodes as both records, under the answer byte',
+    law: 'The envelope',
+    padlockSecret: material.padlockSecret,
+    envelope: hex(await sealedInside(tagged(1, ambiguousPayload.bytes), voice.secret, ephemeral)),
+    refuses: true,
+  },
+  {
+    name: 'a payload that decodes as both records, under the say byte',
+    law: 'The envelope',
+    value: ambiguousPayload.json,
+    padlock: material.padlock,
+    padlockSecret: material.padlockSecret,
+    voiceSecret: material.voiceSecret,
+    ephemeralSecret: material.ephemeralSecret,
+    envelope: hex(await sealed(ambiguousPayload.json, voice.secret, ephemeral)),
   },
 ].concat(
   answerValues.map(([name, value]) => {

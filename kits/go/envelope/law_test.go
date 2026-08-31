@@ -3,6 +3,7 @@ package envelope_test
 import (
 	"bytes"
 	"crypto/sha256"
+	"encoding/binary"
 	"testing"
 
 	"quo.systems/kit/arithmetic"
@@ -104,9 +105,14 @@ func TestOnlyTheNamedDoorCanOpenIt(t *testing.T) {
 func TestTheSignatureIsTheLastSixtyFourBytesInsideTheSeal(t *testing.T) {
 	padlock, secret := padlockOf(t, "door")
 	s := wellFormed(t)
-	payload, err := envelope.EncodeSay(s)
+	// The payload is the record byte and the record together, because that is
+	// what the signature covers.
+	payload, err := envelope.EncodeSayPayload(s)
 	if err != nil {
 		t.Fatal(err)
+	}
+	if payload[0] != envelope.SayTag {
+		t.Fatalf("the payload leads with %d, want the say byte", payload[0])
 	}
 	message, err := envelope.SealSay(draw("ephemeral"), padlock, draw("voice"), s)
 	if err != nil {
@@ -320,6 +326,103 @@ func TestSurplusBytesInsideTheSealAreRefused(t *testing.T) {
 	}
 	if _, err := envelope.DecodeSay(payload[:len(payload)-1]); err == nil {
 		t.Fatal("a truncated say was accepted")
+	}
+}
+
+// sealInside seals arbitrary bytes as the inside of an envelope, which is the
+// only way to write a payload the kit itself would never write.
+func sealInside(t *testing.T, padlock [32]byte, inside []byte) []byte {
+	t.Helper()
+	sig := arithmetic.Sign(draw("voice"), inside)
+	message, err := envelope.Seal(draw("ephemeral"), padlock, append(inside, sig[:]...))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return message
+}
+
+// TestAPayloadUnderTheWrongByteIsRefused holds the leading byte: any byte but
+// the say's is silence at a door, whoever signed what follows it.
+func TestAPayloadUnderTheWrongByteIsRefused(t *testing.T) {
+	padlock, secret := padlockOf(t, "door")
+	record, err := envelope.EncodeSay(wellFormed(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, inside := range [][]byte{
+		append([]byte{envelope.AnswerTag}, record...),
+		append([]byte{7}, record...),
+		// No byte in front at all, which is the shape before the byte existed.
+		record,
+		// And an empty payload has no byte to read.
+		{},
+	} {
+		if _, err := envelope.OpenSay(secret, sealInside(t, padlock, inside)); err == nil {
+			t.Fatalf("a payload under byte %v opened as a say", inside[:min(1, len(inside))])
+		}
+	}
+	// The same holds the other way: a record under the say byte is no answer.
+	answer, err := envelope.EncodeAnswer(envelope.Answer{Warden: arithmetic.SigningKey(draw("name")), Seq: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := envelope.OpenAnswer(secret, sealInside(t, padlock, append([]byte{envelope.SayTag}, answer...))); err == nil {
+		t.Fatal("an answer under the say byte opened as an answer")
+	}
+}
+
+// TestAPayloadThatDecodesAsBothRecordsIsJudgedByTheByte holds the confusion
+// the byte exists to kill. Before it, one stretch of bytes could be a legal
+// say and a legal answer at once, so a signature over it proved only that its
+// signer had said something — never which of the two.
+func TestAPayloadThatDecodesAsBothRecordsIsJudgedByTheByte(t *testing.T) {
+	padlock, secret := padlockOf(t, "door")
+	s := wellFormed(t)
+	s.Hints = nil
+	// Read as an answer: the voice is the warden, the recipient's first eight
+	// bytes are the seq, its ninth says the data is present, and the eight
+	// after it are a length that consumes exactly what remains of the say.
+	var recipient [32]byte
+	for i := range recipient {
+		recipient[i] = 3
+	}
+	recipient[8] = 1
+	binary.BigEndian.PutUint64(recipient[9:17], uint64(131-49))
+	s.Recipient = recipient
+
+	both, err := envelope.EncodeSay(s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(both) != 131 {
+		t.Fatalf("the crafted payload is %d bytes, want 131", len(both))
+	}
+	// Both decoders take it, which is the ambiguity itself.
+	if _, err := envelope.DecodeSay(both); err != nil {
+		t.Fatalf("the crafted payload is no say: %v", err)
+	}
+	if _, err := envelope.DecodeAnswer(both); err != nil {
+		t.Fatalf("the crafted payload is no answer: %v", err)
+	}
+
+	// Under the say byte it is the say it encodes, and nothing else.
+	asSay := sealInside(t, padlock, append([]byte{envelope.SayTag}, both...))
+	back, err := envelope.OpenSay(secret, asSay)
+	if err != nil {
+		t.Fatalf("refused its own say: %v", err)
+	}
+	if back.Voice != s.Voice {
+		t.Fatal("it opened to another voice")
+	}
+	if _, err := envelope.OpenAnswer(secret, asSay); err == nil {
+		t.Fatal("a say opened as an answer because its bytes also decode as one")
+	}
+
+	// Under the answer byte it is not a say at any door, however well it
+	// decodes as one.
+	asAnswer := sealInside(t, padlock, append([]byte{envelope.AnswerTag}, both...))
+	if _, err := envelope.OpenSay(secret, asAnswer); err == nil {
+		t.Fatal("an answer opened as a say because its bytes also decode as one")
 	}
 }
 

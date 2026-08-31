@@ -19,6 +19,14 @@ import {
   TAG,
   encodePayload,
   decodePayload,
+  decodeAnswer,
+  tagged,
+  untag,
+  kindOf,
+  box,
+  concat,
+  SAY,
+  ANSWER,
   PAYLOAD_BLUEPRINT,
   parse,
   print,
@@ -155,9 +163,10 @@ test('the ephemeral key is outside, and nothing else is', async () => {
     random: EPHEMERAL,
   });
   assert.equal(hex(envelope.subarray(0, 32)), hex((await sealingPair(EPHEMERAL)).pk));
-  // Ephemeral key, then one ciphertext: the payload, its signature, and a tag.
-  // No length rides in front of the payload — the signature is fixed size.
-  const inside = encodePayload(payload).length + 64;
+  // Ephemeral key, then one ciphertext: the record byte, the payload, its
+  // signature, and a tag. No length rides in front of the payload — the
+  // signature is fixed size.
+  const inside = 1 + encodePayload(payload).length + 64;
   assert.equal(envelope.length, 32 + inside + TAG);
 });
 
@@ -252,7 +261,8 @@ test('the signature is the last sixty-four bytes inside the seal', async () => {
     padlockSecret: door.secret,
   });
   assert.equal(opened.signature.length, 64);
-  assert.equal(hex(opened.bytes), hex(encodePayload(payload)));
+  // What was signed is the record byte and the record together.
+  assert.equal(hex(opened.bytes), hex(tagged(SAY, encodePayload(payload))));
   assert.equal(await verify(opened.bytes, opened.signature, voice.pk), true);
 });
 
@@ -300,6 +310,88 @@ test('only the door the box was sealed to can open it', async () => {
     () => unseal({ envelope: new Uint8Array(0), padlockSecret: door.secret }),
     'SHORT_INPUT',
   );
+});
+
+// Sealing arbitrary bytes as the inside of an envelope: the only way to write
+// a payload the kit itself would never write.
+async function sealInside(inside, secret = voice.secret) {
+  return box(concat([inside, await sign(inside, secret)]), door.pk, EPHEMERAL);
+}
+
+test('a payload under any byte but the say byte meets silence at a door', async () => {
+  const bytes = encodePayload(payload);
+  // The answer byte, a byte naming no record at all, and no byte in front.
+  for (const inside of [tagged(ANSWER, bytes), tagged(7, bytes), bytes]) {
+    const envelope = await sealInside(inside);
+    await rejectedWith(() => unseal({ envelope, padlockSecret: door.secret }), 'WRONG_RECORD');
+  }
+  // And an empty payload has no byte to read.
+  const empty = await sealInside(new Uint8Array(0));
+  await rejectedWith(() => unseal({ envelope: empty, padlockSecret: door.secret }), 'SHORT_INPUT');
+});
+
+// The confusion the byte exists to kill. Before it, one stretch of bytes could
+// be a legal `say` and a legal `answer` at once, so a signature over it proved
+// only that its signer had said something — never which of the two.
+test('a payload that decodes as both records is judged by the byte alone', async () => {
+  const recipient = new Uint8Array(32).fill(3);
+  // Read as an answer: the voice is the warden, the recipient's first eight
+  // bytes are the seq, its ninth says the data is present, and the eight after
+  // it are a length that consumes exactly what remains of the say.
+  recipient[8] = 1;
+  new DataView(recipient.buffer).setBigInt64(9, BigInt(131 - 49), false);
+  const both = encodePayload({
+    ...payload,
+    recipient,
+    commitment: null,
+    hints: [],
+    being: null,
+    method: null,
+  });
+  assert.equal(both.length, 131);
+  // Both decoders take it, which is the ambiguity itself.
+  assert.ok(decodePayload(both));
+  assert.ok(decodeAnswer(both));
+
+  // Under the say byte it is the say it encodes, and nothing else.
+  const asSay = await sealInside(tagged(SAY, both));
+  assert.equal(
+    hex((await unseal({ envelope: asSay, padlockSecret: door.secret })).voice),
+    hex(voice.pk),
+  );
+  assert.equal(await kindOf({ envelope: asSay, padlockSecret: door.secret }), SAY);
+
+  // Under the answer byte it is not a say at any door, however well it decodes
+  // as one and whoever signed it.
+  const asAnswer = await sealInside(tagged(ANSWER, both));
+  await rejectedWith(
+    () => unseal({ envelope: asAnswer, padlockSecret: door.secret }),
+    'WRONG_RECORD',
+  );
+  assert.equal(await kindOf({ envelope: asAnswer, padlockSecret: door.secret }), ANSWER);
+});
+
+test('the byte says which record arrived, and refuses to guess', async () => {
+  const envelope = await seal({
+    payload,
+    padlock: door.pk,
+    voiceSecret: voice.secret,
+    random: EPHEMERAL,
+  });
+  assert.equal(await kindOf({ envelope, padlockSecret: door.secret }), SAY);
+  // A box this padlock cannot open, and a byte naming no record, are one
+  // answer: nothing.
+  assert.equal(await kindOf({ envelope, padlockSecret: caller.secret }), null);
+  assert.equal(
+    await kindOf({
+      envelope: await sealInside(tagged(9, encodePayload(payload))),
+      padlockSecret: door.secret,
+    }),
+    null,
+  );
+  // And the inverse of the byte is one refusal, never a silent strip.
+  assert.equal(hex(untag(SAY, tagged(SAY, Uint8Array.of(5)))), '05');
+  assert.throws(() => untag(SAY, tagged(ANSWER, Uint8Array.of(5))), Refusal);
 });
 
 test('a payload signed by one voice and claiming another is refused', async () => {

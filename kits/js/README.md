@@ -5,7 +5,7 @@ whose authority** — and refuses every other one.
 
 Everything arrives at a door signed, sealed to its recipient, and judged by
 whose seal it wears. There is no login, no session and no ambient permission:
-standing is a reference, granted by invitation and spent once.
+standing is granted by invitation and spent once.
 
 This kit is written from the Quo constitution alone. It carries the canonical
 blueprint notation, the wire encoding of the closed types, the arithmetic, the
@@ -56,8 +56,9 @@ it agrees on the bytes.
 
 ## The protocol
 
-- **[quo.systems](https://quo.systems)** — the law with worked examples, the
-  conformance proof, and a demo that runs in your own tab.
+- **[quo.systems](https://quo.systems)** — the guide from a ten-minute demo
+  to the full API reference, the law with worked examples, the conformance
+  proof, and a demo that runs in your own tab.
 - **[github.com/razvangherghina/quo](https://github.com/razvangherghina/quo)**
   — the constitution and both kits, source of this package.
 

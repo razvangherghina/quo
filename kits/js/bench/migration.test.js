@@ -147,9 +147,9 @@ async function peerAt(origin, being, { seed, voiceSeed, heirSeed, nextSeed }) {
   return { peer, row, seq: 1n };
 }
 
-// An ordinary ask down a peer's own record, at whatever the reference now says.
+// An ordinary ask down a peer's own record, at whatever the handle now says.
 function askThere(peer, row, being, method, seq) {
-  const ref = peer.reference(being);
+  const ref = peer.handle(being);
   return peer.carry({
     recipient: ref ? ref.warden : row.warden,
     padlock: ref ? ref.padlock : row.padlock,
@@ -327,7 +327,7 @@ test('a peer that receives both news arrives at the new door and its standing wo
     null,
     'the first news was believed',
   );
-  const after = one.peer.reference(moving.word.successor);
+  const after = one.peer.handle(moving.word.successor);
   assert.ok(after);
   assert.equal(hex(after.warden), hex(destination.name.pk));
 
@@ -355,7 +355,7 @@ test('a peer that receives both news arrives at the new door and its standing wo
     null,
     'the second news was believed',
   );
-  const now = one.peer.reference(second.word.successor);
+  const now = one.peer.handle(second.word.successor);
   assert.ok(now);
   assert.equal(hex(now.warden), hex(destination.name.pk));
   assert.equal(hex(now.padlock), hex(destination.padlock.pk));
@@ -701,7 +701,7 @@ test('the replay window travels whole, so a caller with asks in flight survives 
   const second = landed(destination);
   const peer = second.peers.find((standing) => hex(standing.voice) === hex(one.row.voice.pk));
   assert.notEqual(await tell(destination, one.peer, second.voice, second.word, 1n, peer), null);
-  const now = one.peer.reference(second.word.successor);
+  const now = one.peer.handle(second.word.successor);
 
   const at = (seq) =>
     readAt(

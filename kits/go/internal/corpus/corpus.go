@@ -97,10 +97,28 @@ func (v Vector) Key(name string) ([32]byte, error) {
 }
 
 // Load reads one area by name, such as "notation" or "wire".
+//
+// The corpus has one home — kits/js/vectors, beside the kit that generates it
+// — and that is what is read wherever the two kits stand together, in this
+// repo and in the published one. The Go kit is also emitted on its own, as the
+// module quo.systems/kit, where no sibling JS kit exists; that emit carries a
+// copy beside this file, and it is only ever reached when the shared corpus is
+// not there. Preferring the shared one is what keeps the copy a copy.
 func Load(area string) (File, error) {
 	_, self, _, _ := runtime.Caller(0)
-	path := filepath.Join(filepath.Dir(self), "..", "..", "..", "js", "vectors", area+".json")
-	raw, err := os.ReadFile(path)
+	dir := filepath.Dir(self)
+
+	var raw []byte
+	var err error
+	for _, path := range []string{
+		filepath.Join(dir, "..", "..", "..", "js", "vectors", area+".json"),
+		filepath.Join(dir, "vectors", area+".json"),
+	} {
+		raw, err = os.ReadFile(path)
+		if err == nil {
+			break
+		}
+	}
 	if err != nil {
 		return File{}, err
 	}

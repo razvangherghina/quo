@@ -16,7 +16,14 @@ import { concat } from './envelope.js';
 // ciphertext together, which is exactly the number `limit()` publishes. It is
 // the host's to pass, the same way it passes the clock, and a door handed none
 // reads whatever arrives.
-export function serve(warden, { clock, random, host = '127.0.0.1', port = 0, limit = null }) {
+// `hint` is the road callers should take to this door, for the ordinary case
+// where the socket is not the address: behind a proxy or a tunnel the door
+// listens on loopback and the world reaches it by a domain. Handed none, the
+// door publishes the socket it actually bound.
+export function serve(
+  warden,
+  { clock, random, host = '127.0.0.1', port = 0, limit = null, hint = null },
+) {
   const server = createServer((incoming, outgoing) => {
     const chunks = [];
     incoming.on('data', (chunk) => chunks.push(chunk));
@@ -39,14 +46,20 @@ export function serve(warden, { clock, random, host = '127.0.0.1', port = 0, lim
   return new Promise((resolve) => {
     server.listen(port, host, () => {
       const at = server.address();
+      // A door is the only thing that knows where it ended up, and it already
+      // holds the warden it serves — so it tells it, rather than making the
+      // host carry the address from one to the other.
+      const road = hint ?? `http://${host}:${at.port}`;
+      warden.publish(road);
       resolve({
         server,
-        hint: `http://${host}:${at.port}`,
+        hint: road,
         // A caller keeps its connection alive between messages, so closing the
         // door means dropping those sockets too: a `close` that waits for the
         // last idle keep-alive to time out is a door that never shuts.
         close: () =>
           new Promise((done) => {
+            warden.retract(road);
             server.close(done);
             server.closeAllConnections();
           }),
