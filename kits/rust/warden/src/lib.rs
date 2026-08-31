@@ -1080,9 +1080,9 @@ fn read_key(args: Option<&Value>) -> Judged<[u8; KEY]> {
 pub fn order(estate: Estate) -> Estate {
     let mut classes = estate.classes;
     for class in &mut classes {
-        class.beings.sort_by(|a, b| a.being.cmp(&b.being));
+        class.beings.sort_by_key(|a| a.being);
     }
-    classes.sort_by(|a, b| a.digest.cmp(&b.digest));
+    classes.sort_by_key(|a| a.digest);
     Estate { classes }
 }
 
