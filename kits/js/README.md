@@ -48,6 +48,42 @@ await door.close();
 door to a maximum envelope size; anything larger is met with silence, the same
 as any other refusal.
 
+## The line
+
+`serve` and `post` are the common carriage: one request, one answer, a
+connection per act. Beside it stands an optional second road — sealed envelopes
+as length-prefixed frames over one persistent TCP connection, for the roads
+where both ends are consenting grounds and TLS buys nothing, because the
+envelope already carries all the crypto.
+
+```js
+import { dial, listen } from '@quo-systems/js/line';
+
+// The listening end publishes its road on its warden.
+const door = await listen(warden, { clock, random, port: 8443 });
+
+// The dialling end publishes nothing and is reachable only down the line it
+// holds — so either end may originate on it.
+const line = await dial(guest, door.hint, { clock, random });
+const answer = await line.carry(envelope, { warden: theirWarden, seq });
+
+line.close();
+await door.close();
+```
+
+A frame is an eight-byte signed length, most significant first, and then that
+many envelope bytes — no header, no correlation id, nothing outside the seal
+that carries meaning. Silence has no wire form: a refused ask simply produces
+no frame, so a zero-length frame is malformed and drops the connection. The
+line refuses to open at all under `DEFAULT` (16,384 bytes), the envelope size an
+undeclared end promises; a door with another appetite says so with `?cap=` on
+the road it publishes. `CAP`, `DEFAULT` and `UnderTheDefault` are exported
+beside `dial` and `listen`.
+
+The constitution names the line as a standard road, never a mandatory one: the
+common carriage stays the one every warden answers, and a warden that answers
+the line answers it exactly as written there or has not answered it at all.
+
 ## Conformance vectors
 
 The published package ships the vectors the kit is judged against, under

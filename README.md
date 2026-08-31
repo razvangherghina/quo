@@ -18,10 +18,10 @@ own tab at **[quo.systems](https://quo.systems)**.
 ## What is here
 
 - **[constitution.md](https://github.com/razvangherghina/quo/blob/main/constitution.md)**
-  — the whole of what binds an implementation, in eleven articles. The world,
-  the arithmetic, the voice, the envelope, the door, the seat and the one act
-  that moves it, custody and its honest limits, the ask, the carriage, the
-  refusals, and the proof.
+  — the whole of what binds an implementation, in fifteen articles. The world,
+  the carriage and its two roads, the notation and the wire encoding, the
+  arithmetic, keys and standings, the warden and its blueprint, the describe,
+  the envelope, the judgment, rotation, the news, and what a message may carry.
 - **[kits/js](https://github.com/razvangherghina/quo/tree/main/kits/js)** — the
   JavaScript kit, published to npm as
   [`@quo-systems/js`](https://www.npmjs.com/package/@quo-systems/js). Zero
@@ -29,7 +29,16 @@ own tab at **[quo.systems](https://quo.systems)**.
   browser tab, an edge worker or Node. Only the listening door touches Node.
 - **[kits/go](https://github.com/razvangherghina/quo/tree/main/kits/go)** — the
   Go kit, written from the constitution's text alone by builders who had not
-  seen the first kit.
+  seen the first kit. It is imported as `quo.systems/kit`:
+
+  ```
+  go get quo.systems/kit
+  ```
+
+  Go 1.24 or newer. Because Go resolves an import path to a repository root,
+  the module is published from a repository of its own,
+  [github.com/razvangherghina/quo-go](https://github.com/razvangherghina/quo-go),
+  emitted from the tree here.
 
 The two kits exchange real sealed messages over a real socket and derive
 identical digests. That is the proof the constitution is implementable from its

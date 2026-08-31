@@ -2,7 +2,8 @@
 // persistent TCP connection. It is for the roads where both ends are consenting
 // grounds — droplet to droplet, same machine, a held line — where TLS and HTTP
 // buy nothing, because the envelope already carries all the crypto. It is a
-// private carriage: the law names it nowhere and needs to name it nowhere.
+// named road: the law states it in full and makes it standard, never mandatory,
+// because a browser tab can open no socket and reach outranks fit.
 //
 // A frame is a length written the way the wire encoding writes an `int` — eight
 // bytes, signed two's complement, most significant first — and then that many
