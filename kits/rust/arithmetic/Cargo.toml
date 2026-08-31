@@ -1,0 +1,18 @@
+[package]
+name = "quo-arithmetic"
+version = "0.0.0"
+description = "The arithmetic of Quo: the four algorithms of Article VI — Ed25519, X25519, SHA-256 and AES-256-GCM under HKDF-SHA-256 — and nothing else."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+homepage = "https://quo.systems"
+repository = "https://github.com/razvangherghina/quo"
+keywords = ["quo", "protocol", "cryptography", "ed25519", "x25519"]
+categories = ["cryptography", "no-std"]
+
+[dependencies]
+aes-gcm.workspace = true
+ed25519-dalek.workspace = true
+hkdf.workspace = true
+sha2.workspace = true
+x25519-dalek.workspace = true

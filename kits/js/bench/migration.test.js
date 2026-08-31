@@ -380,7 +380,10 @@ test('news names the door by the padlock, because speaking first holds no name',
   const way = await wayTo(moving, fixed(22));
   // The origin never learned this peer's warden name: an inbound row keeps the
   // padlock it named and the hints it gave, and nothing else about the house.
-  assert.equal(way.name, undefined);
+  // The one name on the row is the origin's own — the name this standing's
+  // heir commitment was minted under, which says nothing about the peer.
+  assert.equal(hex(way.name), hex(origin.name.pk));
+  assert.ok(way.padlock);
   const envelope = await news(origin, {
     peer: way,
     voice: moving.voice,
@@ -461,12 +464,32 @@ test('a peer that follows the first news early meets the weather', async () => {
 
 test('a peer that missed the news asks the old door and is told, then asks the new', async () => {
   const { origin, destination, being, two, moving } = await walk();
-  // The old door only points: it answers every arriving ask with the word it
-  // published instead of doing the work, and never forwards.
+  // The old door only points: the work ask meets silence, because the word is
+  // not the answer type `count` declared.
+  assert.equal(
+    await readAt(
+      two.peer,
+      origin,
+      askThere(two.peer, two.row, being, { name: 'count', args: new Uint8Array(0) }, 5n),
+      'moved',
+    ),
+    null,
+  );
+  // The peer learns the succession by asking the old door `moved`.
   const pointed = await readAt(
     two.peer,
     origin,
-    askThere(two.peer, two.row, being, { name: 'count', args: new Uint8Array(0) }, 5n),
+    two.peer.carry({
+      recipient: origin.name.pk,
+      padlock: origin.padlock.pk,
+      voicePk: two.row.voice.pk,
+      voiceSecret: two.row.voice.secret,
+      seq: 6n,
+      allowance: { time: 5_000n, hops: 4n },
+      being: origin.name.pk,
+      method: { name: 'moved', args: being },
+      random: RANDOM,
+    }),
     'moved',
   );
   assert.equal(hex(pointed.being), hex(being));
@@ -485,8 +508,8 @@ test('a peer that missed the news asks the old door and is told, then asks the n
       voiceSecret: two.row.voice.secret,
       seq: 6n,
       allowance: { time: 5_000n, hops: 4n },
-      being: pointed.successor,
-      method: { name: 'count', args: new Uint8Array(0) },
+      being: pointed.name,
+      method: { name: 'moved', args: pointed.successor },
       random: RANDOM,
     }),
     'moved',
@@ -530,12 +553,32 @@ test('after the move every key the old warden held for the being is dead', async
   const { origin, being, one } = await walk();
   // The pointer, the keys and the heir are gone from the origin.
   assert.equal(origin.beings.has(hex(being)), false);
-  // It never acts on the being's behalf again: the work is not done, the word
-  // is returned in its place.
+  // It never acts on the being's behalf again: the work is not done, and the
+  // word is not put in its place either — the ask meets silence.
+  assert.equal(
+    await readAt(
+      one.peer,
+      origin,
+      askThere(one.peer, one.row, being, { name: 'add', args: utf8.encode('eggs') }, 9n),
+      'moved',
+    ),
+    null,
+  );
+  // What the old door still answers is `moved`, asked of the warden itself.
   const answer = await readAt(
     one.peer,
     origin,
-    askThere(one.peer, one.row, being, { name: 'add', args: utf8.encode('eggs') }, 9n),
+    one.peer.carry({
+      recipient: origin.name.pk,
+      padlock: origin.padlock.pk,
+      voicePk: one.row.voice.pk,
+      voiceSecret: one.row.voice.secret,
+      seq: 10n,
+      allowance: { time: 5_000n, hops: 4n },
+      being: origin.name.pk,
+      method: { name: 'moved', args: being },
+      random: RANDOM,
+    }),
     'moved',
   );
   assert.ok(answer);

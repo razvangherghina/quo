@@ -1,0 +1,20 @@
+[package]
+name = "quo-envelope"
+version = "0.0.0"
+description = "The Quo envelope: a sealed box with the key to open it stapled to the lid, and the two records it carries."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+homepage = "https://quo.systems"
+repository = "https://github.com/razvangherghina/quo"
+keywords = ["quo", "protocol", "envelope", "cryptography"]
+categories = ["cryptography", "encoding"]
+
+[dependencies]
+quo-arithmetic = { version = "0.0.0", path = "../arithmetic" }
+quo-notation = { version = "0.0.0", path = "../notation" }
+quo-wire = { version = "0.0.0", path = "../wire" }
+
+[dev-dependencies]
+quo-arithmetic = { path = "../arithmetic" }
+quo-notation = { path = "../notation" }

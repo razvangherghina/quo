@@ -6,7 +6,7 @@ tell anyone else.
 
 ## Reporting
 
-Email **<info@factcurier.ro>** with what you found and how to reproduce it. You
+Email **<razvan@quo.systems>** with what you found and how to reproduce it. You
 will get an acknowledgement within three working days.
 
 Please do not open a public issue for anything that lets a message be forged,

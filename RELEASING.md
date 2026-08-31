@@ -47,14 +47,36 @@ kits carry the same version. The push is what publishes.
 
 ## The workflows
 
-- **`kits`** runs on every push to `main` and every pull request: the JS bench
-  on Node 20, 22 and 24, and the Go kit's `gofmt`, `go vet` and `go test` on
-  Go 1.24 — the floor the module declares — and on current Go.
+- **`kits`** runs on every push to `main` and every pull request, one job per
+  kit: the JS bench on Node 20, 22 and 24; the Go kit's `gofmt`, `go vet` and
+  `go test` on Go 1.24 — the floor the module declares — and on current Go;
+  the Zig kit's `zig fmt --check` and `zig build test` on Zig 0.16.0, the
+  version `build.zig.zon` names; the Rust kit's `cargo fmt`, `cargo clippy`
+  and `cargo test` on 1.88.0 — the floor the workspace declares — and on
+  stable; and the Python kit's `ty` check and unittest run through `uv` on
+  Python 3.13.
 - **`kit`**, in the Go repository, runs `go build` and `go test` there on the
   same two versions, because a bench that only ever runs beside its sibling
   proves nothing about the repository a Go builder actually fetches.
 - **`publish-js`** runs on a `js-v*` tag. It needs an `NPM_TOKEN` secret on a
   GitHub environment named `npm`, and `id-token: write`, which it declares.
+- **`publish-python`** runs on a `python-v*` tag. It carries no token: PyPI
+  holds a trusted publisher naming this repository, this workflow and the
+  `pypi` environment, and the OIDC token minted for the run is the whole
+  credential.
+- **`publish-zig`** runs on a `zig-v*` tag. Zig has no registry — a package is
+  a tarball and its hash — so the workflow checks the tag against
+  `build.zig.zon`, runs the bench, builds the tarball from the tagged commit
+  and attaches it to a GitHub release, with the hash `zig fetch` computed over
+  that exact asset printed in the release notes.
+- **`publish-rust`** runs on a `rust-v*` tag. It carries no token either:
+  crates.io holds a trusted publisher naming this repository, this workflow
+  and the `crates-io` environment, and the OIDC token minted for the run is
+  exchanged for a crates.io token that dies with the run. It checks the tag
+  against the crates' own manifests, runs `cargo fmt`, `cargo clippy` and
+  `cargo test`, then publishes the nine crates in dependency order, waiting
+  for each to appear in the index before the next. That order and that
+  waiting are in `tools/publish-rust.mjs`, which the workflow runs.
 
 ## The law moves too
 

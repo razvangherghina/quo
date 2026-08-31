@@ -66,11 +66,15 @@ function frame(envelope) {
 // that. No path, no second query, no second scheme. A bare road promises the
 // default.
 function road(hint) {
-  const at = /^tcp:\/\/([^/:?]+):(\d+)(?:\?cap=(\d+))?$/.exec(hint);
+  const at = /^tcp:\/\/(\[[0-9A-Fa-f:.]+\]|[^/:?[\]]+):(\d+)(?:\?cap=(\d+))?$/.exec(hint);
   if (!at) return null;
   const far = at[3] === undefined ? DEFAULT : BigInt(at[3]);
-  if (far <= 0n) return null;
-  return { host: at[1], port: Number(at[2]), far };
+  const port = Number(at[2]);
+  // A cap of zero or a port of zero names a door that can take nothing, and is
+  // no road at all: it is refused when offered as a road, never dialled.
+  if (far <= 0n || port === 0) return null;
+  const host = at[1].startsWith('[') ? at[1].slice(1, -1) : at[1];
+  return { host, port, far };
 }
 
 // What this end accepts. `declares` says whether this half has a road to put
@@ -87,7 +91,10 @@ function capOf(warden, limit, declares) {
   // carry it. A warden's published limit is not that saying, and a dialler has
   // no road to carry it on.
   if (cap < DEFAULT && !(explicit && declares)) throw new UnderTheDefault(cap);
-  return cap;
+  // An end that publishes nothing — the dialling end always — promises the
+  // default, and there is no way to promise more. So what a dialler accepts on
+  // an inbound frame is the default exactly, whatever its own appetite.
+  return declares ? cap : DEFAULT;
 }
 
 // One live line, from either end: the two halves differ only in who dialled.

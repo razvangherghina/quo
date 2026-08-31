@@ -1,0 +1,14 @@
+[package]
+name = "quo"
+version = "0.0.0"
+description = "Quo: a small, open protocol that answers exactly one question — by whose authority — and refuses every other. This name is held for the Rust kit; the kit itself lands in 0.1.0."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+homepage = "https://quo.systems"
+repository = "https://github.com/razvangherghina/quo"
+readme = "README.md"
+keywords = ["quo", "protocol", "capability", "authority"]
+categories = ["cryptography", "network-programming"]
+
+[dependencies]

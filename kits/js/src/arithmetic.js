@@ -31,6 +31,34 @@ const X_SECRET = unhex('302e020100300506032b656e04220420');
 const ED = { name: 'Ed25519' };
 const X = { name: 'X25519' };
 
+// Verification is RFC 8032's check, and before it one named refusal: a public
+// key that is all zeros or of small order is silence, no signature examined.
+// These are the eight small-order points' encodings — the identity, the point
+// of order two, the two of order four (the all-zero key among them) and the
+// four of order eight — written out as constants so no kit reimplements the
+// arithmetic to comply. The pre-check stands in front of whatever verifier the
+// platform supplies; a stricter platform refuses more, which stays legal.
+const SMALL_ORDER = [
+  '0100000000000000000000000000000000000000000000000000000000000000',
+  'ecffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f',
+  '0000000000000000000000000000000000000000000000000000000000000000',
+  '0000000000000000000000000000000000000000000000000000000000000080',
+  '26e8958fc2b227b045c3f489f2ef98f0d5dfac05d3c63339b13802886d53fc05',
+  'c7176a703d4dd84fba3c0b760d10670f2a2053fa2c39ccc64ec7fd7792ac037a',
+  '26e8958fc2b227b045c3f489f2ef98f0d5dfac05d3c63339b13802886d53fc85',
+  'c7176a703d4dd84fba3c0b760d10670f2a2053fa2c39ccc64ec7fd7792ac03fa',
+].map(unhex);
+
+function sameBytes(a, b) {
+  if (a.length !== b.length) return false;
+  for (let at = 0; at < a.length; at += 1) if (a[at] !== b[at]) return false;
+  return true;
+}
+
+export function smallOrder(pk) {
+  return SMALL_ORDER.some((point) => sameBytes(point, pk));
+}
+
 function key32(value, what) {
   if (!(value instanceof Uint8Array)) refuse('NOT_BYTES', what);
   if (value.length !== KEY) refuse('NOT_A_KEY', `${what} is ${value.length} bytes`);
@@ -98,6 +126,8 @@ export async function sign(message, secret) {
 
 export async function verify(message, signature, pk) {
   if (!(signature instanceof Uint8Array) || signature.length !== SIGNATURE) return false;
+  if (!(pk instanceof Uint8Array) || pk.length !== KEY) return false;
+  if (smallOrder(pk)) return false;
   try {
     const key = await publicKey(ED, pk, 'voice', ['verify']);
     return await subtle.verify(ED, key, signature, message);
@@ -109,7 +139,19 @@ export async function verify(message, signature, pk) {
 export async function agree(secret, peerPk) {
   const key = await secretKey(X, X_SECRET, secret, 'secret', ['deriveBits']);
   const peer = await publicKey(X, peerPk, 'padlock', []);
-  return new Uint8Array(await subtle.deriveBits({ name: X.name, public: peer }, key, KEY * 8));
+  let shared;
+  try {
+    shared = new Uint8Array(await subtle.deriveBits({ name: X.name, public: peer }, key, KEY * 8));
+  } catch {
+    // A platform that refuses the degenerate agreement itself has said the
+    // same thing this kit says next, and it says it as one refusal.
+    refuse('DEAD_AGREEMENT');
+  }
+  // An agreement that hands back thirty-two zero bytes is refused at the point
+  // of agreement: the padlock was not a real key, and a seal derived from it
+  // would protect nothing.
+  if (shared.every((byte) => byte === 0)) refuse('DEAD_AGREEMENT');
+  return shared;
 }
 
 // One HKDF-SHA-256 yields the AES key and the nonce together. The nonce needs

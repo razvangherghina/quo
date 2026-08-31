@@ -1,0 +1,23 @@
+[package]
+name = "quo-warden"
+version = "0.0.0"
+description = "The Quo warden: the door, and the judgment of Article XII that everything arriving at it is put through."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+homepage = "https://quo.systems"
+repository = "https://github.com/razvangherghina/quo"
+keywords = ["quo", "protocol", "authority", "capability"]
+categories = ["cryptography", "authentication"]
+
+[dependencies]
+quo-arithmetic = { version = "0.0.0", path = "../arithmetic" }
+quo-envelope = { version = "0.0.0", path = "../envelope" }
+quo-notation = { version = "0.0.0", path = "../notation" }
+quo-wire = { version = "0.0.0", path = "../wire" }
+
+[dev-dependencies]
+quo-arithmetic = { path = "../arithmetic" }
+quo-envelope = { path = "../envelope" }
+quo-notation = { path = "../notation" }
+quo-wire = { path = "../wire" }

@@ -1,0 +1,17 @@
+[package]
+name = "quo-carriage"
+version = "0.0.0"
+description = "The Quo common carriage: HTTPS, and the one POST every warden answers — bytes in, bytes out."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+homepage = "https://quo.systems"
+repository = "https://github.com/razvangherghina/quo"
+keywords = ["quo", "protocol", "transport", "http"]
+categories = ["network-programming"]
+
+[dependencies]
+
+[dev-dependencies]
+quo-arithmetic = { path = "../arithmetic" }
+quo-envelope = { path = "../envelope" }

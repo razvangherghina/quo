@@ -18,13 +18,19 @@ const DefaultWindow = 64
 // is able to know.
 type inbound struct {
 	voice      [32]byte
-	commitment [32]byte // the heir's, hashed under this door's name
-	beings     map[[32]byte]bool
-	mark       int64
-	spent      map[int64]bool // the numbers below the mark already honoured
-	padlock    *[32]byte      // how to answer this voice, refreshed by every call
-	hints      []string
-	label      string // a private label; it resolves nothing and travels nowhere
+	commitment [32]byte // the heir's, hashed under the name below
+	// name is the name this door wore when the commitment was minted. Every
+	// commitment was hashed with a door's name inside it, so a door that
+	// succeeded its name keeps verifying an older standing's heir at the name
+	// it was minted at, and mints new commitments under the new one. It is
+	// held in memory and rides nowhere.
+	name    [32]byte
+	beings  map[[32]byte]bool
+	mark    int64
+	spent   map[int64]bool // the numbers below the mark already honoured
+	padlock *[32]byte      // how to answer this voice, refreshed by every call
+	hints   []string
+	label   string // a private label; it resolves nothing and travels nowhere
 }
 
 // outbound is one row of the record of the relations this warden's beings may
@@ -71,10 +77,13 @@ func newRecord(window int64) *record {
 // heir finds the standing whose committed heir this voice is. The commitment
 // binds the key and the place together, so a heir committed at another door
 // hashes to nothing here.
-func (r *record) heir(name, voice [32]byte) *inbound {
-	want := arithmetic.Commit(name, voice)
+//
+// Each row is hashed against the name its own commitment was minted under,
+// never the name the door wears now: after a name succession an older standing
+// must still be able to rotate.
+func (r *record) heir(voice [32]byte) *inbound {
 	for _, row := range r.in {
-		if row.commitment == want {
+		if arithmetic.Commit(row.name, voice) == row.commitment {
 			return row
 		}
 	}
@@ -84,10 +93,12 @@ func (r *record) heir(name, voice [32]byte) *inbound {
 // rotate hands a standing over: the pk becomes the current holder, the carried
 // commitment becomes the new heir, the old key dies, and the mark starts
 // fresh, because the new holder never saw the numbers the old one counted.
-func (r *record) rotate(row *inbound, voice, commitment [32]byte) {
+func (r *record) rotate(row *inbound, voice, commitment, name [32]byte) {
 	delete(r.in, row.voice)
 	row.voice = voice
 	row.commitment = commitment
+	// New commitments are minted under the name the door has now.
+	row.name = name
 	row.mark = 0
 	row.spent = map[int64]bool{}
 	r.in[voice] = row

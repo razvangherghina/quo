@@ -148,6 +148,12 @@ function noRepeats(fields) {
 // chooses it. This walk is what both the printer and the parser judge by.
 function recordOrder(blueprint) {
   const records = new Map(blueprint.records.map((r) => [r.name, r]));
+  // A block wearing the name of a closed type would give one name two
+  // meanings, and the types are closed.
+  if (SCALARS.has(blueprint.name)) refuse('CLOSED_TYPE_NAME', blueprint.name);
+  for (const record of blueprint.records) {
+    if (SCALARS.has(record.name)) refuse('CLOSED_TYPE_NAME', record.name);
+  }
   if (records.has(blueprint.name)) refuse('DUPLICATE_BLOCK', blueprint.name);
   if (records.size !== blueprint.records.length) refuse('DUPLICATE_BLOCK');
 
@@ -182,7 +188,9 @@ export function parse(input) {
   const text =
     typeof input === 'string'
       ? input
-      : new TextDecoder('utf-8', { fatal: true, ignoreBOM: false }).decode(input);
+      : // The mark is kept rather than stripped, because a mark stripped would be
+        // a second way to write one text — so it reaches the refusal below.
+        new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(input);
   const blocks = splitBlocks(splitCanonicalLines(text));
   const blueprint = {
     ...parseClassBlock(blocks[0]),

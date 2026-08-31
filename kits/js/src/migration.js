@@ -33,6 +33,11 @@ export function pack(origin, beingPk) {
     standings: peers(origin, beingPk).map((row) => ({
       voice: row.voice,
       commitment: row.commitment,
+      // The name the heir commitment was minted under travels with the row.
+      // Without it a migrated standing could never verify an older commitment
+      // again: the destination would file every arriving one at its own name
+      // and refuse the rotation the holder is entitled to make.
+      name: row.name,
       beings: [being.heir.pk],
       mark: row.mark ?? 0n,
       // The replay record travels whole: the mark and the spent numbers beneath
@@ -63,6 +68,10 @@ export function pack(origin, beingPk) {
       heir: row.heir.pk,
       heirSecret: row.heir.secret,
       seq: row.seq,
+      // The mark kept for that far warden's news, which is its own counter
+      // and never the one this door sends by. A relation that arrived without
+      // it would honour every number that peer had already spent.
+      news: row.marks.mark ?? 0n,
       hints: row.hints ?? [],
     })),
   };
@@ -127,13 +136,16 @@ export function landed(destination) {
 // therefore has an address, because an inbound row keeps the padlock the peer
 // named even though it never learns that peer's name.
 export function news(warden, { peer, voice, word, seq, allowance, random }) {
+  // An inbound row keeps the padlock the peer named and never that peer's
+  // warden name — a door never learns the house behind a voice — so the
+  // recipient is the padlock. A padlock is per door, so it binds the message to
+  // one door exactly as a name would.
   const padlock = peer.padlock ?? null;
-  const recipient = peer.name ?? padlock;
   // A peer that has never spoken left no way back. It is reached by the only
   // means left: it eventually asks, and the old door tells it.
-  if (!recipient || !padlock) return null;
+  if (!padlock) return null;
   return warden.carry({
-    recipient,
+    recipient: padlock,
     padlock,
     voicePk: voice.pk,
     voiceSecret: voice.secret,

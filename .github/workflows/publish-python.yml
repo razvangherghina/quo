@@ -1,0 +1,62 @@
+# Publishing the Python kit to PyPI, from a tag and from nowhere else.
+#
+# There is no token anywhere in this file. PyPI holds a trusted publisher
+# naming this repository, this workflow and the `pypi` environment, and
+# nothing else may publish `quo-systems`. The OIDC token GitHub mints for the
+# run is the whole credential, and it is minted per run and dies with it —
+# which is worth more than a long-lived token for a package doing
+# cryptography.
+name: publish-python
+
+on:
+  push:
+    tags: ['python-v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to publish, e.g. python-v0.1.0'
+        required: true
+
+permissions:
+  contents: read
+  # Required for trusted publishing. Without it the publish fails rather than
+  # falling back to some other credential.
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: pypi
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+
+      - uses: astral-sh/setup-uv@v7
+        with:
+          # The kit pins its interpreter; the runner must not resolve its own.
+          python-version: '3.13'
+
+      # The tag is the claim; the manifest is the fact. If they disagree, the
+      # release is wrong and stopping here is cheaper than yanking.
+      - name: The tag matches the version
+        working-directory: kits/python
+        run: |
+          tag="${{ github.event.inputs.tag || github.ref_name }}"
+          version=$(grep -m1 '^version = ' pyproject.toml | cut -d'"' -f2)
+          if [ "$tag" != "python-v$version" ]; then
+            echo "tag $tag does not match version $version"
+            exit 1
+          fi
+
+      - name: The bench is green
+        working-directory: kits/python
+        run: uv run --frozen --python 3.13 python -m unittest discover -s tests -t tests
+
+      - name: Build
+        working-directory: kits/python
+        run: uv build
+
+      - name: Publish
+        working-directory: kits/python
+        run: uv publish --trusted-publishing always

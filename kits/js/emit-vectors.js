@@ -244,6 +244,7 @@ const notationRefuses = [
   ['a field named twice in one class', 'Small\n  yes() bool\n  yes() int\n'],
   ['a field named twice in one record', 'Order\n  first() a\n\na\n  x int\n  x bool\n'],
   ['the class block used as a type', 'Small\n  first() Small\n'],
+  ["a class wearing a closed type's name", 'text\n  yes() bool\n'],
 ];
 
 const notation = (
@@ -295,6 +296,10 @@ const wireAccepts = [
   ['text ASCII', 'text', 'hello'],
   ['text beyond ASCII', 'text', 'héllo 世界'],
   ['text outside the basic plane', 'text', '\u{1f513}'],
+  // A text is carried as given and never normalised, so a byte order mark is
+  // three bytes of the value like any other. A decoder that swallows it hands
+  // back a second spelling of the same text.
+  ['text carrying a byte order mark', 'text', '﻿hello'],
   ['bytes empty', 'bytes', ''],
   ['bytes one', 'bytes', '00'],
   ['bytes five', 'bytes', '0001027fff'],
@@ -363,12 +368,20 @@ const wire = wireAccepts
   .map(([name, type, value]) => {
     const blueprint = probe(type);
     const { type: parsed, records } = typeOf(blueprint);
+    const bytes = encode(parsed, fromJson(parsed, value, records), records);
+    // The other direction too: what the corpus pins is read back and written
+    // again. A decoder that alters the value on the way in — swallowing a byte
+    // order mark, say — is caught here rather than by a later kit.
+    must(
+      hex(encode(parsed, decode(parsed, bytes, records), records)) === hex(bytes),
+      `wire does not round-trip: ${name}`,
+    );
     return {
       name,
       law: 'The wire encoding of the types',
       blueprint,
       value,
-      bytes: hex(encode(parsed, fromJson(parsed, value, records), records)),
+      bytes: hex(bytes),
     };
   })
   .concat(
@@ -538,6 +551,15 @@ const derived = await derive(shared);
 const plaintext = utf8('by whose authority');
 const ciphertext = await encrypt(shared, plaintext, ephemeralPair.pk);
 
+// The one named refusal that stands in front of the platform's verifier: a
+// public key that is all zeros or of small order is silence, no signature
+// examined. Two kits could otherwise disagree about a key that verifies
+// anything, because platform verifiers differ exactly here.
+const ALL_ZERO_KEY = '0'.repeat(64);
+const SMALL_ORDER_KEY = '26e8958fc2b227b045c3f489f2ef98f0d5dfac05d3c63339b13802886d53fc05';
+const boundaryMessage = utf8('by whose authority');
+const boundarySignature = await sign(boundaryMessage, voice.secret);
+
 const arithmetic = [
   {
     name: 'SHA-256 of nothing',
@@ -610,6 +632,22 @@ const arithmetic = [
     refuses: true,
   },
   {
+    name: 'a signature under an all-zero public key is silence',
+    law: 'The arithmetic',
+    voice: ALL_ZERO_KEY,
+    message: hex(boundaryMessage),
+    signature: hex(boundarySignature),
+    refuses: true,
+  },
+  {
+    name: 'a signature under a small-order public key is silence',
+    law: 'The arithmetic',
+    voice: SMALL_ORDER_KEY,
+    message: hex(boundaryMessage),
+    signature: hex(boundarySignature),
+    refuses: true,
+  },
+  {
     name: 'an X25519 agreement',
     law: 'The arithmetic',
     secret: material.ephemeralSecret,
@@ -657,6 +695,16 @@ const arithmetic = [
     refuses: true,
   },
 ];
+
+// Every signature vector the corpus refuses, asserted against this kit here:
+// the emitter writes no refusal it does not itself refuse.
+for (const vector of arithmetic) {
+  if (!vector.refuses || !vector.signature || !vector.voice) continue;
+  must(
+    !(await verify(bin(vector.message), bin(vector.signature), bin(vector.voice))),
+    `verification should refuse: ${vector.name}`,
+  );
+}
 
 function turn(bytes, at) {
   const out = new Uint8Array(bytes);

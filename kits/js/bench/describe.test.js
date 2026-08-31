@@ -389,7 +389,7 @@ test('a stranger reaches the public being and nothing else', async () => {
   );
 });
 
-test('the old door only points: a moved being answers the word in place of work', async () => {
+test('the old door only points: a moved being answers only `moved`, work is silence', async () => {
   const { warden, one, voice } = await estate();
   const word = {
     being: one,
@@ -400,24 +400,27 @@ test('the old door only points: a moved being answers the word in place of work'
     hints: ['https://elsewhere.example'],
   };
   assert.equal(warden.point(one, word), true);
-  // It never forwards the call and never acts on the being's behalf again.
-  const pointed = await answered(
-    warden,
-    voice,
-    { being: one, method: invoke('complete') },
-    'moved',
+  // A method ask meets silence: an answer's data is the field's declared
+  // answer type, and a succession is not `bool`, so the old door cannot put
+  // the word where the caller asked for the work.
+  assert.equal(
+    await warden.judge(await ask(warden, voice, { being: one, method: invoke('complete') }), {
+      clock: still,
+      random: RANDOM,
+    }),
+    null,
   );
-  assert.equal(hex(pointed.being), hex(one));
-  assert.equal(hex(pointed.successor), hex(fixed(77)));
-  assert.deepEqual(pointed.hints, ['https://elsewhere.example']);
-  // And a peer that asks both learns the identical thing.
-  const asked = await answered(
+  // The succession is learned by asking `moved`, which is the one ask the old
+  // door answers about a being that left.
+  const pointed = await answered(
     warden,
     voice,
     { seq: 2n, being: warden.name.pk, method: field('moved', one) },
     'moved',
   );
-  assert.deepEqual(asked, pointed);
+  assert.equal(hex(pointed.being), hex(one));
+  assert.equal(hex(pointed.successor), hex(fixed(77)));
+  assert.deepEqual(pointed.hints, ['https://elsewhere.example']);
   // A being that has not moved answers the absence.
   const { two } = await estate();
   assert.equal(

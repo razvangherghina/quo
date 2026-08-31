@@ -1,0 +1,21 @@
+[package]
+name = "quo-subject"
+version = "0.0.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[[bin]]
+name = "subject"
+path = "src/main.rs"
+
+[dependencies]
+quo-arithmetic = { path = "../arithmetic" }
+quo-carriage = { path = "../carriage" }
+quo-envelope = { path = "../envelope" }
+quo-line = { path = "../line" }
+quo-notation = { path = "../notation" }
+quo-warden = { path = "../warden" }
+quo-wire = { path = "../wire" }
+quo-zero = { path = "../zero" }

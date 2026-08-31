@@ -64,7 +64,10 @@ class Reader {
 }
 
 const utf8 = new TextEncoder();
-const fromUtf8 = new TextDecoder('utf-8', { fatal: true, ignoreBOM: false });
+// `ignoreBOM: true` keeps a leading byte order mark in the string rather than
+// stripping it: inside a text value a mark is ordinary content, and a decoder
+// that ate it would hand back a second spelling of what arrived.
+const fromUtf8 = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true });
 
 function bytesOf(value, what) {
   if (!(value instanceof Uint8Array)) refuse('NOT_BYTES', what);
@@ -73,6 +76,11 @@ function bytesOf(value, what) {
 
 function writeText(writer, value) {
   if (typeof value !== 'string') refuse('NOT_TEXT', String(value));
+  // A kit may not write what no kit may read. JavaScript's strings can hold an
+  // unpaired surrogate, which is no code point and no UTF-8; `TextEncoder`
+  // would quietly write U+FFFD for it, and a repaired text is a second
+  // spelling of a value this protocol names by the hash of its bytes.
+  if (/\p{Surrogate}/u.test(value)) refuse('NOT_UTF8');
   const encoded = utf8.encode(value);
   writer.int(BigInt(encoded.length));
   writer.push(encoded);

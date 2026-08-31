@@ -1,0 +1,26 @@
+[workspace]
+resolver = "2"
+members = [
+  "arithmetic",
+  "carriage",
+  "envelope",
+  "line",
+  "notation",
+  "quo",
+  "subject",
+  "warden",
+  "wire",
+  "zero",
+]
+
+[workspace.package]
+edition = "2021"
+rust-version = "1.88.0"
+license = "Apache-2.0"
+
+[workspace.dependencies]
+aes-gcm = { version = "0.10", default-features = false, features = ["aes", "alloc"] }
+ed25519-dalek = "2"
+hkdf = "0.12"
+sha2 = "0.10"
+x25519-dalek = { version = "2", features = ["static_secrets"] }

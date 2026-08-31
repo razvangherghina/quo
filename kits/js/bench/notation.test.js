@@ -169,6 +169,31 @@ test('a block nothing uses, an empty block and a repeated name are refused', () 
   refusedWith('ToDo\n  limit() int\n  limit() int\n', 'DUPLICATE_FIELD');
 });
 
+test('a byte order mark is refused in the bytes, not stripped out of them', () => {
+  // A mark stripped would be a second way to write one text, and this protocol
+  // names things by the hash of their bytes.
+  const marked = new TextEncoder().encode('﻿' + TODO);
+  assert.throws(
+    () => parse(marked),
+    (error) => error instanceof Refusal && error.code === 'BYTE_ORDER_MARK',
+  );
+});
+
+test('a class or a record wearing the name of a closed type is refused', () => {
+  const closed = ['bool', 'int', 'text', 'bytes', 'b32', 'being', 'invitation', 'card'];
+  for (const name of closed) {
+    refusedWith(`${name}\n  one() bool\n`, 'CLOSED_TYPE_NAME');
+    refusedWith(`Thing\n  one() ${name}\n\n${name}\n  at int\n`, 'CLOSED_TYPE_NAME');
+  }
+  // The same two shapes with a name outside the closed set stand, so what the
+  // refusal is about is the name and nothing else.
+  assert.equal(print(parse('Thing\n  one() bool\n')), 'Thing\n  one() bool\n');
+  assert.equal(
+    print(parse('Thing\n  one() row\n\nrow\n  at int\n')),
+    'Thing\n  one() row\n\nrow\n  at int\n',
+  );
+});
+
 const canonical = (text) => assert.equal(print(parse(text)), text);
 
 test('an identifier is ASCII: a letter, then letters and digits', () => {

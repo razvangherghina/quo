@@ -1,6 +1,7 @@
-# Both kits, on every push. The claim this repository makes is that two
+# All five kits, on every push. The claim this repository makes is that five
 # independent implementations of one text agree; a red kit is that claim
-# failing, so neither is allowed to go quietly red.
+# failing, so none of them is allowed to go quietly red. Each kit is its own
+# job, and no job waits on another, so a red one names itself.
 name: kits
 
 on:
@@ -24,9 +25,9 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: ${{ matrix.node }}
-      # Zero dependencies is the kit's own rule, so there is nothing to
-      # install and no lockfile to cache. If an install step ever becomes
-      # necessary here, the rule has been broken somewhere.
+      # This kit takes no packages — JavaScript carries the five primitives
+      # itself — so there is nothing to install and no lockfile to cache. An
+      # install step appearing here means the kit's shape changed.
       #
       # The test script leaves its glob unquoted so the shell expands it.
       # Node's own test runner only learned to glob in 22, and the kit
@@ -48,7 +49,7 @@ jobs:
       - uses: actions/setup-go@v6
         with:
           go-version: ${{ matrix.go }}
-          # Zero dependencies here too: there is no go.sum, so there is
+          # No packages here either: there is no go.sum, so there is
           # nothing to cache and the action should not go looking.
           cache: false
       - name: gofmt
@@ -58,3 +59,61 @@ jobs:
         working-directory: kits/go
       - run: go test -count=1 ./...
         working-directory: kits/go
+
+  zig:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      # Zig ships no setup action of its own. mlugg/setup-zig is the one the
+      # Zig community maintains and the one publish-zig already uses; keeping
+      # both files on the same action means one thing to check when it moves.
+      - uses: mlugg/setup-zig@v2
+        with:
+          # Exactly the version build.zig.zon names as its minimum. Zig's
+          # standard library still moves between releases, so a floating
+          # version is a claim nobody is checking.
+          version: 0.16.0
+      - name: zig fmt
+        working-directory: kits/zig
+        run: zig fmt --check build.zig build.zig.zon src test cmd
+      - run: zig build test
+        working-directory: kits/zig
+
+  rust:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # The floor the workspace declares, and whatever is current. A matrix
+        # that skips the floor is a claim nobody is checking.
+        rust: ['1.88.0', 'stable']
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.rust }}
+          components: rustfmt, clippy
+      - run: cargo fmt --all --check
+        working-directory: kits/rust
+      - run: cargo clippy --all-targets -- -D warnings
+        working-directory: kits/rust
+      - run: cargo test
+        working-directory: kits/rust
+
+  python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v7
+        with:
+          # The kit's .python-version pins the interpreter; the runner must not
+          # resolve its own.
+          python-version: '3.13'
+      - run: uv sync --frozen --python 3.13
+        working-directory: kits/python
+      # The same type check the desk gate runs, at the same pinned version. A
+      # public CI weaker than the desk gate is a lie about what is proved.
+      - run: uvx ty@0.0.75 check src/quo subject.py
+        working-directory: kits/python
+      - run: uv run --frozen --python 3.13 python -m unittest discover -s tests -t tests
+        working-directory: kits/python

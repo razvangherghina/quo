@@ -7,6 +7,7 @@ import { request } from 'node:http';
 import {
   Warden,
   commitment,
+  hangUp,
   news,
   post,
   reach,
@@ -15,6 +16,7 @@ import {
   signingPair,
 } from '../src/index.js';
 import { serve } from '../src/door.js';
+import { listen } from '../src/line.js';
 
 const hex = (bytes) => Buffer.from(bytes).toString('hex');
 const fixed = (fill) => new Uint8Array(32).fill(fill);
@@ -249,6 +251,20 @@ test('the hint is posted to exactly as given, with no path and no query', async 
   assert.deepEqual(seen, ['/']);
 });
 
+test('a road that never carried the bytes is weather, not silence', async () => {
+  // Silence has a wire form on this carriage: an empty body. A connection
+  // refused and a name that does not resolve said neither of those, so the kit
+  // reports the road's fault rather than inventing an empty body.
+  const envelope = new Uint8Array(48);
+  await assert.rejects(() => post('http://127.0.0.1:1/', envelope));
+  await assert.rejects(() => post('http://a-door-that-is-not.invalid/', envelope));
+  // And a caller that tried every hint it held raises the last of them rather
+  // than handing back the nothing an answered door would have given.
+  await assert.rejects(() =>
+    reach(['http://127.0.0.1:1/', 'http://a-door-that-is-not.invalid/'], envelope),
+  );
+});
+
 test('a caller tries the hints it holds, because none is authoritative', async (t) => {
   const world = await grounds();
   t.after(world.close);
@@ -271,6 +287,80 @@ test('a caller tries the hints it holds, because none is authoritative', async (
   const estate = await readBack(world.guest, world.host, answer, 'describe');
   assert.equal(estate.classes.length, 1);
   assert.equal(hex(estate.classes[0].beings[0].being), hex(world.host.name.pk));
+});
+
+// Which roads a caller can speak is nothing it is told and nothing it is
+// passed. It finds out by trying to pick one up, and what it can pick up is
+// what the platform under it has. These three cases are the whole of that
+// claim: it takes the line where it has one, it walks past the line where it
+// has none, and walking past is neither silence nor weather.
+test('a caller takes the road it can speak, and is told nothing about which', async (t) => {
+  const world = await grounds();
+  t.after(world.close);
+  // The host stands on both roads at once. Nothing about the two is ranked and
+  // the warden does not know which a caller will take: it offers what it has.
+  const road = await listen(world.host, { clock: still, random: () => fixed(77) });
+  t.after(road.close);
+  assert.ok(world.host.hints.some((hint) => hint.startsWith('tcp://')));
+
+  const stranger = await signingPair(fixed(51));
+  const ask = (seq) =>
+    world.guest.carry({
+      recipient: world.host.name.pk,
+      padlock: world.host.padlock.pk,
+      voicePk: stranger.pk,
+      voiceSecret: stranger.secret,
+      seq,
+      allowance: { time: 5_000n, hops: 4n },
+      being: null,
+      method: null,
+      random: RANDOM,
+    });
+
+  // Handed the ground it is calling for, the caller loads the line, finds it,
+  // and takes the `tcp://` hint the host offered first. Not a flag, not an
+  // option: the file loaded, so the road is there.
+  const over = { warden: world.guest, clock: still, random: () => fixed(78) };
+  const line = await reach([road.hint, world.there.hint], await ask(1n), {
+    ...over,
+    far: world.host.name.pk,
+    seq: 1n,
+  });
+  const overLine = await readBack(world.guest, world.host, line, 'describe');
+  assert.ok(overLine, 'the line carried it');
+  assert.equal(road.lines.size, 1, 'and it went down a connection, not a POST');
+  t.after(() => hangUp(world.guest));
+
+  // The same caller, the same hints, handed no ground: it has nowhere to hold a
+  // line, so the `tcp://` hint is a road it cannot speak and it posts instead.
+  // The answer is the same answer, because the road never was the point.
+  const posted = await reach([road.hint, world.there.hint], await ask(2n));
+  const overPost = await readBack(world.guest, world.host, posted, 'describe');
+  assert.ok(overPost, 'the carriage carried it');
+  assert.equal(road.lines.size, 1, 'and no second line was opened');
+  assert.equal(overLine.classes.length, overPost.classes.length);
+  assert.equal(
+    hex(overLine.classes[0].beings[0].being),
+    hex(overPost.classes[0].beings[0].being),
+    'one estate, two roads, and the seal is what proved it either way',
+  );
+});
+
+test('a road the caller cannot speak is not a road that failed', async () => {
+  // Nothing was sent down it, so no door spoke and no road broke: it is neither
+  // silence nor weather, and the caller walks past it exactly as it would past
+  // a hint it had never been offered. Here every hint is unspeakable — one
+  // because this caller holds no ground for a line, one because it is weather —
+  // and what comes back is the weather, never the skip.
+  const envelope = new Uint8Array(48);
+  await assert.rejects(
+    () => reach(['tcp://127.0.0.1:9', 'http://127.0.0.1:1/'], envelope),
+    /ECONNREFUSED|fetch failed/,
+    'the raised fault is the road that broke, not the road that was skipped',
+  );
+  // And a list of nothing but roads it cannot speak is no road tried at all,
+  // which is not weather either: there is nothing to report the fault of.
+  assert.equal(await reach(['tcp://127.0.0.1:9'], envelope), null);
 });
 
 test('a door that learns its address at serve time mints invitations that reach it', async (t) => {
@@ -345,3 +435,82 @@ function statusOf(hint, body) {
     call.end(Buffer.from(body));
   });
 }
+
+test('the published limit and the enforced one are two separate acts, and nothing joins them', async (t) => {
+  // The warden's part is only to publish the number; enforcing it is the road's
+  // and the operator holds the two together by hand. Nothing derives one from
+  // the other, so a house can publish a generous number and stand behind a mean
+  // door — and every honest caller doing the arithmetic the published number
+  // invites is refused in silence, which is what makes it undiagnosable.
+  const published = 65_536n;
+  const enforced = 4_096n;
+
+  const house = await Warden.open({
+    nameSeed: fixed(70),
+    padlockSeed: fixed(71),
+    heirSeed: fixed(72),
+    limit: published,
+  });
+  const being = await house.hold(todo(), { seed: fixed(73), heirSeed: fixed(74), blueprint: LIST });
+  const caller = await Warden.open({
+    nameSeed: fixed(75),
+    padlockSeed: fixed(76),
+    heirSeed: fixed(77),
+  });
+
+  let grain = 150;
+  const random = () => fixed((grain += 1) % 251);
+  const door = await serve(house, { clock: still, random, limit: enforced });
+  t.after(door.close);
+
+  const invitation = await house.grant(being, { voiceSeed: fixed(78), heirSeed: fixed(79) });
+  const row = caller.remember(invitation);
+  const next = await signingPair(fixed(80));
+  await post(
+    door.hint,
+    await caller.ask(row, {
+      seq: 1n,
+      commitment: await commitment(house.name.pk, next.pk),
+      random: RANDOM,
+    }),
+  );
+  row.voice = { pk: row.heir.pk, secret: row.heir.secret };
+  row.heir = next;
+
+  // What the house says about itself, asked over the wire like anything else.
+  const asked = await readBack(
+    caller,
+    house,
+    await post(
+      door.hint,
+      await caller.ask(row, {
+        seq: 2n,
+        being: house.name.pk,
+        method: { name: 'limit', args: new Uint8Array(0) },
+        random: RANDOM,
+      }),
+    ),
+    'limit',
+  );
+  assert.equal(asked, published, 'the warden publishes the number it was opened with');
+
+  // A caller that believes it and sends something comfortably inside it meets
+  // silence, because the road in front of the door was held to a smaller
+  // number and the road is what counts the bytes.
+  const big = utf8.encode('x'.repeat(Number(enforced)));
+  const over = await caller.ask(row, {
+    seq: 3n,
+    being,
+    method: { name: 'add', args: big },
+    random: RANDOM,
+  });
+  assert.ok(
+    BigInt(over.length) > enforced && BigInt(over.length) < published,
+    'the probe has to sit between the two numbers or it proves nothing',
+  );
+  assert.equal(await post(door.hint, over), null);
+
+  // And it is the road rather than the judgment: the same envelope handed
+  // straight to the warden is answered, so nothing about the message was wrong.
+  assert.notEqual(await house.judge(over, { clock: still, random: RANDOM }), null);
+});

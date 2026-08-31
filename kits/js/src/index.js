@@ -18,6 +18,7 @@ export {
   agree,
   encrypt,
   decrypt,
+  smallOrder,
 } from './arithmetic.js';
 export {
   PAYLOAD_BLUEPRINT,
@@ -41,10 +42,11 @@ export {
   ANSWER_BLUEPRINT,
   WARDEN_BLUEPRINT,
   WARDEN_DIGEST,
+  accept,
   decodeAnswer,
   readAnswer,
   readField,
   writeArgument,
 } from './warden.js';
 export { pack, depart, landed, peers, news } from './migration.js';
-export { post, reach } from './carriage.js';
+export { hangUp, post, reach } from './carriage.js';

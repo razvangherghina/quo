@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   Warden,
   Leash,
+  accept,
   readAnswer,
   seal,
   signingPair,
@@ -160,6 +161,46 @@ test('granting writes the row and hands out the five things', async () => {
   assert.equal(await warden.grant(fixed(98), { voiceSeed: fixed(9), heirSeed: fixed(10) }), null);
 });
 
+test('a being lists the voices holding a standing at it, and nothing of another being', async () => {
+  const warden = await ground();
+  const object = todo();
+  const beingOne = await warden.hold(object, { seed: fixed(5), blueprint: LIST });
+  const beingTwo = await warden.hold(todo(), { seed: fixed(11), blueprint: LIST });
+  const one = await signingPair(fixed(6));
+  const two = await signingPair(fixed(12));
+  const three = await signingPair(fixed(13));
+  const other = await signingPair(fixed(14));
+  await warden.grant(beingOne, { voiceSeed: fixed(6), heirSeed: fixed(7) });
+  await warden.grant(beingOne, { voiceSeed: fixed(12), heirSeed: fixed(15) });
+  await warden.grant(beingOne, { voiceSeed: fixed(13), heirSeed: fixed(16) });
+  await warden.grant(beingTwo, { voiceSeed: fixed(14), heirSeed: fixed(17) });
+
+  const holders = warden.standings(beingOne);
+  assert.deepEqual(
+    holders.map((holder) => hex(holder.voice)).sort(),
+    [hex(one.pk), hex(two.pk), hex(three.pk)].sort(),
+  );
+  assert.ok(!holders.some((holder) => hex(holder.voice) === hex(other.pk)));
+  assert.deepEqual(Object.keys(holders[0]), ['voice']);
+
+  // The result is a copy: mutating it changes nothing the warden holds.
+  holders[0].voice[0] = 255;
+  assert.notEqual(warden.standings(beingOne)[0].voice[0], 255);
+
+  // An unknown being answers empty.
+  assert.deepEqual(warden.standings(fixed(97)), []);
+
+  // A voice granted then released stops appearing.
+  warden.amend(one.pk, { remove: [beingOne] });
+  assert.deepEqual(
+    warden
+      .standings(beingOne)
+      .map((holder) => hex(holder.voice))
+      .sort(),
+    [hex(two.pk), hex(three.pk)].sort(),
+  );
+});
+
 test('a granted voice is answered, and the answer names the ask by its seq', async () => {
   const { warden, being, voice, object } = await granted();
   const envelope = await ask(warden, voice, { being, method: invoke('add', utf8.encode('milk')) });
@@ -275,6 +316,82 @@ test('the way back is refreshed by every call that arrives', async () => {
   );
   assert.equal(hex(warden.standing(voice.pk).padlock), hex(other.pk));
   assert.deepEqual(warden.standing(voice.pk).hints, ['https://moved.example']);
+});
+
+test('an arriving call with empty hints leaves the way back standing', async () => {
+  // An end that publishes nothing — the dialing end always — sends empty
+  // hints by nature, and a door that erased on that would destroy its own way
+  // back to that peer on the peer's first ask.
+  const { warden, being, voice } = await granted();
+  await warden.judge(
+    await ask(warden, voice, {
+      being,
+      method: invoke('complete'),
+      hints: ['https://reachable.example'],
+    }),
+    { clock: still, random: RANDOM },
+  );
+  assert.deepEqual(warden.standing(voice.pk).hints, ['https://reachable.example']);
+  await warden.judge(
+    await ask(warden, voice, { seq: 2n, being, method: invoke('complete'), hints: [] }),
+    { clock: still, random: RANDOM },
+  );
+  assert.deepEqual(warden.standing(voice.pk).hints, ['https://reachable.example']);
+});
+
+test('the way back is refreshed between the seq and the leash, so a replay cannot rewrite it', async () => {
+  // Where the refresh falls decides two things the door would otherwise get
+  // wrong, and both are consequences rather than choices.
+  const { warden, being, voice } = await granted();
+  const live = await sealingPair(fixed(41));
+  const retired = await sealingPair(fixed(42));
+  const late = await sealingPair(fixed(43));
+
+  await warden.judge(
+    await ask(warden, voice, { seq: 5n, being, method: invoke('complete'), padlock: live.pk }),
+    { clock: still, random: RANDOM },
+  );
+  assert.equal(hex(warden.standing(voice.pk).padlock), hex(live.pk));
+
+  // Not earlier than the seq: a replayed message carries whatever way back the
+  // peer had when it was sent, and the seq is the only thing that tells a
+  // replay from a call. A door that refreshed first would let anyone who kept a
+  // copy overwrite a live way back with a retired one.
+  assert.equal(
+    await warden.judge(
+      await ask(warden, voice, { seq: 5n, being, method: invoke('complete'), padlock: retired.pk }),
+      { clock: still, random: RANDOM },
+    ),
+    null,
+  );
+  assert.equal(
+    hex(warden.standing(voice.pk).padlock),
+    hex(live.pk),
+    'the replay was refused and left the way back alone',
+  );
+
+  // And not later than the leash: a message refused for its leash still arrived
+  // and still spent its number. A door that refreshed only what it went on to
+  // route would slowly lose the way back to any peer whose calls it keeps
+  // refusing — and news is what that peer would stop receiving.
+  assert.equal(
+    await warden.judge(
+      await ask(warden, voice, {
+        seq: 6n,
+        being,
+        method: invoke('complete'),
+        padlock: late.pk,
+        allowance: { time: 0n, hops: 4n },
+      }),
+      { clock: still, random: RANDOM },
+    ),
+    null,
+  );
+  assert.equal(
+    hex(warden.standing(voice.pk).padlock),
+    hex(late.pk),
+    'refused for its leash, and the way back moved anyway',
+  );
 });
 
 // Step four: the window.
@@ -767,6 +884,348 @@ test('a voice in the outbound record is news, and news cannot invoke a being', a
   );
 });
 
+// Step three: the commitment field, and the name it was minted under.
+
+test('a plain ask carrying a commitment is refused', async () => {
+  const { warden, being, voice } = await granted();
+  const next = await signingPair(fixed(8));
+  // The commitment is present only when a message spends an heir. This voice
+  // is found as a current holder, so it is an ask and not a rotation.
+  assert.equal(
+    await warden.judge(
+      await ask(warden, voice, {
+        seq: 1n,
+        commitment: await commitment(warden.name.pk, next.pk),
+        being,
+        method: invoke('complete'),
+      }),
+      { clock: still, random: RANDOM },
+    ),
+    null,
+  );
+  // The standing is untouched by the refusal, and the same ask without the
+  // field stands — so what refused it is the field.
+  assert.notEqual(
+    await warden.judge(await ask(warden, voice, { seq: 2n, being, method: invoke('complete') }), {
+      clock: still,
+      random: RANDOM,
+    }),
+    null,
+  );
+  assert.equal(
+    hex(warden.standing(voice.pk).commitment),
+    hex(await commitment(warden.name.pk, (await signingPair(fixed(7))).pk)),
+  );
+});
+
+test('a commitment is verified at the name it was minted under, so a name succession keeps the standings', async () => {
+  const { warden, being, heir } = await granted();
+  const mintedAt = warden.name.pk;
+  assert.equal(hex(warden.standing((await signingPair(fixed(6))).pk).name), hex(mintedAt));
+
+  // The heavy rotation: the owner's heir spends and the house answers by a new
+  // key from here on. The standings stay, and every one of their commitments
+  // was hashed under the name the door had then.
+  const afterThat = await signingPair(fixed(60));
+  warden.name = warden.heir;
+  warden.heir = afterThat;
+  warden.commitment = await commitment(warden.name.pk, afterThat.pk);
+  assert.notEqual(hex(warden.name.pk), hex(mintedAt));
+
+  // The older standing still rotates: its heir hashes to the commitment at the
+  // old name, and hashing at the door's current name would find nothing.
+  const next = await signingPair(fixed(61));
+  const back = await warden.judge(
+    await ask(
+      warden,
+      heir,
+      {
+        commitment: await commitment(warden.name.pk, next.pk),
+        seq: 1n,
+        being,
+        method: invoke('complete'),
+      },
+      fixed(202),
+    ),
+    { clock: still, random: RANDOM },
+  );
+  assert.notEqual(back, null);
+
+  // And new commitments are minted under the new name, so the chain runs on.
+  const row = warden.standing(heir.pk);
+  assert.equal(hex(row.name), hex(warden.name.pk));
+  const after = await signingPair(fixed(62));
+  assert.notEqual(
+    await warden.judge(
+      await ask(
+        warden,
+        next,
+        {
+          commitment: await commitment(warden.name.pk, after.pk),
+          seq: 1n,
+          being,
+          method: invoke('complete'),
+        },
+        fixed(203),
+      ),
+      { clock: still, random: RANDOM },
+    ),
+    null,
+  );
+});
+
+test('a holder behind a name succession succeeds once, and the rotation after it is silence', async () => {
+  // The other side of the case above, and the one the article warns about. A
+  // commitment arrives opaque, so a door cannot see which name a holder minted
+  // it under and files every new one under the name it has now. A holder that
+  // has not heard the news mints under the retired name: the standing it spends
+  // was filed there, so the rotation is accepted — and the commitment it
+  // carried is filed under the current name, which its own next rotation will
+  // not match.
+  const { warden, being, heir } = await granted();
+  const retired = warden.name.pk;
+
+  const afterThat = await signingPair(fixed(60));
+  warden.name = warden.heir;
+  warden.heir = afterThat;
+  warden.commitment = await commitment(warden.name.pk, afterThat.pk);
+
+  // It succeeds once. The holder is behind, so it hashes against the name it
+  // still believes the door wears.
+  const next = await signingPair(fixed(63));
+  assert.notEqual(
+    await warden.judge(
+      await ask(
+        warden,
+        heir,
+        { commitment: await commitment(retired, next.pk), seq: 1n, being, method: invoke('add') },
+        fixed(204),
+      ),
+      { clock: still, random: RANDOM },
+    ),
+    null,
+    'the standing it spends was filed under the retired name',
+  );
+
+  // The commitment it carried was filed under the door's current name, not the
+  // one the holder hashed it under.
+  const row = warden.standing(heir.pk);
+  assert.equal(hex(row.name), hex(warden.name.pk));
+  assert.equal(hex(row.commitment), hex(await commitment(retired, next.pk)));
+
+  // So the rotation after it is silence. Nothing the next message carries can
+  // change that: the door places a voice by hashing it against the commitment
+  // the row holds, at the name the row holds, and both were fixed by the
+  // rotation above. What the new message commits to is never read, because the
+  // voice is never recognised as a holder in the first place.
+  const after = await signingPair(fixed(64));
+  assert.notEqual(
+    hex(await commitment(warden.name.pk, next.pk)),
+    hex(row.commitment),
+    'the door would hash the next voice at its current name and find something else',
+  );
+  assert.equal(
+    await warden.judge(
+      await ask(
+        warden,
+        next,
+        {
+          commitment: await commitment(warden.name.pk, after.pk),
+          seq: 1n,
+          being,
+          method: invoke('add'),
+        },
+        fixed(205),
+      ),
+      { clock: still, random: RANDOM },
+    ),
+    null,
+  );
+
+  // And hearing the news is what ends it: a holder that learns the succession
+  // rotates from a commitment minted under the current name, which is the case
+  // above this one. A door keeps no retired name alive to rescue this, because
+  // a name it must remember for whoever might still be behind is a name it can
+  // never stop remembering.
+  assert.equal(warden.standing(after.pk), null);
+});
+
+// Step five: the leash, judged on what arrived.
+
+test('a hop count of zero is legal and a hop count below zero is silence', async () => {
+  const { warden, object, being, voice } = await granted();
+  // What a zero forbids is onward, never the call itself.
+  assert.notEqual(
+    await warden.judge(
+      await ask(warden, voice, {
+        seq: 1n,
+        allowance: { time: 5_000n, hops: 0n },
+        being,
+        method: invoke('add', utf8.encode('milk')),
+      }),
+      { clock: still, random: RANDOM },
+    ),
+    null,
+  );
+  assert.equal(object.leashes[0].received.hops, 0n);
+  assert.equal(object.leashes[0].onward(), null);
+  // Below zero is what the law calls silence, and it never reaches the being.
+  assert.equal(
+    await warden.judge(
+      await ask(warden, voice, {
+        seq: 2n,
+        allowance: { time: 5_000n, hops: -1n },
+        being,
+        method: invoke('add', utf8.encode('bread')),
+      }),
+      { clock: still, random: RANDOM },
+    ),
+    null,
+  );
+  assert.equal(object.leashes.length, 1);
+});
+
+// The answer's own judgment, at the caller's end.
+
+test('an answer is verified against the warden its record carries, and the door it was asked is a second check', async () => {
+  const { warden, being, voice } = await granted();
+  const back = await warden.judge(await ask(warden, voice, { being, method: invoke('complete') }), {
+    clock: still,
+    random: RANDOM,
+  });
+  const answer = await readAnswer({
+    envelope: back,
+    padlockSecret: caller.secret,
+    wardenPk: warden.name.pk,
+  });
+  assert.notEqual(answer, null);
+  assert.equal(hex(answer.warden), hex(warden.name.pk));
+  // That this warden is the one the ask was sent to is the caller's separate
+  // judgment, and it refuses on its own.
+  assert.equal(
+    await readAnswer({ envelope: back, padlockSecret: caller.secret, wardenPk: fixed(99) }),
+    null,
+  );
+});
+
+test('a caller reading an answer takes only the answer byte', async () => {
+  const { warden, voice } = await granted();
+  // A well-formed say, sealed to the caller's own padlock and signed by the
+  // door. There is no generic open: the caller never offers the payload the
+  // choice of being read as the other record.
+  const say = await seal({
+    payload: payloadFor(warden, voice),
+    padlock: caller.pk,
+    voiceSecret: voice.secret,
+    random: fixed(204),
+  });
+  assert.equal(
+    await readAnswer({ envelope: say, padlockSecret: caller.secret, wardenPk: warden.name.pk }),
+    null,
+  );
+});
+
+// The accept helper: the raw path composed, and the raw path still open.
+
+async function accepting(warden, invitation, over = {}) {
+  const caller = await Warden.open({
+    nameSeed: fixed(80),
+    padlockSeed: fixed(81),
+    heirSeed: fixed(82),
+  });
+  let grain = 150;
+  const taken = await accept(caller, invitation, {
+    voiceSeed: fixed(30),
+    heirSeed: fixed(31),
+    random: () => fixed((grain += 7) % 251),
+    send: (envelope) => warden.judge(envelope, { clock: still, random: RANDOM }),
+    ...over,
+  });
+  return { caller, taken };
+}
+
+test('accept spends the invitation whole and answers the ask it carried', async () => {
+  const { warden, being, voice, heir, invitation } = await granted();
+  const { caller, taken } = await accepting(warden, invitation, {
+    being,
+    method: invoke('add', utf8.encode('milk')),
+  });
+  const answer = await readAnswer({
+    envelope: taken.answer,
+    padlockSecret: caller.padlock.secret,
+    wardenPk: warden.name.pk,
+  });
+  assert.equal(Buffer.from(answer.data).toString(), 'added');
+
+  // The standing now stands on a key the caller generated and the granter
+  // never saw, committed to an heir the granter never saw either.
+  const row = warden.standing(taken.voice.pk);
+  assert.ok(row);
+  assert.equal(hex(row.commitment), hex(await commitment(warden.name.pk, taken.heir.pk)));
+  assert.equal(hex(taken.commitment), hex(row.commitment));
+  // Both of the granter's keys are dead: the voice it minted and the heir it
+  // handed out. A standing is transferred and never copied.
+  assert.equal(warden.standing(voice.pk), null);
+  assert.equal(warden.standing(heir.pk), null);
+  // And the row the caller keeps is the one it now spends.
+  assert.equal(hex(taken.row.voice.pk), hex(taken.voice.pk));
+  assert.equal(hex(taken.row.heir.pk), hex(taken.heir.pk));
+});
+
+test("spentBy scopes the row to a being of the caller's own, apart from the being addressed", async () => {
+  const { warden, being, invitation } = await granted();
+  const caller = await Warden.open({
+    nameSeed: fixed(80),
+    padlockSeed: fixed(81),
+    heirSeed: fixed(82),
+  });
+  const mine = await caller.hold(todo(), { seed: fixed(83), blueprint: LIST });
+  let grain = 150;
+  const taken = await accept(caller, invitation, {
+    voiceSeed: fixed(30),
+    heirSeed: fixed(31),
+    spentBy: mine,
+    being,
+    method: invoke('complete'),
+    random: () => fixed((grain += 7) % 251),
+    send: (envelope) => warden.judge(envelope, { clock: still, random: RANDOM }),
+  });
+  // The row is spent by the caller's own being, never the far being the ask
+  // addressed — the two options carry different meanings.
+  assert.equal(hex(taken.row.being), hex(mine));
+  assert.notEqual(hex(taken.row.being), hex(being));
+});
+
+test('a copy of the invitation can no longer take the standing', async () => {
+  const { warden, being, invitation } = await granted();
+  await accepting(warden, invitation, { being, method: invoke('complete') });
+
+  // Somebody else holding the same invitation — the granter included — replays
+  // the holder's first act at the door.
+  const thief = await Warden.open({
+    nameSeed: fixed(90),
+    padlockSeed: fixed(91),
+    heirSeed: fixed(92),
+  });
+  const row = thief.remember(invitation);
+  const mine = await signingPair(fixed(93));
+  assert.equal(
+    await warden.judge(
+      await thief.ask(row, {
+        seq: 1n,
+        commitment: await commitment(warden.name.pk, mine.pk),
+        being,
+        method: invoke('complete'),
+        random: fixed(205),
+      }),
+      { clock: still, random: RANDOM },
+    ),
+    null,
+  );
+  // The heir it holds is nobody's holder and hashes to nothing this door keeps.
+  assert.equal(warden.standing(invitation.heirPublic), null);
+});
+
 test('a warden is total over what it holds, and two wardens are strangers', async () => {
   const { warden, being, voice } = await granted();
   const neighbour = await Warden.open({
@@ -784,4 +1243,515 @@ test('a warden is total over what it holds, and two wardens are strangers', asyn
     }),
     null,
   );
+});
+
+// An armed commitment: a door standing open for a claim whose keys it never
+// minted. The claimant arrives as any stranger does, and its own keys become
+// the holder — the step-three rotation path with the minting taken out.
+async function armed() {
+  const warden = await ground();
+  const object = todo();
+  const being = await warden.hold(object, { seed: fixed(5), blueprint: LIST });
+  // The keys were made somewhere else entirely; the door is handed the hash.
+  const key = await signingPair(fixed(30));
+  warden.arm(await commitment(warden.name.pk, key.pk), { beings: [being] });
+  return { warden, object, being, key };
+}
+
+// The claim, exactly as a rotation is made: signed by the key the commitment
+// was hashed from, committing to a fresh heir of the claimant's own.
+async function claim(warden, key, over = {}) {
+  return ask(warden, key, {
+    commitment: await commitment(warden.name.pk, (await signingPair(fixed(31))).pk),
+    ...over,
+  });
+}
+
+test('an armed commitment is claimed by a stranger, and the standing is written at the named beings', async () => {
+  const { warden, being, key } = await armed();
+  // Nothing was written in advance: an armed commitment is held at the door,
+  // never as a row, so before the claim this voice stands at nothing.
+  assert.equal(warden.standing(key.pk), null);
+  assert.equal(warden.inbound.size, 0);
+
+  const back = await warden.judge(
+    await claim(warden, key, { being, method: invoke('add', utf8.encode('milk')) }),
+    { clock: still, random: RANDOM },
+  );
+  const answer = await readAnswer({
+    envelope: back,
+    padlockSecret: caller.secret,
+    wardenPk: warden.name.pk,
+  });
+  assert.equal(Buffer.from(answer.data).toString(), 'added');
+
+  // The claimant's own keys are the holder, and the door minted nothing.
+  const row = warden.standing(key.pk);
+  assert.equal(hex(row.voice), hex(key.pk));
+  assert.ok(row.beings.has(hex(being)));
+  // And the arm is spent.
+  assert.equal(warden.armed.length, 0);
+});
+
+test('a wrong proof of an armed commitment is ordinary silence and leaves the arm standing', async () => {
+  const { warden, being, object } = await armed();
+  // A voice that hashes to nothing this door holds. It is a stranger, and a
+  // stranger reaches the public being alone.
+  const thief = await signingPair(fixed(40));
+  assert.equal(
+    await warden.judge(await claim(warden, thief, { being, method: invoke('add') }), {
+      clock: still,
+      random: RANDOM,
+    }),
+    null,
+  );
+  assert.equal(object.calls.length, 0);
+  assert.equal(warden.standing(thief.pk), null);
+  // The arm stands: a claim nobody proved spends nothing.
+  assert.equal(warden.armed.length, 1);
+});
+
+test('an armed commitment is spent once, and a second claim on it meets silence', async () => {
+  const { warden, being, key } = await armed();
+  assert.notEqual(
+    await warden.judge(await claim(warden, key, { being, method: invoke('complete') }), {
+      clock: still,
+      random: RANDOM,
+    }),
+    null,
+  );
+
+  assert.equal(warden.armed.length, 0);
+
+  // Take the standing the claim wrote back out, so the voice is unknown to the
+  // door again and only the arm could let it in. It cannot: the arm was spent
+  // by the first claim, and a second claim on it is silence like any other.
+  warden.inbound.delete(hex(key.pk));
+  assert.equal(
+    await warden.judge(await claim(warden, key, { seq: 2n, being, method: invoke('complete') }), {
+      clock: still,
+      random: RANDOM,
+    }),
+    null,
+  );
+  assert.equal(warden.standing(key.pk), null);
+});
+
+test('one outbound row is dropped at one far warden, and the being other rows stand', async () => {
+  const warden = await ground();
+  const being = await warden.hold(todo(), { seed: fixed(5), blueprint: LIST });
+  const other = await warden.hold(todo(), { seed: fixed(50), blueprint: LIST });
+
+  const houses = [];
+  for (const at of [60, 70]) {
+    houses.push(
+      await Warden.open({
+        nameSeed: fixed(at),
+        padlockSeed: fixed(at + 1),
+        heirSeed: fixed(at + 2),
+      }),
+    );
+  }
+  const invitationTo = (house) => ({
+    warden: house.name.pk,
+    commitment: house.commitment,
+    padlock: house.padlock.pk,
+    heirPublic: house.name.pk,
+    heirSecret: house.name.secret,
+    hints: [],
+  });
+  warden.remember(invitationTo(houses[0]), { being });
+  warden.remember(invitationTo(houses[1]), { being });
+  warden.remember(invitationTo(houses[0]), { being: other });
+  assert.equal(warden.outbound.length, 3);
+
+  // One row goes, named by the being and the far door it stands at — no
+  // consumer reaches into the record to do it.
+  assert.equal(warden.forget(being, { at: houses[0].name.pk }), 1);
+  assert.equal(warden.relationsOf(being).length, 1);
+  assert.equal(hex(warden.relationsOf(being)[0].warden), hex(houses[1].name.pk));
+  // The other being's row at that same house is untouched.
+  assert.equal(warden.relationsOf(other).length, 1);
+  // And without `at` it is still the whole being.
+  assert.equal(warden.forget(being), 1);
+  assert.equal(warden.relationsOf(being).length, 0);
+});
+
+test('silence is observable inward, and the wire answer is the same silence either way', async () => {
+  const { warden, being, voice } = await granted();
+  // `breaks` throws, which is the fault an answering layer most wants back.
+  const envelope = await ask(warden, voice, { being, method: invoke('breaks') });
+
+  // First without an observer at all: the door falls silent.
+  const quiet = await warden.judge(envelope, { clock: still, random: RANDOM });
+  assert.equal(quiet, null);
+
+  const seen = [];
+  warden.observe((fault) => seen.push(fault));
+  // The same fault again, one seq on, so it is the fault being judged and not
+  // the replay.
+  const watched = await warden.judge(
+    await ask(warden, voice, { seq: 2n, being, method: invoke('breaks') }),
+    { clock: still, random: RANDOM },
+  );
+
+  // Inward, the house knows exactly what happened and where.
+  assert.equal(seen.length, 1);
+  assert.equal(seen[0].reason, 'threw');
+  assert.equal(seen[0].method, 'breaks');
+  assert.equal(hex(seen[0].being), hex(being));
+  assert.equal(seen[0].thrown.message, 'the being fell over');
+  // Outward, byte for byte, it is the identical nothing: no envelope, watched
+  // or not.
+  assert.equal(watched, null);
+  assert.equal(watched, quiet);
+
+  // An observer that falls over changes no answer either.
+  warden.observe(() => {
+    throw new Error('the watcher fell over');
+  });
+  assert.equal(
+    await warden.judge(await ask(warden, voice, { seq: 3n, being, method: invoke('breaks') }), {
+      clock: still,
+      random: RANDOM,
+    }),
+    null,
+  );
+});
+
+test('the verified caller is offered inward, and a stranger is offered as one', async () => {
+  const { warden, being, voice } = await granted();
+  const offered = [];
+  warden.offer((one) => offered.push(one));
+
+  // An ordinary ask: the house is told the holder that made it, and nothing
+  // else — no marks, no window, no padlock, no hints.
+  await warden.judge(await ask(warden, voice, { being, method: invoke('complete') }), {
+    clock: still,
+    random: RANDOM,
+  });
+  assert.equal(offered.length, 1);
+  assert.deepEqual(Object.keys(offered[0]).sort(), ['kind', 'voice']);
+  assert.equal(offered[0].kind, 'holder');
+  assert.equal(hex(offered[0].voice), hex(voice.pk));
+  // A copy: writing to it reaches nothing the warden holds.
+  offered[0].voice[0] = 255;
+  assert.notEqual(warden.standing(voice.pk).voice[0], 255);
+
+  // A stranger's describe is served, and offered as what it is.
+  const nobody = await signingPair(fixed(88));
+  await warden.judge(await ask(warden, nobody, { seq: 4n }), { clock: still, random: RANDOM });
+  assert.equal(offered.length, 2);
+  assert.equal(offered[1].kind, 'stranger');
+  assert.equal(hex(offered[1].voice), hex(nobody.pk));
+
+  // The offer is made once the caller is verified, so a call the routing then
+  // refuses was still offered — the caller is a fact, and the refusal is the
+  // door's own.
+  await warden.judge(
+    await ask(warden, voice, { seq: 2n, being: fixed(96), method: invoke('add') }),
+    {
+      clock: still,
+      random: RANDOM,
+    },
+  );
+  assert.equal(offered.length, 3);
+  assert.equal(offered[2].kind, 'holder');
+});
+
+test('after a rotation the offered voice is the new holder', async () => {
+  const { warden, being, heir } = await granted();
+  const next = await signingPair(fixed(8));
+  const offered = [];
+  warden.offer((one) => offered.push(one));
+  const back = await warden.judge(
+    await ask(
+      warden,
+      heir,
+      {
+        commitment: await commitment(warden.name.pk, next.pk),
+        seq: 1n,
+        being,
+        method: invoke('complete'),
+      },
+      fixed(201),
+    ),
+    { clock: still, random: RANDOM },
+  );
+  assert.notEqual(back, null);
+  assert.equal(offered.length, 1);
+  assert.equal(offered[0].kind, 'rotation');
+  assert.equal(hex(offered[0].voice), hex(heir.pk));
+});
+
+test('the offer changes no byte of the answer', async () => {
+  const one = await granted();
+  const two = await granted();
+  const envelope = await ask(one.warden, one.voice, {
+    being: one.being,
+    method: invoke('add', utf8.encode('milk')),
+  });
+
+  const quiet = await one.warden.judge(envelope, { clock: still, random: RANDOM });
+  two.warden.offer(() => {});
+  const watched = await two.warden.judge(envelope, { clock: still, random: RANDOM });
+  assert.notEqual(quiet, null);
+  assert.equal(hex(watched), hex(quiet));
+
+  // And a consumer that falls over is the consumer's problem.
+  const three = await granted();
+  three.warden.offer(() => {
+    throw new Error('the house fell over');
+  });
+  assert.equal(
+    hex(await three.warden.judge(envelope, { clock: still, random: RANDOM })),
+    hex(quiet),
+  );
+});
+
+test('a hop this kit refuses itself spends no number against the far door', async () => {
+  const warden = await ground();
+  const elsewhere = await Warden.open({
+    nameSeed: fixed(80),
+    padlockSeed: fixed(81),
+    heirSeed: fixed(82),
+  });
+  const row = warden.remember({
+    warden: elsewhere.name.pk,
+    commitment: elsewhere.commitment,
+    padlock: elsewhere.padlock.pk,
+    heirPublic: elsewhere.name.pk,
+    heirSecret: elsewhere.name.secret,
+    hints: [],
+  });
+
+  // A budget with nothing left in it. The kit refuses the hop itself and puts
+  // no message on the wire.
+  assert.equal(
+    warden.ask(row, { seq: 5n, allowance: { time: 0n, hops: 4n }, random: RANDOM }),
+    null,
+  );
+  assert.equal(row.seq, 0n);
+  assert.equal(
+    warden.ask(row, { seq: 5n, allowance: { time: 5_000n, hops: -1n }, random: RANDOM }),
+    null,
+  );
+  assert.equal(row.seq, 0n);
+
+  // A message actually sent spends its number.
+  assert.notEqual(await warden.ask(row, { seq: 5n, random: RANDOM }), null);
+  assert.equal(row.seq, 5n);
+});
+
+test('a rotation whose answer never comes has either landed or not, and both keys are needed to find out', async () => {
+  // The one awkward moment no helper removes: between sending a rotation and
+  // reading its answer, a caller does not know which key the far door now
+  // holds, and the door will not say. The two cases below are the same silence
+  // from the caller's side and opposite states at the door — which is the whole
+  // reason a caller keeps both keys until a message signed with the new one is
+  // answered.
+  const landed = await granted();
+  const next = await signingPair(fixed(8));
+  // It arrived and was answered into a connection that dropped. The caller saw
+  // nothing; the door moved on.
+  await landed.warden.judge(
+    await ask(landed.warden, landed.heir, {
+      commitment: await commitment(landed.warden.name.pk, next.pk),
+      seq: 1n,
+      being: landed.being,
+      method: invoke('complete'),
+    }),
+    { clock: still, random: RANDOM },
+  );
+  const spent = async (one, voice, seq) =>
+    one.warden.judge(
+      await ask(one.warden, voice, { seq, being: one.being, method: invoke('complete') }),
+      { clock: still, random: RANDOM },
+    );
+  // The old key is dead and the new one is the holder: a caller that threw the
+  // old key away on the strength of having sent something would be fine, and a
+  // caller that kept only the old one would be locked out.
+  assert.equal(await spent(landed, landed.voice, 2n), null);
+  assert.notEqual(await spent(landed, landed.heir, 2n), null);
+
+  const lost = await granted();
+  // The mirror: the envelope never arrived at all. Nothing is judged.
+  await ask(lost.warden, lost.heir, {
+    commitment: await commitment(lost.warden.name.pk, next.pk),
+    seq: 1n,
+    being: lost.being,
+    method: invoke('complete'),
+  });
+  // Now the opposite pair holds, and the caller cannot tell this apart from the
+  // case above by anything the door said.
+  assert.notEqual(await spent(lost, lost.voice, 2n), null);
+  assert.equal(await spent(lost, lost.heir, 2n), null);
+});
+
+test('a rotation refused for its number has taken the standing over anyway, and asking again on the new voice recovers it', async () => {
+  // The trap is where the refusal falls. The rotation lands at step 4 and the
+  // number is judged at step 5, so the takeover has already happened when the
+  // silence comes back: the standing stands on the new voice and the old key is
+  // dead. Nothing is beyond recovery — a refusal at step 5 spends nothing — but
+  // the caller cannot see any of that, and the natural reading of silence is
+  // the one that loses it.
+  const { warden, being, voice, heir } = await granted();
+  const next = await signingPair(fixed(8));
+  const refused = await warden.judge(
+    await ask(warden, heir, {
+      commitment: await commitment(warden.name.pk, next.pk),
+      // Below the first legal number, so step 5 refuses it.
+      seq: 0n,
+      being,
+      method: invoke('complete'),
+    }),
+    { clock: still, random: RANDOM },
+  );
+  assert.equal(refused, null);
+
+  // Silence, and the takeover happened all the same.
+  assert.equal(warden.standing(voice.pk), null, 'the old key died at step 4');
+  const row = warden.standing(heir.pk);
+  assert.notEqual(row, null, 'the standing changed hands before the number was judged');
+  assert.equal(hex(row.commitment), hex(await commitment(warden.name.pk, next.pk)));
+
+  // The recovery, which is the whole point of the correction: ask again on the
+  // voice the rotation moved to. Nothing was spent, so a plain ask is answered.
+  assert.notEqual(
+    await warden.judge(await ask(warden, heir, { seq: 1n, being, method: invoke('complete') }), {
+      clock: still,
+      random: RANDOM,
+    }),
+    null,
+    'a refusal at step 5 spends nothing, so the new voice opens where it likes',
+  );
+
+  // And the loss, which is a reading of silence rather than a rule. A holder
+  // that takes silence for "the rotation did not land" retries the whole
+  // rotate-and-ask — signing with the key it just retired — and is refused for
+  // that, now and every time after.
+  const retry = async (seq) =>
+    warden.judge(
+      await ask(warden, voice, {
+        commitment: await commitment(warden.name.pk, next.pk),
+        seq,
+        being,
+        method: invoke('complete'),
+      }),
+      { clock: still, random: RANDOM },
+    );
+  assert.equal(await retry(1n), null);
+  assert.equal(await retry(2n), null, 'and no number it picks brings the retired key back');
+});
+
+test('a fresh mark honours any number at or above one, so no door may require exactly one', async () => {
+  // A door that required a first message to carry exactly one would refuse a
+  // conforming stranger in silence, telling it nothing to fix — and by the case
+  // above, leaving a live standing dead with no fault anyone can find. Which
+  // number a caller opens with, above one, is the caller's own.
+  const { warden, being, heir } = await granted();
+  const next = await signingPair(fixed(8));
+  const back = await warden.judge(
+    await ask(warden, heir, {
+      commitment: await commitment(warden.name.pk, next.pk),
+      seq: 8_675_309n,
+      being,
+      method: invoke('complete'),
+    }),
+    { clock: still, random: RANDOM },
+  );
+  assert.notEqual(back, null, 'a fresh mark stands below every legal number');
+
+  // And the mark moved there, so the numbers under it are gone rather than
+  // waiting to be used.
+  assert.equal(
+    await warden.judge(await ask(warden, heir, { seq: 12n, being, method: invoke('complete') }), {
+      clock: still,
+      random: RANDOM,
+    }),
+    null,
+  );
+});
+
+// The same ground twice over, holding whatever object the case wants to put
+// behind one blueprint. Every seed is the one `granted` uses, so two of these
+// are the same house down to the keys and only the being's own code differs —
+// which is what lets two answers be compared byte for byte.
+async function standing(object) {
+  const warden = await ground();
+  const being = await warden.hold(object, { seed: fixed(5), blueprint: LIST });
+  const voice = await signingPair(fixed(6));
+  await warden.grant(being, { voiceSeed: fixed(6), heirSeed: fixed(7) });
+  return { warden, object, being, voice };
+}
+
+test('a being never produces silence, whatever it answers', async () => {
+  // A call meets two layers and only the first can be silent. Past the door the
+  // being always answers, so nothing a being returns can make the door go
+  // quiet — which is why a being that wants to say no says it in a field.
+  const said = utf8.encode('no, and here is why');
+  const beings = {
+    'data where the field declares data': { add: () => utf8.encode('added'), silent() {} },
+    'a refusal written as data, which is the only way to refuse': { add: () => said, silent() {} },
+    'nothing at all, where the field answers nothing': { add: () => utf8.encode('x'), silent() {} },
+  };
+
+  for (const [what, object] of Object.entries(beings)) {
+    const one = await standing(object);
+    // A number apiece: two asks under one seq would be a replay, which is the
+    // door's silence and would prove nothing about the being.
+    for (const [at, field] of ['add', 'silent'].entries()) {
+      const back = await one.warden.judge(
+        await ask(one.warden, one.voice, {
+          seq: BigInt(at + 1),
+          being: one.being,
+          method: invoke(field),
+        }),
+        { clock: still, random: RANDOM },
+      );
+      assert.notEqual(back, null, `${what}, asked ${field}, went silent`);
+    }
+  }
+
+  // And the refusal a being writes for itself arrives as ordinary data, named
+  // by the ask's own number like any other answer.
+  const refuser = await standing({ add: () => said, silent() {} });
+  const answer = await readAnswer({
+    envelope: await refuser.warden.judge(
+      await ask(refuser.warden, refuser.voice, { being: refuser.being, method: invoke('add') }),
+      { clock: still, random: RANDOM },
+    ),
+    padlockSecret: caller.secret,
+    wardenPk: refuser.warden.name.pk,
+  });
+  assert.equal(hex(answer.data), hex(said));
+  assert.equal(answer.seq, 1n);
+});
+
+test('on a field answering nothing, a call that ran and one the being refused are the same bytes', async () => {
+  // The cost of the rule above, stated rather than hidden. A being whose
+  // callers must tell these apart declares a field that says which, and that is
+  // the being author's affair rather than the protocol's.
+  const ran = [];
+  const worked = await standing({
+    silent() {
+      ran.push('did the work');
+    },
+  });
+  const declined = await standing({
+    silent() {
+      // Decided against it, and has no way to say so on this field.
+    },
+  });
+
+  const envelope = await ask(worked.warden, worked.voice, {
+    being: worked.being,
+    method: invoke('silent'),
+  });
+  const one = await worked.warden.judge(envelope, { clock: still, random: RANDOM });
+  const two = await declined.warden.judge(envelope, { clock: still, random: RANDOM });
+
+  assert.equal(ran.length, 1, 'one being did the work and the other did not');
+  assert.notEqual(one, null);
+  assert.equal(hex(two), hex(one), 'and the two answers are the same bytes on the wire');
 });

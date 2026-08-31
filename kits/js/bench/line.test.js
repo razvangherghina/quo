@@ -433,6 +433,47 @@ test('a warden under the default that declares nothing does not offer the line',
   );
 });
 
+test('a hint is matched byte for byte as written', async () => {
+  // A hint is compared, republished as news and stored in a row, so two
+  // spellings of one road would be two roads. Case, leading zeros and all.
+  const warden = await Warden.open({
+    nameSeed: fixed(93),
+    padlockSeed: fixed(94),
+    heirSeed: fixed(95),
+  });
+  warden.publish('tcp://127.0.0.1:9000');
+  warden.publish('tcp://127.0.0.1:9000');
+  assert.deepEqual(warden.hints, ['tcp://127.0.0.1:9000']);
+  warden.publish('TCP://127.0.0.1:9000', 'tcp://127.0.0.1:09000', 'tcp://127.0.0.1:9000 ');
+  assert.equal(warden.hints.length, 4);
+  // And retracting one road retracts that road and no other spelling of it.
+  warden.retract('tcp://127.0.0.1:9000');
+  assert.deepEqual(warden.hints, [
+    'TCP://127.0.0.1:9000',
+    'tcp://127.0.0.1:09000',
+    'tcp://127.0.0.1:9000 ',
+  ]);
+});
+
+test('a dialling end promises the default and accepts no more', async (t) => {
+  // The listener holds a megabyte and says so on its road; the dialler
+  // publishes nothing, so it promises the default and there is no way to
+  // promise more — whatever its own appetite.
+  const world = await grounds({ limit: 1n << 20n });
+  t.after(world.close);
+  assert.match(world.door.hint, /\?cap=1048576$/);
+  const line = await dial(world.guest, world.door.hint, { clock: still, random: grain(50) });
+  while (world.accepted.length === 0) await new Promise((done) => setImmediate(done));
+
+  // A frame one byte over the default, written straight onto the socket the
+  // listener holds. The dialler cannot frame it, so it drops without a word.
+  const closed = new Promise((done) => line.socket.on('close', done));
+  const over = Number(DEFAULT) + 1;
+  world.accepted[0].socket.write(Buffer.concat([header(over), Buffer.alloc(over)]));
+  await closed;
+  assert.equal(line.open, false);
+});
+
 test('an envelope at the default rides a line whose warden published no limit', async (t) => {
   const world = await grounds();
   t.after(world.close);
@@ -554,7 +595,11 @@ test('a hint that is not a line is not dialled', async () => {
     'tcp://127.0.0.1:1?cap=big',
     'tcp://127.0.0.1:1?cap=16384x',
     'tcp://127.0.0.1:1?cap=16384&x=1',
+    // A cap of zero or a port of zero names a door that can take nothing, and
+    // is no road at all: refused when offered as a road, never dialled.
     'tcp://127.0.0.1:1?cap=0',
+    'tcp://127.0.0.1:0',
+    'tcp://127.0.0.1:0?cap=65536',
     'tcp://127.0.0.1:1?limit=16384',
   ]) {
     await assert.rejects(

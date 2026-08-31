@@ -224,6 +224,41 @@ test('records that hold records round-trip', () => {
   assert.deepEqual(decode(estate, encode(estate, value, records), records), value);
 });
 
+test('an encoder refuses text it cannot write as UTF-8, as a decoder refuses to read it', () => {
+  // A kit may not write what no kit may read. A lone surrogate is no code point
+  // and no UTF-8; `TextEncoder` would quietly write U+FFFD for it, and a
+  // repaired text is a second spelling of a value named by the hash of its
+  // bytes.
+  refusedWith(() => encode(T('text'), '\ud800'), 'NOT_UTF8');
+  refusedWith(() => encode(T('text'), 'milk\udfff'), 'NOT_UTF8');
+  refusedWith(() => encode(T('text', { list: true }), ['fine', '\udbff']), 'NOT_UTF8');
+  // A well-formed pair is one code point and rides untouched.
+  assert.equal(decode(T('text'), encode(T('text'), '😀')), '😀');
+});
+
+test('a text is carried as given and never normalised', () => {
+  // Two Unicode normalisation forms are two values, and a kit that repaired
+  // either would have forged a second spelling: U+00E9 composed against
+  // U+0065 U+0301 decomposed.
+  const composed = 'é';
+  const decomposed = 'é';
+  assert.notEqual(hex(encode(T('text'), composed)), hex(encode(T('text'), decomposed)));
+  assert.equal(decode(T('text'), encode(T('text'), decomposed)), decomposed);
+  assert.equal(decode(T('text'), encode(T('text'), composed)), composed);
+  // A byte order mark inside a text value is ordinary content.
+  assert.equal(decode(T('text'), encode(T('text'), '﻿hi')), '﻿hi');
+});
+
+test('a T? marker byte that is neither zero nor one is refused', () => {
+  const present = encode(T('int', { optional: true }), 7n);
+  assert.equal(present[0], 1);
+  assert.equal(encode(T('int', { optional: true }), null)[0], 0);
+  const bad = Uint8Array.from(present);
+  bad[0] = 2;
+  refusedWith(() => decode(T('int', { optional: true }), bad), 'NOT_A_FLAG');
+  refusedWith(() => decode(T('bool'), Uint8Array.of(2)), 'NOT_A_FLAG');
+});
+
 test('malformed wire bytes are refused', () => {
   const negative = new Uint8Array(16);
   new DataView(negative.buffer).setBigInt64(0, -1n, false);

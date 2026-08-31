@@ -1,0 +1,109 @@
+# Publishing the Zig kit, from a tag and from nowhere else.
+#
+# Zig has no registry. A Zig package is a URL to a tarball and the hash of
+# what that tarball unpacks to, pasted into a consumer's build.zig.zon. So
+# publishing here means putting a tarball at an address that will not move —
+# a GitHub release asset — and printing the hash beside it, computed by the
+# same toolchain the consumer will use rather than typed by anyone.
+name: publish-zig
+
+on:
+  push:
+    tags: ['zig-v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to publish, e.g. zig-v0.1.0'
+        required: true
+
+permissions:
+  # The release and its asset are written by this job. Nothing else is.
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+
+      - uses: mlugg/setup-zig@v2
+        with:
+          # The kit names the Zig version it compiles against; the runner must
+          # not resolve its own. Zig's standard library still moves between
+          # releases.
+          version: 0.16.0
+
+      # The tag is the claim; the manifest is the fact. If they disagree, the
+      # release is wrong and stopping here is cheaper than moving a tag people
+      # have already fetched by hash.
+      - name: The tag matches the version
+        id: version
+        working-directory: kits/zig
+        run: |
+          tag="${{ github.event.inputs.tag || github.ref_name }}"
+          version=$(grep -m1 '\.version = ' build.zig.zon | cut -d'"' -f2)
+          if [ "$tag" != "zig-v$version" ]; then
+            echo "tag $tag does not match version $version"
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+      - name: The bench is green
+        working-directory: kits/zig
+        run: |
+          zig fmt --check build.zig build.zig.zon src test cmd
+          zig build test
+
+      # Built from the commit rather than from the working tree, so nothing the
+      # bench left behind — .zig-cache, zig-out — can ride into the tarball.
+      - name: Build the tarball
+        id: tarball
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          name="quo-zig-$VERSION.tar.gz"
+          git archive --format=tar.gz --prefix="quo-zig-$VERSION/" -o "$RUNNER_TEMP/$name" HEAD:kits/zig
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+          echo "path=$RUNNER_TEMP/$name" >> "$GITHUB_OUTPUT"
+
+      # `zig fetch` resolves its cache from the project it is standing in, so
+      # it is run from the kit rather than from the runner's home.
+      - name: The hash a consumer pastes
+        id: hash
+        working-directory: kits/zig
+        run: echo "hash=$(zig fetch '${{ steps.tarball.outputs.path }}')" >> "$GITHUB_OUTPUT"
+
+      - name: Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.version.outputs.tag }}
+          VERSION: ${{ steps.version.outputs.version }}
+          ASSET: ${{ steps.tarball.outputs.path }}
+          NAME: ${{ steps.tarball.outputs.name }}
+          HASH: ${{ steps.hash.outputs.hash }}
+        run: |
+          url="https://github.com/$GITHUB_REPOSITORY/releases/download/$TAG/$NAME"
+          cat > "$RUNNER_TEMP/body.md" <<BODY
+          The Quo kit in Zig, $VERSION. Zig 0.16.0.
+
+          Zig has no registry: a package is a tarball and its hash. Add this to
+          your \`build.zig.zon\`:
+
+          \`\`\`zig
+          .dependencies = .{
+              .quo = .{
+                  .url = "$url",
+                  .hash = "$HASH",
+              },
+          },
+          \`\`\`
+
+          The hash was computed by \`zig fetch\` over this exact asset, in the
+          run that produced it.
+          BODY
+          gh release create "$TAG" "$ASSET" \
+            --title "Zig kit $VERSION" \
+            --notes-file "$RUNNER_TEMP/body.md"

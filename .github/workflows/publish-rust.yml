@@ -1,0 +1,73 @@
+# Publishing the Rust kit to crates.io, from a tag and from nowhere else.
+#
+# There is no token anywhere in this file. crates.io holds a trusted publisher
+# naming this repository, this workflow and the `crates-io` environment, and
+# the OIDC token GitHub mints for the run is exchanged for a crates.io token
+# that lives for the run and dies with it.
+#
+# Nine crates go up, in dependency order, each waited for in the index before
+# the next — because crates.io refuses a crate whose dependency it cannot yet
+# resolve, and the index is not consistent the instant a publish returns. That
+# order and that waiting live in `tools/publish-rust.mjs`, which this runs
+# rather than restating.
+name: publish-rust
+
+on:
+  push:
+    tags: ['rust-v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to publish, e.g. rust-v0.1.0'
+        required: true
+
+permissions:
+  contents: read
+  # Required for trusted publishing. Without it the exchange fails rather than
+  # falling back to some other credential.
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: crates-io
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      # The tag is the claim; the manifests are the fact. The script reads the
+      # nine crates through `cargo metadata` and refuses if they disagree among
+      # themselves, so a half-bumped workspace stops here rather than reaching
+      # a registry that never forgets a version.
+      - name: The tag matches the version
+        run: |
+          tag="${{ github.event.inputs.tag || github.ref_name }}"
+          version=$(node tools/publish-rust.mjs --version)
+          if [ "$tag" != "rust-v$version" ]; then
+            echo "tag $tag does not match version $version"
+            exit 1
+          fi
+
+      - name: The bench is green
+        working-directory: kits/rust
+        run: |
+          cargo fmt --all --check
+          cargo clippy --all-targets -- -D warnings
+          cargo test
+
+      - uses: rust-lang/crates-io-auth-action@v1.0.5
+        id: auth
+
+      - name: Publish
+        run: node tools/publish-rust.mjs
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}

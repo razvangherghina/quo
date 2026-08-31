@@ -28,8 +28,7 @@ own tab at **[quo.systems](https://quo.systems)**.
   dependencies: WebCrypto and `Uint8Array`, so the core runs unchanged in a
   browser tab, an edge worker or Node. Only the listening door touches Node.
 - **[kits/go](https://github.com/razvangherghina/quo/tree/main/kits/go)** — the
-  Go kit, written from the constitution's text alone by builders who had not
-  seen the first kit. It is imported as `quo.systems/kit`:
+  Go kit. It is imported as `quo.systems/kit`:
 
   ```
   go get quo.systems/kit
@@ -40,15 +39,38 @@ own tab at **[quo.systems](https://quo.systems)**.
   [github.com/razvangherghina/quo-go](https://github.com/razvangherghina/quo-go),
   emitted from the tree here.
 
-The two kits exchange real sealed messages over a real socket and derive
-identical digests. That is the proof the constitution is implementable from its
-text rather than from anyone's source.
+- **[kits/zig](https://github.com/razvangherghina/quo/tree/main/kits/zig)** —
+  the Zig kit, for Zig 0.16.0. It declares no dependency: `std.crypto` carries
+  all five primitives the constitution names. Zig has no registry, so the kit
+  is published as a tarball on a GitHub release here, with the `zig fetch`
+  hash printed in the release notes for you to paste into your
+  `build.zig.zon`.
+
+- **[kits/rust](https://github.com/razvangherghina/quo/tree/main/kits/rust)** —
+  the Rust kit, a workspace of small crates: the core, the three roads, and a
+  `subject` binary another language can drive. Edition 2021, toolchain 1.88.0
+  or newer. The crate names are held on crates.io and the kit itself is read
+  from this repository until the first real version is cut.
+
+- **[kits/python](https://github.com/razvangherghina/quo/tree/main/kits/python)**
+  — the Python kit, Python 3.11 or newer, built and tested with 3.13. It takes
+  one third-party import, PyCA `cryptography`, for the four primitives the
+  standard library does not carry. The name `quo-systems` is held on PyPI and
+  the kit is read from this repository until the first real version is cut.
+
+Five implementations of one text. Each was written from the constitution alone,
+and each is judged against the same pinned vector corpus, which lives in
+[`kits/js/vectors`](https://github.com/razvangherghina/quo/tree/main/kits/js/vectors).
+Each kit also ships a `subject` executable that a driver in another language can
+spawn, so any two kits can be made to exchange real sealed messages over a real
+socket and shown to derive identical digests. That is the proof the
+constitution is implementable from its text rather than from anyone's source.
 
 ## Status: pre-1.0 working draft
 
 The law is written and complete enough to implement from, and it is still being
-argued with — against two working implementations, against a vector corpus, and
-against anyone willing to attack it. Articles have moved and more will.
+argued with — against five working implementations, against a vector corpus,
+and against anyone willing to attack it. Articles have moved and more will.
 
 What that means for you: the ideas are stable enough to build a real
 understanding on, and the exact spellings are not yet stable enough to ship a
@@ -67,10 +89,11 @@ constitution binds an implementation.
 Where bytes are pinned they are pinned exactly; where a choice is left open it
 is named as open.
 
-Each kit ships the vector corpus it is judged against, under `vectors/`. A third
-implementation in a third language can read those files and prove it agrees on
-the bytes. A corpus pins bytes and cannot pin judgment, so the crossing between
-two kits doing real work is what finds the rest.
+The vector corpus every kit is judged against is in
+[`kits/js/vectors`](https://github.com/razvangherghina/quo/tree/main/kits/js/vectors),
+one JSON file per article it pins. A sixth implementation in a sixth language
+can read those files and prove it agrees on the bytes. A corpus pins bytes and
+cannot pin judgment, so two kits crossing at real work is what finds the rest.
 
 ## Licence and ownership
 
@@ -94,7 +117,7 @@ trying to be.
 
 ## Contact
 
-Razvan Gherghina — [info@factcurier.ro](mailto:info@factcurier.ro) ·
+Razvan Gherghina — [razvan@quo.systems](mailto:razvan@quo.systems) ·
 [linkedin.com/in/razvangh](https://www.linkedin.com/in/razvangh/) ·
 [quo.systems](https://quo.systems)
 
