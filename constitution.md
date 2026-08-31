@@ -780,10 +780,14 @@ declares in a blueprint of its own beside this one. `tell` is news;
 `receive` is a migration's state transfer — an ordinary field spent by
 an ordinary standing granted in advance, and its answer is the
 commitment of the key the destination minted and the origin never saw,
-hashed under the destination's own name. **`receive` carries a digest,
-never the blueprint's text, and the digest identifies rather than
-delivers: a destination that does not already hold that class refuses
-the cargo in silence, and there is nobody it may ask.**
+hashed under the destination's own name. **A destination mints two keys
+— the one the being is named by and that one's heir — and the commitment
+is of the first**, the being's new name, because that is the key the
+second rotation moves the being's identity to and the key a peer hashes
+a succession against when it believes news. **`receive` carries a
+digest, never the blueprint's text, and the digest identifies rather
+than delivers: a destination that does not already hold that class
+refuses the cargo in silence, and there is nobody it may ask.**
 
 ## X. The describe
 
