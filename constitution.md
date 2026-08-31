@@ -872,10 +872,14 @@ method
 - **The recipient** is the door this message is for, named by whichever
   key the sender holds: the warden's name when it has one, otherwise the
   padlock it seals to. A message presented at any other door is silence.
-- **The commitment** is present only when the message spends an heir. A
-  plain ask carrying one is refused. **News is not a rotation and does
-  not use this field**; a succession announced as news carries its next
-  commitment in the `word`.
+- **The commitment** is present only when the message spends an heir,
+  and is present whenever one is spent. A plain ask carrying one is
+  refused, and a rotation carrying none is refused — Article XII's
+  fourth step makes the carried commitment the new heir, and with
+  nothing carried the step has no outcome and the standing could never
+  change hands again. **News is not a rotation and does not use this
+  field**; a succession announced as news carries its next commitment in
+  the `word`.
 - **The seq** is the number that only rises for this voice.
 - **The padlock and hints** are how to answer, and how to speak to this
   caller later.
