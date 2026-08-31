@@ -36,7 +36,8 @@ another is a red rather than an absence.
 
 | Path          | What it is                                                                                           |
 | ------------- | ---------------------------------------------------------------------------------------------------- |
-| `Cargo.toml`  | The workspace.                                                                                       |
+| `Cargo.toml`  | The workspace, and the one version the nine published crates share.                                  |
+| `quo/`        | The crate `quo`: the kit whole — no code of its own, the eight below under one dependency.           |
 | `notation/`   | The crate `quo-notation`: the parser, the canonical text, the digest.                                |
 | `arithmetic/` | The crate `quo-arithmetic`: the four algorithms of Article VI.                                       |
 | `wire/`       | The crate `quo-wire`: the byte encoding of Article V.                                                |

@@ -1,6 +1,6 @@
 [package]
 name = "quo-line"
-version = "0.0.0"
+version.workspace = true
 description = "The Quo line: framed envelopes over one persistent TCP connection, the road named beside the common carriage."
 edition.workspace = true
 rust-version.workspace = true
@@ -11,9 +11,9 @@ keywords = ["quo", "protocol", "transport", "tcp"]
 categories = ["network-programming"]
 
 [dependencies]
-quo-carriage = { version = "0.0.0", path = "../carriage" }
-quo-notation = { version = "0.0.0", path = "../notation" }
-quo-wire = { version = "0.0.0", path = "../wire" }
+quo-carriage.workspace = true
+quo-notation.workspace = true
+quo-wire.workspace = true
 
 [dev-dependencies]
 quo-arithmetic = { path = "../arithmetic" }

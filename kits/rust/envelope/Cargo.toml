@@ -1,6 +1,6 @@
 [package]
 name = "quo-envelope"
-version = "0.0.0"
+version.workspace = true
 description = "The Quo envelope: a sealed box with the key to open it stapled to the lid, and the two records it carries."
 edition.workspace = true
 rust-version.workspace = true
@@ -11,9 +11,9 @@ keywords = ["quo", "protocol", "envelope", "cryptography"]
 categories = ["cryptography", "encoding"]
 
 [dependencies]
-quo-arithmetic = { version = "0.0.0", path = "../arithmetic" }
-quo-notation = { version = "0.0.0", path = "../notation" }
-quo-wire = { version = "0.0.0", path = "../wire" }
+quo-arithmetic.workspace = true
+quo-notation.workspace = true
+quo-wire.workspace = true
 
 [dev-dependencies]
 quo-arithmetic = { path = "../arithmetic" }

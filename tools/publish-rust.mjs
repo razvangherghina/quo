@@ -17,9 +17,9 @@ import { fileURLToPath } from 'node:url';
 // Dependency order: a crate is listed after every crate it depends on, because
 // crates.io refuses a crate whose dependency is not already published.
 // notation → wire; arithmetic+notation+wire → envelope → warden;
-// carriage and zero depend on nothing; line takes notation and wire.
+// carriage and zero depend on nothing; line takes notation and wire; and
+// `quo` is last because it is the kit whole and depends on all eight.
 const ORDER = [
-  'quo',
   'quo-notation',
   'quo-arithmetic',
   'quo-wire',
@@ -28,6 +28,7 @@ const ORDER = [
   'quo-carriage',
   'quo-line',
   'quo-zero',
+  'quo',
 ];
 
 // Where each crate lives inside the kit, which the rehearsal needs below.

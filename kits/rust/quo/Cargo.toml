@@ -1,7 +1,7 @@
 [package]
 name = "quo"
-version = "0.0.0"
-description = "Quo: a small, open protocol that answers exactly one question — by whose authority — and refuses every other. This name is held for the Rust kit; the kit itself lands in 0.1.0."
+version.workspace = true
+description = "Quo: a small, open protocol that answers exactly one question — by whose authority — and refuses every other. This crate is the Rust kit whole: the core, and the three roads Article III names."
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
@@ -12,3 +12,11 @@ keywords = ["quo", "protocol", "capability", "authority"]
 categories = ["cryptography", "network-programming"]
 
 [dependencies]
+quo-arithmetic.workspace = true
+quo-carriage.workspace = true
+quo-envelope.workspace = true
+quo-line.workspace = true
+quo-notation.workspace = true
+quo-warden.workspace = true
+quo-wire.workspace = true
+quo-zero.workspace = true

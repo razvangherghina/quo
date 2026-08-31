@@ -1,6 +1,6 @@
 [package]
 name = "quo-carriage"
-version = "0.0.0"
+version.workspace = true
 description = "The Quo common carriage: HTTPS, and the one POST every warden answers — bytes in, bytes out."
 edition.workspace = true
 rust-version.workspace = true
@@ -12,6 +12,9 @@ categories = ["network-programming"]
 
 [dependencies]
 
+# Path-only, deliberately. A dev-dependency carrying a version has to resolve
+# from the registry at package time, which would make the bench decide the
+# publish order. Cargo drops a path-only one from the published manifest.
 [dev-dependencies]
 quo-arithmetic = { path = "../arithmetic" }
 quo-envelope = { path = "../envelope" }

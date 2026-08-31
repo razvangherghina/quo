@@ -1,6 +1,6 @@
 [package]
 name = "quo-notation"
-version = "0.0.0"
+version.workspace = true
 description = "The Quo notation: a blueprint's canonical text, its digest, and everything Article IV refuses."
 edition.workspace = true
 rust-version.workspace = true

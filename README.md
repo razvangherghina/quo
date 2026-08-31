@@ -42,21 +42,37 @@ own tab at **[quo.systems](https://quo.systems)**.
 - **[kits/zig](https://github.com/razvangherghina/quo/tree/main/kits/zig)** —
   the Zig kit, for Zig 0.16.0. It declares no dependency: `std.crypto` carries
   all five primitives the constitution names. Zig has no registry, so the kit
-  is published as a tarball on a GitHub release here, with the `zig fetch`
-  hash printed in the release notes for you to paste into your
+  is published as a tarball on a
+  [GitHub release here](https://github.com/razvangherghina/quo/releases), with
+  the `zig fetch` hash printed in the release notes for you to paste into your
   `build.zig.zon`.
 
 - **[kits/rust](https://github.com/razvangherghina/quo/tree/main/kits/rust)** —
   the Rust kit, a workspace of small crates: the core, the three roads, and a
   `subject` binary another language can drive. Edition 2021, toolchain 1.88.0
-  or newer. The crate names are held on crates.io and the kit itself is read
-  from this repository until the first real version is cut.
+  or newer. Published to crates.io as [`quo`](https://crates.io/crates/quo),
+  which is the kit whole and holds no code of its own:
+
+  ```
+  cargo add quo
+  ```
+
+  A caller who wants one part takes that part instead — `quo-notation`,
+  `quo-arithmetic`, `quo-wire`, `quo-envelope`, `quo-warden`, `quo-carriage`,
+  `quo-line`, `quo-zero`. crates.io has no scopes, so the kit costs nine
+  names rather than one.
 
 - **[kits/python](https://github.com/razvangherghina/quo/tree/main/kits/python)**
   — the Python kit, Python 3.11 or newer, built and tested with 3.13. It takes
   one third-party import, PyCA `cryptography`, for the four primitives the
-  standard library does not carry. The name `quo-systems` is held on PyPI and
-  the kit is read from this repository until the first real version is cut.
+  standard library does not carry. Published to PyPI as
+  [`quo-systems`](https://pypi.org/project/quo-systems/) and imported as
+  `quo`, because PyPI's `quo` has been held since 2023 by an unrelated
+  project:
+
+  ```
+  pip install quo-systems
+  ```
 
 Five implementations of one text. Each was written from the constitution alone,
 and each is judged against the same pinned vector corpus, which lives in

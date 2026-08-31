@@ -1,6 +1,6 @@
 [package]
 name = "quo-subject"
-version = "0.0.0"
+version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
@@ -11,11 +11,11 @@ name = "subject"
 path = "src/main.rs"
 
 [dependencies]
-quo-arithmetic = { path = "../arithmetic" }
-quo-carriage = { path = "../carriage" }
-quo-envelope = { path = "../envelope" }
-quo-line = { path = "../line" }
-quo-notation = { path = "../notation" }
-quo-warden = { path = "../warden" }
-quo-wire = { path = "../wire" }
-quo-zero = { path = "../zero" }
+quo-arithmetic.workspace = true
+quo-carriage.workspace = true
+quo-envelope.workspace = true
+quo-line.workspace = true
+quo-notation.workspace = true
+quo-warden.workspace = true
+quo-wire.workspace = true
+quo-zero.workspace = true

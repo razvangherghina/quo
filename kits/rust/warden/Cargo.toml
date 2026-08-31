@@ -1,6 +1,6 @@
 [package]
 name = "quo-warden"
-version = "0.0.0"
+version.workspace = true
 description = "The Quo warden: the door, and the judgment of Article XII that everything arriving at it is put through."
 edition.workspace = true
 rust-version.workspace = true
@@ -11,10 +11,10 @@ keywords = ["quo", "protocol", "authority", "capability"]
 categories = ["cryptography", "authentication"]
 
 [dependencies]
-quo-arithmetic = { version = "0.0.0", path = "../arithmetic" }
-quo-envelope = { version = "0.0.0", path = "../envelope" }
-quo-notation = { version = "0.0.0", path = "../notation" }
-quo-wire = { version = "0.0.0", path = "../wire" }
+quo-arithmetic.workspace = true
+quo-envelope.workspace = true
+quo-notation.workspace = true
+quo-wire.workspace = true
 
 [dev-dependencies]
 quo-arithmetic = { path = "../arithmetic" }

@@ -1,6 +1,6 @@
 [package]
 name = "quo-wire"
-version = "0.0.0"
+version.workspace = true
 description = "The Quo wire encoding: the one way each closed type is written, and the bytes a decoder refuses."
 edition.workspace = true
 rust-version.workspace = true
@@ -11,4 +11,4 @@ keywords = ["quo", "protocol", "encoding", "serialization"]
 categories = ["encoding", "cryptography"]
 
 [dependencies]
-quo-notation = { version = "0.0.0", path = "../notation" }
+quo-notation.workspace = true

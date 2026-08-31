@@ -1,6 +1,6 @@
 [package]
 name = "quo-arithmetic"
-version = "0.0.0"
+version.workspace = true
 description = "The arithmetic of Quo: the four algorithms of Article VI — Ed25519, X25519, SHA-256 and AES-256-GCM under HKDF-SHA-256 — and nothing else."
 edition.workspace = true
 rust-version.workspace = true

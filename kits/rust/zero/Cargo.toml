@@ -1,6 +1,6 @@
 [package]
 name = "quo-zero"
-version = "0.0.0"
+version.workspace = true
 description = "Distance zero: the Quo road with no wire — two houses in one process handing envelope bytes as bytes, judged in full."
 edition.workspace = true
 rust-version.workspace = true

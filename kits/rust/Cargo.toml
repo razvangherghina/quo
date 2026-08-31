@@ -14,6 +14,9 @@ members = [
 ]
 
 [workspace.package]
+# The nine published crates carry one version, stated here once. They are
+# released together, so a crate out of step is a mistake rather than a choice.
+version = "0.1.0"
 edition = "2021"
 rust-version = "1.88.0"
 license = "Apache-2.0"
@@ -24,3 +27,14 @@ ed25519-dalek = "2"
 hkdf = "0.12"
 sha2 = "0.10"
 x25519-dalek = { version = "2", features = ["static_secrets"] }
+
+# The kit's own crates. A published dependency needs a version as well as a
+# path, and stating both here keeps the number in one place.
+quo-arithmetic = { version = "0.1.0", path = "arithmetic" }
+quo-carriage = { version = "0.1.0", path = "carriage" }
+quo-envelope = { version = "0.1.0", path = "envelope" }
+quo-line = { version = "0.1.0", path = "line" }
+quo-notation = { version = "0.1.0", path = "notation" }
+quo-warden = { version = "0.1.0", path = "warden" }
+quo-wire = { version = "0.1.0", path = "wire" }
+quo-zero = { version = "0.1.0", path = "zero" }
