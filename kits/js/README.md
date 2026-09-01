@@ -80,6 +80,32 @@ undeclared end promises; a door with another appetite says so with `?cap=` on
 the road it publishes. `CAP`, `DEFAULT` and `UnderTheDefault` are exported
 beside `dial` and `listen`.
 
+The line has a second address form for the paths a bare socket cannot walk — a
+browser tab, an edge that passes only the web — and it changes nothing above the
+bytes: the same frames, carried as the binary messages of a WebSocket over TLS.
+
+```js
+import { dial, listen } from '@quo-systems/js/line-ws';
+
+// `tls` is the key and certificate this end terminates with. Handed none, the
+// server speaks plain HTTP and an edge in front of it does the TLS — then the
+// hint is the operator's to give, with `hint`.
+const door = await listen(warden, { clock, random, port: 8443, tls: { key, cert } });
+
+// `wss://host[:port][/path][?cap=N]`. The port absent means 443, and the path
+// is dialled exactly as given and never parsed, because one domain often fronts
+// many doors. `ws://` names nothing: in the clear the line is already `tcp://`.
+const line = await dial(guest, door.hint, { clock, random });
+```
+
+A message's bytes are one frame exactly as above, length then envelope, so
+everything said of frames, caps, silence and faults reads the same on either
+form. What the WebSocket adds — its handshake, its masking, its control frames —
+is the road's own plumbing below the line: pings are answered there and the line
+never learns one arrived. The dialling end takes `globalThis.WebSocket` wherever
+the platform has one, which is what makes this the tab's road, and falls back to
+the same framing over `node:tls` where it does not.
+
 The constitution names the line as a standard road, never a mandatory one: the
 common carriage stays the one every warden answers, and a warden that answers
 the line answers it exactly as written there or has not answered it at all.

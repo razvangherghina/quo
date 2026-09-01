@@ -265,10 +265,12 @@ func (g *ground) ask(r warden.Reach) ([]byte, int64, error) {
 	return g.w.Ask(draw(), r)
 }
 
+// hear is the line's frame sorter and not the caller's judgment: it says
+// whether a frame is an answer sealed to this end, and spends nothing. The
+// judgment — the door match and the awaiting record — is the warden's own
+// Hear, taken where the ask was made.
 func (g *ground) hear(message []byte) (envelope.Answer, error) {
-	g.mu.Lock()
-	defer g.mu.Unlock()
-	return g.w.Hear(g.w.PadlockSecret(), message)
+	return envelope.OpenAnswer(g.w.PadlockSecret(), message)
 }
 
 func (g *ground) roads(far [32]byte) ([]string, bool) {

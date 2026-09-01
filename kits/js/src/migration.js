@@ -7,7 +7,7 @@
 // `tell`, an ordinary ask in the other direction. Both are the Warden
 // blueprint's own fields, so no bytes are invented.
 import { commitment as commit } from './arithmetic.js';
-import { writeArgument } from './warden.js';
+import { ascending, writeArgument } from './warden.js';
 import { hex } from './bytes.js';
 
 // The rows that stand at one being: who must be told, and how to reach them —
@@ -23,6 +23,13 @@ export function peers(warden, beingPk) {
 // what travels is the being's state and its relations — cells, both records of
 // standings, and the replay record whole with them — the mark and the spent
 // numbers beneath it.
+//
+// Every list is ordered by the rule Article IX gives, and the order is derived
+// rather than chosen: `standings` by the voice's bytes, `relations` by the far
+// warden's, `beings` under a standing by their pk bytes, and `spent`
+// numerically — all ascending. A cargo crosses the wire, so two wardens packing
+// one being must produce one byte string, and a list read off a map in
+// whatever order it happens to yield differs from itself between two runs.
 export function pack(origin, beingPk) {
   const being = origin.beings.get(hex(beingPk));
   if (!being) return null;
@@ -30,26 +37,28 @@ export function pack(origin, beingPk) {
     being: being.heir.pk,
     digest: being.digest,
     cells: being.cells(),
-    standings: peers(origin, beingPk).map((row) => ({
-      voice: row.voice,
-      commitment: row.commitment,
-      // The name the heir commitment was minted under travels with the row.
-      // Without it a migrated standing could never verify an older commitment
-      // again: the destination would file every arriving one at its own name
-      // and refuse the rotation the holder is entitled to make.
-      name: row.name,
-      beings: [being.heir.pk],
-      mark: row.mark ?? 0n,
-      // The replay record travels whole: the mark and the spent numbers beneath
-      // it. A mark alone would make the new door either refuse everything at or
-      // below it — killing a caller with asks in flight — or honour it all,
-      // reopening what was spent.
-      spent: row.window(),
-      // The way back travels with the standing, or the destination could not
-      // send the second news to the peers that just arrived with it.
-      padlock: row.padlock,
-      hints: row.hints ?? [],
-    })),
+    standings: peers(origin, beingPk)
+      .map((row) => ({
+        voice: row.voice,
+        commitment: row.commitment,
+        // The name the heir commitment was minted under travels with the row.
+        // Without it a migrated standing could never verify an older commitment
+        // again: the destination would file every arriving one at its own name
+        // and refuse the rotation the holder is entitled to make.
+        name: row.name,
+        beings: [being.heir.pk],
+        mark: row.mark ?? 0n,
+        // The replay record travels whole: the mark and the spent numbers beneath
+        // it. A mark alone would make the new door either refuse everything at or
+        // below it — killing a caller with asks in flight — or honour it all,
+        // reopening what was spent.
+        spent: row.window(),
+        // The way back travels with the standing, or the destination could not
+        // send the second news to the peers that just arrived with it.
+        padlock: row.padlock,
+        hints: row.hints ?? [],
+      }))
+      .sort((a, b) => ascending(a.voice, b.voice)),
     // Its outbound record travels too. Nobody is owed news about this half —
     // the far doors know only a voice and have never heard of the being — but
     // a being that cannot reach them has lost everything it could do.
@@ -59,21 +68,24 @@ export function pack(origin, beingPk) {
     // would leave the heir secret at the origin — the one key that can take
     // the standing over, held by a door whose keys are all supposed to be
     // dead.
-    relations: origin.relationsOf(beingPk).map((row) => ({
-      warden: row.warden,
-      commitment: row.commitment,
-      padlock: row.padlock,
-      voice: row.voice.pk,
-      secret: row.voice.secret,
-      heir: row.heir.pk,
-      heirSecret: row.heir.secret,
-      seq: row.seq,
-      // The mark kept for that far warden's news, which is its own counter
-      // and never the one this door sends by. A relation that arrived without
-      // it would honour every number that peer had already spent.
-      news: row.marks.mark ?? 0n,
-      hints: row.hints ?? [],
-    })),
+    relations: origin
+      .relationsOf(beingPk)
+      .map((row) => ({
+        warden: row.warden,
+        commitment: row.commitment,
+        padlock: row.padlock,
+        voice: row.voice.pk,
+        secret: row.voice.secret,
+        heir: row.heir.pk,
+        heirSecret: row.heir.secret,
+        seq: row.seq,
+        // The mark kept for that far warden's news, which is its own counter
+        // and never the one this door sends by. A relation that arrived without
+        // it would honour every number that peer had already spent.
+        news: row.marks.mark ?? 0n,
+        hints: row.hints ?? [],
+      }))
+      .sort((a, b) => ascending(a.warden, b.warden)),
   };
 }
 

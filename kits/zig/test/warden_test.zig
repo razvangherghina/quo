@@ -10,6 +10,8 @@
 const std = @import("std");
 const arithmetic = @import("arithmetic");
 const envelope = @import("envelope");
+const notation = @import("notation");
+const wire = @import("wire");
 const warden = @import("warden");
 const warden_path = @import("vectors").warden_path;
 
@@ -382,6 +384,85 @@ test "IX — limit is the whole envelope as the carriage delivers it" {
     ground.door.limit = sealed.len;
     var verdict = try ground.door.judge(sealed);
     verdict.deinit();
+}
+
+// -------------------------------------------- VII, amending a standing
+
+test "VII — a standing is amended, not replaced: the warden widens it and narrows it" {
+    const gpa = std.testing.allocator;
+    var ground = try Ground.init(gpa);
+    defer ground.deinit();
+    try ground.admit();
+
+    // A second being of the ordinary class, standing but reached by nobody.
+    const other = try arithmetic.signingPair(@splat(8));
+    try ground.door.beings.append(gpa, .{
+        .pk = other.public,
+        .secret = other.secret,
+        .digest = ground.thing_digest,
+        .commitment = arithmetic.commitment(ground.door.name, other.public),
+        .text = "Thing\n  poke() int\n",
+    });
+
+    try std.testing.expect(!ground.door.mayReach(ground.voice.public, other.public));
+    try ground.door.widen(ground.voice.public, other.public);
+    try std.testing.expect(ground.door.mayReach(ground.voice.public, other.public));
+
+    // Nobody was told and no secret was minted: the same row, the same
+    // commitment, and the holder finds it on its next describe.
+    try std.testing.expectEqual(@as(usize, 1), ground.door.inbound.items.len);
+    try std.testing.expectEqualSlices(
+        u8,
+        &arithmetic.commitment(ground.door.name, ground.heir.public),
+        &ground.door.inbound.items[0].commitment,
+    );
+
+    try ground.door.narrow(ground.voice.public, other.public);
+    try std.testing.expect(!ground.door.mayReach(ground.voice.public, other.public));
+    try std.testing.expect(ground.door.mayReach(ground.voice.public, ground.thing));
+}
+
+test "VII — taking the last being away is release, and there is no separate act for it" {
+    const gpa = std.testing.allocator;
+    var ground = try Ground.init(gpa);
+    defer ground.deinit();
+    try ground.admit();
+
+    var arena = std.heap.ArenaAllocator.init(gpa);
+    defer arena.deinit();
+
+    try ground.door.narrow(ground.voice.public, ground.thing);
+    try std.testing.expectEqual(@as(usize, 0), ground.door.inbound.items.len);
+
+    // What is left is a stranger, whose estate is the public being alone.
+    const estate = try ground.door.estateFor(arena.allocator(), ground.voice.public);
+    try std.testing.expectEqual(@as(usize, 1), estate.classes.len);
+}
+
+test "VII — a voice that stands nowhere cannot be amended, and neither can a being that does not stand" {
+    const gpa = std.testing.allocator;
+    var ground = try Ground.init(gpa);
+    defer ground.deinit();
+
+    // A row conjured out of a widening would be a grant by another name.
+    const stranger = try arithmetic.signingPair(@splat(11));
+    try std.testing.expectError(
+        warden.Error.Refused,
+        ground.door.widen(stranger.public, ground.thing),
+    );
+    try std.testing.expectError(
+        warden.Error.Refused,
+        ground.door.narrow(stranger.public, ground.thing),
+    );
+
+    // A row may only ever name beings that stand here.
+    try ground.admit();
+    const nowhere: Key = @splat(0x99);
+    try std.testing.expectError(
+        warden.Error.Refused,
+        ground.door.widen(ground.voice.public, nowhere),
+    );
+    try std.testing.expectEqual(@as(usize, 1), ground.door.inbound.items[0].beings.items.len);
 }
 
 // ------------------------------------------------------------- X, the describe
@@ -1422,4 +1503,956 @@ test "XIV — hearing the news is what ends it" {
     }));
     defer second.deinit();
     try std.testing.expect(second.placement == .rotation);
+}
+
+// -------------------------------- the awaiting record, and a caller's numbers
+
+test "XII — an answer nothing awaits is silence, and hearing one spends the record" {
+    const gpa = std.testing.allocator;
+    var arena = std.heap.ArenaAllocator.init(gpa);
+    defer arena.deinit();
+    const a = arena.allocator();
+
+    var ground = try Ground.init(gpa);
+    defer ground.deinit();
+    try ground.admit();
+    var holder = try holding(gpa);
+    defer holder.deinit();
+
+    const at = try holder.remember(invitationOf(&ground));
+    const next = try arithmetic.signingPair(@splat(0x51));
+    const rotated, const seq = try holder.rotate(a, at, @splat(0x52), next.secret, .{});
+    try std.testing.expectEqual(@as(usize, 1), holder.outbound.items[at].awaiting.items.len);
+
+    var verdict = try ground.door.judge(rotated);
+    defer verdict.deinit();
+    const reply = try ground.door.answer(a, @splat(0x53), verdict.say, null);
+
+    var heard = try holder.hear(a, reply);
+    defer heard.deinit();
+    try std.testing.expectEqual(seq, heard.payload.answer.seq);
+    try std.testing.expectEqual(@as(usize, 0), holder.outbound.items[at].awaiting.items.len);
+
+    // The very same bytes: well-formed, well-signed, from the door that was
+    // asked, and silence, because nothing awaits them.
+    try std.testing.expectError(warden.Error.Refused, holder.hear(a, reply));
+}
+
+test "XII — an answer from a door this ask never went to is silence at the caller" {
+    const gpa = std.testing.allocator;
+    var arena = std.heap.ArenaAllocator.init(gpa);
+    defer arena.deinit();
+    const a = arena.allocator();
+
+    var ground = try Ground.init(gpa);
+    defer ground.deinit();
+    try ground.admit();
+    var holder = try holding(gpa);
+    defer holder.deinit();
+
+    // An ask that never went anywhere, so the caller awaits number one — and
+    // an answer signed by a house it holds no relation with, sealed to its own
+    // padlock so the envelope's own half reads it perfectly.
+    const at = try holder.remember(invitationOf(&ground));
+    const next = try arithmetic.signingPair(@splat(0x54));
+    _, const seq = try holder.rotate(a, at, @splat(0x55), next.secret, .{});
+
+    const stranger = try arithmetic.signingPair(@splat(0x56));
+    const forged = try envelope.seal(a, @splat(0x57), holder.padlock, stranger.secret, .{ .answer = .{
+        .warden = stranger.public,
+        .seq = seq,
+        .data = null,
+    } });
+
+    // It unseals here, it says `answer`, and its signature verifies against
+    // the warden its own record carries.
+    var opened = try envelope.open(a, holder.padlock_secret, .answer, forged);
+    defer opened.deinit();
+    try std.testing.expectEqual(seq, opened.payload.answer.seq);
+    // And it is silence, because that warden is nobody this ground asked.
+    try std.testing.expectError(warden.Error.Refused, holder.hear(a, forged));
+}
+
+test "XII — two asks whose answers could not be told apart: the second is not sent" {
+    const gpa = std.testing.allocator;
+    var arena = std.heap.ArenaAllocator.init(gpa);
+    defer arena.deinit();
+    const a = arena.allocator();
+
+    var ground = try Ground.init(gpa);
+    defer ground.deinit();
+    try ground.admit();
+    var holder = try holding(gpa);
+    defer holder.deinit();
+
+    const at = try holder.remember(invitationOf(&ground));
+    const first = try arithmetic.signingPair(@splat(0x58));
+    const second = try arithmetic.signingPair(@splat(0x59));
+    _, _ = try holder.rotate(a, at, @splat(0x5a), first.secret, .{ .seq = 1 });
+
+    // A rotation starts the far door's mark fresh, so a caller may open at one
+    // again — the same padlock, the same warden, the same number.
+    try std.testing.expectError(
+        warden.Error.Refused,
+        holder.rotate(a, at, @splat(0x5b), second.secret, .{ .seq = 1 }),
+    );
+
+    // Forgoing is the caller saying it has stopped waiting.
+    try std.testing.expect(holder.forgo(at, 1));
+    try std.testing.expect(!holder.forgo(at, 1));
+    _, _ = try holder.rotate(a, at, @splat(0x5b), second.secret, .{ .seq = 1 });
+}
+
+test "VIII — the caller's kit lets it open above one, and counts on from there" {
+    const gpa = std.testing.allocator;
+    var arena = std.heap.ArenaAllocator.init(gpa);
+    defer arena.deinit();
+    const a = arena.allocator();
+
+    var ground = try Ground.init(gpa);
+    defer ground.deinit();
+    try ground.admit();
+    var holder = try holding(gpa);
+    defer holder.deinit();
+
+    const at = try holder.remember(invitationOf(&ground));
+    const next = try arithmetic.signingPair(@splat(0x5c));
+    const rotated, const seq = try holder.rotate(a, at, @splat(0x5d), next.secret, .{ .seq = 4096 });
+    try std.testing.expectEqual(@as(i64, 4096), seq);
+
+    var verdict = try ground.door.judge(rotated);
+    defer verdict.deinit();
+    try std.testing.expect(verdict.placement == .rotation);
+
+    // And the row counts on from there, because per voice the number only
+    // rises. A number it has already spent is refused here rather than met
+    // with silence at the far door.
+    try std.testing.expectError(
+        warden.Error.Refused,
+        holder.ask(a, at, @splat(0x5e), .{ .seq = 4096 }),
+    );
+    _, const onward = try holder.ask(a, at, @splat(0x5f), .{});
+    try std.testing.expectEqual(@as(i64, 4097), onward);
+}
+
+test "IX — the published limit binds where there is no road at all" {
+    const gpa = std.testing.allocator;
+    var ground = try Ground.init(gpa);
+    defer ground.deinit();
+    try ground.admit();
+
+    // The one fact this law makes a warden publish about itself is the largest
+    // message it will accept, counted in bytes of the whole envelope. It binds
+    // on every road, distance zero included: a door that accepted locally what
+    // it refuses over the common carriage would have made its own published
+    // number false.
+    const letter = try ground.letter(.{ .voice_secret = ground.voice.secret });
+
+    // A byte over it is silence, and it is silence before anything is
+    // unsealed: the number is not spent and the way back is not refreshed,
+    // which the same envelope being honoured next is what proves.
+    ground.door.limit = letter.len - 1;
+    try std.testing.expectError(warden.Error.Refused, ground.door.judge(letter));
+    try std.testing.expectEqual(@as(i64, 0), ground.door.inbound.items[0].window.mark);
+
+    ground.door.limit = letter.len;
+    var verdict = try ground.door.judge(letter);
+    defer verdict.deinit();
+    try std.testing.expectEqual(@as(i64, 1), ground.door.inbound.items[0].window.mark);
+}
+
+// ------------------------------------------------------- XIV, believing news
+
+/// News arrives as an ordinary envelope carrying `tell(word)`. What comes back
+/// is the verdict, so a case can read the placement the belief was made under.
+fn told(ground: *Ground, secret: Key, seq: i64, word: warden.Word) !void {
+    const a = ground.arena.allocator();
+    const args = try warden.encodeWord(a, word);
+    var verdict = try ground.door.judge(try ground.letter(.{
+        .voice_secret = secret,
+        .seq = seq,
+        .method = .{ .name = "tell", .args = args },
+    }));
+    defer verdict.deinit();
+    var decoded = try warden.decodeWord(a, args);
+    defer decoded.deinit();
+    try ground.door.believe(verdict.placement, verdict.say.voice, decoded.word);
+}
+
+test "XIV — a name succession is believed by hashing the successor against the commitment" {
+    const gpa = std.testing.allocator;
+    var ground = try Ground.init(gpa);
+    defer ground.deinit();
+    try ground.relate();
+
+    // The peer holds the hash of the heir, so the successor signs and the peer
+    // hashes. The row moves whole: the name it now answers by, and the
+    // commitment that lets the next succession be believed.
+    try told(&ground, ground.heir.secret, 1, .{
+        .successor = ground.heir.public,
+        .commitment = @splat(0x44),
+        .padlock = @splat(0x33),
+        .hints = &.{"quic://moved"},
+    });
+    const row = ground.door.outbound.items[0];
+    try std.testing.expectEqualSlices(u8, &ground.heir.public, &row.warden);
+    try std.testing.expectEqualSlices(u8, &@as(Key, @splat(0x44)), &row.commitment);
+    try std.testing.expectEqualSlices(u8, &@as(Key, @splat(0x33)), &row.padlock);
+    try std.testing.expectEqual(@as(usize, 1), row.hints.len);
+    // A name succession keeps the mark: the house persisted and only its key
+    // changed, so numbers already spent stay spent.
+    try std.testing.expectEqual(@as(i64, 1), row.news.mark);
+}
+
+test "XIV — a succession the successor did not sign is silence" {
+    const gpa = std.testing.allocator;
+    var ground = try Ground.init(gpa);
+    defer ground.deinit();
+    try ground.relate();
+    const held = ground.door.outbound.items[0].warden;
+
+    // Signed by the heir that was committed, which is the right road, and
+    // naming somebody else as the successor, which is the wrong key. Believing
+    // it would let a committed heir hand this relation to a third party it
+    // chose.
+    try std.testing.expectError(warden.Error.Refused, told(&ground, ground.heir.secret, 1, .{
+        .successor = @splat(0x66),
+        .commitment = @splat(0x44),
+    }));
+    try std.testing.expectEqualSlices(u8, &held, &ground.door.outbound.items[0].warden);
+
+    // And a succession with no next commitment says nothing about what comes
+    // after it: fields that mean nothing in a case are absent, not filled, and
+    // a succession's do mean something.
+    try std.testing.expectError(warden.Error.Refused, told(&ground, ground.heir.secret, 2, .{
+        .successor = ground.heir.public,
+    }));
+    try std.testing.expectEqualSlices(u8, &held, &ground.door.outbound.items[0].warden);
+}
+
+test "XIV — a padlock replacement has exactly one signer, and it is the name" {
+    const gpa = std.testing.allocator;
+    var ground = try Ground.init(gpa);
+    defer ground.deinit();
+    try ground.relate();
+    const held = ground.door.outbound.items[0].padlock;
+
+    // A lock has no heir. A door that believed this from the committed heir
+    // would let that heir replace this house's lock at every peer before
+    // succeeding anything, and every message those peers sent next would be
+    // sealed to a lock the heir chose.
+    try std.testing.expectError(warden.Error.Refused, told(&ground, ground.heir.secret, 1, .{
+        .padlock = @splat(0x77),
+    }));
+    try std.testing.expectEqualSlices(u8, &held, &ground.door.outbound.items[0].padlock);
+
+    // The name signs the same word and it is believed.
+    try told(&ground, ground.far.secret, 2, .{ .padlock = @splat(0x77) });
+    try std.testing.expectEqualSlices(
+        u8,
+        &@as(Key, @splat(0x77)),
+        &ground.door.outbound.items[0].padlock,
+    );
+    // The mark continues, because a house that replaces its lock persists.
+    try std.testing.expectEqual(@as(i64, 2), ground.door.outbound.items[0].news.mark);
+}
+
+test "XIV — a word that says nothing, and one that says two things, are both silence" {
+    const gpa = std.testing.allocator;
+    var ground = try Ground.init(gpa);
+    defer ground.deinit();
+    try ground.relate();
+
+    // Neither a succession nor a replacement.
+    try std.testing.expectError(warden.Error.Refused, told(&ground, ground.far.secret, 1, .{
+        .hints = &.{"quic://nowhere"},
+    }));
+    // A commitment with no successor is half a succession, and half of one is
+    // none: the case is read off which fields are present.
+    try std.testing.expectError(warden.Error.Refused, told(&ground, ground.far.secret, 2, .{
+        .commitment = @splat(0x44),
+    }));
+    // The far warden's name and its public being are one key, so a word naming
+    // that pk as a being is a second spelling of the name's own succession —
+    // and a value with two spellings is two identities.
+    try std.testing.expectError(warden.Error.Refused, told(&ground, ground.heir.secret, 3, .{
+        .being = ground.far.public,
+        .successor = ground.heir.public,
+        .commitment = @splat(0x44),
+    }));
+}
+
+test "XIV — a being's succession is believed against that being's own commitment" {
+    const gpa = std.testing.allocator;
+    var ground = try Ground.init(gpa);
+    defer ground.deinit();
+    try ground.relate();
+
+    // A describe hands back a commitment per being, and a peer that means to
+    // believe that being's succession keeps it. The being's own heir is a
+    // third key, committed for that being alone.
+    const being = try arithmetic.signingPair(@splat(0x61));
+    const successor = try arithmetic.signingPair(@splat(0x62));
+    try ground.door.note(
+        0,
+        being.public,
+        arithmetic.commitment(ground.far.public, successor.public),
+    );
+    // The house's own name is not a being of it: its commitment is the row's,
+    // and a second copy under the beings would be a second place to believe
+    // one succession from.
+    try std.testing.expectError(
+        warden.Error.Refused,
+        ground.door.note(0, ground.far.public, @splat(0x44)),
+    );
+
+    // The house's committed heir announces the being's succession. It is a key
+    // this door holds and the wrong one for this act: believing it would let
+    // the house's heir succeed every being at that house.
+    try std.testing.expectError(warden.Error.Refused, told(&ground, ground.heir.secret, 1, .{
+        .being = being.public,
+        .successor = ground.heir.public,
+        .commitment = @splat(0x44),
+    }));
+    try std.testing.expectEqualSlices(
+        u8,
+        &being.public,
+        &ground.door.outbound.items[0].beings.items[0].being,
+    );
+
+    // The other direction is the more dangerous one: a being's committed heir
+    // announcing the house's own succession would take the whole relation,
+    // every other being at it included, on a commitment that was only ever
+    // about one being.
+    const was = ground.door.outbound.items[0].warden;
+    try std.testing.expectError(warden.Error.Refused, told(&ground, successor.secret, 2, .{
+        .successor = successor.public,
+        .commitment = @splat(0x55),
+    }));
+    try std.testing.expectEqualSlices(u8, &was, &ground.door.outbound.items[0].warden);
+
+    // The being's own committed heir announces it, and it is believed: the
+    // entry moves to the successor with the next commitment, and the row's own
+    // name and commitment are untouched.
+    const commitment = ground.door.outbound.items[0].commitment;
+    try told(&ground, successor.secret, 3, .{
+        .being = being.public,
+        .successor = successor.public,
+        .commitment = @splat(0x55),
+    });
+    const row = ground.door.outbound.items[0];
+    try std.testing.expectEqualSlices(u8, &successor.public, &row.beings.items[0].being);
+    try std.testing.expectEqualSlices(u8, &@as(Key, @splat(0x55)), &row.beings.items[0].commitment);
+    try std.testing.expectEqualSlices(u8, &was, &row.warden);
+    try std.testing.expectEqualSlices(u8, &commitment, &row.commitment);
+    // A being's succession starts the news mark fresh, exactly as a standing's
+    // rotation does: the house itself changed, and what comes next is believed
+    // by its commitment rather than by its number.
+    try std.testing.expectEqual(@as(i64, 0), row.news.mark);
+}
+
+test "XIV — a succession of a being this door never noted is not news at all" {
+    const gpa = std.testing.allocator;
+    var ground = try Ground.init(gpa);
+    defer ground.deinit();
+    try ground.relate();
+
+    // Its heir is a key found nowhere, so the message is a stranger's rather
+    // than news — and a stranger announces nothing, whatever its word says.
+    const a = ground.arena.allocator();
+    const stranger = try arithmetic.signingPair(@splat(0x63));
+    const args = try warden.encodeWord(a, .{
+        .being = @splat(0x61),
+        .successor = stranger.public,
+        .commitment = @splat(0x55),
+    });
+    try std.testing.expectError(warden.Error.Refused, ground.door.judge(try ground.letter(.{
+        .voice_secret = stranger.secret,
+        .method = .{ .name = "tell", .args = args },
+    })));
+
+    // The same voice placed nowhere reaches the stranger's own room, and the
+    // belief refuses on the placement rather than on the word: what a voice
+    // may announce is decided by where it was found, and a stranger was found
+    // nowhere.
+    var verdict = try ground.door.judge(try ground.letter(.{
+        .voice_secret = stranger.secret,
+        .seq = 2,
+    }));
+    defer verdict.deinit();
+    try std.testing.expect(verdict.placement == .stranger);
+    var decoded = try warden.decodeWord(a, args);
+    defer decoded.deinit();
+    try std.testing.expectError(
+        warden.Error.Refused,
+        ground.door.believe(verdict.placement, verdict.say.voice, decoded.word),
+    );
+}
+
+test "XIV — an empty hints list means the road did not change, never an erasure" {
+    const gpa = std.testing.allocator;
+    var ground = try Ground.init(gpa);
+    defer ground.deinit();
+    try ground.relate();
+    ground.door.outbound.items[0].hints = &.{"quic://one"};
+
+    try told(&ground, ground.far.secret, 1, .{ .padlock = @splat(0x77) });
+    try std.testing.expectEqual(@as(usize, 1), ground.door.outbound.items[0].hints.len);
+}
+
+test "XII — tell is news, and news is a tell, and neither is the other thing" {
+    const gpa = std.testing.allocator;
+    var ground = try Ground.init(gpa);
+    defer ground.deinit();
+    try ground.admit();
+    try ground.relate();
+    const a = ground.arena.allocator();
+    const args = try warden.encodeWord(a, .{ .padlock = @splat(0x77) });
+
+    // A caller holding an ordinary standing announces nothing: `tell` is news,
+    // and news is placed by the voice rather than declared by the message.
+    try std.testing.expectError(warden.Error.Refused, ground.door.judge(try ground.letter(.{
+        .voice_secret = ground.voice.secret,
+        .method = .{ .name = "tell", .args = args },
+    })));
+
+    // And a far warden reaching for anything else is silence too: news reaches
+    // the warden's own being, and the one field it may reach there is `tell`.
+    try std.testing.expectError(warden.Error.Refused, ground.door.judge(try ground.letter(.{
+        .voice_secret = ground.far.secret,
+        .seq = 2,
+        .method = .{ .name = "describe", .args = "" },
+    })));
+    // Including a being of this house it was never granted.
+    try std.testing.expectError(warden.Error.Refused, ground.door.judge(try ground.letter(.{
+        .voice_secret = ground.far.secret,
+        .seq = 3,
+        .being = ground.thing,
+        .method = .{ .name = "tell", .args = args },
+    })));
+}
+
+// --------------------------------------------- IX and XIII, taking a cargo
+
+fn aCargo(ground: *Ground, digest: Key) warden.Cargo {
+    return .{
+        .being = @splat(0x50),
+        .digest = digest,
+        .cells = "remembered",
+        .standings = &.{.{
+            .voice = @splat(0x70),
+            .commitment = @splat(0x71),
+            // The name that commitment was minted at, which is the origin's
+            // rather than this door's.
+            .name = @splat(0x73),
+            .beings = &.{@as(Key, @splat(0x50))},
+            .mark = 9,
+            .spent = &.{ 4, 6 },
+            .padlock = @splat(0x72),
+            .hints = &.{"quic://back"},
+        }},
+        .relations = &.{.{
+            .warden = ground.far.public,
+            .commitment = @splat(0x81),
+            .padlock = @splat(0x82),
+            .voice = @splat(0x83),
+            .secret = @splat(0x84),
+            .heir = @splat(0x85),
+            .heir_secret = @splat(0x86),
+            .seq = 12,
+            .news = 7,
+            .hints = &.{"quic://third"},
+        }},
+    };
+}
+
+/// The two keys a destination mints, and the class it is armed for.
+fn armFor(ground: *Ground) !Key {
+    return ground.door.arm(.{
+        .digest = ground.thing_digest,
+        .text = "Thing\n  poke() int\n",
+        .secret = @splat(0x40),
+        .heir_secret = @splat(0x41),
+    });
+}
+
+test "IX — receive answers the commitment of the being's new name" {
+    const gpa = std.testing.allocator;
+    var ground = try Ground.init(gpa);
+    defer ground.deinit();
+
+    // The commitment the arm hands back is the one the origin carries into the
+    // first news, and it is the same value `receive` answers: the hash of a key
+    // this door generated, which tells the origin nothing about the key.
+    const promised = try armFor(&ground);
+    const answered = try ground.door.receive(aCargo(&ground, ground.thing_digest));
+    try std.testing.expectEqualSlices(u8, &promised, &answered);
+
+    // A destination mints two keys — the one the being is named by here and
+    // that one's heir — and the commitment is of the first. A commitment to
+    // the heir instead names a key that signs nothing until the succession
+    // after this one, so the peer disbelieves the second news and is left
+    // standing at a house that has stopped answering.
+    const name = (try arithmetic.signingPair(@as(Key, @splat(0x40)))).public;
+    const heir = (try arithmetic.signingPair(@as(Key, @splat(0x41)))).public;
+    try std.testing.expectEqualSlices(
+        u8,
+        &arithmetic.commitment(ground.door.name, name),
+        &answered,
+    );
+    try std.testing.expect(
+        !std.mem.eql(u8, &arithmetic.commitment(ground.door.name, heir), &answered),
+    );
+
+    // The being wears that name here, holding its own heir commitment so it
+    // can be succeeded afterwards like any other.
+    const held = ground.door.being(name) orelse return error.TestUnexpectedResult;
+    try std.testing.expectEqualSlices(u8, &ground.thing_digest, &held.digest);
+    try std.testing.expectEqualSlices(
+        u8,
+        &arithmetic.commitment(ground.door.name, heir),
+        &held.commitment,
+    );
+    // The arm is spent: a claim held open twice is a door a being can be
+    // pushed into twice.
+    try std.testing.expectEqual(@as(usize, 0), ground.door.arms.items.len);
+}
+
+test "IX — the digest identifies rather than delivers" {
+    const gpa = std.testing.allocator;
+    var ground = try Ground.init(gpa);
+    defer ground.deinit();
+
+    // A destination that does not already hold that class refuses the cargo in
+    // silence, and there is nobody it may ask.
+    _ = try armFor(&ground);
+    try std.testing.expectError(
+        warden.Error.Refused,
+        ground.door.receive(aCargo(&ground, @splat(0x99))),
+    );
+    try std.testing.expectEqual(@as(usize, 2), ground.door.beings.items.len);
+    try std.testing.expectEqual(@as(usize, 1), ground.door.arms.items.len);
+
+    // And a receive minting the name the being already wore is no move at all.
+    const wearing = (try arithmetic.signingPair(@as(Key, @splat(0x40)))).public;
+    var same = aCargo(&ground, ground.thing_digest);
+    same.being = wearing;
+    try std.testing.expectError(warden.Error.Refused, ground.door.receive(same));
+    try std.testing.expectEqual(@as(usize, 1), ground.door.arms.items.len);
+}
+
+test "XIII — the records travel with the being, and the replay window whole" {
+    const gpa = std.testing.allocator;
+    var ground = try Ground.init(gpa);
+    defer ground.deinit();
+    _ = try armFor(&ground);
+    _ = try ground.door.receive(aCargo(&ground, ground.thing_digest));
+    const name = (try arithmetic.signingPair(@as(Key, @splat(0x40)))).public;
+
+    const row = &ground.door.inbound.items[0];
+    // The name each commitment was minted at travels with the row, so a
+    // standing that arrives still rotates at the name it was granted under
+    // rather than at this door's.
+    try std.testing.expectEqualSlices(u8, &@as(Key, @splat(0x73)), &row.minted_name);
+    try std.testing.expect(!std.mem.eql(u8, &row.minted_name, &ground.door.name));
+    // The way back travelled with the standing, so this door can speak first
+    // to a peer it has never been called by.
+    try std.testing.expectEqualSlices(u8, &@as(Key, @splat(0x72)), &row.padlock.?);
+
+    // **An arriving row reaches the being by the name this door minted and by
+    // that name alone**, never also by the name it wore before: a name a door
+    // must remember for whoever might still be behind is a name it can never
+    // stop remembering, and the peer that is behind is not stranded, because
+    // the old door still answers `moved`.
+    try std.testing.expectEqual(@as(usize, 1), row.beings.items.len);
+    try std.testing.expect(row.reaches(name));
+    try std.testing.expect(!row.reaches(@splat(0x50)));
+
+    // The replay record travels whole — the mark and the spent numbers beneath
+    // it — or a caller's late-arriving in-window numbers would be judged here
+    // by a window this door cannot see.
+    try std.testing.expectEqual(@as(i64, 9), row.window.mark);
+    try std.testing.expectError(warden.Error.Refused, row.window.spend(gpa, 4));
+    try std.testing.expectError(warden.Error.Refused, row.window.spend(gpa, 6));
+    try std.testing.expectError(warden.Error.Refused, row.window.spend(gpa, 9));
+    // And a mark that arrives is a number that was honoured, so it stays
+    // honoured once the mark moves off it.
+    try row.window.spend(gpa, 10);
+    try std.testing.expectError(warden.Error.Refused, row.window.spend(gpa, 9));
+
+    // The outbound record travels too, and nobody is owed news about it: the
+    // doors where the being holds a standing know only a voice and have never
+    // heard of the being at all. Both counters come with it, or a peer's
+    // numbers would all come round again at the new door.
+    const out = ground.door.outbound.items[0];
+    try std.testing.expectEqualSlices(u8, &ground.far.public, &out.warden);
+    try std.testing.expectEqualSlices(u8, &@as(Key, @splat(0x86)), &out.heir_secret);
+    try std.testing.expectEqual(@as(i64, 12), out.seq);
+    try std.testing.expectEqual(@as(i64, 7), out.news.mark);
+}
+
+test "XII — a door any stranger could push a being into is a door with no gate" {
+    const gpa = std.testing.allocator;
+    var ground = try Ground.init(gpa);
+    defer ground.deinit();
+    const a = ground.arena.allocator();
+    const promised = try armFor(&ground);
+    const cargo = try warden.encodeCargo(a, aCargo(&ground, ground.thing_digest));
+
+    // `receive` is an ordinary field spent by an ordinary standing, granted in
+    // advance the way anything is. Refused, it is silence like everything else.
+    try std.testing.expectError(warden.Error.Refused, ground.door.judge(try ground.letter(.{
+        .voice_secret = @splat(0x5a),
+        .method = .{ .name = "receive", .args = cargo },
+    })));
+
+    // The holder reaches it, and the warden spends the field itself.
+    try ground.admit();
+    var verdict = try ground.door.judge(try ground.letter(.{
+        .voice_secret = ground.voice.secret,
+        .method = .{ .name = "receive", .args = cargo },
+    }));
+    defer verdict.deinit();
+    try std.testing.expect(verdict.routing == .own);
+
+    var shapes = try notation.parse(a, warden.blueprint_text);
+    defer shapes.deinit();
+    const answered = (try ground.door.own(a, verdict)).?;
+    var minted = try wire.decode(a, "b32", shapes.records, answered);
+    defer minted.deinit();
+    try std.testing.expectEqualSlices(u8, &promised, &minted.value.b32);
+}
+
+test "XIII — the old door only points" {
+    const gpa = std.testing.allocator;
+    var ground = try Ground.init(gpa);
+    defer ground.deinit();
+    try ground.admit();
+
+    const word: warden.Word = .{
+        .being = ground.thing,
+        .successor = @splat(0x50),
+        .commitment = @splat(0x51),
+        .name = @splat(0x52),
+        .padlock = @splat(0x53),
+        .hints = &.{"quic://new"},
+    };
+    // The name need not be a being this door holds. **The new door points as
+    // well**, for the name the arriving being wore before, and that name is a
+    // being at no door any more — so a pointer for an unheld name becomes a
+    // row that answers `moved` and nothing else.
+    try ground.door.publish(@splat(0x5b), word);
+    try std.testing.expect(ground.door.being(@splat(0x5b)) != null);
+    try ground.door.publish(ground.thing, word);
+
+    // The one ask the old door answers about a being that left.
+    const pointed = try ground.door.movedFor(ground.voice.public, ground.thing);
+    try std.testing.expectEqualSlices(u8, &@as(Key, @splat(0x50)), &pointed.?.successor.?);
+
+    // A legal ask has a legal answer: nothing has moved, so `moved` answers
+    // absence rather than silence.
+    try std.testing.expectEqual(
+        @as(?warden.Word, null),
+        try ground.door.movedFor(ground.voice.public, ground.door.name),
+    );
+
+    // A stranger is answered nothing, as it is by every other describe: a door
+    // that pointed for anyone would be a door any passer-by could ask what it
+    // once ran.
+    try std.testing.expectError(
+        warden.Error.Refused,
+        ground.door.movedFor(null, ground.thing),
+    );
+
+    // And a pointer is reach enough for a holder, because an arriving row
+    // names the being by the destination's name alone — so after the move the
+    // name the being wore stands in no standing anywhere, and if the pointer
+    // were not reach the old door could not point about the one being every
+    // peer behind the news comes to ask it about.
+    ground.door.inbound.items[0].beings.clearRetainingCapacity();
+    const still = try ground.door.movedFor(ground.voice.public, ground.thing);
+    try std.testing.expectEqualSlices(u8, &@as(Key, @splat(0x50)), &still.?.successor.?);
+}
+
+test "IX — a cargo and a word go over the wire by the notation's own rules" {
+    const gpa = std.testing.allocator;
+    var ground = try Ground.init(gpa);
+    defer ground.deinit();
+    const a = ground.arena.allocator();
+
+    const sent = aCargo(&ground, ground.thing_digest);
+    const raw = try warden.encodeCargo(a, sent);
+    var decoded = try warden.decodeCargo(gpa, raw);
+    defer decoded.deinit();
+    const back = decoded.cargo;
+    try std.testing.expectEqualSlices(u8, &sent.being, &back.being);
+    try std.testing.expectEqualSlices(u8, &sent.digest, &back.digest);
+    try std.testing.expectEqualSlices(u8, sent.cells, back.cells);
+    try std.testing.expectEqual(@as(usize, 1), back.standings.len);
+    try std.testing.expectEqual(@as(i64, 9), back.standings[0].mark);
+    try std.testing.expectEqualSlices(i64, &.{ 4, 6 }, back.standings[0].spent);
+    try std.testing.expectEqualSlices(u8, &@as(Key, @splat(0x72)), &back.standings[0].padlock.?);
+    try std.testing.expectEqualSlices(u8, "quic://back", back.standings[0].hints[0]);
+    try std.testing.expectEqual(@as(usize, 1), back.relations.len);
+    // Two counters, because one field cannot be two counters.
+    try std.testing.expectEqual(@as(i64, 12), back.relations[0].seq);
+    try std.testing.expectEqual(@as(i64, 7), back.relations[0].news);
+
+    // And the bytes are the bytes: re-encoding what came back writes the same
+    // envelope, which is what makes a cargo a thing two kits can exchange.
+    const again = try warden.encodeCargo(a, back);
+    try std.testing.expectEqualSlices(u8, raw, again);
+}
+
+test "IX — every list in a cargo travels in the derived order, whatever order it was composed in" {
+    // A cargo crosses the wire, so two wardens packing one being must produce
+    // one byte string. The order is derived rather than chosen: standings by
+    // the voice's bytes, relations by the far warden's, beings under a standing
+    // by their pk bytes, and spent numerically — all ascending. A record kept
+    // in whatever order a map happens to yield is a record that differs from
+    // itself between two runs, and nothing could then compare, cache or
+    // re-derive it.
+    const gpa = std.testing.allocator;
+    var ground = try Ground.init(gpa);
+    defer ground.deinit();
+    const a = ground.arena.allocator();
+
+    const low: warden.Standing = .{
+        .voice = @splat(0x10),
+        .commitment = @splat(0x11),
+        .name = @splat(0x12),
+        .beings = &.{ @as(Key, @splat(0x20)), @as(Key, @splat(0x02)) },
+        .mark = 9,
+        .spent = &.{ 6, 4 },
+        .hints = &.{"quic://low"},
+    };
+    const high: warden.Standing = .{
+        .voice = @splat(0x90),
+        .commitment = @splat(0x91),
+        .name = @splat(0x92),
+        .beings = &.{@as(Key, @splat(0x03))},
+        .mark = 2,
+        .spent = &.{1},
+        .hints = &.{"quic://high"},
+    };
+    const near: warden.Relation = .{
+        .warden = @splat(0x30),
+        .commitment = @splat(0x31),
+        .padlock = @splat(0x32),
+        .voice = @splat(0x33),
+        .secret = @splat(0x34),
+        .heir = @splat(0x35),
+        .heir_secret = @splat(0x36),
+    };
+    const far: warden.Relation = .{
+        .warden = @splat(0xa0),
+        .commitment = @splat(0xa1),
+        .padlock = @splat(0xa2),
+        .voice = @splat(0xa3),
+        .secret = @splat(0xa4),
+        .heir = @splat(0xa5),
+        .heir_secret = @splat(0xa6),
+    };
+
+    const scrambled = try warden.encodeCargo(a, .{
+        .being = @splat(0x50),
+        .digest = ground.thing_digest,
+        .cells = "remembered",
+        .standings = &.{ high, low },
+        .relations = &.{ far, near },
+    });
+    const ordered = try warden.encodeCargo(a, .{
+        .being = @splat(0x50),
+        .digest = ground.thing_digest,
+        .cells = "remembered",
+        .standings = &.{ low, high },
+        .relations = &.{ near, far },
+    });
+    try std.testing.expectEqualSlices(u8, ordered, scrambled);
+
+    // And the order the bytes are in is the derived one, not merely a stable
+    // one: what comes back reads lowest first, at every level.
+    var decoded = try warden.decodeCargo(gpa, scrambled);
+    defer decoded.deinit();
+    const back = decoded.cargo;
+    try std.testing.expectEqualSlices(u8, &@as(Key, @splat(0x10)), &back.standings[0].voice);
+    try std.testing.expectEqualSlices(u8, &@as(Key, @splat(0x02)), &back.standings[0].beings[0]);
+    try std.testing.expectEqualSlices(i64, &.{ 4, 6 }, back.standings[0].spent);
+    try std.testing.expectEqualSlices(u8, &@as(Key, @splat(0x30)), &back.relations[0].warden);
+}
+
+// ------------------------------ XII-8, the warden answers its own fields
+
+/// Judge a letter and spend whatever the warden's own being was asked for.
+/// Nothing between the two is a host's: the point of these cases is that a
+/// caller reaching the door needs no knowledge of the Warden blueprint to be
+/// answered by it.
+fn ownAnswer(ground: *Ground, a: std.mem.Allocator, l: Ground.Letter) !?[]u8 {
+    var verdict = try ground.door.judge(try ground.letter(l));
+    defer verdict.deinit();
+    return ground.door.own(a, verdict);
+}
+
+test "IX — every field of the warden's own blueprint is answered by the warden itself" {
+    const gpa = std.testing.allocator;
+    var ground = try Ground.init(gpa);
+    defer ground.deinit();
+    try ground.admit();
+
+    var arena = std.heap.ArenaAllocator.init(gpa);
+    defer arena.deinit();
+    const a = arena.allocator();
+    var shapes = try notation.parse(a, warden.blueprint_text);
+    defer shapes.deinit();
+
+    const held = ground.voice.secret;
+    const being_arg = try wire.encode(a, "being", shapes.records, .{ .being = ground.thing });
+
+    // Every answer below is read back as the type the field declares, which
+    // is the whole of what the warden promised to write.
+    const described = (try ownAnswer(&ground, a, .{
+        .voice_secret = held,
+        .seq = 1,
+        .method = .{ .name = "describe", .args = "" },
+    })).?;
+    const estate = try warden.encodeEstate(a, try ground.door.estateFor(a, ground.voice.public));
+    try std.testing.expectEqualSlices(u8, estate, described);
+
+    const limit = (try ownAnswer(&ground, a, .{
+        .voice_secret = held,
+        .seq = 2,
+        .method = .{ .name = "limit", .args = "" },
+    })).?;
+    var read_limit = try wire.decode(a, "int", shapes.records, limit);
+    defer read_limit.deinit();
+    try std.testing.expectEqual(@as(i64, @intCast(ground.door.limit)), read_limit.value.integer);
+
+    const sketched = (try ownAnswer(&ground, a, .{
+        .voice_secret = held,
+        .seq = 3,
+        .method = .{ .name = "sketch", .args = being_arg },
+    })).?;
+    var read_sketch = try wire.decode(a, "sketch?", shapes.records, sketched);
+    defer read_sketch.deinit();
+    const fields = read_sketch.value.present.record;
+    try std.testing.expectEqualSlices(u8, &ground.thing, &fields[0].being);
+    try std.testing.expectEqualSlices(u8, &ground.thing_digest, &fields[1].b32);
+
+    const digest_arg = try wire.encode(a, "b32", shapes.records, .{ .b32 = ground.thing_digest });
+    const text = (try ownAnswer(&ground, a, .{
+        .voice_secret = held,
+        .seq = 4,
+        .method = .{ .name = "blueprint", .args = digest_arg },
+    })).?;
+    var read_text = try wire.decode(a, "text?", shapes.records, text);
+    defer read_text.deinit();
+    try std.testing.expectEqualStrings("Thing\n  poke() int\n", read_text.value.present.text);
+
+    // A legal ask has a legal answer: nothing has moved, so `moved` answers
+    // absence rather than silence.
+    const nowhere = (try ownAnswer(&ground, a, .{
+        .voice_secret = held,
+        .seq = 5,
+        .method = .{ .name = "moved", .args = being_arg },
+    })).?;
+    var read_nowhere = try wire.decode(a, "word?", shapes.records, nowhere);
+    defer read_nowhere.deinit();
+    try std.testing.expect(read_nowhere.value == .absent);
+
+    try ground.door.publish(ground.thing, .{ .being = ground.thing, .successor = @splat(0x44) });
+    const pointed = (try ownAnswer(&ground, a, .{
+        .voice_secret = held,
+        .seq = 6,
+        .method = .{ .name = "moved", .args = being_arg },
+    })).?;
+    var read_pointed = try wire.decode(a, "word?", shapes.records, pointed);
+    defer read_pointed.deinit();
+    const word = read_pointed.value.present.record;
+    try std.testing.expectEqualSlices(u8, &ground.thing, &word[0].present.being);
+    try std.testing.expectEqualSlices(u8, &@as(Key, @splat(0x44)), &word[1].present.b32);
+}
+
+test "IX — a name the warden's blueprint does not declare is silence" {
+    const gpa = std.testing.allocator;
+    var ground = try Ground.init(gpa);
+    defer ground.deinit();
+    try ground.admit();
+
+    var arena = std.heap.ArenaAllocator.init(gpa);
+    defer arena.deinit();
+    const a = arena.allocator();
+
+    // Anything the blueprint does not declare does not exist for the being it
+    // describes, and the warden's own being is no exception.
+    try std.testing.expectError(warden.Error.Refused, ownAnswer(&ground, a, .{
+        .voice_secret = ground.voice.secret,
+        .seq = 1,
+        .method = .{ .name = "poke", .args = "" },
+    }));
+
+    // Including a name that is a field of some other class this door holds.
+    try std.testing.expectError(warden.Error.Refused, ownAnswer(&ground, a, .{
+        .voice_secret = ground.voice.secret,
+        .seq = 2,
+        .being = ground.door.name,
+        .method = .{ .name = "poke", .args = "" },
+    }));
+
+    // A surplus byte to a field that takes none is refused everywhere.
+    try std.testing.expectError(warden.Error.Refused, ownAnswer(&ground, a, .{
+        .voice_secret = ground.voice.secret,
+        .seq = 3,
+        .method = .{ .name = "describe", .args = "\x00" },
+    }));
+}
+
+test "XII — step 8, the warden's own being answers to both of its addresses" {
+    const gpa = std.testing.allocator;
+    var ground = try Ground.init(gpa);
+    defer ground.deinit();
+    try ground.admit();
+
+    var arena = std.heap.ArenaAllocator.init(gpa);
+    defer arena.deinit();
+    const a = arena.allocator();
+
+    // Naming the public being is the ordinary form and omitting it the
+    // shortcut, so the two are one answer.
+    const shortcut = (try ownAnswer(&ground, a, .{
+        .voice_secret = ground.voice.secret,
+        .seq = 1,
+        .method = .{ .name = "limit", .args = "" },
+    })).?;
+    const named = (try ownAnswer(&ground, a, .{
+        .voice_secret = ground.voice.secret,
+        .seq = 2,
+        .being = ground.door.name,
+        .method = .{ .name = "limit", .args = "" },
+    })).?;
+    try std.testing.expectEqualSlices(u8, shortcut, named);
+}
+
+test "XIV — news is believed by the warden, and answers no bytes at all" {
+    const gpa = std.testing.allocator;
+    var ground = try Ground.init(gpa);
+    defer ground.deinit();
+    try ground.relate();
+
+    var arena = std.heap.ArenaAllocator.init(gpa);
+    defer arena.deinit();
+    const a = arena.allocator();
+
+    const args = try warden.encodeWord(a, .{ .padlock = @splat(0x77) });
+    // `tell` declares no answer, and a field that answers nothing answers
+    // nothing — not an absent optional, no bytes.
+    try std.testing.expectEqual(@as(?[]u8, null), try ownAnswer(&ground, a, .{
+        .voice_secret = ground.far.secret,
+        .seq = 1,
+        .method = .{ .name = "tell", .args = args },
+    }));
+    try std.testing.expectEqualSlices(
+        u8,
+        &@as(Key, @splat(0x77)),
+        &ground.door.outbound.items[0].padlock,
+    );
 }

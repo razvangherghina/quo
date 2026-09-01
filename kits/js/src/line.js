@@ -23,6 +23,12 @@
 //
 // This file names a host, so it lives behind its own export beside the door and
 // the portable barrel stays host-free.
+//
+// The line has a second address form — the same frames as the binary messages
+// of a WebSocket — and it lives in `line-ws.js` beside this one. Everything
+// above the bytes is the same line, so the body below (`hold`, and the cap
+// arithmetic it rests on) is exported and shared rather than written twice:
+// what differs between the two forms is only what carries a frame's bytes.
 import { createConnection, createServer } from 'node:net';
 import { ANSWER, concat, kindOf } from './envelope.js';
 import { readAnswer } from './warden.js';
@@ -81,7 +87,7 @@ function road(hint) {
 // the number on: a listener does, and so any cap it resolves is legal because
 // the hint will carry it. A dialler publishes nothing and therefore promises
 // the default, so anything under it is an end that does not offer the line.
-function capOf(warden, limit, declares) {
+export function capOf(warden, limit, declares) {
   const explicit = limit !== null && limit !== undefined && BigInt(limit) > 0n;
   let cap;
   if (explicit) cap = BigInt(limit);
@@ -103,7 +109,11 @@ function capOf(warden, limit, declares) {
 // `cap` is what this end accepts; `far` is what the road at the other end
 // promised, which is the default wherever nothing was declared — the dialling
 // half always.
-function hold(warden, socket, { clock, random, cap, far }) {
+// `socket` is anything that carries bytes the way a socket does: `write`,
+// `end`, `destroy`, and `data`/`end`/`close`/`error` events. A `node:net`
+// socket is one; the WebSocket carrier in `line-ws.js` is the other, and every
+// rule below reads the same over either, which is the point.
+export function hold(warden, socket, { clock, random, cap, far }) {
   // What this end is waiting to hear, keyed by the far warden and the number of
   // the ask. Both facts are the caller's own — it built the ask — and neither
   // travels outside a seal.
@@ -217,10 +227,12 @@ function hold(warden, socket, { clock, random, cap, far }) {
         send(envelope);
         return Promise.resolve(null);
       }
-      // One return padlock — this warden's own — one far warden and one number
-      // would make two answers indistinguishable, so the second ask is not
-      // sent while the first waits. Refusing here is the sender's own kit
-      // saying no; the ask never reaches the road.
+      // The road's own demultiplexer, keyed the way the core's awaiting record
+      // is: one return padlock — this warden's own — one far warden and one
+      // number. The judgment is the core's, in `Warden#hear`, and this map is
+      // only which promise a frame belongs to. It refuses a duplicate key for
+      // its own reason: a second waiter under one key would silently displace
+      // the first.
       const key = `${hex(expect.warden)}:${expect.seq}`;
       if (pending.has(key)) return Promise.resolve(null);
       send(envelope);

@@ -104,7 +104,7 @@ class Counter:
     def __init__(self) -> None:
         self.total = 0
 
-    def invoke(self, name: str, args: bytes) -> bytes:
+    def invoke(self, name: str, args: bytes, leash: warden.Leash) -> bytes:
         if name == "bump":
             # Bytes left after the declared arguments are the being's to
             # refuse, never the warden's.
@@ -301,7 +301,7 @@ class Pushing:
             road,
             row,
             "describe",
-            next_heir=arithmetic.signing_public(draw()),
+            next_heir=draw(),
         )
         if step is None:
             return
@@ -617,7 +617,7 @@ def speak(argv: list) -> int:
         row,
         "describe",
         hand=hand,
-        next_heir=arithmetic.signing_public(draw()),
+        next_heir=draw(),
     )
     if step is None:
         return 0  # the door answered silence, and it has already been reported

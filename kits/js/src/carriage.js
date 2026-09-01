@@ -33,17 +33,18 @@ export async function post(hint, envelope) {
 // one place this must not fail — so the load stays a runtime question, asked
 // once and answered by the platform.
 const LINE = './line.js';
-let picked;
+const LINE_WS = './line-ws.js';
+const picked = new Map();
 
-async function lineRoad() {
-  if (picked === undefined) {
+async function lineRoad(specifier) {
+  if (!picked.has(specifier)) {
     try {
-      picked = await import(LINE);
+      picked.set(specifier, await import(specifier));
     } catch {
-      picked = null;
+      picked.set(specifier, null);
     }
   }
-  return picked;
+  return picked.get(specifier);
 }
 
 // The lines a ground holds, one per road it has dialled, kept because the line
@@ -80,11 +81,18 @@ export async function reach(hints, envelope, over = null) {
   let last = null;
   for (const hint of hints) {
     try {
-      if (hint.startsWith('tcp://')) {
+      // `ws://` names nothing — in the clear the line is already `tcp://` — so
+      // a hint spelling it is not a road that failed, it is not a road. It is
+      // passed by in silence and never posted to.
+      if (hint.startsWith('ws://')) continue;
+      // The line's two address forms are one road above the bytes, so they are
+      // one branch here: which file carries it is the only difference.
+      const form = hint.startsWith('tcp://') ? LINE : hint.startsWith('wss://') ? LINE_WS : null;
+      if (form) {
         // A road this ground cannot speak is not a road that failed to carry:
         // nothing was sent, so it is not weather either. The caller moves on
         // exactly as it would past a hint it had never been offered.
-        const road = over && (await lineRoad());
+        const road = over && (await lineRoad(form));
         if (!road) continue;
         return await overLine(road, hint, envelope, over);
       }

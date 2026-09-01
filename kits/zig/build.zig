@@ -112,6 +112,25 @@ pub fn build(b: *std.Build) void {
     });
     b.installArtifact(subject);
 
+    // The conformance subject: the same kit answering a different contract —
+    // nine verbs over JSON lines rather than a road and a mode.
+    const conformance = b.addExecutable(.{
+        .name = "conformance",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("cmd/conformance/main.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{
+                .{ .name = "notation", .module = notation },
+                .{ .name = "arithmetic", .module = arithmetic },
+                .{ .name = "wire", .module = wire },
+                .{ .name = "envelope", .module = envelope },
+                .{ .name = "warden", .module = warden },
+            },
+        }),
+    });
+    b.installArtifact(conformance);
+
     // The suite asserts the separation rather than observing it, so it needs
     // to read the kit's own source.
     const sources = b.addOptions();
@@ -199,8 +218,27 @@ pub fn build(b: *std.Build) void {
             .imports = &.{
                 .{ .name = "arithmetic", .module = arithmetic },
                 .{ .name = "envelope", .module = envelope },
+                .{ .name = "notation", .module = notation },
+                .{ .name = "wire", .module = wire },
                 .{ .name = "warden", .module = warden },
                 .{ .name = "vectors", .module = vectors_module },
+            },
+        }),
+    });
+
+    // A being migrated away, end to end: three houses in one process, so the
+    // half a single door can never prove is proved here.
+    const migration_tests = b.addTest(.{
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("test/migration_test.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{
+                .{ .name = "arithmetic", .module = arithmetic },
+                .{ .name = "envelope", .module = envelope },
+                .{ .name = "notation", .module = notation },
+                .{ .name = "wire", .module = wire },
+                .{ .name = "warden", .module = warden },
             },
         }),
     });
@@ -252,7 +290,7 @@ pub fn build(b: *std.Build) void {
     });
 
     const test_step = b.step("test", "Run the kit's suite against the pinned corpus");
-    for ([_]*std.Build.Step.Compile{ tests, arithmetic_tests, wire_tests, envelope_tests, warden_tests, carriage_tests, line_tests, judgment_tests }) |suite| {
+    for ([_]*std.Build.Step.Compile{ tests, arithmetic_tests, wire_tests, envelope_tests, warden_tests, migration_tests, carriage_tests, line_tests, judgment_tests }) |suite| {
         const run = b.addRunArtifact(suite);
         run.has_side_effects = true;
         test_step.dependOn(&run.step);

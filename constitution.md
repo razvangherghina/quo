@@ -150,12 +150,15 @@ that never carried the bytes — a connection refused, a name that does
 not resolve — said neither of them: that is weather, not silence, and a
 kit reports it as the road's fault rather than inventing an empty body.
 **The carriage's bound is the warden's published `limit`** (Article IX);
-this road has no cap of its own. **Any meaning in the carriage would be
-meaning outside the seal, and there is none.** **HTTPS names HTTP's
-semantics, and the TLS in front of a door is its operator's** — relied
-on for no guarantee, and free to terminate ahead of the warden. A kit
-that cannot speak TLS refuses an `https://` hint rather than dialling in
-the clear.
+this road has no cap of its own. **The `limit` binds on every road,
+distance zero included** — it is a fact a warden publishes about itself
+rather than about a road, and a door that accepted locally what it
+refuses over the common carriage would have made its own published
+number false. **Any meaning in the carriage would be meaning outside the
+seal, and there is none.** **HTTPS names HTTP's semantics, and the TLS
+in front of a door is its operator's** — relied on for no guarantee, and
+free to terminate ahead of the warden. A kit that cannot speak TLS
+refuses an `https://` hint rather than dialling in the clear.
 
 Beside the common carriage, any private carriage two consenting grounds
 share binds only those two.
@@ -227,34 +230,67 @@ door may declare.
 
 **The line is dumb, not defenceless.** It negotiates nothing, keeps
 nothing alive and reconnects for no one; a dropped line is weather, and
-dialing again is the caller's affair. How an end guards its socket —
+dialing again is the caller's affair. Keeping nothing alive is the
+line's own discipline, not a muzzle on the road beneath it: a road's
+housekeeping — a carrier's ping, answered below the line — is the road's
+business, carries no meaning, and never reaches the judgment; a
+middlebox that reaps idle connections is why a road may need one, and a
+line held through such a road is cut or kept by the road's own care,
+which is still weather to the line. How an end guards its socket —
 reaping idle lines, bounding connections, bounding the asks it holds in
 flight, refusing a frame that arrives one byte a day — is delivery, each
 warden's own under Article II; the list is examples, never a licence,
 and a reaped line is the same weather as a dropped one. Only the
-listening end has a road to publish, and its hint is `tcp://host:port` —
-the host a literal address or a name, an IPv6 literal in brackets, the
-port always written — optionally followed by `?cap=` and the door's cap
-in decimal bytes, and nothing after that. **A hint is matched byte for
-byte as written** — case, leading zeros and all — because a hint is
-compared, republished as news and stored in a row, and two spellings of
-one road would be two roads. **A declared cap is a floor**, as `limit`
-is: a door may accept more than it promised, never less. A hint
-declaring a cap of zero or a port of zero names a door that can take
-nothing, and is no road at all. The dialing end is reachable down the
-lines it holds and publishes nothing; news for a peer that publishes
-nothing rides that peer's next line if its sender's delivery kept it,
-and news that finds no line is weather.
+listening end has a road to publish, and on this form its hint is
+`tcp://host:port` — the host a literal address or a name, an IPv6
+literal in brackets, the port always written — optionally followed by
+`?cap=` and the door's cap in decimal bytes, and nothing after that. **A
+hint is matched byte for byte as written** — case, leading zeros and all
+— because a hint is compared, republished as news and stored in a row,
+and two spellings of one road would be two roads. **A declared cap is a
+floor**, as `limit` is: a door may accept more than it promised, never
+less. A hint declaring a cap of zero or a port of zero names a door that
+can take nothing, and is no road at all. **A `?cap=` that does not parse
+is no road either** — a hint outside the grammar is not the hint this
+article describes, and a caller walks past it as it walks past a road it
+cannot speak, rather than guessing a default and sending frames on a
+guess. **A cap above the door's own `limit` is legal**: the cap bounds a
+frame and `limit` bounds an envelope, so such a door frames what its
+judgment then refuses. **Two hints differing only in cap are two
+roads**, by the byte-for-byte rule above and by nothing more — several
+roads may lead to one door. The dialing end is reachable down the lines
+it holds and publishes nothing; news for a peer that publishes nothing
+rides that peer's next line if its sender's delivery kept it, and news
+that finds no line is weather.
+
+**The line has a second address form: the same frames carried as the
+binary messages of a WebSocket over TLS.** It exists for the paths a
+bare socket cannot walk — a browser tab, an edge that passes only the
+web — and it changes no law above it: a message's bytes are one frame
+exactly as written above, length then envelope, so everything this
+article says of frames, caps, silence and faults reads the same on
+either form. What the WebSocket adds — its handshake, its masking, its
+control frames — is the road's own plumbing below the line, carrying no
+meaning, and a road that put meaning there would be a road putting
+meaning outside the seal, of which there is none. The hint is `wss://`
+then host and optional port — absent, the port is 443 — then an optional
+path, then the same optional `?cap=` and nothing after that: the path is
+the operator's affair, dialled exactly as given and never parsed,
+because a hint is opaque and one domain often fronts many doors. The TLS
+is the toll such paths charge, relied on for no guarantee as ever;
+**`ws://` names nothing** — in the clear the line is already `tcp://`,
+and a second cleartext spelling of one road would be two roads.
 
 **Consent is the road itself, and it gates nothing above the carriage.**
-Publishing the `tcp://` hint is the listener's consent; dialing is the
-dialer's. A door reached over the line owes every caller what any door
-owes, the stranger's case included — an allowlist on the socket is a
-second gate this law does not have. **And the line is a trade, named
-plainly:** the seal concedes nothing, but the road's observer reads what
-the common carriage's TLS hides — the size, count, direction and timing
-of every frame — and anyone on the path may cut the line at will. Both
-ends chose this road; choosing it is choosing that.
+Publishing the line's hint, in either form, is the listener's consent;
+dialing is the dialer's. A door reached over the line owes every caller
+what any door owes, the stranger's case included — an allowlist on the
+socket is a second gate this law does not have. **And the line is a
+trade, named plainly:** the seal concedes nothing, but on the `tcp://`
+form the road's observer reads what TLS elsewhere hides — the size,
+count, direction and timing of every frame — and on either form anyone
+on the path may cut the line at will. Both ends chose this road;
+choosing it is choosing that.
 
 **And at distance zero the carriage is a call — two houses in one device
 or one process handing envelope bytes as bytes — which is a private
@@ -281,11 +317,19 @@ reading of one this law permits.
 **There are several roads and none is authoritative, so choosing among
 them is the caller's whole job.** A warden offers as many as it has and
 ranks none; a caller takes the first it can speak that carried, and
-nothing above the carriage names which it took. **Which roads a caller
-can speak is its own platform's answer and nothing this law asks**: a
-kit finds it out rather than being configured with it, and a caller that
-had to be told is a caller whose ground was made to know something
-delivery already knew.
+nothing above the carriage names which it took. **A caller that met
+silence may try the next road it can speak, and does it by re-sending
+the identical envelope, never a fresh one** — the replay window is
+exactly what makes that safe, the far door either having spent that
+number already, in which case the resend meets silence and rightly, or
+not, in which case it is honoured once. A fresh envelope for one
+question is the unsafe act, because a message refused at routing or for
+its leash has still spent its number. Whether to try at all is delivery,
+and delivery is each warden's own. **Which roads a caller can speak is
+its own platform's answer and nothing this law asks**: a kit finds it
+out rather than being configured with it, and a caller that had to be
+told is a caller whose ground was made to know something delivery
+already knew.
 
 **A road a caller cannot speak is not a road that failed.** Nothing was
 sent down it, so no door spoke and no road broke: it is neither silence
@@ -527,7 +571,13 @@ the key** (Article VI). There is no separate secret token: handing out
 the heir is handing out a keypair, and an heir-seal signature is a
 signature by a key whose public half hashes — with the door's name — to
 the committed value. **Every rotation carries a fresh commitment**, or a
-standing could be taken over once and never again.
+standing could be taken over once and never again. **Freshness is the
+holder's duty and the door never checks it**: a door comparing the
+arriving commitment against the one it holds catches only the case of
+committing twice to the same key, and never the case of committing to an
+older one, which no door can see without keeping every commitment ever
+filed. A half-check tells an implementer it is protected where it is
+not.
 
 **A warden keeps two records, and they are not the same shape.**
 
@@ -655,16 +705,22 @@ already spent. Above the mark is honoured and moves the mark; inside the
 window is honoured once and never again; below the window is silence.
 **Honoured means the number is consumed, and nothing later gives it
 back** — a message refused at routing or for its leash has still spent
-it. **How wide the window is, is the warden's own.** Both facts survive
-a restart — and forward: a ground restored from an old backup has
-rewound its marks and re-opened every number spent since, which is a
-real event with a real consequence, and belongs on the list of things
-whoever operates a ground watches for.
+it. **How wide the window is, is the warden's own, and zero is a width**
+— a door that honours only strictly rising numbers keeps both facts and
+keeps its spent set always empty. No peer can tell a narrow window from
+a wide one, because a number below the window meets the same silence a
+lost message does. Both facts survive a restart — and forward: a ground
+restored from an old backup has rewound its marks and re-opened every
+number spent since, which is a real event with a real consequence, and
+belongs on the list of things whoever operates a ground watches for.
 
 **A walk carries its own leash, and the leash only shrinks.** The
 caller's allowance — a time budget and a hop count — rides the message,
 and every door hands onward less than it received, never more. No door
-beneath may widen it.
+beneath may widen it. **Where a door's own two readings yield a dwell
+below zero, the onward budget is the arriving one** — the rule that no
+door widens a leash is absolute, and a door's clock is never a peer's
+fault.
 
 - **The hop count falls by one at every door.**
 - **The time budget falls by each door's own dwell**: the difference
@@ -762,6 +818,16 @@ verify an older commitment again — and `relation.news`, the mark kept
 for that far warden's news, held apart from `seq`, the count of what
 this door sends, because one field cannot be two counters.
 
+**Every list in a cargo is ordered, and the order is derived rather than
+chosen**: `standings` by the voice's bytes ascending, `relations` by the
+far warden's bytes ascending, `beings` under a standing by their pk
+bytes ascending, and `spent` numerically ascending. This is Article X's
+rule for an estate, and it is here for the same reason: **a cargo
+crosses the wire, so two wardens packing one being must produce one byte
+string.** A record kept in whatever order a map happens to yield is a
+record that differs from itself between two runs of one kit, and nothing
+could then compare, cache or re-derive it.
+
 **The public being's pk is the warden's own name.** The key that names
 the house and the key that names the being the house speaks as are one
 key.
@@ -818,6 +884,14 @@ voice may not reach. An absent optional is a legal answer to a legal
 ask: nothing has moved, so `moved` answers absence. A door that answered
 "absent" about a being you do not reach would be a door confirming that
 being exists.
+
+**A being that has left is reached for `moved` by the succession the
+door published, and by nothing else** — to a holder who reached it
+before, never to a stranger. Otherwise Article XIII's own sentence would
+be false: the peer it sends to ask `moved` would meet silence, because
+after the move that name stands in no standing anywhere. The published
+succession is what a holder is owed, and it is the whole of what this
+answers.
 
 The describe caches, because a digest never changes meaning; and it
 verifies, because content-addressed text cannot be swapped by whoever
@@ -883,7 +957,13 @@ method
   nothing carried the step has no outcome and the standing could never
   change hands again. **News is not a rotation and does not use this
   field**; a succession announced as news carries its next commitment in
-  the `word`.
+  the `word`. **Those two are the only refusals, and everywhere else a
+  carried commitment is ignored rather than refused** — by news, and by
+  a voice this door has never met. They are the two cases where the
+  field has work to do and the work cannot be done; elsewhere it decides
+  nothing, and a door that refused news for it would meet a succession
+  with silence, which is the one message a house cannot afford to have
+  refused.
 - **The seq** is the number that only rises for this voice.
 - **The padlock and hints** are how to answer, and how to speak to this
   caller later.
@@ -896,7 +976,10 @@ method
   takes nothing. A method's blob is its arguments in declared order,
   each by the notation, concatenated. The warden never looks inside.
   **Bytes left in the blob after the declared arguments are refused, and
-  the refusal is the being's, never the warden's.**
+  the refusal is the being's, never the warden's** — so it reaches the
+  wire the way every answer of a being's does, as data of the field's
+  declared answer type, and never as silence. Silence is the door's
+  alone.
 
 **A call meets two layers, and only the first can be silent.** At the
 door the warden judges, and what it produces is silence or a call that
@@ -975,7 +1058,11 @@ silence and never says which step it was.**
 4. **Place the voice**, in the two records and in that order. Found as a
    current holder in the **inbound** record → an ask. Not found there,
    but its hash matches a standing's heir commitment → a **rotation**,
-   and the standing changes hands before anything else is judged: the pk
+   and the standing changes hands before anything else is judged.
+   **Matching more than one standing is silence** — no order over the
+   records is law, so any door choosing between them would choose
+   differently from the next, and a granter that committed one heir at
+   two standings has made its own error. Matching exactly one: the pk
    becomes the current holder, the carried commitment becomes the new
    heir, the old key dies, and nobody is told. Found in the **outbound**
    record — as a warden this door holds a relation with, or as the heir
@@ -1062,19 +1149,33 @@ caller asked for something else. A peer that never asks `moved` learns
 of the move by news. The old door never forwards a call and never acts
 on the being's behalf again.
 
+**The new door points as well.** A destination that has taken a being in
+answers `moved`, for the name that being wore before, with the word its
+own arrival composed — and meets a stranger asking it with the silence
+any unheld name meets. Neither door vouches for the other: each answers
+only with a succession it composed itself. Both point because the old
+door is what keeps a peer that missed the news from being stranded, and
+a migration is the one moment at which the old door may not be there at
+all.
+
 **Cells and both records of standings travel with the being** — the
 inbound one, so its peers keep their standing at it, and the outbound
-one, so it keeps its standing at theirs — **and the replay record whole:
-the mark and the spent numbers beneath it, the cargo's `spent [int]`**,
-or a caller's late-arriving in-window numbers would be judged at the new
-door by a window it cannot see. The outbound cargo carries, per row, the
-far warden, its heir commitment, the padlock, the voice's keys, the
-hints, the count kept against that far door, and the mark kept for its
-news — two counters, `seq` and `news`, one for what this door sends and
-one for what that warden announces, never one field doing both. **The
-voice's keys means both of them**, the current voice and the heir it
-committed to; the heir travels and the origin's copy dies with
-everything else.
+one, so it keeps its standing at theirs — **and an arriving inbound row
+reaches the being by the name the destination minted and by that name
+alone**, never also by the name the being wore before: a name a door
+must remember for whoever might still be behind is a name it can never
+stop remembering, and the peer that is behind is not stranded, because
+the old door still answers `moved` with the succession it published —
+**and the replay record whole: the mark and the spent numbers beneath
+it, the cargo's `spent [int]`**, or a caller's late-arriving in-window
+numbers would be judged at the new door by a window it cannot see. The
+outbound cargo carries, per row, the far warden, its heir commitment,
+the padlock, the voice's keys, the hints, the count kept against that
+far door, and the mark kept for its news — two counters, `seq` and
+`news`, one for what this door sends and one for what that warden
+announces, never one field doing both. **The voice's keys means both of
+them**, the current voice and the heir it committed to; the heir travels
+and the origin's copy dies with everything else.
 
 **Rotation is revocation, and only of a standing.** A thief who steals a
 current voice holds no preimage and can never succeed. **This says
@@ -1154,7 +1255,11 @@ destination generated, sent by the new house itself.
 
 **Believed news rewrites the outbound row entire** — name, padlock, heir
 commitment, hints, one for one off the word's own fields. **An empty
-hints list means the road did not change, never an erasure.**
+hints list means the road did not change, never an erasure.** **Nothing
+inbound follows**: an inbound row is keyed by a voice, and no voice's pk
+changes when a house succeeds its name — nor does the name a standing
+was minted under, which records this door's name at that moment and not
+the peer's.
 
 **A peer that is not there is not a problem.** News missed is news
 missed; the old door still answers `moved` with the succession it

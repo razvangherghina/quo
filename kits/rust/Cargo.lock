@@ -283,7 +283,7 @@ dependencies = [
 
 [[package]]
 name = "quo"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "quo-arithmetic",
  "quo-carriage",
@@ -297,7 +297,7 @@ dependencies = [
 
 [[package]]
 name = "quo-arithmetic"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "aes-gcm",
  "ed25519-dalek",
@@ -308,15 +308,25 @@ dependencies = [
 
 [[package]]
 name = "quo-carriage"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "quo-arithmetic",
  "quo-envelope",
 ]
 
 [[package]]
+name = "quo-conformance"
+version = "0.2.0"
+dependencies = [
+ "quo-arithmetic",
+ "quo-notation",
+ "quo-warden",
+ "quo-wire",
+]
+
+[[package]]
 name = "quo-envelope"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "quo-arithmetic",
  "quo-notation",
@@ -325,7 +335,7 @@ dependencies = [
 
 [[package]]
 name = "quo-line"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "quo-arithmetic",
  "quo-carriage",
@@ -336,14 +346,14 @@ dependencies = [
 
 [[package]]
 name = "quo-notation"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "sha2",
 ]
 
 [[package]]
 name = "quo-subject"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "quo-arithmetic",
  "quo-carriage",
@@ -357,7 +367,7 @@ dependencies = [
 
 [[package]]
 name = "quo-warden"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "quo-arithmetic",
  "quo-envelope",
@@ -367,14 +377,14 @@ dependencies = [
 
 [[package]]
 name = "quo-wire"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "quo-notation",
 ]
 
 [[package]]
 name = "quo-zero"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "quo-arithmetic",
  "quo-carriage",

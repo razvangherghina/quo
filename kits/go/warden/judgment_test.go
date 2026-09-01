@@ -3,6 +3,7 @@ package warden_test
 import (
 	"bytes"
 	"errors"
+	"strings"
 	"testing"
 
 	"quo.systems/kit/arithmetic"
@@ -18,6 +19,17 @@ import (
 const todoText = "ToDo\n  add(title text) text\n  count() int\n"
 
 type todo struct{ items []string }
+
+// todoFrom is what a house that welcomes this class does with a cargo: it makes
+// the being from the cells that travelled with it, which is the whole of what
+// the origin sent that is not identity or record.
+func todoFrom(cells []byte) (warden.Being, error) {
+	o := &todo{}
+	if len(cells) > 0 {
+		o.items = strings.Split(string(cells), "\n")
+	}
+	return o, nil
+}
 
 func (o *todo) Invoke(call warden.Call) ([]byte, error) {
 	switch call.Method {
@@ -57,12 +69,17 @@ type ground struct {
 
 func stand(t *testing.T) *ground {
 	t.Helper()
+	return standLimited(t, 1<<20)
+}
+
+func standLimited(t *testing.T, limit int64) *ground {
+	t.Helper()
 	clock := &tick{}
 	w, err := warden.New(warden.Founding{
 		NameSecret:     secret("name"),
 		HeirCommitment: arithmetic.Commit(arithmetic.SigningKey(secret("name")), arithmetic.SigningKey(secret("wardenHeir"))),
 		PadlockSecret:  secret("padlock"),
-		Limit:          1 << 20,
+		Limit:          limit,
 		Clock:          clock.read,
 	})
 	if err != nil {
@@ -70,6 +87,11 @@ func stand(t *testing.T) *ground {
 	}
 	being, err := w.Hold(todoText, &todo{}, warden.Keys{Secret: secret("being"), HeirSecret: secret("beingHeir")})
 	if err != nil {
+		t.Fatal(err)
+	}
+	// This house can make a being of that class, which is what lets a being of
+	// it migrate here at all.
+	if _, err := w.Welcome(todoText, todoFrom); err != nil {
 		t.Fatal(err)
 	}
 	returned, err := arithmetic.SealingKey(secret("returnPadlock"))
@@ -110,7 +132,7 @@ func (g *ground) judge(signer [32]byte, s envelope.Say) ([]byte, error) {
 	if err != nil {
 		g.t.Fatal(err)
 	}
-	return g.w.Judge(warden.Draws{Ephemeral: secret("answerEphemeral"), Heir: secret("receiveHeir")}, message)
+	return g.w.Judge(warden.Draws{Ephemeral: secret("answerEphemeral"), Being: secret("receiveBeing"), Heir: secret("receiveHeir")}, message)
 }
 
 // answer opens what came back and hands over the data the field answered.
@@ -606,11 +628,9 @@ func TestMovedAnswersAbsence(t *testing.T) {
 
 	successor := arithmetic.SigningKey(secret("successor"))
 	next := arithmetic.Commit(successor, successor)
-	if err := g.w.Publish(g.being, warden.Word{
+	g.w.Publish(g.being, warden.Word{
 		Being: &g.being, Successor: &successor, Commitment: &next, Hints: []string{"https://new.example"},
-	}); err != nil {
-		t.Fatal(err)
-	}
+	})
 	s = g.say(g.inv.Heir, 3)
 	s.Being = g.own()
 	s.Method = &envelope.Method{Name: warden.FieldMoved, Args: arg}
@@ -766,6 +786,70 @@ func TestNewsIsBelievedByAKeyAlreadyHeld(t *testing.T) {
 	if _, commitment, _, _, ok := peer.Relation(farHeir); !ok || commitment != next {
 		t.Fatal("a refused word moved the relation")
 	}
+
+	// The committed heir cannot replace the lock, though it is a key this peer
+	// holds and is placed as news by it. Article XIV gives this act exactly one
+	// signer — the name, which has not moved — and a door that believed any key
+	// it managed to place would let a house's heir replace that house's lock at
+	// every peer before succeeding anything, so every message those peers sent
+	// next would be sealed to a lock the heir chose. That is key substitution
+	// by a party the law deliberately gave no such power.
+	stolen, err := arithmetic.SealingKey(secret("heirsOwnLock"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	g.silent(tell(secret("farHeir2"), 5, warden.Word{Padlock: &stolen}))
+	if _, _, padlock, _, _ := peer.Relation(farHeir); padlock != lock2 {
+		t.Fatal("the committed heir replaced the house's lock at this peer")
+	}
+	// The name signs the same word and it is believed, so what refused the
+	// first is the signer and nothing else about the word.
+	if data := g.answer(tell(secret("farHeir"), 6, warden.Word{Padlock: &stolen})); data != nil {
+		t.Fatalf("tell answered %x where it answers nothing", data)
+	}
+	if _, _, padlock, _, _ := peer.Relation(farHeir); padlock != stolen {
+		t.Fatal("the name could not replace its own lock")
+	}
+
+	// Nor may the committed heir hand the relation to a third party: the
+	// successor signs and the peer hashes, so a word naming a successor the
+	// signer is not proves nothing about that key.
+	thief := arithmetic.SigningKey(secret("thiefName"))
+	theirs := arithmetic.Commit(thief, arithmetic.SigningKey(secret("thiefHeir")))
+	g.silent(tell(secret("farHeir2"), 7, warden.Word{
+		Successor: &thief, Commitment: &theirs, Name: &thief,
+	}))
+	if _, _, _, _, ok := peer.Relation(thief); ok {
+		t.Fatal("a key that never signed for it was handed the relation")
+	}
+	if _, commitment, _, _, ok := peer.Relation(farHeir); !ok || commitment != next {
+		t.Fatal("a refused word moved the relation")
+	}
+
+	// A commitment on the envelope is ignored rather than refused. Article XI
+	// names two refusals on that field — a plain ask carrying one, a rotation
+	// carrying none — and they are the only two: each has a mechanical reason
+	// in step 4, and neither reason exists for news, which places a voice by
+	// the outbound record and never reads the field. A door that refused it
+	// would meet a house that has succeeded with silence, and a house that has
+	// succeeded and is not believed is a house nobody can reach.
+	stray := arithmetic.Commit(farHeir, arithmetic.SigningKey(secret("stray")))
+	args, err = warden.EncodeWord(warden.Word{Padlock: &stolen})
+	if err != nil {
+		t.Fatal(err)
+	}
+	s = g.say(arithmetic.SigningKey(secret("farHeir")), 8)
+	s.Commitment = &stray
+	s.Being = g.own()
+	s.Method = &envelope.Method{Name: warden.FieldTell, Args: args}
+	if data := g.answer(g.judge(secret("farHeir"), s)); data != nil {
+		t.Fatalf("tell answered %x where it answers nothing", data)
+	}
+	// And the field decided nothing: the row's commitment is what the word
+	// last said, never what the envelope carried.
+	if _, commitment, _, _, ok := peer.Relation(farHeir); !ok || commitment != next {
+		t.Fatal("a commitment on a news envelope was read as a claim")
+	}
 }
 
 // TestABeingSuccessionNeedsItsOwnCommitment holds what the invitation does not
@@ -859,20 +943,51 @@ func TestReceiveNeedsTheOrdinaryGate(t *testing.T) {
 	s.Being = g.own()
 	s.Method = &envelope.Method{Name: warden.FieldReceive, Args: cargo}
 	data := g.answer(g.judge(g.inv.HeirSecret, s))
-	want := arithmetic.Commit(g.w.Name(), arithmetic.SigningKey(secret("receiveHeir")))
+	// A destination mints two keys — the one the being is named by here and
+	// that one's heir — and the commitment is of the first (Article IX). The
+	// being's new name is where the migration's second news moves the being's
+	// identity, and it is what the peer hashes that succession against; a
+	// commitment to the heir would name a key that signs nothing until the
+	// succession after this one, and the news would be disbelieved.
+	arrivedAs := arithmetic.SigningKey(secret("receiveBeing"))
+	want := arithmetic.Commit(g.w.Name(), arrivedAs)
 	if !bytes.Equal(data, want[:]) {
 		t.Fatalf("receive answered %x", data)
 	}
+	if heirs := arithmetic.Commit(g.w.Name(), arithmetic.SigningKey(secret("receiveHeir"))); bytes.Equal(data, heirs[:]) {
+		t.Fatal("receive answered the commitment of the new name's heir, not of the new name")
+	}
 
+	// The being wears the name this door minted for it, and the standings that
+	// travelled reach it there.
 	// The record travelled with the being, and the mark with it, so the number
 	// the follower had already spent does not come round again at the new door.
 	s = g.say(arithmetic.SigningKey(secret("follower")), 11)
-	s.Being = &arriving
+	s.Being = &arrivedAs
 	g.silent(g.judge(secret("follower"), s))
 
 	s = g.say(arithmetic.SigningKey(secret("follower")), 12)
-	s.Being = &arriving
+	s.Being = &arrivedAs
 	g.answer(g.judge(secret("follower"), s))
+
+	// And it does not come round once the mark has moved past it either. A
+	// mark that arrives in a cargo is a number that was honoured — that is
+	// what a mark is — so as the mark moves off it, it belongs in the window
+	// beneath as spent. A door that only moved the mark would honour eleven a
+	// second time here, which is Article XIII's own named harm arriving one
+	// call later than the article's example.
+	s = g.say(arithmetic.SigningKey(secret("follower")), 11)
+	s.Being = &arrivedAs
+	g.silent(g.judge(secret("follower"), s))
+
+	// **An arriving row reaches the being by the name this door minted and by
+	// that name alone** (Article XIII), never also by the name it wore before:
+	// a name a door must remember for whoever might still be behind is a name
+	// it can never stop remembering, and the peer that is behind is not
+	// stranded, because the old door still answers `moved`.
+	s = g.say(arithmetic.SigningKey(secret("follower")), 13)
+	s.Being = &arriving
+	g.silent(g.judge(secret("follower"), s))
 }
 
 // TestThePublicBeingsPkIsTheWardensOwnName holds the plain sentence: the
@@ -993,13 +1108,44 @@ func TestDistanceZeroWaivesNoStepOfTheJudgment(t *testing.T) {
 	}
 	bent := append([]byte(nil), message...)
 	bent[len(bent)-1] ^= 1
-	g.silent(g.w.Judge(warden.Draws{Ephemeral: secret("answerEphemeral"), Heir: secret("receiveHeir")}, bent))
+	g.silent(g.w.Judge(warden.Draws{Ephemeral: secret("answerEphemeral"), Being: secret("receiveBeing"), Heir: secret("receiveHeir")}, bent))
 
 	// A replayed envelope meets silence too: the same seq handed to the
 	// judge a second time, in the very process that spent it, is still
 	// spent.
 	g.answer(g.judge(g.inv.HeirSecret, g.say(g.inv.Heir, 4)))
 	g.silent(g.judge(g.inv.HeirSecret, g.say(g.inv.Heir, 4)))
+}
+
+// TestThePublishedLimitBindsWhereThereIsNoRoad holds that the one fact a warden
+// publishes about itself is judged by the warden. A door whose limit lived only
+// in its line would accept, over a road with no socket in it, exactly the
+// envelope it told every caller it would refuse.
+func TestThePublishedLimitBindsWhereThereIsNoRoad(t *testing.T) {
+	measure := standLimited(t, 1<<20)
+	measure.rotate(1)
+	s := measure.say(measure.inv.Heir, 2)
+	s.Being = measure.own()
+	s.Method = &envelope.Method{Name: warden.FieldLimit, Args: []byte{}}
+	message, err := envelope.SealSay(secret("ephemeral"), measure.w.Padlock(), measure.inv.HeirSecret, s)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	draws := warden.Draws{Ephemeral: secret("answerEphemeral"), Being: secret("receiveBeing"), Heir: secret("receiveHeir")}
+
+	// A byte over the limit is silence, and it is silence before the record is
+	// touched: the same envelope is honoured when the limit admits it, which
+	// it could not be had the refused one spent its number.
+	over := standLimited(t, int64(len(message))-1)
+	over.rotate(1)
+	over.silent(over.w.Judge(draws, message))
+
+	exact := standLimited(t, int64(len(message)))
+	exact.rotate(1)
+	if back, err := exact.w.Judge(draws, message); err != nil || back == nil {
+		t.Fatalf("the limit is inclusive, and this door refused its own largest message: %v", err)
+	}
 }
 
 func mustEstate(t *testing.T, data []byte) warden.Estate {

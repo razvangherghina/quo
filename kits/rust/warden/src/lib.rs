@@ -17,6 +17,8 @@
 
 pub mod shape;
 
+use std::collections::{BTreeMap, BTreeSet};
+
 use quo_arithmetic::commitment;
 use quo_envelope::{Answer, Message, Method, Say};
 use quo_wire::Value;
@@ -132,6 +134,29 @@ pub struct Outbound {
     /// The mark kept for that far warden's news — Article XIV.
     pub news: i64,
     pub hints: Vec<String>,
+    /// Which of this ground's beings may spend the relation. **A row that
+    /// named none could not travel when that being moves**, and a relation
+    /// nobody here owns belongs to the warden itself and travels nowhere.
+    pub holder: Option<[u8; KEY]>,
+    /// The commitment this door holds for each being it stands at down this
+    /// relation, taken from a describe and kept by `note`. **A being's
+    /// succession is believed against the being's own commitment, never the
+    /// row's**: the row's belongs to the house's name, and a door that hashed
+    /// one against the other would let the house's committed heir succeed
+    /// every being at it, or let a being's heir take the house.
+    ///
+    /// It does not travel. A `relation` record carries what the far door
+    /// knows about this holder, and what this door has learned about the
+    /// beings there is its own reading, re-taken from a describe.
+    pub beings: BTreeMap<[u8; KEY], [u8; KEY]>,
+    /// The asks put on a road down this relation with no answer heard yet,
+    /// each as the padlock the answer will be sealed to and the number the ask
+    /// spent. Article XII's fourth check on an answer reads it, so it belongs
+    /// in the core: the check is owed whether or not a socket was involved.
+    ///
+    /// It does not travel. A relation that migrates carries what the far door
+    /// knows; an ask still out was put on a road that ends at the old house.
+    pub awaiting: BTreeSet<([u8; KEY], i64)>,
 }
 
 impl Outbound {
@@ -148,8 +173,14 @@ impl Outbound {
             heir: relation.heir,
             heir_secret: relation.heir_secret,
             seq: relation.seq,
-            news: 0,
+            // The news mark travels too, or a peer's numbers would all come
+            // round again at the new door and every one of them be honoured
+            // a second time.
+            news: relation.news,
             hints: relation.hints.clone(),
+            holder: None,
+            beings: BTreeMap::new(),
+            awaiting: BTreeSet::new(),
         }
     }
 
@@ -180,8 +211,15 @@ pub enum Placement {
     /// The standing has already changed hands by the time this is returned.
     Rotation { standing: usize },
     /// Found in the outbound record, as a warden this door holds a relation
-    /// with or as the heir it committed.
-    News { relation: usize, by_heir: bool },
+    /// with or as an heir committed down it. `being` names which being's
+    /// commitment the voice hashed to, and is absent when it hashed to the
+    /// house's own — which is what says whose succession this voice may
+    /// announce.
+    News {
+        relation: usize,
+        by_heir: bool,
+        being: Option<[u8; KEY]>,
+    },
     /// Nowhere: a standing at nothing.
     Stranger,
 }
@@ -243,6 +281,22 @@ pub struct Warden {
     /// The successions this door published for beings that have moved. The
     /// old door only points.
     pub moved: Vec<([u8; KEY], Word)>,
+    /// What the last `receive` took in, until [`Warden::landed`] reads it.
+    pub arrived: Option<Arrived>,
+}
+
+/// What a `receive` leaves behind for the migration's second news: the name
+/// the being wore before, the name this door minted for it, and the voices
+/// that arrived with the standings.
+///
+/// **No key is here.** The two secrets `receive` mints were handed in by the
+/// caller, which still holds them, and this kit holds no key it was not
+/// founded with.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Arrived {
+    pub was: [u8; KEY],
+    pub being: [u8; KEY],
+    pub voices: Vec<[u8; KEY]>,
 }
 
 impl Warden {
@@ -273,6 +327,7 @@ impl Warden {
             inbound: Vec::new(),
             outbound: Vec::new(),
             moved: Vec::new(),
+            arrived: None,
         }
     }
 
@@ -291,6 +346,53 @@ impl Warden {
             .iter()
             .find(|row| &row.voice == voice)
             .is_some_and(|row| row.beings.contains(being))
+    }
+
+    // ---- Article VII, amending a standing ----------------------------
+
+    /// Widen a standing: the warden adds a being to a voice's row.
+    ///
+    /// **A standing is amended, not replaced** — nobody is told, no secret is
+    /// minted, and the holder finds it on its next describe.
+    ///
+    /// The warden is the actor, not the caller. A host reaching into the
+    /// record to add a being itself would be widening a standing without
+    /// asking the door, which is the ambient permission Quo refuses.
+    ///
+    /// Two refusals: a voice with no row here, because there is nothing to
+    /// amend and a row conjured from a widening would be a grant by another
+    /// name; and a being this door does not hold, because a row may only ever
+    /// name beings that stand.
+    pub fn widen(&mut self, voice: &[u8; KEY], being: &[u8; KEY]) -> Judged<()> {
+        if self.resident(being).is_none() {
+            return refuse("a being this door does not hold");
+        }
+        match self.inbound.iter_mut().find(|row| &row.voice == voice) {
+            None => refuse("a voice that stands nowhere here"),
+            Some(row) => {
+                if !row.beings.contains(being) {
+                    row.beings.push(*being);
+                }
+                Ok(())
+            }
+        }
+    }
+
+    /// Narrow a standing: the warden takes a being away.
+    ///
+    /// **Taking the last being away is release, and there is no separate act
+    /// for it.** The row goes, the holder is a stranger at its next call, and
+    /// nobody is told. Narrowing a being the row never named is no refusal —
+    /// the row already says what the narrowing asks for.
+    pub fn narrow(&mut self, voice: &[u8; KEY], being: &[u8; KEY]) -> Judged<()> {
+        let Some(at) = self.inbound.iter().position(|row| &row.voice == voice) else {
+            return refuse("a voice that stands nowhere here");
+        };
+        self.inbound[at].beings.retain(|held| held != being);
+        if self.inbound[at].beings.is_empty() {
+            self.inbound.remove(at);
+        }
+        Ok(())
     }
 
     // ---- Article X, the describe -------------------------------------
@@ -370,14 +472,22 @@ impl Warden {
     /// answered absent about a being you do not reach would be a door
     /// confirming that being exists.
     pub fn moved_for(&self, voice: &[u8; KEY], being: &[u8; KEY]) -> Judged<Option<Word>> {
-        if !self.reaches(voice, being) {
-            return refuse("a pointer for a being this voice may not reach");
-        }
-        Ok(self
+        let pointer = self
             .moved
             .iter()
             .find(|(moved, _)| moved == being)
-            .map(|(_, word)| word.clone()))
+            .map(|(_, word)| word.clone());
+        // A being this door has moved on is reached by the succession it
+        // published and by nothing else: an arriving row names the being by
+        // the name the destination minted and by that name alone, so the name
+        // it wore before stands in no standing here. If a published pointer
+        // were not reach enough, the old door could not point about the one
+        // being Article XIII sends every peer behind the news to ask it about.
+        let holder = self.inbound.iter().any(|row| &row.voice == voice);
+        if !self.reaches(voice, being) && !(pointer.is_some() && holder) {
+            return refuse("a pointer for a being this voice may not reach");
+        }
+        Ok(pointer)
     }
 
     // ---- Article XII, the judgment -----------------------------------
@@ -485,6 +595,7 @@ impl Warden {
             return Ok(Placement::News {
                 relation: at,
                 by_heir: false,
+                being: None,
             });
         }
         if let Some(at) = self
@@ -495,7 +606,25 @@ impl Warden {
             return Ok(Placement::News {
                 relation: at,
                 by_heir: true,
+                being: None,
             });
+        }
+        // Or as the heir a being at that house committed, which a describe
+        // published and `note` kept. Placed here rather than at the row,
+        // because what a voice may announce is decided by which commitment it
+        // hashed to.
+        for (at, row) in self.outbound.iter().enumerate() {
+            if let Some((being, _)) = row
+                .beings
+                .iter()
+                .find(|(_, held)| commitment(&row.warden, &say.voice) == **held)
+            {
+                return Ok(Placement::News {
+                    relation: at,
+                    by_heir: true,
+                    being: Some(*being),
+                });
+            }
         }
 
         // Nowhere: the stranger's case, which is a standing at nothing.
@@ -582,13 +711,14 @@ impl Warden {
     /// Step seven's answer, for everything the warden answers itself. A route
     /// to a being is not the warden's to answer and is refused here.
     ///
-    /// `mint` is the key `receive` commits to — the one the destination
-    /// minted and the origin never saw. Every draw is an argument in this
-    /// kit, and this is the only field that takes one.
+    /// `mint` is the two keys `receive` needs — the name the arriving being
+    /// takes here and that name's heir, both minted by the destination and
+    /// never seen by the origin. Every draw is an argument in this kit, and
+    /// this is the only field that takes one.
     pub fn answer(
         &mut self,
         verdict: &Verdict,
-        mint: Option<&[u8; KEY]>,
+        mint: Option<&[[u8; KEY]; 2]>,
     ) -> Judged<Option<Vec<u8>>> {
         let voice = verdict.say.voice;
         match &verdict.route {
@@ -613,7 +743,7 @@ impl Warden {
         &mut self,
         verdict: &Verdict,
         method: &Method,
-        mint: Option<&[u8; KEY]>,
+        mint: Option<&[[u8; KEY]; 2]>,
     ) -> Judged<Option<Vec<u8>>> {
         let voice = verdict.say.voice;
         let field = shape::field(&method.name)?;
@@ -651,18 +781,27 @@ impl Warden {
                     args.as_ref()
                         .ok_or_else(|| Refused("a tell with no word".to_string()))?,
                 )?;
-                self.believe(verdict.place, &word)?;
+                self.believe(verdict.place, &verdict.say.voice, &word)?;
                 shape::write_answer(field, None)
             }
             "receive" => {
+                // An ordinary field spent by an ordinary standing, granted in
+                // advance the way anything is: **a door any stranger could
+                // push a being into is a door with no gate** (Article IX).
+                if !matches!(
+                    verdict.place,
+                    Placement::Ask { .. } | Placement::Rotation { .. }
+                ) {
+                    return refuse("a receive spent by no standing at this door");
+                }
                 let cargo = shape::as_cargo(
                     args.as_ref()
                         .ok_or_else(|| Refused("a receive with no cargo".to_string()))?,
                 )?;
-                let Some(mint) = mint else {
-                    return refuse("a receive with no key minted for it");
+                let Some([being, heir]) = mint else {
+                    return refuse("a receive with no keys minted for it");
                 };
-                let answered = self.receive(&cargo, mint)?;
+                let answered = self.receive(&cargo, being, heir)?;
                 shape::write_answer(field, Some(Value::B32(answered)))
             }
             _ => refuse("a field the warden's blueprint does not declare"),
@@ -702,8 +841,13 @@ impl Warden {
     /// **Believed news rewrites the outbound row entire**, one for one off
     /// the word's own fields; an empty hints list means the road did not
     /// change, never an erasure.
-    pub fn believe(&mut self, place: Placement, word: &Word) -> Judged<()> {
-        let Placement::News { relation, by_heir } = place else {
+    pub fn believe(&mut self, place: Placement, voice: &[u8; KEY], word: &Word) -> Judged<()> {
+        let Placement::News {
+            relation,
+            by_heir,
+            being: hashed_to,
+        } = place
+        else {
             return refuse("a word from a voice that is not a peer this door holds");
         };
 
@@ -717,10 +861,24 @@ impl Warden {
             if !by_heir {
                 return refuse("a succession not signed by the heir that was committed");
             }
+            // The successor signs and the peer hashes. A word naming a
+            // successor the signer is not proves nothing about that key: it
+            // would let a committed heir hand this relation to a third party
+            // it chose.
+            if word.successor.as_ref() != Some(voice) {
+                return refuse("a succession the successor did not sign");
+            }
             if word.being == Some(self.outbound[relation].warden) {
                 // The name and the public being are one key, so this word
                 // would be a second spelling of the name's own succession.
                 return refuse("a word naming the announcing warden's own pk as a being");
+            }
+            // The commitment the voice hashed to is placed already, so it says
+            // what this voice may succeed and nothing else does: a being's
+            // heir cannot move the house's name, and the house's heir cannot
+            // move a being.
+            if word.being != hashed_to {
+                return refuse("a succession announced by an heir committed to something else");
             }
         } else {
             if word.padlock.is_none() {
@@ -732,14 +890,31 @@ impl Warden {
         }
 
         let row = &mut self.outbound[relation];
-        if let Some(successor) = word.successor {
-            row.warden = successor;
+        match word.being {
+            // A being's succession moves the being's own entry: the successor
+            // takes the name, and the next commitment is filed against it.
+            // The row's own commitment belongs to the house and is untouched.
+            Some(being) => {
+                row.beings.remove(&being);
+                if let (Some(successor), Some(next)) = (word.successor, word.commitment) {
+                    row.beings.insert(successor, next);
+                }
+            }
+            // The house's own: the name moves and the commitment with it.
+            None => {
+                if let Some(successor) = word.successor {
+                    row.warden = successor;
+                }
+                if let Some(next) = word.commitment {
+                    row.commitment = next;
+                }
+            }
         }
+        // Believed news rewrites the rest of the row entire, because the
+        // relation follows the being: where it now answers, and how it is
+        // reached.
         if let Some(name) = word.name {
             row.warden = name;
-        }
-        if let Some(next) = word.commitment {
-            row.commitment = next;
         }
         if let Some(padlock) = word.padlock {
             row.padlock = padlock;
@@ -759,30 +934,277 @@ impl Warden {
     /// delivers**: a destination that does not already hold that class
     /// refuses the cargo in silence, and there is nobody it may ask.
     ///
-    /// The answer is the commitment of the key the destination minted and the
-    /// origin never saw, hashed under the destination's own name.
-    pub fn receive(&mut self, cargo: &Cargo, minted_heir: &[u8; KEY]) -> Judged<[u8; KEY]> {
+    /// **A destination mints two keys — the one the being is named by here and
+    /// that one's heir — and the answer is the commitment of the first**
+    /// (Article IX), hashed under the destination's own name. The being's new
+    /// name is where the migration's second news moves the being's identity,
+    /// and it is what a peer hashes that succession against; a commitment to
+    /// the heir instead names a key that signs nothing until the succession
+    /// after this one, so the peer disbelieves the news and is left standing at
+    /// a house that has stopped answering.
+    pub fn receive(
+        &mut self,
+        cargo: &Cargo,
+        minted_being: &[u8; KEY],
+        minted_heir: &[u8; KEY],
+    ) -> Judged<[u8; KEY]> {
         let holds = self.blueprints.iter().any(|text| {
             quo_notation::digest(text).expect("a blueprint this door holds") == cargo.digest
         });
         if !holds {
             return refuse("a cargo of a class this door does not hold");
         }
-        let sealed = commitment(&self.name, minted_heir);
+        let name = quo_arithmetic::signing_pk(minted_being);
+        if name == cargo.being {
+            return refuse("a receive minting the name the being already wore");
+        }
         self.beings.retain(|held| held.being != cargo.being);
         self.beings.push(Resident {
-            being: cargo.being,
+            being: name,
             digest: cargo.digest,
-            commitment: sealed,
+            // The being's own heir commitment, which is what lets this name be
+            // succeeded afterwards like any other.
+            commitment: commitment(&self.name, &quo_arithmetic::signing_pk(minted_heir)),
             cells: cargo.cells.clone(),
         });
         // Cells and both records of standings travel with the being — the
         // replay record whole, the mark and the spent numbers beneath it.
-        self.inbound
-            .extend(cargo.standings.iter().map(Inbound::from_standing));
-        self.outbound
-            .extend(cargo.relations.iter().map(Outbound::from_relation));
-        Ok(sealed)
+        //
+        // **An arriving row reaches the being by the name this door minted and
+        // by that name alone** (Article XIII), never also by the name the being
+        // wore before: a name a door must remember for whoever might still be
+        // behind is a name it can never stop remembering, and the peer that is
+        // behind is not stranded, because the old door still answers `moved`.
+        self.inbound.extend(cargo.standings.iter().map(|one| {
+            let mut row = Inbound::from_standing(one);
+            row.beings = vec![name];
+            row
+        }));
+        self.outbound.extend(cargo.relations.iter().map(|relation| {
+            let mut row = Outbound::from_relation(relation);
+            row.holder = Some(name);
+            row
+        }));
+        self.arrived = Some(Arrived {
+            was: cargo.being,
+            being: name,
+            // A standing granted here after the being landed is owed nothing:
+            // it never knew the being anywhere else.
+            voices: cargo.standings.iter().map(|one| one.voice).collect(),
+        });
+        Ok(commitment(&self.name, &name))
+    }
+
+    // ---- Articles XIII and XIV, migrating a being away ---------------
+
+    /// The rows that stand at one being: **who must be told when that being
+    /// moves, and how to reach them**. The padlock and the roads are refreshed
+    /// by every call that arrives, so a row read here is the freshest way back
+    /// this door has.
+    ///
+    /// Ordered by the voice's bytes ascending, so a list of who is owed news
+    /// does not differ between two readings.
+    pub fn peers(&self, being: &[u8; KEY]) -> Vec<Peer> {
+        let mut out: Vec<Peer> = self
+            .inbound
+            .iter()
+            .filter(|row| row.beings.contains(being))
+            .map(|row| Peer {
+                voice: row.voice,
+                padlock: row.padlock,
+                hints: row.hints.clone(),
+            })
+            .collect();
+        out.sort_by_key(|peer| peer.voice);
+        out
+    }
+
+    /// Drop the relations a being holds outward, and say how many went. `at`
+    /// narrows it to one far warden, which is how a relation re-remembered at
+    /// a house supersedes the one it replaces; `None` drops them all, which is
+    /// what a being leaving takes with it.
+    pub fn forget(&mut self, being: &[u8; KEY], at: Option<&[u8; KEY]>) -> usize {
+        let before = self.outbound.len();
+        self.outbound.retain(|row| {
+            !(row.holder.as_ref() == Some(being) && at.is_none_or(|far| &row.warden == far))
+        });
+        before - self.outbound.len()
+    }
+
+    /// A migration's cargo, read off what this door holds for one being: its
+    /// class, its cells, and both records of standings — the inbound one so
+    /// its peers keep their standing at it, and the outbound one so it keeps
+    /// its standing at theirs.
+    ///
+    /// `heir` is the being's committed heir, handed in like every other key
+    /// this kit works with, and checked against the commitment this door
+    /// published for that being. **The cargo is packed under it**, because
+    /// migration is one message sent twice: the first moves the being's
+    /// identity to that heir, and the second moves it on to the key the
+    /// destination minted. A cargo packed under the name the being wears here
+    /// would leave the destination composing a succession of a name every peer
+    /// has already succeeded past.
+    ///
+    /// The lists are ordered where the bytes are made, by [`Cargo::value`].
+    pub fn pack(&self, being: &[u8; KEY], heir: &[u8; KEY]) -> Judged<Cargo> {
+        let Some(held) = self.resident(being) else {
+            return refuse("a being this door does not hold");
+        };
+        if commitment(&self.name, heir) != held.commitment {
+            return refuse("a key that is not the heir this being committed to");
+        }
+        let standings = self
+            .inbound
+            .iter()
+            .filter(|row| row.beings.contains(being))
+            .map(|row| {
+                let mut record = row.standing();
+                // Only the being that moves travels in the row, and under the
+                // name the cargo is packed under: what the voice reaches here
+                // besides it is this door's affair and stays.
+                record.beings = vec![*heir];
+                record
+            })
+            .collect();
+        let relations = self
+            .outbound
+            .iter()
+            .filter(|row| row.holder.as_ref() == Some(being))
+            .map(Outbound::relation)
+            .collect();
+        Ok(Cargo {
+            being: *heir,
+            digest: held.digest,
+            cells: held.cells.clone(),
+            standings,
+            relations,
+        })
+    }
+
+    /// The origin's half, after the cargo has landed. It publishes the
+    /// succession of the being's committed heir — **carrying as its next
+    /// commitment the one `receive` answered**, which is the one fact the
+    /// origin cannot invent — and stops acting on the being's behalf for good.
+    ///
+    /// The being itself goes: its cells are its own memory and they travelled,
+    /// and **after the double rotation every key the old warden held for it is
+    /// dead**, so a door that kept the resident would be keeping state it has
+    /// just announced it no longer holds. The standings stay, so a peer still
+    /// reaches this door and is pointed; the relations went with the cargo, so
+    /// this door can spend nothing on the being's behalf.
+    pub fn depart(&mut self, being: &[u8; KEY], departing: &Departing) -> Judged<Departed> {
+        let Some(held) = self.resident(being) else {
+            return refuse("a being this door does not hold");
+        };
+        // The peer believes the succession by hashing the successor against
+        // the commitment it holds, so a key this door never committed to would
+        // compose news nobody can believe.
+        if commitment(&self.name, &departing.heir) != held.commitment {
+            return refuse("a key that is not the heir this being committed to");
+        }
+        let word = Word {
+            being: Some(*being),
+            successor: Some(departing.heir),
+            commitment: Some(departing.commitment),
+            // Where it answers has changed, so the word says so, and the peer
+            // rewrites its row entire from it.
+            name: Some(departing.name),
+            padlock: Some(departing.padlock),
+            hints: departing.hints.clone(),
+        };
+        let told = self.peers(being);
+        self.forget(being, None);
+        self.beings.retain(|one| &one.being != being);
+        // The pointer stays and answers `moved` alone: every other ask meets
+        // silence, and a peer that never asks `moved` learns by the news.
+        self.moved.retain(|(gone, _)| gone != being);
+        self.moved.push((*being, word.clone()));
+        Ok(Departed { word, peers: told })
+    }
+
+    /// The destination's half, once a cargo has been taken in: the word the
+    /// second news carries, the name this door minted, and the peers that
+    /// arrived with the standings.
+    ///
+    /// The word is composed by the kit and not by the host — a house that had
+    /// to invent its own announcement would invent a different one at every
+    /// ground — and the roads are handed in, as they are for every other act
+    /// this kit composes, because a door does not know where it stands until
+    /// something stands it up.
+    ///
+    /// **The new door points as well** (Article XIII), for the name the being
+    /// wore before, so the word a peer hears and the word a peer gets by
+    /// asking are the identical bytes.
+    pub fn landed(&mut self, hints: &[String]) -> Judged<Landing> {
+        let Some(arrived) = self.arrived.clone() else {
+            return refuse("nothing has landed at this door");
+        };
+        let Some(held) = self.resident(&arrived.being) else {
+            return refuse("a being that landed here and is no longer held");
+        };
+        let word = Word {
+            being: Some(arrived.was),
+            successor: Some(arrived.being),
+            commitment: Some(held.commitment),
+            name: Some(self.name),
+            padlock: Some(self.padlock),
+            hints: hints.to_vec(),
+        };
+        self.moved.retain(|(gone, _)| gone != &arrived.was);
+        self.moved.push((arrived.was, word.clone()));
+        let told = self
+            .peers(&arrived.being)
+            .into_iter()
+            .filter(|peer| arrived.voices.contains(&peer.voice))
+            .collect();
+        Ok(Landing {
+            word,
+            being: arrived.being,
+            peers: told,
+        })
+    }
+
+    /// Compose one piece of news for one peer, and hand back the sealed bytes.
+    ///
+    /// It is an ordinary envelope judged at the peer's door by the same steps
+    /// as any ask. **What makes it news is only where its voice is found**: in
+    /// the peer's outbound record rather than its inbound one — so this names
+    /// no being, and the voice is whichever key the peer can believe the word
+    /// from, handed in rather than held.
+    ///
+    /// The recipient is the padlock. An inbound row keeps the padlock the peer
+    /// named and never that peer's warden name — a door never learns the house
+    /// behind a voice — and a padlock is per door, so it binds the message to
+    /// one door exactly as a name would.
+    pub fn news(&self, ephemeral_secret: &[u8; KEY], tell: &Tell) -> Judged<Vec<u8>> {
+        // A peer that has never spoken left no way back. It is reached by the
+        // only means left: it eventually asks, and this door points it.
+        let Some(padlock) = tell.peer.padlock else {
+            return refuse("a peer that left no way back");
+        };
+        spend_leash(&tell.allowance)?;
+        let args = shape::write_record("word", &tell.word.value())?;
+        let say = Say {
+            voice: quo_arithmetic::signing_pk(&tell.voice_secret),
+            recipient: padlock,
+            commitment: None,
+            seq: tell.seq,
+            padlock: self.padlock,
+            hints: tell.hints.clone(),
+            allowance: tell.allowance,
+            being: None,
+            method: Some(Method {
+                name: "tell".to_string(),
+                args,
+            }),
+        };
+        quo_envelope::seal(
+            &tell.voice_secret,
+            ephemeral_secret,
+            &padlock,
+            &Message::Say(say),
+        )
+        .map_err(|why| Refused(why.0))
     }
 
     // ---- Article XIV, the name's own succession ----------------------
@@ -837,8 +1259,42 @@ impl Warden {
             seq: 0,
             news: 0,
             hints: invitation.hints.clone(),
+            holder: None,
+            beings: BTreeMap::new(),
+            awaiting: BTreeSet::new(),
         });
         self.outbound.len() - 1
+    }
+
+    /// Say which of this ground's beings spends a relation. It is a separate
+    /// act because an invitation says nothing about who here will hold it, and
+    /// a row that named nobody could not travel when that being moves.
+    pub fn holds(&mut self, at: usize, being: [u8; KEY]) -> Judged<()> {
+        match self.outbound.get_mut(at) {
+            Some(row) => {
+                row.holder = Some(being);
+                Ok(())
+            }
+            None => refuse("a relation this door does not hold"),
+        }
+    }
+
+    /// Keep the commitment a describe published for one being at a far house.
+    /// A peer that means to believe that being's succession must keep it: the
+    /// news arrives signed by a key this door has never seen, and the hash
+    /// against this commitment is the only thing that recognises it.
+    pub fn note(&mut self, at: usize, being: [u8; KEY], commitment: [u8; KEY]) -> Judged<()> {
+        let Some(row) = self.outbound.get_mut(at) else {
+            return refuse("no relation at that index");
+        };
+        if being == row.warden {
+            // The house's name and its public being are one key, and its
+            // commitment is the row's own. A second copy under `beings` would
+            // be a second place to believe the same succession from.
+            return refuse("a note naming the far warden's own pk as a being");
+        }
+        row.beings.insert(being, commitment);
+        Ok(())
     }
 
     /// Compose one utterance to a far door. The number it spends comes back
@@ -877,19 +1333,40 @@ impl Warden {
         let Some(row) = self.outbound.get_mut(at) else {
             return refuse("a relation this door does not hold");
         };
-        row.seq += 1;
+        // A rotation starts the far door's mark fresh, so every number at or
+        // above one stands above it again; on an ordinary ask the floor is
+        // what this relation has already spent, because per voice the number
+        // only rises. Article VIII leaves which number a caller opens with,
+        // above one, to the caller — a kit that always counted from one would
+        // be keeping a choice the law gives away.
+        let floor = if reach.next.is_some() { 0 } else { row.seq };
+        let seq = match reach.seq {
+            None => row.seq + 1,
+            Some(chosen) if chosen > floor => chosen,
+            Some(_) => return refuse("a number this relation has already spent"),
+        };
+
+        // An answer is paired to its ask by the padlock, the warden and the
+        // seq, and by nothing else. Two asks out at once carrying the same
+        // three would be answered indistinguishably, so this kit refuses to
+        // send the second — the shape a rotation makes, because it starts the
+        // far door's mark fresh and brings a number round again.
+        let pending = (padlock, seq);
+        if row.awaiting.contains(&pending) {
+            return refuse("an ask on that number is already awaiting an answer");
+        }
+        row.seq = seq;
         let say = Say {
             voice: quo_arithmetic::signing_pk(signer_secret),
             recipient: row.warden,
             commitment: reach.next.map(|next| commitment(&row.warden, &next)),
-            seq: row.seq,
+            seq,
             padlock,
             hints: reach.hints.clone(),
             allowance: reach.allowance,
             being: reach.being,
             method: reach.method.clone(),
         };
-        let seq = row.seq;
         let sealed = quo_envelope::seal(
             signer_secret,
             ephemeral_secret,
@@ -897,6 +1374,9 @@ impl Warden {
             &Message::Say(say),
         )
         .map_err(|why| Refused(why.0))?;
+        // There is an envelope: the ask is out, and the caller keeps the
+        // record that its answer will be judged against.
+        row.awaiting.insert(pending);
         Ok((sealed, seq))
     }
 
@@ -938,12 +1418,34 @@ impl Warden {
     /// Open an answer sealed to this ground's own padlock, verified against
     /// the `warden` its own record carries and matched to the door that was
     /// asked — the two checks Article XII keeps separate.
-    pub fn hear(&self, at: usize, reply: &[u8]) -> Judged<Answer> {
-        let Some(row) = self.outbound.get(at) else {
+    /// **and matched to an ask this relation is actually awaiting** — the
+    /// fourth check, which is the caller's own bookkeeping: an ask must be
+    /// awaiting under that padlock, that warden and that seq. An answer
+    /// nothing awaits is the same silence as every other failure, and hearing
+    /// one spends the record, so the same bytes never answer twice.
+    pub fn hear(&mut self, at: usize, reply: &[u8]) -> Judged<Answer> {
+        let padlock = self.padlock;
+        let Some(row) = self.outbound.get_mut(at) else {
             return refuse("a relation this door does not hold");
         };
-        quo_envelope::read_answer(&self.padlock_secret, reply, &row.warden)
-            .map_err(|why| Refused(why.0))
+        let answer = quo_envelope::read_answer(&self.padlock_secret, reply, &row.warden)
+            .map_err(|why| Refused(why.0))?;
+        if !row.awaiting.remove(&(padlock, answer.seq)) {
+            return refuse("an answer nothing awaits");
+        }
+        Ok(answer)
+    }
+
+    /// Stop awaiting an ask whose answer will never come — a road that failed
+    /// to carry, or a caller that has stopped waiting. Nothing on the wire
+    /// changes: the number stays spent, because a message the far door judged
+    /// spent it there whatever this end does with its own record.
+    pub fn forgo(&mut self, at: usize, seq: i64) -> bool {
+        let padlock = self.padlock;
+        match self.outbound.get_mut(at) {
+            Some(row) => row.awaiting.remove(&(padlock, seq)),
+            None => false,
+        }
     }
 
     /// Accept an invitation, whole — Razvan's ruling, 2026-08-31.
@@ -976,9 +1478,14 @@ impl Warden {
             ..Reach::default()
         };
 
-        let (first, _) =
+        let (first, opening_seq) =
             self.rotate(at, &accepting.ephemeral[0], &accepting.voice_secret, &reach)?;
         let opening = send(&first);
+        // The opening is handed back sealed for the caller to judge, so this
+        // helper stops awaiting it: a record nothing will ever spend is a leak,
+        // and where the two rotations both open at one it is the thing that
+        // would make the second ask indistinguishable from the first.
+        self.forgo(at, opening_seq);
 
         let (second, seq) = self.rotate(
             at,
@@ -1006,6 +1513,65 @@ impl Warden {
     }
 }
 
+/// One row that stands at a being, read as the way back to whoever holds it.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Peer {
+    pub voice: [u8; KEY],
+    pub padlock: Option<[u8; KEY]>,
+    pub hints: Vec<String>,
+}
+
+/// What the origin's half of a migration needs, once the cargo has landed.
+#[derive(Debug, Clone)]
+pub struct Departing {
+    /// The being's committed heir, which signs the first news and is the
+    /// successor the peer hashes.
+    pub heir: [u8; KEY],
+    /// The commitment `receive` answered — **the one fact the origin cannot
+    /// invent**, because it is the hash of a key the destination generated.
+    pub commitment: [u8; KEY],
+    /// Where the being answers now.
+    pub name: [u8; KEY],
+    pub padlock: [u8; KEY],
+    pub hints: Vec<String>,
+}
+
+/// What the origin holds after departing: the word to send, and the peers
+/// owed it. The key that signs it is the heir the caller handed in.
+#[derive(Debug, Clone)]
+pub struct Departed {
+    pub word: Word,
+    pub peers: Vec<Peer>,
+}
+
+/// What the destination holds after a cargo has landed.
+#[derive(Debug, Clone)]
+pub struct Landing {
+    pub word: Word,
+    /// The name the arriving being wears here. The second news is signed by
+    /// it: the peer holds the hash of it from the first news, so it is the one
+    /// key the peer can believe that news from.
+    pub being: [u8; KEY],
+    pub peers: Vec<Peer>,
+}
+
+/// One piece of news this door composes for one peer.
+#[derive(Debug, Clone)]
+pub struct Tell {
+    pub peer: Peer,
+    /// Whichever key the peer can believe this word from. Article XIV gives
+    /// two roads and only two: the name, which has not moved, or a key the
+    /// peer holds the hash of.
+    pub voice_secret: [u8; KEY],
+    pub word: Word,
+    /// The number this news spends, against the mark the peer keeps for this
+    /// house — its own counter and never the one this door's callers spend, so
+    /// the sender names it.
+    pub seq: i64,
+    pub allowance: Allowance,
+    pub hints: Vec<String>,
+}
+
 /// What one utterance reaches for. `next` is the pk this ask commits to,
 /// present on a rotation and on nothing else.
 #[derive(Debug, Clone)]
@@ -1020,6 +1586,12 @@ pub struct Reach {
     /// The roads this ground publishes, which every say it composes carries.
     /// A ground that publishes none is reachable only down a line it opened.
     pub hints: Vec<String>,
+    /// The number to spend, when the caller wants to choose it. Article VIII
+    /// leaves that choice to the caller: a fresh mark is empty, so every
+    /// number at or above one stands above it, and no door may require a first
+    /// message to carry exactly one. `None` counts on from what the row last
+    /// spent, which is the ordinary case.
+    pub seq: Option<i64>,
 }
 
 impl Default for Reach {
@@ -1033,6 +1605,7 @@ impl Default for Reach {
                 hops: 8,
             },
             hints: Vec::new(),
+            seq: None,
         }
     }
 }

@@ -73,7 +73,7 @@ def a_warden(**kwargs) -> warden.Warden:
         pk=BEING_PK,
         digest=BEING_DIGEST,
         commitment=BEING_COMMITMENT,
-        invoke=lambda name, args: b"lit" if name == "lit" else None,
+        invoke=lambda name, args, leash: b"lit" if name == "lit" else None,
     )
     door.blueprints[BEING_DIGEST] = BEING_BLUEPRINT
     return door
@@ -495,11 +495,26 @@ class TheJudgment(unittest.TestCase):
         self.assertEqual(self.standing.hints, ("quic://one",))
 
     def test_ix_the_limit_is_counted_in_bytes_of_the_whole_envelope(self) -> None:
+        """And it binds on every road, distance zero included.
+
+        The limit is a fact a warden publishes about itself rather than about
+        a road, so a door that accepted locally what it refuses over the common
+        carriage would have made its own published number false. Neither
+        envelope here ever met a socket.
+        """
         message = say(self.door)
         door = a_warden(limit=len(message) - 1)
         door.grant(VOICE, arithmetic.commitment(door.name, HEIR), [BEING_PK])
         with self.assertRaises(warden.Silence):
             door.judge(message)
+
+        # One byte more and the same envelope is honoured: the limit is
+        # inclusive, and the refused one spent nothing on its way out, because
+        # an envelope beyond the bound is not accepted and so is not judged.
+        door = a_warden(limit=len(message))
+        row = door.grant(VOICE, arithmetic.commitment(door.name, HEIR), [BEING_PK])
+        door.judge(message)
+        self.assertEqual(row.mark, 1)
 
 
 class TheDescribe(unittest.TestCase):
@@ -736,6 +751,28 @@ class TheNews(unittest.TestCase):
         self.assertEqual(self.relation.padlock, new_padlock)
         self.assertEqual(self.relation.warden, FAR_NAME)
 
+    def test_xiv_a_padlock_replacement_the_committed_heir_signed_is_silence(
+        self,
+    ) -> None:
+        """Article XIV gives this act exactly one signer, and the heir is not it.
+
+        The far house's committed heir is a key this peer holds and is placed
+        as news by it — the second of the two roads of belief, and the wrong
+        road for this act. A door that believed any key it managed to place
+        would let a house's heir replace that house's lock at every peer
+        before it had succeeded anything, and every message those peers sent
+        next would be sealed to a lock the heir chose.
+        """
+        held = self.relation.padlock
+        stolen = arithmetic.sealing_public(seed(14))
+        with self.assertRaises(warden.Silence):
+            self.tell(FAR_HEIR_SECRET, self.word(padlock=stolen))
+        self.assertEqual(self.relation.padlock, held)
+        # The name signs the same word and it is believed, so what refused the
+        # first is the signer and nothing else about the word.
+        self.tell(FAR_NAME_SECRET, self.word(padlock=stolen), seq=2)
+        self.assertEqual(self.relation.padlock, stolen)
+
     def test_xiv_a_lock_has_no_heir_so_a_padlock_word_carries_no_commitment(
         self,
     ) -> None:
@@ -810,16 +847,38 @@ class TheNews(unittest.TestCase):
         self.assertEqual(self.relation.news, 7)
 
     def test_xiv_a_beings_succession_starts_the_news_mark_fresh(self) -> None:
+        # A being's succession is believed against the being's own commitment,
+        # which a describe published and `note` keeps — never the row's, which
+        # belongs to the house's name.
+        self.door.note(self.relation, BEING_PK, arithmetic.commitment(FAR_NAME, OTHER))
         self.tell(
-            FAR_HEIR_SECRET,
+            OTHER_SECRET,
             self.word(
                 being=BEING_PK,
-                successor=FAR_HEIR,
+                successor=OTHER,
                 commitment=arithmetic.digest(b"n"),
             ),
             seq=7,
         )
         self.assertEqual(self.relation.news, 0)
+
+    def test_xiv_a_beings_succession_the_houses_heir_announced_is_silence(self) -> None:
+        """The commitment the voice hashed to says what it may succeed.
+
+        The far house's own committed heir is placed as news, and a door that
+        believed any key it managed to place would let that heir succeed every
+        being at the house — or, the other way, let a being's heir take the
+        house's name.
+        """
+        with self.assertRaises(warden.Silence):
+            self.tell(
+                FAR_HEIR_SECRET,
+                self.word(
+                    being=BEING_PK,
+                    successor=FAR_HEIR,
+                    commitment=arithmetic.digest(b"n"),
+                ),
+            )
 
     def test_xiv_the_news_mark_and_the_send_count_are_two_counters(self) -> None:
         """ "the mark kept for that far warden's news, split from ``seq``, the
@@ -870,7 +929,13 @@ class Migration(unittest.TestCase):
     """Articles IX and XIII: receive, and the door that only points."""
 
     def setUp(self) -> None:
+        # The mint walks a fixed list rather than handing one key out over and
+        # over: a receive draws two, and a door whose draws are all the same
+        # key cannot tell the two apart — which is how a kit committing to the
+        # wrong one of them stays green.
+        self.drawn = [seed(byte) for byte in (40, 41, 42, 43, 44, 45)]
         self.door = a_warden()
+        self.door.mint = lambda: self.drawn.pop(0)
         self.standing = self.door.grant(
             VOICE, arithmetic.commitment(self.door.name, HEIR), [BEING_PK]
         )
@@ -901,9 +966,17 @@ class Migration(unittest.TestCase):
             warden.WARDEN_RECORDS,
         )
 
-    def test_ix_receive_answers_a_commitment_under_the_destinations_own_name(
+    def test_ix_receive_answers_the_commitment_of_the_beings_new_name(
         self,
     ) -> None:
+        """A destination mints two keys, and the commitment is of the first.
+
+        The being's new name is where the migration's second news moves the
+        being's identity, and it is what a peer hashes that succession against.
+        A commitment to that name's heir instead names a key that signs nothing
+        until the succession after this one, so the news is disbelieved and the
+        peer is left standing at a house that has stopped answering.
+        """
         judgment = self.door.judge(
             say(self.door, call=method("receive", self.cargo(BEING_DIGEST)))
         )
@@ -912,8 +985,26 @@ class Migration(unittest.TestCase):
             opened(judgment.answer)["data"],
             warden.WARDEN_RECORDS,
         )
-        heir = arithmetic.signing_public(EPHEMERAL)
-        self.assertEqual(answered, arithmetic.commitment(self.door.name, heir))
+        name = arithmetic.signing_public(seed(40))
+        heir = arithmetic.signing_public(seed(41))
+        self.assertEqual(answered, arithmetic.commitment(self.door.name, name))
+        self.assertNotEqual(answered, arithmetic.commitment(self.door.name, heir))
+
+        # The being wears that name here, holding its own heir commitment so it
+        # can be succeeded afterwards like any other.
+        self.assertIn(name, self.door.beings)
+        self.assertEqual(
+            self.door.beings[name].commitment,
+            arithmetic.commitment(self.door.name, heir),
+        )
+        # An arriving row reaches the being by the name this door minted and by
+        # that name alone (Article XIII), never also by the name it wore
+        # before: a name a door must remember for whoever might still be behind
+        # is a name it can never stop remembering, and the peer that is behind
+        # is not stranded, because the old door still answers `moved`.
+        arrived = [row for row in self.door.inbound if row is not self.standing][0]
+        self.assertEqual(list(arrived.beings), [name])
+        self.assertNotIn(OTHER, arrived.beings)
 
     def test_ix_a_destination_that_does_not_hold_that_class_refuses_in_silence(
         self,
@@ -934,6 +1025,16 @@ class Migration(unittest.TestCase):
         arrived = [row for row in self.door.inbound if row is not self.standing][0]
         self.assertEqual(arrived.mark, 9)
         self.assertEqual(arrived.spent, {4, 7})
+
+        # A mark that arrives in a cargo is a number that was honoured — that
+        # is what a mark is — so as the mark moves past it, it belongs in the
+        # window beneath as spent. A door that only moved the mark would honour
+        # nine a second time here.
+        with self.assertRaises(warden.Silence):
+            warden.spend_seq(arrived.mark, arrived.spent, 9, 64)
+        mark, spent = warden.spend_seq(arrived.mark, arrived.spent, 10, 64)
+        with self.assertRaises(warden.Silence):
+            warden.spend_seq(mark, spent, 9, 64)
 
     def test_xiii_the_old_door_only_points(self) -> None:
         moved = {
@@ -962,6 +1063,46 @@ class Migration(unittest.TestCase):
             ),
             moved,
         )
+
+    def test_xiii_a_published_pointer_is_reach_enough_and_a_stranger_gets_none(
+        self,
+    ) -> None:
+        """`moved` is scoped like every describe, and a pointer is scope.
+
+        An arriving row names the being by the name the destination minted and
+        by that name alone, so the name it wore before stands in no standing
+        anywhere. If a published pointer were not reach enough, a door could
+        not point about the one being Article XIII sends every peer behind the
+        news to ask it about — and the peer that is behind would be stranded,
+        which is the case the article says cannot arise.
+        """
+        moved = {
+            "being": OTHER,
+            "successor": BEING_PK,
+            "commitment": arithmetic.digest(b"n"),
+            "name": None,
+            "padlock": None,
+            "hints": [],
+        }
+        self.door.pointers[OTHER] = moved
+        # OTHER stands in no standing at this door, and the holder is answered
+        # anyway, because the pointer is what it is being asked for.
+        self.assertNotIn(OTHER, self.standing.beings)
+        judgment = self.door.judge(say(self.door, call=method("moved", OTHER)))
+        self.assertEqual(
+            wire.decode(
+                MAYBE_WORD, opened(judgment.answer)["data"], warden.WARDEN_RECORDS
+            ),
+            moved,
+        )
+
+        # A stranger holds no standing, so it is answered nothing — a door that
+        # pointed for anyone would be a door any passer-by could ask what it
+        # once ran.
+        stranger = a_warden()
+        stranger.pointers[OTHER] = moved
+        with self.assertRaises(warden.Silence):
+            stranger.judge(say(stranger, call=method("moved", OTHER)))
 
     def test_x_moved_answers_the_succession_the_door_published(self) -> None:
         moved = {
@@ -1221,12 +1362,17 @@ class Accepting(unittest.TestCase):
         row = self.holder.stand(self.invitation)
         voice_secret = seed(40)
         voice = arithmetic.signing_public(voice_secret)
-        first, _ = self.holder.ask(row, seed(41), next_heir=voice)
+        first, _ = self.holder.ask(row, seed(41), next_heir=voice_secret)
         self.send(first)
-        row.voice, row.secret = voice, voice_secret
+        # The row moved with the rotation: it stands on the key that signed and
+        # keeps the secret behind the one it committed to, so the caller does
+        # no bookkeeping of its own between the two acts.
+        self.assertEqual(row.voice, self.invitation.heir)
+        self.assertEqual(row.heir, voice)
         heir = arithmetic.signing_public(seed(42))
-        second, _ = self.holder.ask(row, seed(43), next_heir=heir)
+        second, _ = self.holder.ask(row, seed(43), next_heir=seed(42))
         self.send(second)
+        self.assertEqual(row.voice, voice)
 
         standing = self.granter.inbound[0]
         self.assertEqual(standing.voice, voice)

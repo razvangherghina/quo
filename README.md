@@ -108,8 +108,16 @@ is named as open.
 The vector corpus every kit is judged against is in
 [`kits/js/vectors`](https://github.com/razvangherghina/quo/tree/main/kits/js/vectors),
 one JSON file per article it pins. A sixth implementation in a sixth language
-can read those files and prove it agrees on the bytes. A corpus pins bytes and
-cannot pin judgment, so two kits crossing at real work is what finds the rest.
+can read those files and prove it agrees on the bytes.
+
+**A corpus pins bytes and cannot pin a judgment**, which is why there is a
+second instrument. The conformance lane drives one scenario file through every
+kit with the clock and the randomness handed in, and pins both the envelope
+bytes and the warden's resulting record — so a kit that decides differently is
+caught, not merely found to be consistent with itself. Every article of the
+law is accounted for there: driven by a case, or named with the reason it
+cannot be. It runs against these five kits today; a sixth implements a small
+contract of verbs and is driven by the same scenarios.
 
 ## Licence and ownership
 

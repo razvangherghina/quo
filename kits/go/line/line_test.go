@@ -86,9 +86,7 @@ func door(w *warden.Warden, label string) line.Door {
 			return reply
 		},
 		Hear: func(message []byte) (envelope.Answer, error) {
-			mu.Lock()
-			defer mu.Unlock()
-			return w.Hear(w.PadlockSecret(), message)
+			return envelope.OpenAnswer(w.PadlockSecret(), message)
 		},
 		Limit: w.Limit(),
 	}

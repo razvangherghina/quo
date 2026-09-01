@@ -74,6 +74,12 @@ type Door struct {
 	// Hear opens an arriving frame as an answer sealed to this end, under the
 	// padlock secret the asks from this end named. The error is the ordinary
 	// "this was not an answer to me", which is most frames.
+	//
+	// It tells the two records apart and nothing more, so it is
+	// envelope.OpenAnswer and never the warden's own Hear: judging an answer
+	// spends the awaiting record the caller keeps for it, and a road that
+	// spent it while sorting frames would leave nothing for the caller to
+	// judge. The road demultiplexes; the caller judges.
 	Hear func(message []byte) (envelope.Answer, error)
 
 	// Limit is the frame cap this end accepts: the number the host gave, else

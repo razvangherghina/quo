@@ -61,6 +61,21 @@ type outbound struct {
 	// keep it could not believe that being's succession.
 	beings map[[32]byte][32]byte
 	label  string
+	// awaiting is the asks this ground has put on a road down this relation
+	// and has not yet heard an answer to. Article XII's fourth check on an
+	// answer is that one is awaiting under that padlock, that warden and that
+	// seq, so the caller keeps the record that check reads.
+	awaiting map[await]bool
+}
+
+// await is one ask still out: the number it spent and the padlock it told the
+// far door to seal the answer to. The warden is the row it hangs on. Two asks
+// carrying the same three are two asks whose answers cannot be told apart,
+// which is what a caller's own kit refuses to send — and a rotation, which
+// starts the far door's mark fresh, is how a number comes round again.
+type await struct {
+	seq     int64
+	padlock [32]byte
 }
 
 // record is the pair of records a warden keeps. They are not the same shape.
@@ -126,6 +141,14 @@ func spend(mark *int64, spent map[int64]bool, window, seq int64) error {
 	}
 	spent[seq] = true
 	if seq > *mark {
+		// The number the mark held is honoured — that is what a mark is — and
+		// must stay honoured as the mark moves off it. Ordinarily it is in the
+		// set already, because it was spent through here; a mark that arrived
+		// in a cargo never was, and a mark that simply moved would leave that
+		// number free to be honoured a second time.
+		if was := *mark; was >= 1 {
+			spent[was] = true
+		}
 		*mark = seq
 		forget(spent, *mark, window)
 	}

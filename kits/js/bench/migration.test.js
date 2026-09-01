@@ -294,8 +294,17 @@ test('the state transfer lands: cells, digest and the standings travel', async (
   const { destination, dock, taken, cargo } = await walk();
   // `receive` answers the commitment of the key the destination minted, hashed
   // under its own name — never a bare yes.
+  // A destination mints two keys — the one the being is named by here and that
+  // one's heir — and the commitment is of the first. The being's new name is
+  // where the second news moves the being's identity, and it is what a peer
+  // hashes that succession against; a commitment to the heir instead names a
+  // key that signs nothing until the succession after this one, so the news is
+  // disbelieved and the peer is left standing at a house that stopped
+  // answering.
   const landedPk = (await signingPair(fixed(40))).pk;
+  const landedHeir = (await signingPair(fixed(41))).pk;
   assert.equal(hex(taken), hex(await commitment(destination.name.pk, landedPk)));
+  assert.notEqual(hex(taken), hex(await commitment(destination.name.pk, landedHeir)));
   // Only data moves: the blueprint was reproduced at the far end from its
   // digest, and the cells arrived whole.
   assert.deepEqual(dock.landing.lines, ['milk', 'bread']);
@@ -310,6 +319,27 @@ test('the state transfer lands: cells, digest and the standings travel', async (
     assert.ok(row.beings.has(hex(landedPk)));
     assert.equal(hex(row.padlock), hex(one.padlock));
     assert.deepEqual(row.hints, one.hints);
+  }
+});
+
+// Article XIII: an arriving inbound row reaches the being by the name the
+// destination minted and by that name alone. A name a door must remember for
+// whoever might still be behind is a name it can never stop remembering — and
+// the peer that is behind is not stranded, because the old door still answers
+// `moved` with the succession it published.
+test('an arriving row names the being the destination minted, and no other', async () => {
+  const { destination, cargo } = await walk();
+  const landedPk = (await signingPair(fixed(40))).pk;
+  for (const one of cargo.standings) {
+    const row = destination.standing(one.voice);
+    assert.deepEqual(
+      [...row.beings],
+      [hex(landedPk)],
+      'the name the being wore before did not come with it',
+    );
+    for (const wore of one.beings) {
+      assert.ok(!row.beings.has(hex(wore)), 'and is reached by nothing here');
+    }
   }
 });
 

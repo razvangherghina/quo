@@ -1,10 +1,51 @@
 # Changelog
 
-The JavaScript kit, published as
-[`@quo-systems/js`](https://www.npmjs.com/package/@quo-systems/js).
+**All five kits, at one version, released together.** A kit out of step is a
+mistake rather than a choice, so this file covers them all: JavaScript as
+[`@quo-systems/js`](https://www.npmjs.com/package/@quo-systems/js), Go as the
+module `quo.systems/kit`, Python as `quo-systems` on PyPI, Rust as the
+`quo-*` crates, and Zig as a release asset with its hash.
+
+Entries before 0.2.0 covered the JavaScript kit alone.
 
 Nothing here carries a compatibility promise before 1.0.0. The wire may move,
 and a version is the only safe thing to depend on.
+
+## 0.2.0
+
+**The first release of all five kits together, and the first with every
+article of the law accounted for by a running case.**
+
+**Twenty silences are ruled and in the constitution.** A silence is a place
+where two strangers implementing from the law alone would produce different
+bytes. Five of the twenty were live disagreements between the two kits already
+published — the same text, honestly read, running differently. Each ruling is
+a sentence in the constitution now, so the fork is closed for anyone reading
+it rather than for us alone.
+
+**The conformance lane.** One scenario file is driven through every kit with
+the clock and the randomness handed in, and both the envelope bytes and the
+warden's resulting record are pinned. A corpus proves bytes and cannot prove a
+judgment; this proves the judgment, because a decision leaves a record and the
+record travels as a cargo. Sixteen scenarios, and all 149 obligations the law
+carries are either driven or named with the reason they cannot be.
+
+**Ten defects it found, none of which any kit's own tests could see.** Every
+one sat behind a capability nothing exercised. The two worth naming: a peer
+verified a being's succession against the _house's_ commitment rather than the
+being's, so whoever held a house's heir key could have taken over every being
+at it; and two kits let a stranger spend `receive`, a door anyone could push a
+being into. Both are closed.
+
+**What each kit gained.** Rust and Zig can now widen and narrow a standing at
+the warden — before, a host reached in and edited the record, which is the
+ambient permission Quo exists to refuse. Zig's warden answers its own being's
+fields instead of leaving that to its host. Python composes an onward ask under
+a real budget. Go's arriving beings answer. And Rust, Python and Zig can now
+migrate a being away, not only receive one.
+
+**All five order a cargo's lists**, so two kits packing one being agree on the
+bytes because the law says so rather than by coincidence.
 
 ## 0.1.1
 

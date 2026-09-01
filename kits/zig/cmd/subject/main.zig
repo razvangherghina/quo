@@ -518,68 +518,17 @@ const Ground = struct {
         return switch (verdict.routing) {
             .estate => try warden.encodeEstate(a, try self.door.estateFor(a, voice)),
             .stranger => try warden.encodeEstate(a, try self.door.estateFor(a, null)),
-            .sketch => |pk| try self.sketchAnswer(a, try self.door.sketchFor(voice, pk)),
-            .own => |m| try self.ownField(a, voice, m),
-            // The warden's own being answers to two addresses, and that is
-            // meant: naming it is the ordinary form, omitting it the
-            // shortcut. So a field invoked on the public being is a field of
-            // the one blueprint every warden holds, not an object's.
+            .sketch => |pk| try self.door.sketchAnswer(a, voice, pk),
+            // The fields of the one blueprint every warden holds are the
+            // warden's own to answer, under both of the addresses its being
+            // answers to. Nothing about them is this ground's: not the
+            // decoding, not the scope, not the refusal.
+            .own => try self.door.own(a, verdict),
             .invoke => |call| if (self.door.isPublic(call.being))
-                try self.ownField(a, voice, call.method)
+                try self.door.own(a, verdict)
             else
                 try self.invoke(a, call.being, call.method),
         };
-    }
-
-    /// The fields of the one blueprint every warden holds, answered by the
-    /// warden's own being. What this ground does not implement is silence.
-    fn ownField(self: *Ground, a: std.mem.Allocator, voice: ?Key, m: envelope.Method) !?[]const u8 {
-        if (std.mem.eql(u8, m.name, "describe")) {
-            if (m.args.len != 0) return error.Refused;
-            return try warden.encodeEstate(a, try self.door.estateFor(a, voice));
-        }
-        if (std.mem.eql(u8, m.name, "limit")) {
-            if (m.args.len != 0) return error.Refused;
-            return try wire.encode(a, "int", self.own.records, .{
-                .integer = @intCast(self.door.limit),
-            });
-        }
-        if (std.mem.eql(u8, m.name, "sketch")) {
-            var decoded = try wire.decode(a, "being", self.own.records, m.args);
-            defer decoded.deinit();
-            const pk = switch (decoded.value) {
-                .being => |k| k,
-                else => return error.Refused,
-            };
-            return try self.sketchAnswer(a, try self.door.sketchFor(voice, pk));
-        }
-        if (std.mem.eql(u8, m.name, "blueprint")) {
-            var decoded = try wire.decode(a, "b32", self.own.records, m.args);
-            defer decoded.deinit();
-            const want = switch (decoded.value) {
-                .b32 => |k| k,
-                else => return error.Refused,
-            };
-            const text = try self.door.blueprintFor(voice, want);
-            const held = try a.create(wire.Value);
-            held.* = .{ .text = text };
-            return try wire.encode(a, "text?", self.own.records, .{ .present = held });
-        }
-        return error.Refused;
-    }
-
-    /// The Warden blueprint declares `sketch(being being) sketch?`, so what a
-    /// sketch answers with wears the optional the field declared. The kit's
-    /// own encoder writes the record; putting it under the declared type is
-    /// the ground's.
-    fn sketchAnswer(self: *Ground, a: std.mem.Allocator, sketch: warden.Sketch) ![]const u8 {
-        const fields = try a.alloc(wire.Value, 3);
-        fields[0] = .{ .being = sketch.being };
-        fields[1] = .{ .b32 = sketch.digest };
-        fields[2] = .{ .b32 = sketch.commitment };
-        const held = try a.create(wire.Value);
-        held.* = .{ .record = fields };
-        return wire.encode(a, "sketch?", self.own.records, .{ .present = held });
     }
 
     /// The being answers, and the warden never reads its arguments: bytes
@@ -756,8 +705,13 @@ const Wire = struct {
 
     /// Whether a frame is the answer this caller is waiting on. Only the seal
     /// says so, and it says so without a byte of it travelling in the clear.
+    ///
+    /// This sorts frames and spends nothing, so it opens the envelope rather
+    /// than calling the warden's `hear`: judging an answer spends the awaiting
+    /// record the caller keeps for it, and a road that spent it while sorting
+    /// would leave nothing for the caller to judge.
     fn answers(self: *Wire, gpa: std.mem.Allocator, frame: []const u8, far: Key, seq: i64) bool {
-        var heard = self.ground.hear(gpa, frame) catch return false;
+        var heard = envelope.open(gpa, self.ground.door.padlock_secret, .answer, frame) catch return false;
         defer heard.deinit();
         const answer = heard.payload.answer;
         return answer.seq == seq and std.mem.eql(u8, &answer.warden, &far);

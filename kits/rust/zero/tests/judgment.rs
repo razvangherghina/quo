@@ -46,6 +46,9 @@ const ELSEWHERE_PADLOCK_SECRET: &str =
 const EPHEMERAL: &str = "9909090909090909090909090909090909090909090909090909090909090909";
 const REPLY_EPHEMERAL: &str = "aa0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a";
 const MINT: &str = "bb0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b";
+/// A destination mints two keys for an arriving being: the name it takes here
+/// and that name's heir.
+const MINT_HEIR: &str = "bc0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c";
 
 /// How long a road with no wire form for silence is waited on before silence
 /// is what it said. Only the line needs it; the other two say silence with an
@@ -119,7 +122,10 @@ impl Ground {
         let verdict = self.w.judge(envelope, 1_000).ok()?;
         let data = match verdict.route.clone() {
             Route::Being { being, method } => Some(self.invoke(&being, &method).ok()?),
-            _ => self.w.answer(&verdict, Some(&key(MINT))).ok()?,
+            _ => self
+                .w
+                .answer(&verdict, Some(&[key(MINT), key(MINT_HEIR)]))
+                .ok()?,
         };
         let mut ephemeral = key(REPLY_EPHEMERAL);
         ephemeral[0] = ephemeral[0].wrapping_add(self.replies);

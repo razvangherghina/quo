@@ -231,15 +231,32 @@ impl Word {
     }
 }
 
+/// Every list in a cargo is ordered, and the order is derived rather than
+/// chosen: standings by the voice's bytes, relations by the far warden's,
+/// beings under a standing by their pk bytes, and spent numerically — all
+/// ascending (Article IX). A cargo crosses the wire, so two wardens packing one
+/// being must produce one byte string; the ordering is imposed here, where the
+/// bytes are made, rather than trusted to whoever composed the record.
+fn ordered<T: Clone, K: Ord>(items: &[T], by: impl Fn(&T) -> K) -> Vec<T> {
+    let mut out = items.to_vec();
+    out.sort_by_key(|one| by(one));
+    out
+}
+
 impl Standing {
     pub fn value(&self) -> Value {
         Value::Record(vec![
             b32(&self.voice),
             b32(&self.commitment),
             b32(&self.name),
-            Value::Many(self.beings.iter().map(being).collect()),
+            Value::Many(ordered(&self.beings, |pk| *pk).iter().map(being).collect()),
             Value::Int(self.mark),
-            Value::Many(self.spent.iter().map(|n| Value::Int(*n)).collect()),
+            Value::Many(
+                ordered(&self.spent, |n| *n)
+                    .iter()
+                    .map(|n| Value::Int(*n))
+                    .collect(),
+            ),
             maybe_b32(&self.padlock),
             hints(&self.hints),
         ])
@@ -269,8 +286,18 @@ impl Cargo {
             being(&self.being),
             b32(&self.digest),
             Value::Bytes(self.cells.clone()),
-            Value::Many(self.standings.iter().map(Standing::value).collect()),
-            Value::Many(self.relations.iter().map(Relation::value).collect()),
+            Value::Many(
+                ordered(&self.standings, |one| one.voice)
+                    .iter()
+                    .map(Standing::value)
+                    .collect(),
+            ),
+            Value::Many(
+                ordered(&self.relations, |one| one.warden)
+                    .iter()
+                    .map(Relation::value)
+                    .collect(),
+            ),
         ])
     }
 }

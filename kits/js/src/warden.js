@@ -21,8 +21,9 @@ const same = (a, b) => a instanceof Uint8Array && b instanceof Uint8Array && hex
 const key32 = (value) => value instanceof Uint8Array && value.length === 32;
 
 // The order is derived, never chosen: bytes ascending, so two wardens
-// describing one estate produce one byte sequence.
-function ascending(a, b) {
+// describing one estate produce one byte sequence — and, by Article IX, so two
+// wardens packing one being do.
+export function ascending(a, b) {
   for (let at = 0; at < Math.min(a.length, b.length); at += 1) {
     if (a[at] !== b[at]) return a[at] - b[at];
   }
@@ -465,6 +466,29 @@ export class Warden {
     return true;
   }
 
+  // Succeed the warden's own name. The heir this door committed to spends, and
+  // from here on the house signs by that key and is addressed by it; the key it
+  // commits to next is the owner's again, so only a seed for it is given. The
+  // public being's pk is the warden's name, so it moves with the name.
+  //
+  // Every standing stays where it was. Each inbound row keeps the name its own
+  // commitment was minted under, so a standing granted before the succession
+  // still rotates — its heir hashes to a commitment at the old name — while
+  // every commitment minted from here on is under the new one.
+  //
+  // The key is handed as a seed like every other key this warden holds, and is
+  // checked against the commitment before anything moves: a door that adopted
+  // a name it never committed to would be a door nobody can believe.
+  async succeed({ nameSeed, heirSeed }) {
+    const name = await signingPair(nameSeed);
+    if (!same(await commit(this.name.pk, name.pk), this.commitment)) return null;
+    const heir = await signingPair(heirSeed);
+    this.name = name;
+    this.heir = heir;
+    this.commitment = await commit(name.pk, heir.pk);
+    return { name: name.pk, commitment: this.commitment };
+  }
+
   // The old door only points: it keeps the succession it published and answers
   // `moved` with it. Every other ask meets silence.
   point(beingPk, word) {
@@ -572,6 +596,12 @@ export class Warden {
       // now names, the commitment that lets it believe the next succession,
       // and where that being now answers.
       beings: new Map(),
+      // The asks put on a road down this relation with no answer heard yet.
+      // Article XII's fourth check on an answer is that one is awaiting under
+      // that padlock, that warden and that seq, so the caller keeps the record
+      // that check reads — in the core, because the check is owed whether or
+      // not a socket was involved.
+      awaiting: new Set(),
     };
     this.outbound.push(row);
     return row;
@@ -595,6 +625,7 @@ export class Warden {
       being: beingPk,
       seq: relation.seq,
       beings: new Map(),
+      awaiting: new Set(),
     };
     this.outbound.push(row);
     return row;
@@ -727,6 +758,13 @@ export class Warden {
       random,
     },
   ) {
+    // An answer is paired to its ask by the padlock, the warden and the seq,
+    // and by nothing else. Two asks out at once carrying the same three would
+    // be answered indistinguishably, so this kit refuses to send the second —
+    // which is the shape a rotation makes, because it starts the far door's
+    // mark fresh and brings a number round again.
+    const pending = awaits(this.padlock.pk, seq);
+    if (row.awaiting.has(pending)) return null;
     const envelope = this.carry({
       recipient: row.warden,
       padlock: row.padlock,
@@ -748,7 +786,40 @@ export class Warden {
     // the refusal without waiting on the seal.
     if (!envelope) return null;
     if (typeof seq === 'bigint' && seq > row.seq) row.seq = seq;
+    row.awaiting.add(pending);
     return envelope;
+  }
+
+  // The caller's own judgment of an answer — Article XII's shorter road, whole.
+  // The envelope's half is `readAnswer`: unseal under the padlock the ask
+  // named, take only the `answer` byte, and verify the signature against the
+  // `warden` the record itself carries. The two checks left are the caller's
+  // bookkeeping and live here, because only the caller knows what it asked:
+  // that warden must be a door this ground actually holds a relation with, and
+  // an ask must be awaiting under that padlock, that warden and that seq.
+  //
+  // An answer nothing awaits is the same silence as every other failure, and
+  // hearing one spends the record, so the same bytes never answer twice.
+  async hear(envelope) {
+    const answer = await readAnswerBytes(envelope, this.padlock.secret);
+    if (!answer) return null;
+    // One far warden may be held by more than one row — the record says which
+    // of this ground's beings may spend which relation — so the awaiting entry
+    // is what picks the row, not the name alone.
+    const pending = awaits(this.padlock.pk, answer.seq);
+    for (const row of this.outbound) {
+      if (!same(row.warden, answer.warden)) continue;
+      if (row.awaiting.delete(pending)) return answer;
+    }
+    return null;
+  }
+
+  // Stop awaiting an ask whose answer will never come — a road that failed to
+  // carry, or a caller that has stopped waiting. Nothing on the wire changes:
+  // the number stays spent, because a message the far door judged spent it
+  // there whatever this end does with its own record.
+  forgo(row, seq) {
+    return row.awaiting.delete(awaits(this.padlock.pk, seq));
   }
 
   // The judgment, in order. Every failure is the same failure: silence, which
@@ -767,6 +838,15 @@ export class Warden {
     // before anything is unsealed, because what it marks is when the message
     // arrived and not when the door got round to it.
     const arrived = clock();
+
+    // 0. The published limit, which binds on every road and not only on the
+    // one with a socket in it. It is what a caller can compute before sending,
+    // so it is judged before anything is unsealed — and a door whose limit was
+    // enforced by its line alone would accept over distance zero exactly what
+    // it told every caller it would refuse.
+    if (this.limit > 0n && BigInt(envelope.length) > this.limit) {
+      return this.#hush('over the limit', { bytes: envelope.length });
+    }
 
     // 1. Unseal with the warden's own secret.
     const { payload, bytes, signature } = await open({
@@ -972,11 +1052,22 @@ export class Warden {
         // would be a door confirming the being exists.
         if (!reach.has(hex(args[0]))) return this.#hush('out of reach', { method: name });
         return this.#reply(payload, 'sketch', this.#sketch(args[0]), random);
-      case 'moved':
+      case 'moved': {
         // Legal ask, legal answer: nothing has moved, so `moved` answers
         // absence. Outside the standing it is silence, exactly as for sketch.
-        if (!reach.has(hex(args[0]))) return this.#hush('out of reach', { method: name });
-        return this.#reply(payload, 'moved', this.gone.get(hex(args[0])) ?? null, random);
+        //
+        // A being this door has moved on is reached by the succession it
+        // published and by nothing else: an arriving row names the being by
+        // the name the destination minted and by that name alone, so the name
+        // it wore before is in no standing here. If a published pointer were
+        // not reach enough, the old door could not point about the one being
+        // Article XIII sends every peer behind the news to ask it about.
+        const at = hex(args[0]);
+        if (!reach.has(at) && !(this.gone.has(at) && !stranger)) {
+          return this.#hush('out of reach', { method: name });
+        }
+        return this.#reply(payload, 'moved', this.gone.get(at) ?? null, random);
+      }
       case 'blueprint': {
         // Answered only if the asker already reaches a being of that class, or
         // the warden's own public being declares it. Otherwise silence: a door
@@ -1164,8 +1255,7 @@ export class Warden {
 
     // The register of standings travels with the being, and the replay marks
     // with it, or every peer's spent numbers would come round again at the new
-    // door. The arriving pk stays in the row beside the new one, so a peer
-    // still holding the old name reaches the door and is pointed onward.
+    // door.
     for (const one of cargo.standings) {
       this.inbound.set(
         hex(one.voice),
@@ -1176,7 +1266,11 @@ export class Warden {
           // standing that arrives still rotates at the name it was granted
           // under rather than at this door's.
           name: one.name,
-          beings: [...one.beings, pk],
+          // The name the destination minted, and that name alone. A name a
+          // door must keep answering for is a name it can never stop
+          // remembering, and the peer that is behind the news is not
+          // stranded: the old door still answers `moved`.
+          beings: [pk],
           mark: one.mark > 0n ? one.mark : null,
           // The replay record travels whole — the mark and the spent numbers
           // beneath it — or a caller's late-arriving in-window numbers would be
@@ -1247,14 +1341,30 @@ export class Warden {
 // sent to is the caller's separate judgment. Which ask it answers is the
 // caller's own bookkeeping and lives where the asks await.
 export async function readAnswer({ envelope, padlockSecret, wardenPk }) {
+  const answer = await readAnswerBytes(envelope, padlockSecret);
+  if (!answer) return null;
+  return same(answer.warden, wardenPk) ? answer : null;
+}
+
+// The envelope's half alone: unsealed, read under the byte the caller expects,
+// and verified against the `warden` the record itself carries. Which door was
+// asked and which ask this answers are the caller's own two checks, and both
+// need the caller's record — `Warden#hear` is where they are made.
+async function readAnswerBytes(envelope, padlockSecret) {
   try {
     const { bytes, signature } = await unbox(envelope, padlockSecret);
     const answer = decodeAnswer(untag(ANSWER_BYTE, bytes));
-    if (!(await verify(bytes, signature, answer.warden))) return null;
-    return same(answer.warden, wardenPk) ? answer : null;
+    return (await verify(bytes, signature, answer.warden)) ? answer : null;
   } catch {
     return null;
   }
+}
+
+// One awaiting ask, as the key the record is a set of: the padlock the answer
+// will be sealed to and the number the ask spent. The far warden is the row it
+// hangs on, which is the third of the three.
+function awaits(padlockPk, seq) {
+  return `${hex(padlockPk)}:${seq}`;
 }
 
 // The caller's side of the same codec: read one of the warden's own fields out
@@ -1300,6 +1410,12 @@ export async function accept(
   const first = await rotate(await commit(invitation.warden, voice.pk));
   if (!first) return null;
   const opening = await send(first);
+  // Both rotations open the count at one, because each starts the far door's
+  // mark fresh — so the two asks carry the same padlock, warden and seq, and
+  // their answers cannot be told apart. The opening is handed back sealed for
+  // the caller to judge, which is what stops awaiting it here; without this
+  // the second ask is the one the kit refuses to send.
+  warden.forgo(row, 1n);
 
   row.voice = { pk: voice.pk, secret: voice.secret };
   const commitment = await commit(invitation.warden, heir.pk);

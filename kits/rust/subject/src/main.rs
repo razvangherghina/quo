@@ -190,7 +190,9 @@ impl Ground {
             Route::Being { being, method } => Some(self.invoke(&being, &method)?),
             _ => self
                 .w
-                .answer(&verdict, Some(&draw()?))
+                // A destination mints two keys for an arriving being: the name
+                // it takes here and that name's heir.
+                .answer(&verdict, Some(&[draw()?, draw()?]))
                 .map_err(|why| why.0)?,
         };
         self.w
@@ -740,7 +742,7 @@ fn exchange(
     // Verified against the warden the answer's own record carries, and matched
     // to the door this caller actually asked — two checks, not one.
     let answer = {
-        let held = ground.lock().expect("the ground's lock");
+        let mut held = ground.lock().expect("the ground's lock");
         held.w.hear(row.at, &reply).map_err(|why| why.0)?
     };
     if answer.seq != seq {

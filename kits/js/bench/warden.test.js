@@ -1755,3 +1755,71 @@ test('on a field answering nothing, a call that ran and one the being refused ar
   assert.notEqual(one, null);
   assert.equal(hex(two), hex(one), 'and the two answers are the same bytes on the wire');
 });
+
+test('a warden succeeds its own name only to the key it committed to', async () => {
+  const warden = await ground();
+  const was = warden.name.pk;
+  const wasCommitment = warden.commitment;
+
+  // A key this door never committed to moves nothing. A door that adopted one
+  // would be a door no peer could believe: every peer holds the hash of the
+  // heir and nothing else.
+  assert.equal(await warden.succeed({ nameSeed: fixed(9), heirSeed: fixed(10) }), null);
+  assert.equal(hex(warden.name.pk), hex(was));
+  assert.equal(hex(warden.commitment), hex(wasCommitment));
+
+  const heir = await signingPair(fixed(3));
+  const next = await signingPair(fixed(10));
+  const moved = await warden.succeed({ nameSeed: fixed(3), heirSeed: fixed(10) });
+  assert.equal(hex(moved.name), hex(heir.pk), 'the heir the founding committed to is the name now');
+  // The next commitment is minted under the name the door has now, so the peer
+  // that believes this succession can believe the one after it.
+  assert.equal(hex(warden.commitment), hex(await commitment(heir.pk, next.pk)));
+  // The public being's pk is the warden's own name, so it moved with it — and
+  // so did the card a stranger begins from.
+  assert.equal(hex(warden.publicBeing().pk), hex(heir.pk));
+  assert.equal(hex(warden.card().warden), hex(heir.pk));
+  // Which is exactly what a peer hashes the succession against: the old name
+  // and the new one hash to the commitment the peer already held.
+  assert.equal(hex(await commitment(was, heir.pk)), hex(wasCommitment));
+});
+
+test('a standing granted before a name succession still rotates, at the name its commitment was minted under', async () => {
+  // The consequence a standing keeps its own name for. Every commitment was
+  // hashed with a door's name inside it, so a door that verified an older
+  // standing's heir at the name it wears now would refuse a rotation the
+  // holder is entitled to make — and by the correction above, refusing a
+  // rotation costs the holder the standing.
+  const { warden, being, heir } = await granted();
+  await warden.succeed({ nameSeed: fixed(3), heirSeed: fixed(10) });
+
+  const next = await signingPair(fixed(8));
+  const answer = await warden.judge(
+    await ask(warden, heir, {
+      // Minted under the name the door has now, because that is where this
+      // heir would spend.
+      commitment: await commitment(warden.name.pk, next.pk),
+      being,
+      method: invoke('complete'),
+    }),
+    { clock: still, random: RANDOM },
+  );
+  assert.notEqual(answer, null, 'the older standing rotated at the name it was minted at');
+
+  const row = warden.standing(heir.pk);
+  assert.equal(hex(row.name), hex(warden.name.pk), 'and the row is at the new name from here on');
+
+  // Which is the whole of it: the next rotation is verified at the new name.
+  assert.notEqual(
+    await warden.judge(
+      await ask(warden, next, {
+        commitment: await commitment(warden.name.pk, (await signingPair(fixed(11))).pk),
+        seq: 1n,
+        being,
+        method: invoke('complete'),
+      }),
+      { clock: still, random: RANDOM },
+    ),
+    null,
+  );
+});

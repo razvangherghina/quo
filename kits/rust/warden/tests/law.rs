@@ -124,6 +124,9 @@ fn relate(warden: &mut Warden, far: [u8; 32], far_heir: [u8; 32]) {
         seq: 0,
         news: 0,
         hints: vec!["https://far.example/quo".to_string()],
+        holder: None,
+        beings: Default::default(),
+        awaiting: Default::default(),
     });
 }
 
@@ -237,6 +240,11 @@ fn ix_an_envelope_beyond_the_limit_is_not_accepted() {
         door.judge(&envelope, 0).is_err(),
         "the largest message it will accept is counted in bytes of the whole envelope"
     );
+    // The limit is inclusive — and the refused message spent nothing, which
+    // is what the same envelope being honoured next proves: an oversized
+    // envelope is refused before the record is touched, so it neither spends
+    // its number nor writes its hints into the way back. The bound binds on
+    // every road, distance zero included: this one never met a socket.
     door.limit = envelope.len() as i64;
     assert!(
         door.judge(&envelope, 0).is_ok(),
@@ -255,16 +263,89 @@ fn ix_receive_refuses_a_cargo_of_a_class_this_door_does_not_hold() {
         relations: Vec::new(),
     };
     assert!(
-        door.receive(&cargo, &[0x60u8; 32]).is_err(),
+        door.receive(&cargo, &[0x60u8; 32], &[0x61u8; 32]).is_err(),
         "the digest identifies rather than delivers, and there is nobody it may ask"
     );
     assert_eq!(door.beings.len(), 2, "and nothing was installed");
 }
 
 #[test]
-fn ix_receive_answers_the_commitment_of_the_key_the_destination_minted() {
+fn ix_every_list_in_a_cargo_travels_in_the_derived_order() {
+    // A cargo crosses the wire, so two wardens packing one being must produce
+    // one byte string. The order is derived rather than chosen: standings by
+    // the voice's bytes, relations by the far warden's, beings under a standing
+    // by their pk bytes, and spent numerically — all ascending. A record kept
+    // in whatever order a map happens to yield differs from itself between two
+    // runs, and nothing could then compare, cache or re-derive it.
+    let standing = |voice: u8, beings: Vec<[u8; 32]>, spent: Vec<i64>| Standing {
+        voice: [voice; 32],
+        commitment: [0x71u8; 32],
+        name: [0x73u8; 32],
+        beings,
+        mark: 9,
+        spent,
+        padlock: None,
+        hints: Vec::new(),
+    };
+    let relation = |warden: u8| warden::Relation {
+        warden: [warden; 32],
+        commitment: [0x81u8; 32],
+        padlock: [0x82u8; 32],
+        voice: [0x83u8; 32],
+        secret: [0x84u8; 32],
+        heir: [0x85u8; 32],
+        heir_secret: [0x86u8; 32],
+        seq: 12,
+        news: 7,
+        hints: Vec::new(),
+    };
+    let low = standing(0x10, vec![[0x20u8; 32], [0x02u8; 32]], vec![6, 4]);
+    let high = standing(0x90, vec![[0x03u8; 32]], vec![1]);
+    let cargo = |standings: Vec<Standing>, relations: Vec<warden::Relation>| warden::Cargo {
+        being: [0x50u8; 32],
+        digest: small_digest(),
+        cells: b"cells".to_vec(),
+        standings,
+        relations,
+    };
+    let scrambled = warden::shape::write_record(
+        "cargo",
+        &cargo(
+            vec![high.clone(), low.clone()],
+            vec![relation(0xa0), relation(0x30)],
+        )
+        .value(),
+    )
+    .expect("a cargo encodes");
+    let ordered = warden::shape::write_record(
+        "cargo",
+        &cargo(vec![low, high], vec![relation(0x30), relation(0xa0)]).value(),
+    )
+    .expect("a cargo encodes");
+    assert_eq!(
+        scrambled, ordered,
+        "the order the record was composed in decides nothing"
+    );
+
+    // And the order is the derived one rather than merely a stable one: what
+    // comes back reads lowest first, at every level.
+    let back = warden::shape::as_cargo(
+        &warden::shape::read_record("cargo", &scrambled).expect("a cargo reads"),
+    )
+    .expect("a cargo reads");
+    assert_eq!(back.standings[0].voice, [0x10u8; 32]);
+    assert_eq!(back.standings[0].beings[0], [0x02u8; 32]);
+    assert_eq!(back.standings[0].spent, vec![4, 6]);
+    assert_eq!(back.relations[0].warden, [0x30u8; 32]);
+}
+
+#[test]
+fn ix_receive_answers_the_commitment_of_the_beings_new_name() {
     let mut door = door();
+    // A destination mints two keys — the one the being is named by here and
+    // that one's heir — and the commitment is of the first.
     let minted = [0x60u8; 32];
+    let minted_heir = [0x61u8; 32];
     let cargo = warden::Cargo {
         being: [0x50u8; 32],
         digest: small_digest(),
@@ -281,8 +362,35 @@ fn ix_receive_answers_the_commitment_of_the_key_the_destination_minted() {
         }],
         relations: Vec::new(),
     };
-    let answered = door.receive(&cargo, &minted).expect("the class is held");
-    assert_eq!(answered, quo_arithmetic::commitment(&door.name, &minted));
+    let answered = door
+        .receive(&cargo, &minted, &minted_heir)
+        .expect("the class is held");
+    let name = quo_arithmetic::signing_pk(&minted);
+    assert_eq!(
+        answered,
+        quo_arithmetic::commitment(&door.name, &name),
+        "the commitment is of the being's new name"
+    );
+    // Not of that name's heir: the origin carries this value into its first
+    // news, and a peer hashes the successor against it. A commitment to the
+    // heir names a key that signs nothing until the succession after this one,
+    // so the news is disbelieved and the peer is left standing at a house that
+    // has stopped answering.
+    assert_ne!(
+        answered,
+        quo_arithmetic::commitment(&door.name, &quo_arithmetic::signing_pk(&minted_heir))
+    );
+    // And the being wears that name here, holding its own heir commitment so
+    // it can be succeeded afterwards like any other.
+    let held = door
+        .beings
+        .iter()
+        .find(|one| one.being == name)
+        .expect("the being stands under the name this door minted");
+    assert_eq!(
+        held.commitment,
+        quo_arithmetic::commitment(&door.name, &quo_arithmetic::signing_pk(&minted_heir))
+    );
 
     // The replay record travels whole: the mark and the spent numbers beneath
     // it, or a late-arriving in-window number would be judged by a window the
@@ -293,13 +401,106 @@ fn ix_receive_answers_the_commitment_of_the_key_the_destination_minted() {
         .find(|row| row.voice == [0x70u8; 32])
         .expect("the standing travelled");
     assert_eq!((row.mark, row.spent.clone()), (9, vec![4, 6]));
+    assert_eq!(held.cells, b"cells".to_vec());
+    // **An arriving row reaches the being by the name this door minted and by
+    // that name alone** (Article XIII), never also by the name the being wore
+    // before: a name a door must remember for whoever might still be behind is
+    // a name it can never stop remembering, and the peer that is behind is not
+    // stranded, because the old door still answers `moved`.
+    assert_eq!(row.beings, vec![name]);
+    assert!(!row.beings.contains(&[0x50u8; 32]), "and by no other");
+
+    // A mark that arrives in a cargo is a number that was honoured — that is
+    // what a mark is — so when the mark moves past it, it belongs in the
+    // window beneath as spent. A door that only moved the mark would honour
+    // nine a second time here.
+    let row = door
+        .inbound
+        .iter_mut()
+        .find(|row| row.voice == [0x70u8; 32])
+        .expect("the standing travelled");
+    assert!(warden::spend(row, 9, 64).is_err(), "the mark itself");
+    warden::spend(row, 10, 64).expect("a number above it");
+    assert!(
+        warden::spend(row, 9, 64).is_err(),
+        "and it stays spent once the mark has moved off it"
+    );
+}
+
+// ---- Article VII, amending a standing ----------------------------------
+
+/// A standing is amended, not replaced: the warden adds a being to the row or
+/// takes one away, and the holder finds it on its next describe.
+#[test]
+fn vii_a_standing_is_amended_not_replaced() {
+    let mut door = door();
+    grant(&mut door, voice(), heir(), vec![[0x40u8; 32]]);
+    let other = [0x41u8; 32];
+    door.beings.push(Resident {
+        being: other,
+        digest: small_digest(),
+        commitment: [4u8; 32],
+        cells: Vec::new(),
+    });
+
+    assert!(!door.reaches(&voice(), &other));
+    door.widen(&voice(), &other).expect("the warden widens");
+    assert!(
+        door.reaches(&voice(), &other),
+        "and the holder now reaches it"
+    );
+    // Nothing else moved: the same row, the same commitment, the same voice.
+    assert_eq!(door.inbound.len(), 1);
+    assert_eq!(door.inbound[0].voice, voice());
+
+    door.narrow(&voice(), &other).expect("the warden narrows");
+    assert!(!door.reaches(&voice(), &other));
+    assert!(
+        door.reaches(&voice(), &[0x40u8; 32]),
+        "and the being it kept is untouched"
+    );
+}
+
+/// Taking the last being away is release, and there is no separate act for
+/// it. What is left is a stranger, whose estate is the public being alone.
+#[test]
+fn vii_narrowing_the_last_being_away_is_release() {
+    let mut door = door();
+    grant(&mut door, voice(), heir(), vec![[0x40u8; 32]]);
+
+    door.narrow(&voice(), &[0x40u8; 32]).expect("the last one");
+    assert!(door.inbound.is_empty(), "the row is gone");
     assert_eq!(
-        door.beings
-            .iter()
-            .find(|held| held.being == [0x50u8; 32])
-            .expect("the being stands here now")
-            .cells,
-        b"cells".to_vec()
+        door.estate_for(&voice()).classes.len(),
+        1,
+        "a released voice sees the public being and nothing else"
+    );
+}
+
+/// The two refusals: a voice that stands nowhere cannot be widened, because a
+/// row conjured from a widening would be a grant by another name; and a being
+/// this door does not hold can never be named in a row.
+#[test]
+fn vii_widening_refuses_a_voice_with_no_row_and_a_being_that_does_not_stand() {
+    let mut door = door();
+    assert!(
+        door.widen(&stranger(), &[0x40u8; 32]).is_err(),
+        "a stranger has no standing to widen"
+    );
+    assert!(
+        door.narrow(&stranger(), &[0x40u8; 32]).is_err(),
+        "and none to narrow"
+    );
+
+    grant(&mut door, voice(), heir(), vec![[0x40u8; 32]]);
+    assert!(
+        door.widen(&voice(), &[0x99u8; 32]).is_err(),
+        "no being of that name stands here"
+    );
+    assert_eq!(
+        door.inbound[0].beings,
+        vec![[0x40u8; 32]],
+        "and nothing moved"
     );
 }
 
@@ -978,7 +1179,8 @@ fn xiv_news_is_the_voice_found_in_the_outbound_record() {
         verdict.place,
         Placement::News {
             relation: 0,
-            by_heir: false
+            by_heir: false,
+            being: None
         },
         "news is not a second kind of message"
     );
@@ -1130,11 +1332,20 @@ fn xiv_a_name_succession_keeps_the_mark_a_beings_succession_starts_it_fresh() {
     door.answer(&verdict, None).expect("believed");
     assert_eq!(door.outbound[0].news, 6, "the house persisted");
 
-    // A being's succession, announced by the heir the new name committed.
-    door.outbound[0].commitment = quo_arithmetic::commitment(&peer_heir(), &peer());
+    // A being's succession, announced by the heir that being committed — the
+    // commitment this door took from a describe and kept with `note`, never
+    // the row's, which belongs to the house's name.
+    door.note(
+        0,
+        [0x40u8; 32],
+        quo_arithmetic::commitment(&peer_heir(), &peer()),
+    )
+    .expect("a being at that house");
+    // The successor signs and the peer hashes, so the successor a word names
+    // is the voice that signed it and never a third key.
     let being_succession = Word {
         being: Some([0x40u8; 32]),
-        successor: Some([0x55u8; 32]),
+        successor: Some(peer()),
         commitment: Some([0x66u8; 32]),
         ..Word::default()
     };
@@ -1144,6 +1355,206 @@ fn xiv_a_name_succession_keeps_the_mark_a_beings_succession_starts_it_fresh() {
     let verdict = door.judge(&envelope, 0).expect("placed");
     door.answer(&verdict, None).expect("believed");
     assert_eq!(door.outbound[0].news, 0, "the news mark starts fresh");
+}
+
+/// "A peer believes it by a key it already holds, and there are only two."
+/// Article XIV gives a padlock replacement exactly one signer — the warden's
+/// name, which has not moved — and a door that accepted any key it managed to
+/// place would let a house's committed heir replace that house's lock at every
+/// peer before it had succeeded anything. Every message those peers sent next
+/// would be sealed to a lock the heir chose.
+#[test]
+fn xiv_a_padlock_replacement_the_name_did_not_sign_is_silence() {
+    let mut door = door();
+    relate(&mut door, peer(), peer_heir());
+    let held = door.outbound[0].padlock;
+
+    let word = Word {
+        padlock: Some([0x77u8; 32]),
+        ..Word::default()
+    };
+    // Signed by the heir the far house committed: a key this door does hold,
+    // placed as news, and the wrong one for this act.
+    let mut say = a_say(&door, peer_heir(), 4);
+    say.method = Some(tell(&word));
+    let envelope = sealed(&door, PEER_HEIR_SECRET, &say);
+    let verdict = door.judge(&envelope, 0).expect("it is placed as news");
+    assert!(
+        door.answer(&verdict, None).is_err(),
+        "a padlock replacement was believed from a key that is not the name"
+    );
+    assert_eq!(door.outbound[0].padlock, held, "the lock did not move");
+
+    // The name signs the same word, and it is believed.
+    let mut say = a_say(&door, peer(), 5);
+    say.method = Some(tell(&word));
+    let envelope = sealed(&door, PEER_SECRET, &say);
+    let verdict = door.judge(&envelope, 0).expect("placed");
+    door.answer(&verdict, None).expect("believed");
+    assert_eq!(door.outbound[0].padlock, [0x77u8; 32]);
+}
+
+/// "The successor signs and the peer hashes." A word naming a successor the
+/// signer is not proves nothing about that key, and believing it would let a
+/// committed heir hand the whole relation to a third party it chose.
+#[test]
+fn xiv_a_succession_the_successor_did_not_sign_is_silence() {
+    let mut door = door();
+    relate(&mut door, peer(), peer_heir());
+    let held = door.outbound[0].warden;
+
+    let word = Word {
+        successor: Some([0x66u8; 32]),
+        commitment: Some([0x44u8; 32]),
+        ..Word::default()
+    };
+    // Signed by the heir that was committed, which is the right road — and
+    // naming somebody else as the successor, which is the wrong key.
+    let mut say = a_say(&door, peer_heir(), 6);
+    say.method = Some(tell(&word));
+    let envelope = sealed(&door, PEER_HEIR_SECRET, &say);
+    let verdict = door.judge(&envelope, 0).expect("it is placed as news");
+    assert!(
+        door.answer(&verdict, None).is_err(),
+        "a relation was handed to a key that never signed for it"
+    );
+    assert_eq!(door.outbound[0].warden, held, "the relation did not move");
+}
+
+/// A describe hands back a commitment per being, and a peer that means to
+/// believe that being's succession keeps it. The row's own commitment belongs
+/// to the house's name; a door that hashed a being's successor against it
+/// would let the house's committed heir succeed every being at that house.
+#[test]
+fn xiv_a_beings_succession_is_believed_against_that_beings_own_commitment() {
+    let mut door = door();
+    relate(&mut door, peer(), peer_heir());
+    let being = [0x40u8; 32];
+    // The being's own heir is a third key, and the far house committed to it
+    // for that being alone.
+    door.note(0, being, quo_arithmetic::commitment(&peer(), &next()))
+        .expect("a being at that house");
+
+    // The house's committed heir announces the being's succession. It is a
+    // key this door holds, placed as news, and the wrong one for this act.
+    let word = Word {
+        being: Some(being),
+        successor: Some(peer_heir()),
+        commitment: Some([0x44u8; 32]),
+        ..Word::default()
+    };
+    let mut say = a_say(&door, peer_heir(), 1);
+    say.method = Some(tell(&word));
+    let envelope = sealed(&door, PEER_HEIR_SECRET, &say);
+    let verdict = door.judge(&envelope, 0).expect("it is placed as news");
+    assert!(
+        door.answer(&verdict, None).is_err(),
+        "the house's heir succeeded a being it was never committed to"
+    );
+    assert_eq!(
+        door.outbound[0].beings.get(&being),
+        Some(&quo_arithmetic::commitment(&peer(), &next())),
+        "and the being did not move"
+    );
+
+    // The being's own committed heir announces the same succession, and it is
+    // believed: the entry moves to the successor with the next commitment,
+    // and the row's own commitment is untouched.
+    let held = door.outbound[0].commitment;
+    let word = Word {
+        being: Some(being),
+        successor: Some(next()),
+        commitment: Some([0x55u8; 32]),
+        ..Word::default()
+    };
+    let mut say = a_say(&door, next(), 2);
+    say.method = Some(tell(&word));
+    let envelope = sealed(&door, NEXT_SECRET, &say);
+    let verdict = door.judge(&envelope, 0).expect("placed");
+    door.answer(&verdict, None).expect("believed");
+    assert!(
+        !door.outbound[0].beings.contains_key(&being),
+        "the being no longer answers by the name it wore"
+    );
+    assert_eq!(door.outbound[0].beings.get(&next()), Some(&[0x55u8; 32]));
+    assert_eq!(
+        door.outbound[0].commitment, held,
+        "the house's own commitment is not a being's"
+    );
+    assert_eq!(door.outbound[0].warden, peer(), "and neither is its name");
+}
+
+/// The other direction, and it is the more dangerous one: a being's committed
+/// heir announcing the house's own succession would take the whole relation —
+/// every other being at it included — on a commitment that was only ever
+/// about one being.
+#[test]
+fn xiv_a_beings_heir_may_not_succeed_the_house_itself() {
+    let mut door = door();
+    relate(&mut door, peer(), peer_heir());
+    door.note(
+        0,
+        [0x40u8; 32],
+        quo_arithmetic::commitment(&peer(), &next()),
+    )
+    .expect("a being at that house");
+    let held = door.outbound[0].warden;
+
+    let word = Word {
+        successor: Some(next()),
+        commitment: Some([0x55u8; 32]),
+        ..Word::default()
+    };
+    let mut say = a_say(&door, next(), 1);
+    say.method = Some(tell(&word));
+    let envelope = sealed(&door, NEXT_SECRET, &say);
+    let verdict = door.judge(&envelope, 0).expect("it is placed as news");
+    assert!(
+        door.answer(&verdict, None).is_err(),
+        "a being's heir moved the house's name"
+    );
+    assert_eq!(door.outbound[0].warden, held, "the house did not move");
+}
+
+/// A being this door holds no commitment for has no road of belief at all:
+/// its heir is a key found nowhere, so the message is a stranger's rather
+/// than news, and a stranger announces nothing.
+#[test]
+fn xiv_a_succession_of_a_being_this_door_never_noted_is_not_news() {
+    let mut door = door();
+    relate(&mut door, peer(), peer_heir());
+
+    let word = Word {
+        being: Some([0x40u8; 32]),
+        successor: Some(next()),
+        commitment: Some([0x55u8; 32]),
+        ..Word::default()
+    };
+    let mut say = a_say(&door, next(), 1);
+    say.method = Some(tell(&word));
+    let envelope = sealed(&door, NEXT_SECRET, &say);
+    let verdict = door.judge(&envelope, 0).expect("placed");
+    assert_eq!(
+        verdict.place,
+        Placement::Stranger,
+        "a voice found nowhere is a stranger, whatever its word says"
+    );
+    assert!(
+        door.answer(&verdict, None).is_err(),
+        "and a stranger cannot announce news"
+    );
+}
+
+/// A note is the commitment a describe published for one being, and the far
+/// house's own pk is not one: its commitment is the row's, and a second copy
+/// under the beings would be a second place to believe one succession from.
+#[test]
+fn xiv_a_note_naming_the_far_wardens_own_pk_is_refused() {
+    let mut door = door();
+    relate(&mut door, peer(), peer_heir());
+    assert!(door.note(0, peer(), [0x44u8; 32]).is_err());
+    assert!(door.note(7, [0x40u8; 32], [0x44u8; 32]).is_err());
+    assert!(door.outbound[0].beings.is_empty());
 }
 
 #[test]
@@ -1348,7 +1759,7 @@ fn xiv_a_migrating_standing_carries_the_name_it_was_minted_at() {
         }],
         relations: Vec::new(),
     };
-    door.receive(&cargo, &[0x99u8; 32])
+    door.receive(&cargo, &[0x99u8; 32], &[0x98u8; 32])
         .expect("the class is held");
     assert_eq!(
         door.inbound[0].minted_at, granted_at,
@@ -1641,4 +2052,171 @@ fn accept_is_remember_and_rotate_composed_and_that_path_stays_open() {
             &quo_arithmetic::signing_pk(&key(FRESH_HEIR_SECRET))
         )
     );
+}
+
+// ---- the awaiting record, and the numbers a caller chooses ---------------
+
+/// Article XII's fourth check on an answer: an ask must be awaiting under that
+/// padlock, that warden and that seq. An answer nothing awaits is the same
+/// silence as every other failure, and hearing one spends the record, so the
+/// same bytes never answer twice.
+#[test]
+fn xii_an_answer_nothing_awaits_is_silence() {
+    let mut granter = door();
+    let public = granter.name;
+    grant(&mut granter, voice(), heir(), vec![public]);
+    let mut holder = holder();
+    let at = holder.remember(&invitation(&granter));
+
+    let (composed, seq) = holder
+        .rotate(
+            at,
+            &key(EPHEMERAL_SECRET),
+            &key(FRESH_VOICE_SECRET),
+            &warden::Reach::default(),
+        )
+        .expect("it composes");
+    assert_eq!(holder.outbound[at].awaiting.len(), 1);
+
+    let verdict = granter.judge(&composed, 0).expect("the heir rotates");
+    let data = granter.answer(&verdict, None).expect("the estate");
+    let reply = granter
+        .reply(&verdict.say, data, &[0x33u8; 32])
+        .expect("it seals");
+
+    assert_eq!(holder.hear(at, &reply).expect("it is heard").seq, seq);
+    assert!(holder.outbound[at].awaiting.is_empty());
+    // The very same bytes: well-formed, well-signed, from the door that was
+    // asked, and silence, because nothing awaits them.
+    assert!(
+        holder.hear(at, &reply).is_err(),
+        "an answer already heard was heard a second time"
+    );
+}
+
+/// "A caller does not put a second ask on a road while an awaiting one would
+/// make the two answers indistinguishable; its own kit refuses to send it."
+/// The shape that makes it real is a rotation, which starts the far door's
+/// mark fresh and so brings a number the caller is awaiting round again.
+#[test]
+fn xii_two_asks_whose_answers_could_not_be_told_apart() {
+    let mut granter = door();
+    let public = granter.name;
+    grant(&mut granter, voice(), heir(), vec![public]);
+    let mut holder = holder();
+    let at = holder.remember(&invitation(&granter));
+
+    let opening = warden::Reach {
+        seq: Some(1),
+        ..warden::Reach::default()
+    };
+    holder
+        .rotate(at, &[0x91u8; 32], &key(FRESH_VOICE_SECRET), &opening)
+        .expect("the first opens at one");
+    assert!(
+        holder
+            .rotate(at, &[0x92u8; 32], &key(FRESH_HEIR_SECRET), &opening)
+            .is_err(),
+        "two asks went out whose answers could not be told apart"
+    );
+
+    // Forgoing is the caller saying it has stopped waiting, and the number is
+    // free to come round again.
+    assert!(holder.forgo(at, 1));
+    assert!(!holder.forgo(at, 1));
+    holder
+        .rotate(at, &[0x92u8; 32], &key(FRESH_HEIR_SECRET), &opening)
+        .expect("the number is free again");
+}
+
+/// Article VIII: "Which number a caller opens with, above one, is the
+/// caller's own." A fresh mark is empty, so every number at or above one
+/// stands above it — and a kit that always counted from one would be keeping
+/// a choice the law gives away.
+#[test]
+fn viii_a_caller_chooses_which_number_it_opens_with() {
+    let mut granter = door();
+    let public = granter.name;
+    grant(&mut granter, voice(), heir(), vec![public]);
+    let mut holder = holder();
+    let at = holder.remember(&invitation(&granter));
+
+    let (composed, seq) = holder
+        .rotate(
+            at,
+            &key(EPHEMERAL_SECRET),
+            &key(FRESH_VOICE_SECRET),
+            &warden::Reach {
+                seq: Some(4_096),
+                ..warden::Reach::default()
+            },
+        )
+        .expect("it composes");
+    assert_eq!(seq, 4_096);
+    let verdict = granter.judge(&composed, 0).expect("the door honours it");
+    assert!(matches!(verdict.place, Placement::Rotation { .. }));
+    assert_eq!(granter.inbound[0].mark, 4_096);
+
+    // And the row counts on from there, because per voice the number only
+    // rises. A number it has already spent is refused here rather than met
+    // with silence at the far door.
+    assert!(
+        holder
+            .ask(
+                at,
+                &[0x94u8; 32],
+                &warden::Reach {
+                    seq: Some(4_096),
+                    ..warden::Reach::default()
+                }
+            )
+            .is_err(),
+        "a number this relation had already spent went out again"
+    );
+    let (_, next) = holder
+        .ask(at, &[0x95u8; 32], &warden::Reach::default())
+        .expect("it composes");
+    assert_eq!(next, 4_097);
+}
+
+/// Accept hands its opening answer back sealed rather than judging it, so it
+/// stops awaiting that one — leaving awaiting exactly the ask it hands the
+/// caller an answer to.
+#[test]
+fn accept_leaves_awaiting_only_the_ask_it_hands_an_answer_back_for() {
+    let mut granter = door();
+    let public = granter.name;
+    grant(&mut granter, voice(), heir(), vec![public]);
+    let mut holder = holder();
+
+    let taken = holder
+        .accept(
+            &invitation(&granter),
+            &warden::Accepting {
+                voice_secret: key(FRESH_VOICE_SECRET),
+                heir_secret: key(FRESH_HEIR_SECRET),
+                ephemeral: [[0xa1u8; 32], [0xa2u8; 32]],
+                being: None,
+                method: None,
+                allowance: Allowance {
+                    time: 5_000,
+                    hops: 8,
+                },
+                hints: Vec::new(),
+            },
+            |envelope| {
+                let verdict = granter.judge(envelope, 0).expect("both are judged");
+                let data = granter.answer(&verdict, None).expect("the estate");
+                granter.reply(&verdict.say, data, &[0xa3u8; 32]).ok()
+            },
+        )
+        .expect("the invitation is spent");
+
+    assert_eq!(holder.outbound[taken.at].awaiting.len(), 1);
+    let reply = taken.answer.clone().expect("the road answered");
+    assert_eq!(
+        holder.hear(taken.at, &reply).expect("it is heard").seq,
+        taken.seq
+    );
+    assert!(holder.outbound[taken.at].awaiting.is_empty());
 }

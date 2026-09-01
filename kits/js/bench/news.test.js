@@ -110,6 +110,55 @@ test('a padlock replacement carries only the padlock, and is believed by the nam
   assert.equal(hex(row.warden), hex(far.name.pk));
 });
 
+test('a padlock replacement the name did not sign is silence, the committed heir included', async () => {
+  const { peer, far, row } = await peerAndFar();
+  const was = hex(row.padlock);
+  const stolen = await sealingPair(fixed(72));
+
+  // The far house's committed heir is a key this peer holds, and it is placed
+  // as news by it — the second of the two roads of belief. It is still the
+  // wrong road for this act. Article XIV gives a padlock replacement exactly
+  // one signer, the name, which has not moved; a door that believed any key it
+  // managed to place would let a house's heir replace that house's lock at
+  // every peer before it had succeeded anything, and every message those peers
+  // sent next would be sealed to a lock the heir chose.
+  assert.equal(await heard(peer, tell(peer, far.heir, word({ padlock: stolen.pk }))), null);
+  assert.equal(hex(row.padlock), was);
+
+  // The name signs the same word and it is believed, so what refused the first
+  // is the signer and nothing else about the word.
+  assert.equal(await heard(peer, tell(peer, far.name, word({ padlock: stolen.pk }), 2n)), true);
+  assert.equal(hex(row.padlock), hex(stolen.pk));
+});
+
+test('a succession the successor did not sign is silence', async () => {
+  const { peer, far, row } = await peerAndFar();
+  const was = hex(row.warden);
+  const thief = await signingPair(fixed(93));
+
+  // Signed by the heir that was committed, which is the right road — and
+  // naming a third party as the successor, which is the wrong key. The
+  // successor signs and the peer hashes, so a word naming a successor the
+  // signer is not proves nothing about that key, and believing it would hand
+  // the whole relation to somebody the far house never named.
+  assert.equal(
+    await heard(
+      peer,
+      tell(
+        peer,
+        far.heir,
+        word({
+          successor: thief.pk,
+          commitment: await commitment(thief.pk, fixed(94)),
+          name: thief.pk,
+        }),
+      ),
+    ),
+    null,
+  );
+  assert.equal(hex(row.warden), was);
+});
+
 test('a replayed announcement is refused, because news is counted too', async () => {
   const { peer, far, row } = await peerAndFar();
   const first = await sealingPair(fixed(70));

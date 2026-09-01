@@ -38,6 +38,7 @@ __all__ = [
     "spend_seq",
     "spend_leash",
     "onward",
+    "Leash",
     "Being",
     "Standing",
     "Relation",
@@ -203,6 +204,41 @@ def onward(allowance: Mapping[str, int], dwell: int) -> Optional[dict]:
     return {"time": time, "hops": hops}
 
 
+@dataclass(frozen=True)
+class Leash:
+    """What one arriving call may hand to the next door.
+
+    It is not a number the door worked out in advance: the hop count falls by
+    one, and the budget by this door's own dwell — the difference between when
+    the message arrived and when it is handed onward. The second of those two
+    readings cannot be taken until the handing onward happens, so a leash holds
+    the first reading and the clock, and works the rest out when it is spent.
+
+    Made with nothing it carries nothing and refuses to be spent, which is what
+    a being invoked outside a judgment holds.
+    """
+
+    received: Optional[Mapping[str, int]] = None
+    arrived: int = 0
+    clock: Optional[Callable[[], int]] = None
+
+    def onward(self) -> Optional[dict]:
+        """What this call may hand to the next door, read now.
+
+        A budget that has run out mid-work is refused here exactly as it would
+        have been at the door: the caller's allowance is the caller's, and no
+        door beneath may widen it.
+
+        A dwell is never negative. Two readings of one clock is what the law
+        asks for, and a clock that has gone backwards between them is a broken
+        clock, not a licence to hand on more time than arrived.
+        """
+        if self.clock is None or self.received is None:
+            return None
+        dwell = self.clock() - self.arrived
+        return onward(self.received, dwell if dwell > 0 else 0)
+
+
 # ------------------------------------------------------------------ the records
 
 
@@ -213,7 +249,7 @@ class Being:
     pk: bytes
     digest: bytes
     commitment: bytes
-    invoke: Optional[Callable[[str, bytes], Optional[bytes]]] = None
+    invoke: Optional[Callable[[str, bytes, Leash], Optional[bytes]]] = None
     cells: bytes = b""
 
 
@@ -245,8 +281,9 @@ class Relation:
     are two fields **because one field cannot be two counters**: a peer's
     numbers and this door's own would otherwise walk on each other.
 
-    ``news`` is the door's own bookkeeping and does not travel — the
-    ``relation`` record the blueprint declares has no field for it yet.
+    ``holder`` is which of this ground's beings may spend the relation. A row
+    that named none could not travel when that being moves, and a relation
+    nobody here owns belongs to the warden itself and travels nowhere.
     """
 
     warden: bytes
@@ -259,6 +296,23 @@ class Relation:
     seq: int = 0
     news: int = 0
     hints: tuple = ()
+    holder: Optional[bytes] = None
+    #: The commitment this door holds for each being it stands at down this
+    #: relation, taken from a describe and kept by :meth:`Warden.note`. **A
+    #: being's succession is believed against the being's own commitment,
+    #: never the row's**: the row's belongs to the house's name, and a door
+    #: that hashed one against the other would let the house's committed heir
+    #: succeed every being at it, or let a being's heir take the house.
+    #:
+    #: It does not travel. A ``relation`` record carries what the far door
+    #: knows about this holder; what this door has learned about the beings
+    #: there is its own reading, re-taken from a describe.
+    beings: dict = field(default_factory=dict)
+    #: The asks put on a road down this relation with no answer heard yet, each
+    #: as the padlock the answer will be sealed to and the number the ask
+    #: spent. Article XII's fourth check on an answer reads it, so it lives in
+    #: the core: the check is owed whether or not a socket was involved.
+    awaiting: set = field(default_factory=set)
 
 
 @dataclass
@@ -334,7 +388,19 @@ class Warden:
         self.inbound: list = []
         self.outbound: list = []
         self.pointers: dict = {}
+        #: A being's own key, and the heir it committed to. Both are the
+        #: warden's to hold — nobody hand-manages three hundred keys — and both
+        #: sign: the heir signs a migration's first news, and the being's own
+        #: key signs the second, at the house it landed in.
+        self.secrets: dict = {}
         self.heirs: dict = {}
+        #: How a being of each class this door is armed for is invoked once it
+        #: has landed. **The digest identifies rather than delivers**: a cargo
+        #: carries state and never code, so the program an arriving being runs
+        #: is the destination's own and is put here before the cargo comes.
+        self.arriving: dict = {}
+        #: What the last ``receive`` took in, until :meth:`landed` reads it.
+        self.arrived: Optional[tuple] = None
         self.public = Being(
             pk=self.name,
             digest=WARDEN_DIGEST,
@@ -398,12 +464,20 @@ class Warden:
     # -- step 4, placing the voice
 
     def _place(self, say: Mapping[str, Any]) -> tuple:
+        """Where the voice is found, which is the whole of what a message's kind is.
+
+        The third element says how a news voice was placed: ``(by_heir,
+        being)``, where ``being`` is whose commitment the voice hashed to and
+        is absent when it hashed to the house's own. **That is what says whose
+        succession this voice may announce** — a being's heir cannot move the
+        house's name, and the house's heir cannot move a being.
+        """
         voice = bytes(say["voice"])
         for standing in self.inbound:
             if bytes(standing.voice) == voice:
                 if say["commitment"] is not None:
                     raise Silence("a plain ask carrying a commitment")
-                return ASK, standing
+                return ASK, standing, None
         for standing in self.inbound:
             if arithmetic.commitment(standing.minted_at, voice) == bytes(
                 standing.commitment
@@ -415,13 +489,18 @@ class Warden:
                 standing.minted_at = self.name
                 standing.mark = 0
                 standing.spent = set()
-                return ROTATION, standing
+                return ROTATION, standing, None
         for relation in self.outbound:
-            if bytes(relation.warden) == voice or arithmetic.commitment(
-                relation.warden, voice
-            ) == bytes(relation.commitment):
-                return NEWS, relation
-        return STRANGER, None
+            if bytes(relation.warden) == voice:
+                return NEWS, relation, (False, None)
+            if arithmetic.commitment(relation.warden, voice) == bytes(
+                relation.commitment
+            ):
+                return NEWS, relation, (True, None)
+            for being, commitment in relation.beings.items():
+                if arithmetic.commitment(relation.warden, voice) == commitment:
+                    return NEWS, relation, (True, being)
+        return STRANGER, None, None
 
     # -- step 7, the warden's own being
 
@@ -446,6 +525,7 @@ class Warden:
         standing: Optional[Standing],
         row: Optional[Relation],
         voice: bytes,
+        placed: tuple,
     ) -> Optional[bytes]:
         if name not in _FIELDS:
             raise Silence(f"a field the Warden blueprint does not declare: {name!r}")
@@ -467,11 +547,29 @@ class Warden:
             return wire.encode(notation.Base("int"), self.limit, WARDEN_RECORDS)
         if name == "tell":
             assert row is not None
-            self._believe(row, args[0], voice)
+            self._believe(row, args[0], voice, placed)
             return None
         if name == "moved":
-            word = self.pointers.get(bytes(args[0]))
+            # Scoped by the same binary record every describe is, and silence
+            # rather than absence outside it. A being this door has moved on is
+            # reached by the succession it published and by nothing else: an
+            # arriving row names the being by the name the destination minted
+            # and by that name alone, so the name it wore before stands in no
+            # standing here. If a published pointer were not reach enough, the
+            # old door could not point about the one being Article XIII sends
+            # every peer behind the news to ask it about.
+            asked = bytes(args[0])
+            word = self.pointers.get(asked)
+            if self._reaches(standing, asked) is None and not (
+                word is not None and standing is not None
+            ):
+                raise Silence("a pointer for a being this voice does not reach")
             return wire.encode(notation.Maybe(WORD_TYPE), word, WARDEN_RECORDS)
+        # `receive` is an ordinary field spent by an ordinary standing, granted
+        # in advance the way anything is: a door any stranger could push a
+        # being into is a door with no gate (Article IX).
+        if standing is None:
+            raise Silence("a stranger pushing a being into this door")
         return wire.encode(notation.Base("b32"), self._receive(args[0]), WARDEN_RECORDS)
 
     def _blueprint(self, standing: Optional[Standing], digest: bytes) -> bytes:
@@ -495,17 +593,35 @@ class Warden:
 
         The digest identifies rather than delivers: a destination that does not
         already hold that class refuses the cargo in silence.
+
+        **A destination mints two keys — the one the being is named by here and
+        that one's heir — and the commitment is of the first** (Article IX).
+        The being's new name is where the migration's second news moves the
+        being's identity, and it is what a peer hashes that succession against;
+        a commitment to the heir instead names a key that signs nothing until
+        the succession after this one, so the peer disbelieves the news and is
+        left standing at a house that has stopped answering.
         """
         digest = bytes(cargo["digest"])
         if digest not in self.blueprints:
             raise Silence("a cargo of a class this door does not hold")
+        arriving = bytes(cargo["being"])
+        secret = self.mint()
+        pk = arithmetic.signing_public(secret)
+        if pk == arriving:
+            raise Silence("a receive minting the name the being already wore")
         heir_secret = self.mint()
         heir = arithmetic.signing_public(heir_secret)
-        commitment = arithmetic.commitment(self.name, heir)
-        pk = bytes(cargo["being"])
         self.beings[pk] = Being(
-            pk=pk, digest=digest, commitment=commitment, cells=bytes(cargo["cells"])
+            pk=pk,
+            digest=digest,
+            # The being's own heir commitment, which is what lets this name be
+            # succeeded afterwards like any other.
+            commitment=arithmetic.commitment(self.name, heir),
+            cells=bytes(cargo["cells"]),
+            invoke=self.arriving.get(digest),
         )
+        self.secrets[pk] = secret
         self.heirs[pk] = heir_secret
         for row in cargo["standings"]:
             self.inbound.append(
@@ -516,7 +632,13 @@ class Warden:
                     # row, so a standing that arrives still rotates at the name
                     # it was granted under rather than at this door's.
                     minted_at=bytes(row["name"]),
-                    beings=[bytes(one) for one in row["beings"]],
+                    # An arriving row reaches the being by the name this door
+                    # minted and by that name alone (Article XIII), never also
+                    # by the name it wore before: a name a door must remember
+                    # for whoever might still be behind is a name it can never
+                    # stop remembering, and the peer that is behind is not
+                    # stranded, because the old door still answers `moved`.
+                    beings=[pk],
                     mark=row["mark"],
                     spent=set(row["spent"]),
                     padlock=row["padlock"],
@@ -538,15 +660,35 @@ class Warden:
                     # spent across the move rather than coming round again.
                     news=row["news"],
                     hints=tuple(row["hints"]),
+                    holder=pk,
                 )
             )
-        return commitment
+        # What the second news is composed from, held until :meth:`landed` is
+        # asked for it: the name this door minted, the name the being wore
+        # before, and the voices that arrived with the standings. A standing
+        # granted here afterwards is owed nothing — it never knew the being
+        # anywhere else.
+        self.arrived = (
+            arriving,
+            pk,
+            tuple(bytes(row["voice"]) for row in cargo["standings"]),
+        )
+        # The commitment of the being's new name, hashed under this door's own.
+        return arithmetic.commitment(self.name, pk)
 
     # -- Article XIV, believing the news
 
-    def _believe(self, row: Relation, word: Mapping[str, Any], voice: bytes) -> None:
+    def _believe(
+        self,
+        row: Relation,
+        word: Mapping[str, Any],
+        voice: bytes,
+        placed: tuple,
+    ) -> None:
         """A peer believes it by a key it already holds, and there are only two."""
-        if word["being"] is not None and bytes(word["being"]) == bytes(row.warden):
+        by_heir, hashed_to = placed
+        announced = bytes(word["being"]) if word["being"] is not None else None
+        if announced is not None and announced == bytes(row.warden):
             raise Silence("a word naming the warden's own pk in being")
         succession = word["successor"] is not None
         if succession:
@@ -554,11 +696,20 @@ class Warden:
                 raise Silence("a succession carrying no next commitment")
             if bytes(word["successor"]) != bytes(voice):
                 raise Silence("a succession the successor did not sign")
-            if arithmetic.commitment(row.warden, voice) != bytes(row.commitment):
-                raise Silence("a successor that was not named in advance")
-            row.commitment = bytes(word["commitment"])
-            if word["being"] is None:
+            if not by_heir:
+                raise Silence("a succession not signed by the heir that was committed")
+            # The commitment the voice hashed to is placed already, so it says
+            # what this voice may succeed and nothing else does.
+            if announced != hashed_to:
+                raise Silence("a succession announced by an heir committed elsewhere")
+            if announced is None:
                 row.warden = bytes(word["successor"])
+                row.commitment = bytes(word["commitment"])
+            else:
+                # A being's succession moves the being's own entry. The row's
+                # own commitment belongs to the house and is untouched.
+                row.beings.pop(announced, None)
+                row.beings[bytes(word["successor"])] = bytes(word["commitment"])
         else:
             if word["commitment"] is not None:
                 raise Silence("a padlock replacement carrying a commitment")
@@ -606,7 +757,7 @@ class Warden:
 
         # 4 — place the voice, in the two records and in that order.
         voice = bytes(say["voice"])
-        placement, row = self._place(say)
+        placement, row, placed = self._place(say)
 
         standing = row if placement in (ASK, ROTATION) else None
         relation = row if placement == NEWS else None
@@ -635,8 +786,11 @@ class Warden:
         # 6 — spend the leash.
         spend_leash(say["allowance"])
 
-        # 7 — route.
-        data = self._route(say, placement, standing, relation, voice)
+        # 7 — route. Whatever the being reaches onward carries less than
+        # arrived, and the dwell is only known at the moment it reaches, so the
+        # being is handed the leash rather than a number worked out here.
+        leash = Leash(say["allowance"], arrived if arrived is not None else 0, clock)
+        data = self._route(say, placement, standing, relation, voice, placed, leash)
 
         # 8 — answer, sealed to the return padlock and signed by the name.
         handed = clock() if clock is not None else None
@@ -666,6 +820,8 @@ class Warden:
         standing: Optional[Standing],
         relation: Optional[Relation],
         voice: bytes,
+        placed: tuple,
+        leash: Leash,
     ) -> Optional[bytes]:
         being_pk = say["being"]
         method = say["method"]
@@ -688,6 +844,7 @@ class Warden:
                 standing,
                 relation,
                 voice,
+                placed,
             )
         being = self._reaches(standing, bytes(being_pk))
         if being is None:
@@ -704,12 +861,13 @@ class Warden:
                 standing,
                 relation,
                 voice,
+                placed,
             )
         if placement == NEWS:
             raise Silence("news reaches nothing but tell")
         if being.invoke is None:
             raise Silence("a being that answers nothing")
-        return being.invoke(method["name"], bytes(method["args"]))
+        return being.invoke(method["name"], bytes(method["args"]), leash)
 
     # -- Article XIV, the name's own succession
 
@@ -760,7 +918,7 @@ class Warden:
     def hold(
         self,
         blueprint: str,
-        invoke: Callable[[str, bytes], Optional[bytes]],
+        invoke: Callable[[str, bytes, Leash], Optional[bytes]],
         secret: bytes,
         heir_secret: bytes,
     ) -> bytes:
@@ -780,6 +938,7 @@ class Warden:
             commitment=arithmetic.commitment(self.name, heir),
             invoke=invoke,
         )
+        self.secrets[pk] = secret
         self.heirs[pk] = heir_secret
         return pk
 
@@ -814,11 +973,20 @@ class Warden:
             hints=roads,
         )
 
-    def stand(self, invitation: wire.Invitation) -> Relation:
+    def stand(
+        self, invitation: wire.Invitation, holder: Optional[bytes] = None
+    ) -> Relation:
         """Remember an invitation as a row this ground may speak from.
 
         The heir is the voice: whoever minted it has seen the voice key, so the
         holder's first act is signed by the heir nobody else holds.
+
+        **Kept whole means all five things Article VII names, the heir keypair
+        included.** A rotation is signed by the heir and by nothing else, so a
+        row that dropped it could rotate exactly once — on the first rotation
+        the voice and the heir are one key, and on every one after they are
+        not, which is why a caller side that has only ever rotated once is a
+        caller side nobody has tested.
         """
         row = Relation(
             warden=bytes(invitation.warden),
@@ -826,9 +994,10 @@ class Warden:
             padlock=bytes(invitation.padlock),
             voice=bytes(invitation.heir),
             secret=bytes(invitation.heir_secret),
-            heir=b"",
-            heir_secret=b"",
+            heir=bytes(invitation.heir),
+            heir_secret=bytes(invitation.heir_secret),
             hints=tuple(invitation.hints),
+            holder=bytes(holder) if holder is not None else None,
         )
         self.outbound.append(row)
         return row
@@ -836,6 +1005,22 @@ class Warden:
     def relation(self, far: bytes) -> Optional[Relation]:
         for row in self.outbound:
             if bytes(row.warden) == bytes(far):
+                return row
+        return None
+
+    def note(self, row: Relation, being: bytes, commitment: bytes) -> None:
+        """Keep the commitment a describe published for one being at a far house.
+
+        A peer that means to believe that being's succession must keep it: the
+        news arrives signed by a key this door has never seen, and the hash
+        against this commitment is the only thing that recognises it.
+        """
+        row.beings[bytes(being)] = bytes(commitment)
+
+    def handle(self, being: bytes) -> Optional[Relation]:
+        """The relation down which this door reaches that far being."""
+        for row in self.outbound:
+            if bytes(being) in row.beings:
                 return row
         return None
 
@@ -848,20 +1033,70 @@ class Warden:
         next_heir: Optional[bytes] = None,
         allowance: Optional[Mapping[str, int]] = None,
         seq: Optional[int] = None,
+        leash: Optional[Leash] = None,
     ) -> tuple[bytes, int]:
         """Compose one say to the far door, and say what number it spent.
 
-        ``next_heir`` makes it a rotation: the fresh commitment names a key
-        nobody has seen, and the row keeps the secret behind it.
+        ``leash`` is the call this ask is made in the course of, when it is
+        one. A being standing in the middle of a chain hands its own leash
+        straight back, and the allowance is read off it here, at the moment of
+        sealing — which is the moment the message is handed onward, and the
+        second of the two readings the dwell is the difference of. Present, it
+        overrides ``allowance``, so a being under a leash cannot widen one even
+        by mistake.
+
+        ``next_heir`` is the **secret** of a key nobody has ever seen, and it
+        makes this a rotation. The message is **signed by the heir and by
+        nothing else**, because the heir is the only key the far door will take
+        the standing over for and signing with the voice would present a
+        standing's current holder as its own heir. The row ends standing on the
+        key that just signed and keeping the secret behind the key it committed
+        to, because nothing else in Quo carries it — a row that committed to a
+        key it then threw away holds a standing it can never rotate again.
+
+        ``seq`` is the number to spend, when the caller wants to choose it:
+        Article VIII leaves that choice to the caller, because a fresh mark is
+        empty and no door may require a first message to carry exactly one.
+        Absent, the row counts on from what it last spent.
         """
+        # An ask that could not be judged is not made: a hop count below zero
+        # or a budget at or below zero is what the far door would meet with
+        # silence, so the near door never spends a number on it.
+        if leash is not None:
+            allowance = leash.onward()
+            if allowance is None:
+                raise Silence("a leash that cannot be spent onward")
+
+        # A rotation starts the far door's mark fresh, so every number at or
+        # above one stands above it again; on an ordinary ask the floor is what
+        # this relation has already spent, because per voice the number only
+        # rises. The default counts on either way, which costs nothing: a
+        # number above a fresh mark is honoured whatever it is.
+        floor = 0 if next_heir is not None else row.seq
         if seq is None:
-            row.seq += 1
-            seq = row.seq
+            seq = row.seq + 1
+        elif seq <= floor:
+            raise Silence("a number this relation has already spent")
+        signer = row.secret
+        if next_heir is not None:
+            if not row.heir_secret:
+                raise Silence("a relation with no heir cannot rotate")
+            signer = row.heir_secret
+
+        # An answer is paired to its ask by the padlock, the warden and the seq,
+        # and by nothing else. Two asks out at once carrying the same three
+        # would be answered indistinguishably, so this kit refuses to send the
+        # second — the shape a rotation makes, because it starts the far door's
+        # mark fresh and brings a number round again.
+        pending = (bytes(self.padlock), seq)
+        if pending in row.awaiting:
+            raise Silence("an ask on that number is already awaiting an answer")
+
         record = {
-            "voice": arithmetic.signing_public(row.secret),
+            "voice": arithmetic.signing_public(signer),
             "recipient": row.warden,
             "commitment": (
-                arithmetic.commitment(row.warden, next_heir)
+                arithmetic.commitment(row.warden, arithmetic.signing_public(next_heir))
                 if next_heir is not None
                 else None
             ),
@@ -874,22 +1109,62 @@ class Warden:
         }
         try:
             message = envelope.seal(
-                envelope.SAY, record, row.secret, row.padlock, ephemeral_secret
+                envelope.SAY, record, signer, row.padlock, ephemeral_secret
             )
         except envelope.EnvelopeError as bad:
             raise Silence(str(bad)) from bad
+        # There is an envelope: the key that just signed is the holder from
+        # here on, the one committed to is the heir after it, and the row keeps
+        # its secret because nothing else in Quo does.
+        if next_heir is not None:
+            row.voice, row.secret = arithmetic.signing_public(signer), signer
+            row.heir, row.heir_secret = (
+                arithmetic.signing_public(next_heir),
+                next_heir,
+            )
+        row.seq = max(row.seq, seq) if next_heir is None else seq
+        row.awaiting.add(pending)
         return message, seq
 
     def hear(self, message: bytes) -> dict:
-        """Open an answer sealed to this ground's padlock, or refuse it.
+        """Judge an answer at this caller's end — Article XII's shorter road.
 
-        The signature is checked against the warden the answer names; whether
-        that is the warden this ground asked is the caller's own to judge.
+        The envelope's half is the unseal, the leading byte and the signature
+        verified against the ``warden`` the answer's own record carries. The
+        two left are the caller's own bookkeeping, because only the caller
+        knows what it asked: that warden must be a door this ground holds a
+        relation with, and **an ask must be awaiting under that padlock, that
+        warden and that seq**.
+
+        An answer nothing awaits is the same silence as every other failure,
+        and hearing one spends the record, so the same bytes never answer
+        twice.
         """
         try:
-            return envelope.unseal(self.padlock_secret, message, envelope.ANSWER)
+            answer = envelope.unseal(self.padlock_secret, message, envelope.ANSWER)
         except envelope.EnvelopeError as bad:
             raise Silence(str(bad)) from bad
+        pending = (bytes(self.padlock), answer["seq"])
+        for row in self.outbound:
+            if bytes(row.warden) != bytes(answer["warden"]):
+                continue
+            if pending in row.awaiting:
+                row.awaiting.discard(pending)
+                return answer
+        raise Silence("an answer nothing awaits")
+
+    def forgo(self, row: Relation, seq: int) -> bool:
+        """Stop awaiting an ask whose answer will never come.
+
+        A road that failed to carry, or a caller that has stopped waiting.
+        Nothing on the wire changes: the number stays spent, because a message
+        the far door judged spent it there whatever this end does.
+        """
+        pending = (bytes(self.padlock), seq)
+        if pending not in row.awaiting:
+            return False
+        row.awaiting.discard(pending)
+        return True
 
     def accept(
         self,
@@ -933,11 +1208,16 @@ class Warden:
         voice = arithmetic.signing_public(voice_secret)
 
         # The heir signs, and commits to a voice the granter has never seen.
-        first, _ = self.ask(row, self.mint(), next_heir=voice)
+        # The row moves with it: that voice now stands and is what signs next.
+        first, opening_seq = self.ask(row, self.mint(), next_heir=voice_secret)
         opening = send(first)
+        # Both rotations open the count at one, because each starts the far
+        # door's mark fresh — so their answers carry the same padlock, warden
+        # and seq. The opening is handed back sealed for the caller to judge,
+        # which is what stops awaiting it here; without this the second ask is
+        # the one the kit refuses to send.
+        self.forgo(row, opening_seq)
 
-        # That voice now stands, and commits to a fresh heir beside it.
-        row.voice, row.secret = voice, voice_secret
         heir_secret = self.mint()
         heir = arithmetic.signing_public(heir_secret)
         second, seq = self.ask(
@@ -945,11 +1225,10 @@ class Warden:
             self.mint(),
             being=being,
             method=method,
-            next_heir=heir,
+            next_heir=heir_secret,
             allowance=allowance,
         )
         answer = send(second)
-        row.heir, row.heir_secret = heir, heir_secret
 
         return Accepted(
             row=row,
@@ -973,3 +1252,282 @@ class Warden:
                     self.inbound.remove(standing)
                 return
         raise Silence("no such standing")
+
+    # -- Articles XIII and XIV, migrating a being away
+
+    def expect(
+        self,
+        blueprint: str,
+        invoke: Callable[[str, bytes, Leash], Optional[bytes]],
+    ) -> bytes:
+        """Arm this door for a class of being it is willing to take in.
+
+        **A destination that does not already hold the class refuses the cargo
+        in silence, and there is nobody it may ask** (Article IX). Holding the
+        class means both halves: the text, so the digest identifies something,
+        and the program an arriving being runs, because a cargo carries state
+        and never code.
+        """
+        text = notation.render(notation.parse(blueprint))
+        digest = notation.digest(text)
+        self.blueprints[digest] = text
+        self.arriving[digest] = invoke
+        return digest
+
+    def peers(self, being: bytes) -> list:
+        """The rows that stand at one being: who must be told when it moves.
+
+        The padlock and the roads are refreshed by every call that arrives, so
+        a row read here is the freshest way back this door has. Ordered by the
+        voice's bytes ascending, so a list of who is owed news does not differ
+        between two runs.
+        """
+        at = bytes(being)
+        return sorted(
+            (row for row in self.inbound if at in [bytes(one) for one in row.beings]),
+            key=lambda row: bytes(row.voice),
+        )
+
+    def forget(self, being: bytes, at: Optional[bytes] = None) -> int:
+        """Drop the relations a being holds outward, and say how many went.
+
+        ``at`` narrows it to one far warden, which is how a relation
+        re-remembered at a house supersedes the one it replaces. Absent, all of
+        them go — which is what a being leaving takes with it.
+        """
+        held = bytes(being)
+        keeping = [
+            row
+            for row in self.outbound
+            if not (
+                row.holder is not None
+                and bytes(row.holder) == held
+                and (at is None or bytes(row.warden) == bytes(at))
+            )
+        ]
+        dropped = len(self.outbound) - len(keeping)
+        self.outbound = keeping
+        return dropped
+
+    def point(self, being: bytes, word: Mapping[str, Any]) -> None:
+        """Publish the succession this door answers ``moved`` with.
+
+        The name need not be a being here, and a door that required one could
+        not point for the half of a migration that matters most: a destination
+        points for the name the arriving being wore before, and that name is a
+        being at no door any more.
+        """
+        self.pointers[bytes(being)] = dict(word)
+
+    def pack(self, being: bytes, cells: Optional[bytes] = None) -> dict:
+        """A migration's cargo, read off what this door holds for one being.
+
+        Packed **under the name the first rotation gives the being**, which is
+        its committed heir. Migration is one message sent twice: the first
+        moves the being's identity to that heir and the second moves it on to
+        the key the destination minted, so a cargo packed under the name the
+        being wears here would leave the destination composing a succession of
+        a name every peer has already succeeded past.
+
+        Every list is ordered by the rule Article IX gives, and the order is
+        derived rather than chosen: standings by the voice's bytes, relations
+        by the far warden's, beings under a standing by their pk bytes, and
+        spent numerically — all ascending. **A cargo crosses the wire, so two
+        wardens packing one being must produce one byte string.**
+        """
+        at = bytes(being)
+        held = self.beings.get(at)
+        if held is None:
+            raise Silence("no being of that name")
+        heir_secret = self.heirs.get(at)
+        if heir_secret is None:
+            raise Silence("a being whose committed heir this door does not hold")
+        heir = arithmetic.signing_public(heir_secret)
+        standings = [
+            {
+                "voice": bytes(row.voice),
+                "commitment": bytes(row.commitment),
+                # The name the heir commitment was minted under travels with
+                # the row. Without it a migrated standing could never verify an
+                # older commitment again.
+                "name": bytes(row.minted_at),
+                "beings": [heir],
+                "mark": row.mark,
+                # The replay record travels whole: the mark and the spent
+                # numbers beneath it. A mark alone would make the new door
+                # either refuse everything at or below it — killing a caller
+                # with asks in flight — or honour it all.
+                "spent": sorted(row.spent),
+                # The way back travels with the standing, or the destination
+                # could not send the second news to the peers that arrived.
+                "padlock": bytes(row.padlock) if row.padlock is not None else None,
+                "hints": list(row.hints),
+            }
+            for row in self.peers(at)
+        ]
+        relations = [
+            {
+                "warden": bytes(row.warden),
+                "commitment": bytes(row.commitment),
+                "padlock": bytes(row.padlock),
+                # **The voice's keys means both of them.** Carrying the current
+                # voice alone would leave the being able to act once and never
+                # able to rotate, and would leave the heir secret at a door
+                # whose keys are all supposed to be dead.
+                "voice": bytes(row.voice),
+                "secret": bytes(row.secret),
+                "heir": bytes(row.heir),
+                "heirSecret": bytes(row.heir_secret),
+                "seq": row.seq,
+                # The mark kept for that far warden's news, which is its own
+                # counter and never the one this door sends by.
+                "news": row.news,
+                "hints": list(row.hints),
+            }
+            for row in self.outbound
+            if row.holder is not None and bytes(row.holder) == at
+        ]
+        return {
+            "being": heir,
+            "digest": bytes(held.digest),
+            "cells": bytes(held.cells) if cells is None else bytes(cells),
+            "standings": sorted(standings, key=lambda one: one["voice"]),
+            "relations": sorted(relations, key=lambda one: one["warden"]),
+        }
+
+    def depart(
+        self,
+        being: bytes,
+        commitment: bytes,
+        name: bytes,
+        padlock: bytes,
+        hints: Sequence[str] = (),
+    ) -> tuple:
+        """The origin's half, after the cargo has landed.
+
+        It publishes the succession of the being's committed heir — carrying as
+        its next commitment the one ``receive`` answered, which is the one fact
+        the origin cannot invent — and stops acting on the being's behalf for
+        good. It hands back the word, the secret that signs the first news, and
+        the peers owed it.
+
+        **After the double rotation every key the old warden held for this
+        being is dead**, so this door drops the being itself: its cells are its
+        own memory and its heir is the key the first news spends, and a door
+        that kept either would be holding what it has just announced it no
+        longer holds. The standings stay, so a peer still reaches the door and
+        is pointed.
+        """
+        at = bytes(being)
+        held = self.beings.get(at)
+        heir_secret = self.heirs.get(at)
+        if held is None or heir_secret is None:
+            raise Silence("no being of that name")
+        successor = arithmetic.signing_public(heir_secret)
+        # The peer believes the succession by hashing the successor against the
+        # commitment it holds, so a key this door never committed to would
+        # compose news nobody can believe.
+        if arithmetic.commitment(self.name, successor) != bytes(held.commitment):
+            raise Silence("a being whose heir is not the one it committed to")
+        word = {
+            "being": at,
+            "successor": successor,
+            "commitment": bytes(commitment),
+            # Where it answers has changed, so the word says so, and the peer
+            # rewrites its row entire from it.
+            "name": bytes(name),
+            "padlock": bytes(padlock),
+            "hints": list(hints),
+        }
+        told = self.peers(at)
+        # The relations went with the cargo, so the old door holds no voice of
+        # the being's any more and can spend nothing on its behalf.
+        self.forget(at)
+        del self.beings[at]
+        del self.heirs[at]
+        self.secrets.pop(at, None)
+        self.point(at, word)
+        return word, heir_secret, told
+
+    def landed(self, hints: Sequence[str] = ()) -> tuple:
+        """The destination's half, once a cargo has been taken in.
+
+        The word is composed by the kit and not by the host: a house that took
+        a cargo in and then had to invent the announcement would invent a
+        different one at every ground. The roads are handed in, as they are for
+        a card, a grant and an ask, because a door does not know where it
+        stands until something stands it up.
+
+        **The new door points as well** (Article XIII), for the name the being
+        wore before, with the word its own arrival composed — so the word a
+        peer hears and the word a peer gets by asking are the identical bytes.
+        """
+        if self.arrived is None:
+            raise Silence("nothing has landed here")
+        was, pk, voices = self.arrived
+        held = self.beings[pk]
+        word = {
+            "being": was,
+            "successor": pk,
+            "commitment": bytes(held.commitment),
+            "name": self.name,
+            "padlock": self.padlock,
+            "hints": list(hints),
+        }
+        self.point(was, word)
+        arrived = set(voices)
+        told = [row for row in self.peers(pk) if bytes(row.voice) in arrived]
+        # The being's own key signs the second news: the peer holds the hash of
+        # it from the first, so it is the one key the peer can believe it from.
+        return word, self.secrets[pk], told
+
+    def news(
+        self,
+        peer: Standing,
+        voice_secret: bytes,
+        word: Mapping[str, Any],
+        seq: int,
+        ephemeral_secret: bytes,
+        allowance: Optional[Mapping[str, int]] = None,
+    ) -> bytes:
+        """Compose one piece of news for one peer.
+
+        It is an ordinary envelope judged at the peer's door by the same steps
+        as any ask. **What makes it news is only where its voice is found**: in
+        the peer's outbound record rather than its inbound one. News names no
+        being, because that placement is the whole of what makes it news.
+
+        The recipient is the padlock. An inbound row keeps the padlock the peer
+        named and never that peer's warden name — a door never learns the house
+        behind a voice — and a padlock is per door, so it binds the message to
+        one door exactly as a name would.
+        """
+        if peer.padlock is None:
+            # A peer that has never spoken left no way back. It is reached by
+            # the only means left: it eventually asks, and the door tells it.
+            raise Silence("a peer that left no way back")
+        record = {
+            "voice": arithmetic.signing_public(voice_secret),
+            "recipient": bytes(peer.padlock),
+            "commitment": None,
+            "seq": seq,
+            "padlock": self.padlock,
+            "hints": list(self.hints),
+            "allowance": dict(allowance) if allowance else {"time": 5000, "hops": 8},
+            "being": None,
+            "method": {
+                "name": "tell",
+                "args": wire.encode(WORD_TYPE, dict(word), WARDEN_RECORDS),
+            },
+        }
+        spend_leash(record["allowance"])
+        try:
+            return envelope.seal(
+                envelope.SAY,
+                record,
+                voice_secret,
+                bytes(peer.padlock),
+                ephemeral_secret,
+            )
+        except envelope.EnvelopeError as bad:
+            raise Silence(str(bad)) from bad

@@ -1,0 +1,17 @@
+[package]
+name = "quo-conformance"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[[bin]]
+name = "conformance"
+path = "src/main.rs"
+
+[dependencies]
+quo-arithmetic.workspace = true
+quo-notation.workspace = true
+quo-warden.workspace = true
+quo-wire.workspace = true

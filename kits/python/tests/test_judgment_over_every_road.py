@@ -191,7 +191,7 @@ class TheJudgment:
         """Steps 1 through 6 are the warden's alone. The object behind the door
         is the same object on every road, and it is handed the same bytes."""
         seen = []
-        self.warden.beings[pins.BEING_PK].invoke = lambda name, args: (
+        self.warden.beings[pins.BEING_PK].invoke = lambda name, args, leash: (
             seen.append((name, args)) or b"lit"
         )
         self.assertEqual(pins.opened(self.send(self.say(seq=1)))["data"], b"lit")

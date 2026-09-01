@@ -335,6 +335,32 @@ test('limit is the one fact the document makes a warden publish', async () => {
   assert.equal(asHolder, 65_536n);
 });
 
+// The published limit binds on every road, distance zero included: what a door
+// tells every caller it will refuse, it refuses. A door whose limit lived only
+// in its line would accept, over a road with no socket in it, exactly the
+// envelope it published that it would not.
+test('the published limit binds where there is no road at all', async () => {
+  const { warden, voice } = await estate();
+  const envelope = await ask(warden, voice, { being: warden.name.pk, method: invoke('limit') });
+
+  // One envelope, judged under a limit it exceeds and then under one it fits.
+  // The judgment is the only thing that changed, and no socket was ever
+  // involved.
+  warden.limit = BigInt(envelope.length) - 1n;
+  assert.equal(
+    await warden.judge(envelope, { clock: still, random: RANDOM }),
+    null,
+    'a byte over the limit is silence',
+  );
+  warden.limit = BigInt(envelope.length);
+  assert.notEqual(
+    await warden.judge(envelope, { clock: still, random: RANDOM }),
+    null,
+    'the limit is inclusive — and the refused message spent nothing, because ' +
+      'it was refused before the record was touched',
+  );
+});
+
 test('a method with no being reaches the warden’s own being', async () => {
   const { warden, voice } = await estate();
   // Addressing the door alone is how you speak to the ground's own affairs, so
