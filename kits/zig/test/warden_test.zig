@@ -1934,35 +1934,49 @@ test "XII — tell is news, and news is a tell, and neither is the other thing" 
 
 // --------------------------------------------- IX and XIII, taking a cargo
 
+/// The cargo's rows live here rather than in `aCargo`'s frame. **A `&.{...}`
+/// is only static where every field is comptime-known**, and the relation
+/// names `ground.far.public`, which is not — so returning a slice of it handed
+/// back a pointer into a frame that had already gone. macOS left that stack
+/// page intact and the reads happened to be right; Linux did not, and three
+/// cases failed there while the whole suite was green here. Hanging the rows
+/// off `Ground` gives them the lifetime every caller already assumes.
+var cargo_standings: [1]warden.Standing = undefined;
+var cargo_beings: [1]Key = undefined;
+var cargo_relations: [1]warden.Relation = undefined;
+
 fn aCargo(ground: *Ground, digest: Key) warden.Cargo {
+    cargo_beings = .{@as(Key, @splat(0x50))};
+    cargo_standings = .{.{
+        .voice = @splat(0x70),
+        .commitment = @splat(0x71),
+        // The name that commitment was minted at, which is the origin's
+        // rather than this door's.
+        .name = @splat(0x73),
+        .beings = &cargo_beings,
+        .mark = 9,
+        .spent = &.{ 4, 6 },
+        .padlock = @splat(0x72),
+        .hints = &.{"quic://back"},
+    }};
+    cargo_relations = .{.{
+        .warden = ground.far.public,
+        .commitment = @splat(0x81),
+        .padlock = @splat(0x82),
+        .voice = @splat(0x83),
+        .secret = @splat(0x84),
+        .heir = @splat(0x85),
+        .heir_secret = @splat(0x86),
+        .seq = 12,
+        .news = 7,
+        .hints = &.{"quic://third"},
+    }};
     return .{
         .being = @splat(0x50),
         .digest = digest,
         .cells = "remembered",
-        .standings = &.{.{
-            .voice = @splat(0x70),
-            .commitment = @splat(0x71),
-            // The name that commitment was minted at, which is the origin's
-            // rather than this door's.
-            .name = @splat(0x73),
-            .beings = &.{@as(Key, @splat(0x50))},
-            .mark = 9,
-            .spent = &.{ 4, 6 },
-            .padlock = @splat(0x72),
-            .hints = &.{"quic://back"},
-        }},
-        .relations = &.{.{
-            .warden = ground.far.public,
-            .commitment = @splat(0x81),
-            .padlock = @splat(0x82),
-            .voice = @splat(0x83),
-            .secret = @splat(0x84),
-            .heir = @splat(0x85),
-            .heir_secret = @splat(0x86),
-            .seq = 12,
-            .news = 7,
-            .hints = &.{"quic://third"},
-        }},
+        .standings = &cargo_standings,
+        .relations = &cargo_relations,
     };
 }
 
