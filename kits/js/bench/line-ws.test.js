@@ -632,10 +632,20 @@ test('a warden under the default that declares nothing does not offer the wss li
 test('the platform WebSocket carries the line where a socket cannot be opened', async (t) => {
   // The tab's road: no `node:tls` under it, no options to pass — the platform
   // owns the framing and the pings, and the line above reads the same.
+  //
+  // A runtime with no global `WebSocket` has nothing for this case to measure.
+  // The kit claims Node 20 and a global `WebSocket` arrived in 22, so this is
+  // reached on the floor of the matrix — and `dial` is right there: it falls
+  // back to `node:tls`, which the cases above drive. Asserting the platform
+  // road on a platform that has none would be asserting the runtime, not the
+  // kit.
+  if (typeof globalThis.WebSocket !== 'function') {
+    t.skip('this runtime has no global WebSocket; dial takes the node:tls road');
+    return;
+  }
   const world = await grounds();
   t.after(world.close);
   const { host, guest, object, being } = world;
-  assert.equal(typeof globalThis.WebSocket, 'function');
 
   const invitation = await host.grant(being, { voiceSeed: fixed(20), heirSeed: fixed(21) });
   const row = guest.remember(invitation);
