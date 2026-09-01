@@ -484,7 +484,11 @@ impl Warden {
         // were not reach enough, the old door could not point about the one
         // being Article XIII sends every peer behind the news to ask it about.
         let holder = self.inbound.iter().any(|row| &row.voice == voice);
-        if !self.reaches(voice, being) && !(pointer.is_some() && holder) {
+        // Two ways to earn the answer, and naming them positively is the whole
+        // rule: this voice still reaches the being here, or the being has left
+        // and this voice held a standing at the door before it did.
+        let may_ask = self.reaches(voice, being) || (pointer.is_some() && holder);
+        if !may_ask {
             return refuse("a pointer for a being this voice may not reach");
         }
         Ok(pointer)
