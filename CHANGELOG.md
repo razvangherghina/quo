@@ -11,6 +11,25 @@ Entries before 0.2.0 covered the JavaScript kit alone.
 Nothing here carries a compatibility promise before 1.0.0. The wire may move,
 and a version is the only safe thing to depend on.
 
+## 0.3.1
+
+**A peer that missed a migration's news is no longer stranded.** A handle
+that meets silence at a being asks the far door `moved`, hands the word it
+gets back to its own warden through the same path news takes — the same
+commitment the row already holds, the same mark — and the row is rehoused.
+Both doors of a migration point, so the handle follows both words to the new
+house. The ask that met the move stays silence, as every ask at a departed
+being is; the next reaches. No new wire behaviour: `moved` was always a field
+the door answers, and the word was always the news's bytes.
+
+**Two defects it found.** The Python origin could never answer `moved` after
+a departure, because its reach test asked whether the being was still held.
+The Zig origin answered `moved` with an empty road where the destination's
+should be, because the word's hints were borrowed from the call that composed
+them. Neither was visible to conformance, which had only ever asked `moved`
+at the destination. The departure scenario now asks it at the origin too, and
+asks an ordinary field there and pins the silence.
+
 ## 0.3.0
 
 **Every kit has the same three-layer shape, and a being's seam is complete.**

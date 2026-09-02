@@ -35,6 +35,11 @@ use crate::{
     Refused, Resident, Route, Sketch, Verdict, Word, KEY, WARDEN_BLUEPRINT,
 };
 
+/// How many pointers one silence chases, and how far a handle follows a being
+/// it was minted at. A migration is two words, so more than two is room; the
+/// bound is what a ring of doors pointing at each other runs out of.
+const POINTERS: usize = 8;
+
 /// What a walk is born with when a being starts one of its own, rather than in
 /// the course of answering a call. Each warden sets its own; this is the
 /// starting point the kit offers.
@@ -227,6 +232,13 @@ struct State {
     beings: BTreeMap<[u8; KEY], Kept>,
     labels: BTreeMap<String, Label>,
     texts: BTreeMap<[u8; KEY], String>,
+    /// The name a far being was known by here, against the name it wears now.
+    /// A handle is minted at one key and the row rewrites that key when a
+    /// succession is believed, so without this trail a handle taken before a
+    /// move would go on naming a key that stands in no standing anywhere. It
+    /// is this house's own bookkeeping and never crosses a wire; handles do
+    /// not survive a restart, so neither does it.
+    followed: BTreeMap<[u8; KEY], [u8; KEY]>,
 }
 
 /// What the answering side's own layer is told when the door falls silent.
@@ -391,6 +403,7 @@ impl Warden {
                 beings: BTreeMap::new(),
                 labels,
                 texts,
+                followed: BTreeMap::new(),
             }),
             clock: opening.clock,
             random: opening.random,
@@ -730,6 +743,11 @@ impl Warden {
                     Err(Refused(why)) => return self.hush(&why),
                 };
                 self.keep(&state);
+                if let Route::Warden { method } = &verdict.route {
+                    if method.name == "tell" {
+                        note_followed(&mut state, &method.args);
+                    }
+                }
                 self.reply(&mut state, &verdict, data)
             }
         }
@@ -1038,6 +1056,35 @@ impl Warden {
         read_own(field, asked.data.as_deref())
     }
 
+    /// Hand a word met as the old door's pointer to this house's own door, to
+    /// believe by the same steps news is believed by. Answers whether the row
+    /// moved, which is what says another pointer is worth chasing.
+    fn rehouse(&self, at: usize, word: &Word) -> bool {
+        let mut state = self.state();
+        if state.door.believe_moved(at, word).is_err() {
+            return false;
+        }
+        if let (Some(was), Some(now)) = (word.being, word.successor) {
+            state.followed.insert(was, now);
+        }
+        self.keep(&state);
+        true
+    }
+
+    /// The name a far being wears now, for a handle minted at the name it wore
+    /// before. A chain, because a peer behind two moves is pointed twice.
+    fn followed(&self, being: [u8; KEY]) -> [u8; KEY] {
+        let state = self.state();
+        let mut now = being;
+        for _ in 0..POINTERS {
+            match state.followed.get(&now) {
+                Some(next) if *next != now => now = *next,
+                _ => break,
+            }
+        }
+        now
+    }
+
     fn rotate(&self, at: usize, reach: &Reach) -> Option<Answer> {
         let next = self.0.random.draw();
         let ephemeral = self.0.random.draw();
@@ -1139,6 +1186,22 @@ impl Warden {
                 };
             }
         }
+    }
+}
+
+/// A believed succession moves the being's name in the row, so a handle minted
+/// at the name it wore before is left naming a key that stands nowhere. The
+/// trail is kept whichever way the word arrived — announced as news here, or
+/// met as the old door's pointer — because the two are the same word.
+fn note_followed(state: &mut State, args: &[u8]) {
+    let Ok(value) = crate::shape::read_record("word", args) else {
+        return;
+    };
+    let Ok(word) = crate::shape::as_word(&value) else {
+        return;
+    };
+    if let (Some(was), Some(now)) = (word.being, word.successor) {
+        state.followed.insert(was, now);
     }
 }
 
@@ -1416,7 +1479,7 @@ impl Handle {
         let allowance = self.allowance()?;
         let ephemeral = self.warden.0.random.draw();
         let reach = Reach {
-            being: Some(self.being),
+            being: Some(self.warden.followed(self.being)),
             method: Some(Method {
                 name: field.to_string(),
                 args: blob,
@@ -1444,10 +1507,50 @@ impl Handle {
                 row.awaiting.insert((padlock, sealed.seq));
             }
         }
-        let answer = self.warden.put(at, sealed.envelope.clone(), sealed.seq)?;
+        let answer = match self.warden.put(at, sealed.envelope.clone(), sealed.seq) {
+            Some(answer) => answer,
+            None => {
+                self.met_the_move(at);
+                return None;
+            }
+        };
         let declared = self.field(&sealed.field)?;
         let ty = declared.answers.as_ref()?;
         quo_wire::decode(&self.blueprint, ty, answer.data.as_deref()?).ok()
+    }
+
+    /// Silence may be a being that has left. Every ask at a departed being is
+    /// silence and the old door answers `moved` alone, so the pointer is a
+    /// second ordinary ask down this same relation — no new verb and nothing
+    /// new on the wire — and the word it answers goes to this house's own
+    /// door, which believes it by the same steps as news. A house that points
+    /// at a house that also points is chased to the end, because a peer behind
+    /// a whole migration is behind two words and the news would have carried
+    /// both; the count is what stops a ring of doors pointing at each other.
+    ///
+    /// The call that met the move stays silence and is not retried: the ask
+    /// spent its number at a door that no longer holds the being, and the next
+    /// call down this handle is the one that reaches the new house.
+    fn met_the_move(&self, at: usize) {
+        for _ in 0..POINTERS {
+            let Some(allowance) = self.allowance() else {
+                return;
+            };
+            let being = self.warden.followed(self.being);
+            let Some(args) = own_args("moved", &Value::Being(being)) else {
+                return;
+            };
+            let Some(Value::Maybe(Some(held))) = self.warden.own_ask(at, "moved", args, allowance)
+            else {
+                return;
+            };
+            let Ok(word) = crate::shape::as_word(&held) else {
+                return;
+            };
+            if !self.warden.rehouse(at, &word) {
+                return;
+            }
+        }
     }
 
     /// A call to a being under this same warden. **One shape**: leashed, and a

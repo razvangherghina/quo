@@ -399,7 +399,36 @@ pub fn decodeWord(gpa: std.mem.Allocator, raw: []const u8) Fault!ReadWord {
         else => return Error.Refused,
     };
 
-    const fields = switch (decoded.value) {
+    return .{ .arena = arena, .word = try wordOf(a, decoded.value) };
+}
+
+/// The answer a `moved` came back with: the succession the door published for
+/// a being that left, or absence where nothing has moved. Silence is not here
+/// — it never arrived.
+pub fn decodeMoved(gpa: std.mem.Allocator, raw: []const u8) Fault!?ReadWord {
+    var arena = std.heap.ArenaAllocator.init(gpa);
+    errdefer arena.deinit();
+    const a = arena.allocator();
+
+    const blueprint = try shapes(a);
+    const owned = try a.dupe(u8, raw);
+    const decoded = wire.decode(a, "word?", blueprint.records, owned) catch |e| switch (e) {
+        error.OutOfMemory => return error.OutOfMemory,
+        else => return Error.Refused,
+    };
+    const held = switch (decoded.value) {
+        .absent => {
+            arena.deinit();
+            return null;
+        },
+        .present => |one| one.*,
+        else => return Error.Refused,
+    };
+    return .{ .arena = arena, .word = try wordOf(a, held) };
+}
+
+fn wordOf(a: std.mem.Allocator, value: wire.Value) Fault!Word {
+    const fields = switch (value) {
         .record => |f| f,
         else => return Error.Refused,
     };
@@ -417,14 +446,14 @@ pub fn decodeWord(gpa: std.mem.Allocator, raw: []const u8) Fault!ReadWord {
         };
     }
 
-    return .{ .arena = arena, .word = .{
+    return .{
         .being = try optionalKeyOf(fields[0]),
         .successor = try optionalKeyOf(fields[1]),
         .commitment = try optionalKeyOf(fields[2]),
         .name = try optionalKeyOf(fields[3]),
         .padlock = try optionalKeyOf(fields[4]),
         .hints = hints,
-    } };
+    };
 }
 
 /// Every list in a cargo is ordered, and the order is derived rather than
@@ -794,6 +823,13 @@ pub const Inbound = struct {
 pub const FarBeing = struct {
     being: Key,
     commitment: Key,
+    /// The name this door first learned the being by, which a believed
+    /// succession never rewrites. A handle keeps the name it was made with,
+    /// and a being that moves wears a new one at its new house; this is the
+    /// one place the two are tied together, on the caller's own side. It is
+    /// not a door remembering a departed name for whoever might be behind —
+    /// nothing is answered by it and it travels nowhere.
+    known: Key,
     /// That being's class, as the far door's `blueprint` answered it. It is
     /// what makes the being's fields callable, and it is kept here rather than
     /// beside a label because a standing may name more beings than a label
@@ -930,8 +966,22 @@ pub const BeingRow = struct {
     /// True where the parse above belongs to this row and must be dropped
     /// with it.
     owns_shape: bool = false,
+    /// The roads inside `moved`, which this row owns. A published succession
+    /// outlives the call that composed it, so the roads it names cannot be
+    /// borrowed from that call's own scratch.
+    owned_hints: ?[]const []const u8 = null,
+
+    /// Drop the roads of a succession this row is about to replace or lose.
+    pub fn dropHints(self: *BeingRow, gpa: std.mem.Allocator) void {
+        if (self.owned_hints) |hints| {
+            for (hints) |one| gpa.free(one);
+            gpa.free(hints);
+        }
+        self.owned_hints = null;
+    }
 
     pub fn deinit(self: *BeingRow, gpa: std.mem.Allocator) void {
+        self.dropHints(gpa);
         if (self.owned_text) |bytes| gpa.free(bytes);
         self.owned_text = null;
         if (!self.owns_shape) return;
@@ -1806,7 +1856,26 @@ pub const Warden = struct {
                 return;
             }
         }
-        try row.beings.append(self.gpa, .{ .being = pk, .commitment = commitment, .text = kept });
+        try row.beings.append(self.gpa, .{
+            .being = pk,
+            .commitment = commitment,
+            .known = pk,
+            .text = kept,
+        });
+    }
+
+    /// The name a being wears now down one relation, given the name this door
+    /// knows it by. **A believed succession moves a being to a new name**, and
+    /// the row is where that lands; a handle keeps the name it was made with,
+    /// so this is what stands between the two. A name this row never noted —
+    /// the far door's public being, reached by a knock — is its own answer.
+    pub fn currentAt(self: Warden, at: usize, known: Key) Key {
+        if (at >= self.outbound.items.len) return known;
+        for (self.outbound.items[at].beings.items) |far| {
+            if (std.mem.eql(u8, &far.being, &known)) return far.being;
+            if (std.mem.eql(u8, &far.known, &known)) return far.being;
+        }
+        return known;
     }
 
     /// The class this door has read for one being at a far house, or nothing
@@ -1900,6 +1969,38 @@ pub const Warden = struct {
         // succession keeps the mark — the house persisted and only its key
         // moved, so numbers already spent stay spent.
         if (word.being != null) row.news.reset(self.gpa);
+    }
+
+    /// Believe a succession the old door pointed with rather than one that
+    /// arrived as news. **A peer that missed the news is not stranded**: the
+    /// old door answers `moved` with the succession it published, the bytes
+    /// are identical either way, and this is where those bytes are believed.
+    ///
+    /// It is the same act as `believe` and does none of its judging itself.
+    /// What news proves by its signature — that the signer is the heir this
+    /// relation committed to — is proved here by the same hash against the
+    /// same commitment, taken from the word's own successor; what the
+    /// signature also proves, possession of that key, is not needed, because
+    /// the door that pointed is the door that committed and could point at no
+    /// other key. The answer carrying the word was signed by that house's own
+    /// name and matched to this row before it got here.
+    pub fn pointed(self: *Warden, at: usize, word: Word) Fault!void {
+        if (at >= self.outbound.items.len) return Error.Refused;
+        const row = &self.outbound.items[at];
+        // The old door only ever points with a succession, and a padlock
+        // replacement is believed by a signature this road does not carry.
+        const successor = word.successor orelse return Error.Refused;
+        const claimed = arithmetic.commitment(row.warden, successor);
+
+        var placement: ?Placement = null;
+        if (std.mem.eql(u8, &claimed, &row.commitment)) {
+            placement = .{ .news = .{ .at = at, .by_heir = true } };
+        } else for (row.beings.items) |far| {
+            if (!std.mem.eql(u8, &claimed, &far.commitment)) continue;
+            placement = .{ .news = .{ .at = at, .by_heir = true, .being = far.being } };
+            break;
+        }
+        return self.believe(placement orelse return Error.Refused, successor, word);
     }
 
     // ------------------------------------------------ Article XIII, a cargo
@@ -2040,12 +2141,34 @@ pub const Warden = struct {
     /// there is no row the pointer becomes one — a row that holds no key,
     /// stands in no standing and answers nothing but `moved`.
     ///
-    /// The word is kept as it is handed over, roads included, so whatever owns
-    /// those bytes must outlive the door.
+    /// **The row owns the roads.** Everything else in a word is a key, copied
+    /// by value; the roads are bytes somebody else composed, and the caller
+    /// that composed them is a single call while this pointer is for the rest
+    /// of the door's life — Article XIII: the old door "keeps the succession it
+    /// published and answers `moved` with it", and there is no later moment at
+    /// which it stops. A door that borrowed them would compose the news
+    /// correctly and then point at roads that were no longer there, which is
+    /// exactly what it did until a scenario asked `moved` at an origin after a
+    /// real departure.
     pub fn publish(self: *Warden, being_pk: Key, word: Word) Fault!void {
+        const hints = try self.gpa.alloc([]const u8, word.hints.len);
+        var made: usize = 0;
+        errdefer {
+            for (hints[0..made]) |one| self.gpa.free(one);
+            self.gpa.free(hints);
+        }
+        for (word.hints, hints) |from, *into| {
+            into.* = try self.gpa.dupe(u8, from);
+            made += 1;
+        }
+        var owned = word;
+        owned.hints = hints;
+
         for (self.beings.items) |*row| {
             if (!std.mem.eql(u8, &row.pk, &being_pk)) continue;
-            row.moved = word;
+            row.dropHints(self.gpa);
+            row.moved = owned;
+            row.owned_hints = hints;
             return;
         }
         try self.beings.append(self.gpa, .{
@@ -2053,7 +2176,8 @@ pub const Warden = struct {
             .secret = std.mem.zeroes(Key),
             .digest = std.mem.zeroes(Key),
             .commitment = std.mem.zeroes(Key),
-            .moved = word,
+            .moved = owned,
+            .owned_hints = hints,
         });
     }
 
@@ -2080,12 +2204,12 @@ pub const Warden = struct {
         // `mayReach` catches; at a destination they name it by the key this
         // house minted, so reaching the successor the published word names is
         // what reached-it-before means there.
-        const pointed = pointed: {
-            const word = pointer orelse break :pointed false;
-            const successor = word.successor orelse break :pointed false;
-            break :pointed self.mayReach(voice, successor);
+        const by_successor = by_successor: {
+            const word = pointer orelse break :by_successor false;
+            const successor = word.successor orelse break :by_successor false;
+            break :by_successor self.mayReach(voice, successor);
         };
-        if (!self.mayReach(voice, being_pk) and !pointed) {
+        if (!self.mayReach(voice, being_pk) and !by_successor) {
             return Error.Refused;
         }
         return pointer;

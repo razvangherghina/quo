@@ -197,6 +197,9 @@ class RemoteHandle(Handle):
         self._records = records
         self.text = text
         self.digest = notation.digest(text)
+        #: True while this handle is asking the door where the being went, so
+        #: that ask's own silence never asks again.
+        self._pointing = False
 
     def _view(self) -> dict:
         """What delivery is given per row: the way back and nothing else."""
@@ -256,6 +259,13 @@ class RemoteHandle(Handle):
 
     async def send(self, sealed: Optional[Mapping[str, Any]]) -> Any:
         """Hand a sealed envelope to delivery and answer with what comes back."""
+        return self._read(sealed, await self._settle(sealed))
+
+    async def _settle(
+        self, sealed: Optional[Mapping[str, Any]]
+    ) -> Optional[Mapping[str, Any]]:
+        """The answer's own record, or nothing — which is silence and is told
+        apart from a field that answered absent only here."""
         if sealed is None:
             return None
         seq = sealed["seq"]
@@ -266,13 +276,16 @@ class RemoteHandle(Handle):
             self._warden.forgo(self._row, seq)
         elif back is not CARRIED:
             await self._warden.arrive(back)
-        answer = await self._warden.settled(self._row, seq, settle, sealed["deadline"])
-        return self._read(sealed, answer)
+        return await self._warden.settled(self._row, seq, settle, sealed["deadline"])
 
     def _read(
-        self, sealed: Mapping[str, Any], answer: Optional[Mapping[str, Any]]
+        self,
+        sealed: Optional[Mapping[str, Any]],
+        answer: Optional[Mapping[str, Any]],
     ) -> Any:
-        if answer is None or sealed["answers"] is None or answer["data"] is None:
+        if sealed is None or answer is None:
+            return None
+        if sealed["answers"] is None or answer["data"] is None:
             return None
         try:
             return wire.decode(
@@ -282,7 +295,47 @@ class RemoteHandle(Handle):
             return None
 
     async def _spend(self, name: str, *args: Any) -> Any:
-        return await self.send(await self.seal(name, *args))
+        sealed = await self.seal(name, *args)
+        answer = await self._settle(sealed)
+        if sealed is not None and answer is None:
+            await self._point()
+        return self._read(sealed, answer)
+
+    async def _point(self) -> None:
+        """Silence may be a being that has left, so ask the door where it went.
+
+        Article XIII: the old door only points, and it points with the same
+        signed word it sent as news, so a peer that missed the news is rehoused
+        without a new invitation. The word is handed to this ground's own
+        warden, which believes it by the steps news is believed by, or by none.
+
+        **The ask that met the move stays silence, and this handle does not
+        retry at the new house.** The caller has already been told nothing, and
+        a retry would spend a second number on a call it cannot know was never
+        run — at-most-once is what the row's numbering is for. The next ask down
+        this handle goes to the new house.
+        """
+        if self._pointing:
+            return
+        self._pointing = True
+        try:
+            own = self._warden.own("moved", self.being)
+            if own is None:
+                return
+            sealed = await self._seal_at(
+                None, "moved", own["args"], own["answers"], own["records"]
+            )
+            word = self._read(sealed, await self._settle(sealed))
+            if not word:
+                return
+            successor = self._warden.rehouse(self._row, word)
+            if successor is not None:
+                # The row reaches the being by its new name, so this handle
+                # must ask by it: a name a door has moved on from is a name no
+                # door answers for again.
+                self.being = successor
+        finally:
+            self._pointing = False
 
     async def _look(self, name: str, arg: Any = None) -> Any:
         own = self._warden.own(name, arg)

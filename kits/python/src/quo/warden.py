@@ -535,13 +535,24 @@ class Warden:
             return self.public
         return self.beings.get(bytes(pk))
 
+    def _named(self, standing: Optional[Standing], pk: bytes) -> bool:
+        """Whether this voice's standing names that being.
+
+        Having reached it before, which is not whether this door still holds
+        it: a being that has departed is held nowhere and is exactly what
+        ``moved`` is asked about, so pointing cannot be gated on holding.
+        """
+        if pk == self.name:
+            return True
+        if standing is None:
+            return False
+        return bytes(pk) in [bytes(one) for one in standing.beings]
+
     def _reaches(self, standing: Optional[Standing], pk: bytes) -> Optional[Being]:
         """The public being is reachable by everyone, holders included."""
         if pk == self.name:
             return self.public
-        if standing is None:
-            return None
-        if bytes(pk) not in [bytes(one) for one in standing.beings]:
+        if not self._named(standing, pk):
             return None
         return self.beings.get(bytes(pk))
 
@@ -693,17 +704,19 @@ class Warden:
             # To a holder who reached it before, never to a stranger — and
             # holding a standing at some other being here is not having reached
             # this one. At the old door the standings still name the being that
-            # left, which the reach test catches; at a destination they name it
-            # by the key this house minted, so reaching the successor the
-            # published word names is what reached-it-before means there.
+            # left, and naming it is the whole test: the being is held nowhere
+            # any more, so a test that asked what this door holds could never
+            # let the old door point. At a destination the standings name it by
+            # the key this house minted, so naming the successor the published
+            # word names is what reached-it-before means there.
             asked = bytes(args[0])
             word = self.pointers.get(asked)
             pointed = (
                 word is not None
                 and word.get("successor") is not None
-                and self._reaches(standing, bytes(word["successor"])) is not None
+                and self._named(standing, bytes(word["successor"]))
             )
-            if self._reaches(standing, asked) is None and not pointed:
+            if not self._named(standing, asked) and not pointed:
                 raise Silence("a pointer for a being this voice does not reach")
             return wire.encode(notation.Maybe(WORD_TYPE), word, WARDEN_RECORDS)
         # `receive` is an ordinary field spent by an ordinary standing, granted
@@ -877,6 +890,47 @@ class Warden:
         # and only its key changed; a being's succession starts it fresh.
         if succession and word["being"] is not None:
             row.news = 0
+
+    def rehouse(self, row: Relation, word: Mapping[str, Any]) -> Optional[bytes]:
+        """Believe a succession that arrived as a ``moved`` answer, not as news.
+
+        Article XIII's other end. **The bytes are identical either way**, so
+        this is the news path rather than a second one: the word is placed the
+        way :meth:`_place` places a news voice — the successor hashed against a
+        commitment this row already holds — and applied by :meth:`_believe`,
+        which is the only thing that ever writes a row. A word nobody committed
+        to rehouses nothing.
+
+        No mark is spent, because a word carries no number: the record is its
+        own replay guard. Once believed, the name the word announced is gone
+        from the row and the row stands on the successor, so the same word
+        placed again matches nothing. What comes back is the name the row now
+        reaches the being by, or nothing.
+        """
+        if word is None or word.get("successor") is None:
+            return None
+        voice = bytes(word["successor"])
+        # A succession, and only ever that: the other case a word may carry is
+        # a padlock replacement, which is believed because the name signed it,
+        # and an answer's data carries no signature of the name.
+        hashed = arithmetic.commitment(row.warden, voice)
+        placed: Optional[tuple] = None
+        if hashed == bytes(row.commitment):
+            placed = (True, None)
+        else:
+            for being, commitment in row.beings.items():
+                if hashed == commitment:
+                    placed = (True, being)
+                    break
+        if placed is None:
+            self._hush("a word this row committed to nothing of")
+            return None
+        try:
+            self._believe(row, word, voice, placed)
+        except Silence as bad:
+            self._hush(str(bad))
+            return None
+        return voice
 
     # -- the eight steps
 

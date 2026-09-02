@@ -401,6 +401,9 @@ test('a same-warden handle answers the same introspection, with nothing judged',
   assert.equal(await handle.blueprint(await digest(parse(DOG))), print(parse(DOG)));
   assert.equal(await handle.blueprint(await digest(parse(WALKER))), null);
   assert.equal(await handle.limit(), phone.limit);
+  // Nothing has moved, so `moved` answers absence — the same legal answer to
+  // the same legal ask a far door would give.
+  assert.equal(await handle.moved(), null);
   assert.deepEqual(
     (await handle.handles()).map((one) => hex(one.being)),
     [hex(being)],

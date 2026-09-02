@@ -112,9 +112,11 @@ class ABeingInTheMiddleOfAChain(unittest.TestCase):
         )
 
     def arriving(self, **over) -> warden.Judgment:
-        """One ask at the middle door. The clock is read three times: on
-        arrival, by the being when it spends the leash, and at the answer."""
-        readings = iter([100, 130, 140])
+        """One ask at the middle door. The clock is read on arrival, by the
+        being when it spends the leash, again when the handle meets silence and
+        asks the far door where the being went — this road carries nothing, so
+        every onward ask here is silence — and at the answer."""
+        readings = iter([100, 130, 140, 150])
         return judged(
             self.middle,
             say(self.middle, being=BEING_PK, call=method("lit"), **over),

@@ -204,10 +204,17 @@ pub const Handle = struct {
         near: Key,
     },
 
-    /// The being this handle points at.
+    /// The being this handle points at, by the name it wears now. A handle
+    /// keeps the name it was made with; **a being that migrated wears the
+    /// name its new house minted**, and the row is where a believed
+    /// succession put it.
     pub fn being(self: Handle) Key {
         return switch (self.reach) {
-            .far => |one| one.being,
+            .far => |one| blk: {
+                self.door.take();
+                defer self.door.give();
+                break :blk self.door.currentAt(one.at, one.being);
+            },
             .near => |pk| pk,
         };
     }
@@ -260,8 +267,8 @@ pub const Handle = struct {
                 defer self.door.give();
                 return self.door.sketchWithin(pk) catch null;
             },
-            .far => |one| {
-                const blob = try warden.writeBeing(gpa, one.being);
+            .far => {
+                const blob = try warden.writeBeing(gpa, self.being());
                 defer gpa.free(blob);
                 var opened = (try self.askDoor(gpa, "sketch", blob)) orelse return null;
                 defer opened.deinit();
@@ -345,9 +352,45 @@ pub const Handle = struct {
             .far => {
                 var sealed = try self.seal(gpa, name, args);
                 defer if (sealed) |*one| one.deinit(gpa);
-                return self.send(gpa, A, name, sealed);
+                const answered = try self.send(gpa, A, name, sealed);
+                if (answered == null) self.follow(gpa);
+                return answered;
             },
         }
+    }
+
+    /// Follow a being that moved, having met the move. **The old door only
+    /// points**: an ask at a being that left is silence like any other
+    /// refusal, and the succession that door published is answered by `moved`
+    /// and by nothing else — so a peer that missed the news asks for it here,
+    /// after the silence, and hands what comes back to its own warden to
+    /// believe by the steps news is believed by.
+    ///
+    /// Nothing is retried. **The ask that met the move is silence**, as every
+    /// ask at a departed being is, and the next call down this handle reaches
+    /// the new house — a retry would turn one call into two at the far door
+    /// and hide from the caller that anything moved at all.
+    ///
+    /// Silence has many causes and this asks after every one of them: only
+    /// the door that actually published a succession answers with one, and
+    /// every other silence costs one ask that answers absence.
+    fn follow(self: Handle, gpa: std.mem.Allocator) void {
+        const far = switch (self.reach) {
+            .near => return,
+            .far => |one| one,
+        };
+        const blob = warden.writeBeing(gpa, self.being()) catch return;
+        defer gpa.free(blob);
+        var opened = (self.askDoor(gpa, "moved", blob) catch null) orelse return;
+        defer opened.deinit();
+        const data = opened.payload.answer.data orelse return;
+        var read = (warden.decodeMoved(gpa, data) catch null) orelse return;
+        defer read.deinit();
+
+        self.door.take();
+        defer self.door.give();
+        self.door.pointed(far.at, read.word) catch return;
+        self.door.persist() catch {};
     }
 
     /// The two halves of a call apart, so a caller that met silence can send
@@ -373,11 +416,12 @@ pub const Handle = struct {
         const blob = writeArguments(gpa, field, shape.records, args) catch return null;
         defer gpa.free(blob);
         const budget = self.under.allowance() orelse return null;
+        const now = self.being();
 
         self.door.take();
         defer self.door.give();
         return self.door.sealAsk(gpa, far.at, .{
-            .being = far.being,
+            .being = now,
             .method = .{ .name = name, .args = blob },
             .allowance = budget,
         }) catch null;

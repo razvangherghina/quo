@@ -18,10 +18,23 @@ const envelope = @import("envelope");
 const notation = @import("notation");
 const wire = @import("wire");
 const warden = @import("warden");
+const quo = @import("quo");
 
 const Key = warden.Key;
 
 const LAMP = "Lamp\n  lit() int\n";
+
+/// The lamp itself, so the house that took it in can answer for it rather
+/// than the bench standing in for a being.
+const Lamp = struct {
+    quo: quo.Cell = .{},
+    times: i64 = 0,
+
+    pub fn lit(self: *Lamp) i64 {
+        self.times += 1;
+        return self.times;
+    }
+};
 
 fn seed(byte: u8) Key {
     return @splat(byte);
@@ -77,6 +90,32 @@ fn served(d: *warden.Warden, gpa: std.mem.Allocator, letter: []const u8, ephemer
     return d.answer(gpa, ephemeral, verdict.say, data);
 }
 
+/// The road between the three houses: distance zero, by hand. A row's padlock
+/// says which door the bytes are for, and they go in at that door's one entry
+/// point like anything else, so no step of the judgment is waived.
+const Wires = struct {
+    doors: [3]*warden.Warden = undefined,
+
+    fn delivery(self: *Wires) warden.Delivery {
+        return .{ .context = @ptrCast(self), .send = carry };
+    }
+
+    fn carry(
+        context: *anyopaque,
+        gpa: std.mem.Allocator,
+        row: warden.Row,
+        letter: []const u8,
+    ) std.mem.Allocator.Error!warden.Carried {
+        const self: *Wires = @ptrCast(@alignCast(context));
+        for (self.doors) |d| {
+            if (!std.mem.eql(u8, &d.padlock, &row.padlock)) continue;
+            const back = d.arrive(gpa, letter, null) orelse return .silence;
+            return .{ .answered = back };
+        }
+        return .silence;
+    }
+};
+
 /// The three houses, and everything that stands before anything moves.
 const World = struct {
     gpa: std.mem.Allocator,
@@ -91,6 +130,7 @@ const World = struct {
     /// The peer's row at the origin, and the origin's at the destination.
     at_origin: usize,
     at_destination: usize,
+    wires: Wires = .{},
 
     /// The keys the destination will mint the arriving being under, which the
     /// origin never sees.
@@ -179,6 +219,27 @@ const World = struct {
             .hints = &.{},
         });
         return self;
+    }
+
+    /// Stand the road up between the three, once the world sits where it will
+    /// stay. A world that never asks for it has no delivery at all, and every
+    /// letter in it is handed over by the bench.
+    fn connect(self: *World) void {
+        self.wires.doors = .{ &self.origin, &self.destination, &self.peer };
+        const road = self.wires.delivery();
+        self.origin.delivery = road;
+        self.destination.delivery = road;
+        self.peer.delivery = road;
+    }
+
+    /// The handle the peer holds at the being, made as a standing read makes
+    /// one: the relation, the name it was let in at, and the class.
+    fn handle(self: *World) quo.Handle {
+        return .{
+            .door = &self.peer,
+            .under = .{ .door = &self.peer, .being = self.peer.name, .gpa = self.gpa },
+            .reach = .{ .far = .{ .at = self.at_origin, .being = self.traveller, .text = LAMP } },
+        };
     }
 
     fn deinit(self: *World) void {
@@ -404,4 +465,186 @@ test "XIV — a peer that left no way back is told nothing" {
         .word = .{ .being = w.traveller },
         .seq = 1,
     }));
+}
+
+/// One whole migration with nobody told: both doors hold the succession each
+/// composed, and the peer's record still points at the house the being left.
+const Away = struct {
+    arrived_as: Key,
+    landing: warden.Warden.Landing,
+    departed: warden.Warden.Departed,
+};
+
+fn moveAway(w: *World, lamp: *Lamp) !Away {
+    const a = w.arena.allocator();
+    const cargo = try w.origin.pack(a, w.traveller, w.committed, "");
+    const commitment = try w.receive(cargo);
+
+    // The destination takes the arriving object up under the two keys it
+    // minted, which is what makes the being answer here rather than only be
+    // reachable. A being held twice under one name is one being.
+    const arrived_as = try pk(seed(World.minted_being));
+    _ = try w.destination.hold(.{
+        .blueprint = LAMP,
+        .organ = quo.organ(Lamp, lamp),
+        .seed = seed(World.minted_being),
+        .heir_seed = seed(World.minted_heir),
+    });
+    lamp.quo = .{ .door = &w.destination, .being = arrived_as };
+
+    const landing = try w.destination.landed(a, &.{});
+    const departed = try w.origin.depart(a, w.traveller, .{
+        .heir = w.committed,
+        .commitment = commitment,
+        .name = w.destination.name,
+        .padlock = w.destination.padlock,
+    });
+    return .{ .arrived_as = arrived_as, .landing = landing, .departed = departed };
+}
+
+test "XIII — a peer that missed the news meets the move, and is rehoused by it" {
+    const gpa = std.testing.allocator;
+    var w = try World.init(gpa);
+    defer w.deinit();
+    w.connect();
+
+    var lamp: Lamp = .{};
+    const away = try moveAway(&w, &lamp);
+
+    // Nothing was told to this peer. Its record still names the house the
+    // being left, and its handle still names the being it was let in at.
+    var handle = w.handle();
+    try std.testing.expectEqualSlices(
+        u8,
+        &w.origin.name,
+        &w.peer.outbound.items[w.at_origin].warden,
+    );
+
+    // The ask that meets the move is silence, as every ask at a departed
+    // being is — and the row is rehoused on the spot, off the succession the
+    // old door published.
+    try std.testing.expect((try handle.call(gpa, i64, "lit", .{})) == null);
+    const row = w.peer.outbound.items[w.at_origin];
+    try std.testing.expectEqualSlices(u8, &w.destination.name, &row.warden);
+    try std.testing.expectEqualSlices(u8, &w.destination.padlock, &row.padlock);
+    try std.testing.expectEqualSlices(u8, &w.committed, &row.beings.items[0].being);
+    try std.testing.expectEqualSlices(u8, &w.committed, &handle.being());
+
+    // Both doors point, so the peer is one house behind and no more: the
+    // second ask meets the new door's own word, naming the key that house
+    // minted, and is rehoused again.
+    try std.testing.expect((try handle.call(gpa, i64, "lit", .{})) == null);
+    try std.testing.expectEqualSlices(
+        u8,
+        &away.arrived_as,
+        &w.peer.outbound.items[w.at_origin].beings.items[0].being,
+    );
+    try std.testing.expectEqualSlices(u8, &away.arrived_as, &handle.being());
+
+    // And the whole point of it: the next ask down that same handle reaches
+    // the being at its new house and is answered there, with no second
+    // invitation anywhere.
+    try std.testing.expectEqual(@as(?i64, 1), try handle.call(gpa, i64, "lit", .{}));
+    try std.testing.expectEqual(@as(i64, 1), lamp.times);
+}
+
+test "XIII — a word the row holds no commitment for rehouses nothing" {
+    const gpa = std.testing.allocator;
+    var w = try World.init(gpa);
+    defer w.deinit();
+
+    var lamp: Lamp = .{};
+    const away = try moveAway(&w, &lamp);
+    const before = w.peer.outbound.items[w.at_origin];
+
+    // A door may point only at the key it committed to in advance. A word
+    // naming any other successor is believed from nothing, exactly as news
+    // signed by a key the peer holds no hash of is.
+    var forged = away.departed.word;
+    forged.successor = try pk(seed(0x7e));
+    try std.testing.expectError(warden.Error.Refused, w.peer.pointed(w.at_origin, forged));
+
+    // And a word carrying no succession at all: the old door only points, and
+    // a padlock replacement is believed by a signature this road never has.
+    var lockless = away.departed.word;
+    lockless.successor = null;
+    try std.testing.expectError(warden.Error.Refused, w.peer.pointed(w.at_origin, lockless));
+
+    const after = w.peer.outbound.items[w.at_origin];
+    try std.testing.expectEqualSlices(u8, &before.warden, &after.warden);
+    try std.testing.expectEqualSlices(u8, &before.padlock, &after.padlock);
+    try std.testing.expectEqualSlices(
+        u8,
+        &w.traveller,
+        &after.beings.items[0].being,
+    );
+}
+
+test "XIII — the same word met twice rehouses once" {
+    const gpa = std.testing.allocator;
+    var w = try World.init(gpa);
+    defer w.deinit();
+
+    var lamp: Lamp = .{};
+    const away = try moveAway(&w, &lamp);
+
+    try w.peer.pointed(w.at_origin, away.departed.word);
+    const once = w.peer.outbound.items[w.at_origin];
+    try std.testing.expectEqualSlices(u8, &w.destination.name, &once.warden);
+    try std.testing.expectEqualSlices(u8, &w.committed, &once.beings.items[0].being);
+
+    // The word was believed against a commitment that is spent: the relation
+    // stands at the new house now, and the same bytes hash to nothing it
+    // holds.
+    try std.testing.expectError(
+        warden.Error.Refused,
+        w.peer.pointed(w.at_origin, away.departed.word),
+    );
+    const twice = w.peer.outbound.items[w.at_origin];
+    try std.testing.expectEqualSlices(u8, &w.destination.name, &twice.warden);
+    try std.testing.expectEqualSlices(u8, &w.committed, &twice.beings.items[0].being);
+}
+
+test "XIV — a peer that heard the news is not moved a second time by the word" {
+    const gpa = std.testing.allocator;
+    var w = try World.init(gpa);
+    defer w.deinit();
+    w.connect();
+
+    var lamp: Lamp = .{};
+    const away = try moveAway(&w, &lamp);
+
+    try w.believed(&w.origin, .{
+        .peer = away.departed.peers[0],
+        .voice_secret = seed(0x31),
+        .word = away.departed.word,
+        .seq = 1,
+    }, 0x50);
+    try w.believed(&w.destination, .{
+        .peer = away.landing.peers[0],
+        .voice_secret = away.landing.secret,
+        .word = away.landing.word,
+        .seq = 1,
+    }, 0x51);
+
+    // The peer is where the news put it, and the words both doors still
+    // answer with are believed against commitments it no longer holds.
+    try std.testing.expectError(
+        warden.Error.Refused,
+        w.peer.pointed(w.at_origin, away.departed.word),
+    );
+    try std.testing.expectError(
+        warden.Error.Refused,
+        w.peer.pointed(w.at_origin, away.landing.word),
+    );
+    try std.testing.expectEqualSlices(
+        u8,
+        &away.arrived_as,
+        &w.peer.outbound.items[w.at_origin].beings.items[0].being,
+    );
+
+    // Nothing was met and nothing was followed: the first ask is answered at
+    // the new house.
+    var handle = w.handle();
+    try std.testing.expectEqual(@as(?i64, 1), try handle.call(gpa, i64, "lit", .{}));
 }

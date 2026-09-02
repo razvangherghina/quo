@@ -679,8 +679,22 @@ impl Door {
 
         // Found in the outbound record — as a warden this door holds a
         // relation with, or as the heir it committed — is news.
-        if let Some(at) = self.outbound.iter().position(|row| row.warden == say.voice) {
-            return Ok(Placement::News {
+        if let Some(place) = self.place_news(&say.voice) {
+            return Ok(place);
+        }
+
+        // Nowhere: the stranger's case, which is a standing at nothing.
+        Ok(Placement::Stranger)
+    }
+
+    /// Where a voice sits in the outbound record: the far warden itself, the
+    /// heir it committed, or the heir a being at that house committed. **This
+    /// is what says whose succession that voice may announce**, so it is the
+    /// one placement a word is ever believed from — whether the word arrived
+    /// as news or was met as the old door's pointer.
+    fn place_news(&self, voice: &[u8; KEY]) -> Option<Placement> {
+        if let Some(at) = self.outbound.iter().position(|row| row.warden == *voice) {
+            return Some(Placement::News {
                 relation: at,
                 by_heir: false,
                 being: None,
@@ -689,9 +703,9 @@ impl Door {
         if let Some(at) = self
             .outbound
             .iter()
-            .position(|row| commitment(&row.warden, &say.voice) == row.commitment)
+            .position(|row| commitment(&row.warden, voice) == row.commitment)
         {
-            return Ok(Placement::News {
+            return Some(Placement::News {
                 relation: at,
                 by_heir: true,
                 being: None,
@@ -705,18 +719,16 @@ impl Door {
             if let Some((being, _)) = row
                 .beings
                 .iter()
-                .find(|(_, held)| commitment(&row.warden, &say.voice) == **held)
+                .find(|(_, held)| commitment(&row.warden, voice) == **held)
             {
-                return Ok(Placement::News {
+                return Some(Placement::News {
                     relation: at,
                     by_heir: true,
                     being: Some(*being),
                 });
             }
         }
-
-        // Nowhere: the stranger's case, which is a standing at nothing.
-        Ok(Placement::Stranger)
+        None
     }
 
     /// An inbound row keeps a way back and not only a permission, and the way
@@ -1016,6 +1028,30 @@ impl Door {
             row.news = 0;
         }
         Ok(())
+    }
+
+    /// Believe a word met as the old door's pointer, down the relation that
+    /// met it. **The bytes are identical either way** — this is the same word
+    /// the news carries — but it arrives in an answer the old door signed with
+    /// its own name, so the voice it is believed from is the successor the
+    /// word names rather than whoever handed it over. From there every step is
+    /// the news's: the same commitment already held decides what this
+    /// succession may move, the same rewrite of the row, the same mark. A word
+    /// this relation cannot place — a key the row does not hold, or one whose
+    /// succession this row has already believed — rehouses nothing.
+    pub fn believe_moved(&mut self, at: usize, word: &Word) -> Judged<()> {
+        let Some(successor) = word.successor else {
+            return refuse("a pointer that succeeds nothing");
+        };
+        let Some(place) = self.place_news(&successor) else {
+            return refuse("a pointer signed by a key no relation here holds");
+        };
+        match place {
+            Placement::News { relation, .. } if relation == at => {
+                self.believe(place, &successor, word)
+            }
+            _ => refuse("a pointer placed at a relation other than the one that met it"),
+        }
     }
 
     /// A migration's state transfer. **The digest identifies rather than

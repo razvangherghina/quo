@@ -78,6 +78,10 @@ function readAnswer(field, records, answer) {
 export function remoteHandle(warden, row, beingPk, text) {
   const { fields, records } = fieldsOf(text);
   const view = () => ({ padlock: row.padlock.slice(), hints: [...row.hints] });
+  // The name the being wears now. A succession this handle believes moves it,
+  // and the row moves house with it, so what the next ask reaches is wherever
+  // the being is rather than where it stood when the handle was made.
+  let at = beingPk;
 
   const seal = async (name, ...args) => {
     const field = fields.get(name);
@@ -88,7 +92,7 @@ export function remoteHandle(warden, row, beingPk, text) {
     const envelope = await warden.ask(row, {
       seq,
       allowance,
-      being: beingPk,
+      being: at,
       method: {
         name,
         args: encodeAll(
@@ -117,12 +121,48 @@ export function remoteHandle(warden, row, beingPk, text) {
 
   // Introspection goes on first and the being's own fields after it: the
   // blueprint is the one document a stranger reads, so what it declares under a
-  // name is what that name means. The class that declares all four is the
-  // Warden's own, and there the two are the same ask — a handle at a public
-  // being reaches them as the declared fields they are.
-  const handle = { being: beingPk, ...warden.introspect(row, beingPk), seal, send };
+  // name is what that name means. The class that declares them is the Warden's
+  // own, and there the two are the same ask — a handle at a public being
+  // reaches them as the declared fields they are.
+  const door = warden.introspect(row, () => at);
+
+  // The old door only points, so an ask that met a move is silence, and the
+  // word saying where the being went is one further ask at that door's own
+  // being. Handing it to the warden is the whole of what the news would have
+  // done: the same commitment the row already holds is what believes it, the
+  // row is rehoused off the word's own fields, and the mark starts fresh.
+  //
+  // The ask that met the move stays silence and is not retried. Silence is
+  // what every ask at a departed being is answered with, and a retry would put
+  // in the caller's hands an answer the being it asked never gave, while
+  // hiding that anything moved. The next ask down this handle reaches the new
+  // house, which is what the caller is owed.
+  const follow = async () => {
+    // Only a being this row stands at can be rehoused by a word, and the far
+    // house itself is not one of them: a warden's own move is a name
+    // succession and arrives as news. Without this, every legal silence would
+    // cost an ask.
+    if (hex(at) === hex(row.warden) || !row.beings.has(hex(at))) return;
+    const word = await door.moved(at);
+    if (!word) return;
+    const now = await warden.believe(row, word);
+    if (now) at = now;
+  };
+
+  const handle = {
+    get being() {
+      return at;
+    },
+    ...door,
+    seal,
+    send,
+  };
   for (const name of fields.keys()) {
-    handle[name] = async (...args) => send(await seal(name, ...args));
+    handle[name] = async (...args) => {
+      const answer = await send(await seal(name, ...args));
+      if (answer === null) await follow();
+      return answer;
+    };
   }
   return handle;
 }

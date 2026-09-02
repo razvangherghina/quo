@@ -13,9 +13,11 @@ asserting the routing is how the hole this suite fills survived.
 """
 
 import asyncio
+import secrets
 import unittest
 
 from quo import arithmetic, envelope, notation, warden, wire
+from quo.delivery import memory_delivery, seeds
 
 LAMP = "Lamp\n  lit() bool\n"
 LAMP_DIGEST = notation.digest(LAMP)
@@ -263,6 +265,139 @@ class AMigrationEndToEnd(unittest.TestCase):
             "method": call if call is not None else {"name": "lit", "args": b""},
         }
         return envelope.seal(envelope.SAY, record, secret, door.padlock, seed(51))
+
+
+class APeerThatMissedTheNews(unittest.IsolatedAsyncioTestCase):
+    """The other end of a migration: the peer nobody reached.
+
+    A peer that missed the news is not stranded and needs no new invitation.
+    The old door answers ``moved`` with the same signed word it sent as news,
+    and a handle that meets that word hands it to its own warden to believe by
+    the same steps, so the row is rehoused on the spot. The ask that met the
+    move is silence, as every ask at a departed being is; the next reaches the
+    new house.
+    """
+
+    async def asyncSetUp(self) -> None:
+        self.delivery = memory_delivery()
+        self.origin, self.destination, self.peer = [
+            await warden.Warden.open(
+                seeds(lambda: secrets.token_bytes(32)),
+                random=lambda: secrets.token_bytes(32),
+                delivery=self.delivery,
+            )
+            for _ in range(3)
+        ]
+        for hint, door in (
+            ("mem://origin", self.origin),
+            ("mem://destination", self.destination),
+            ("mem://peer", self.peer),
+        ):
+            self.delivery.attach(hint, door)
+            door.publish(hint)
+
+        self.lamp = Lamp()
+        self.traveller = (await self.origin.hold(self.lamp, LAMP)).being
+        [self.handle] = await self.peer.accept(self.lamp.quo.grant())
+        # The standing is real before anything moves, and so is the way back.
+        self.assertIs(await self.handle.lit(), True)
+        self.row = self.peer.relation(self.origin.name)
+
+        # The destination holds the class and a standing for the origin to
+        # spend `receive` with.
+        self.destination.expect(LAMP, Lamp)
+        gate = self.origin.stand(
+            self.destination.invite(
+                self.destination.name, self.destination.mint(), self.destination.mint()
+            )
+        )
+        self.cargo = self.origin.pack(self.traveller)
+        answered = await self.origin.spend(
+            gate,
+            being=self.destination.name,
+            method={
+                "name": "receive",
+                "args": wire.encode(
+                    warden.CARGO_TYPE, self.cargo, warden.WARDEN_RECORDS
+                ),
+            },
+            next_heir=self.origin.mint(),
+        )
+        commitment = wire.decode(B32, answered["data"], warden.WARDEN_RECORDS)
+
+        self.second_word, self.second_secret, self.landed = self.destination.landed(
+            ["mem://destination"]
+        )
+        self.first_word, self.first_secret, self.told = self.origin.depart(
+            self.traveller,
+            commitment,
+            self.destination.name,
+            self.destination.padlock,
+            ["mem://destination"],
+        )
+        self.arrived_as = self.second_word["successor"]
+
+    async def hears(self, word, secret, peers, door, seq) -> None:
+        """One piece of news, sealed for real and judged at the peer's door."""
+        await self.peer.arrive(door.news(peers[0], secret, word, seq, door.mint()))
+
+    async def test_xiii_the_old_door_points_and_the_handle_is_rehoused_by_the_word(
+        self,
+    ) -> None:
+        # The ask that met the move is silence, and the row is rehoused by the
+        # word the old door pointed with. The peer missed both announcements,
+        # so it follows the double rotation one door at a time: the old door
+        # hands it the first word, the new door the second.
+        self.assertIsNone(await self.handle.lit())
+        self.assertEqual(self.row.warden, self.destination.name)
+        self.assertEqual(self.row.padlock, self.destination.padlock)
+        self.assertEqual(self.row.hints, ("mem://destination",))
+        self.assertEqual(self.handle.being, self.first_word["successor"])
+
+        self.assertIsNone(await self.handle.lit())
+        self.assertEqual(self.handle.being, self.arrived_as)
+        self.assertEqual(
+            self.row.beings, {self.arrived_as: self.second_word["commitment"]}
+        )
+
+        # The whole point of it: the next ask reaches the being at its new
+        # house, down the same handle and with no new invitation anywhere.
+        self.assertIs(await self.handle.lit(), True)
+
+    async def test_xiv_a_word_the_row_committed_to_nothing_of_rehouses_nothing(
+        self,
+    ) -> None:
+        stranger = arithmetic.signing_public(secrets.token_bytes(32))
+        forged = dict(self.first_word, successor=stranger)
+        was = (self.row.warden, self.row.padlock, dict(self.row.beings))
+        self.assertIsNone(self.peer.rehouse(self.row, forged))
+        self.assertEqual((self.row.warden, self.row.padlock, self.row.beings), was)
+
+    async def test_xiv_a_word_already_believed_rehouses_nothing_a_second_time(
+        self,
+    ) -> None:
+        self.assertEqual(
+            self.peer.rehouse(self.row, self.first_word), self.first_word["successor"]
+        )
+        moved = (self.row.warden, self.row.padlock, dict(self.row.beings))
+        # Replayed: the row stands on the successor now, so the word that moved
+        # it matches nothing and moves nothing.
+        self.assertIsNone(self.peer.rehouse(self.row, self.first_word))
+        self.assertEqual((self.row.warden, self.row.padlock, self.row.beings), moved)
+
+    async def test_xiv_a_peer_that_heard_the_news_is_not_moved_again_by_the_word(
+        self,
+    ) -> None:
+        await self.hears(self.first_word, self.first_secret, self.told, self.origin, 1)
+        await self.hears(
+            self.second_word, self.second_secret, self.landed, self.destination, 1
+        )
+        heard = (self.row.warden, self.row.padlock, dict(self.row.beings))
+        self.assertEqual(heard[2], {self.arrived_as: self.second_word["commitment"]})
+        # Both words are the identical bytes either way, and both are spent.
+        self.assertIsNone(self.peer.rehouse(self.row, self.first_word))
+        self.assertIsNone(self.peer.rehouse(self.row, self.second_word))
+        self.assertEqual((self.row.warden, self.row.padlock, self.row.beings), heard)
 
 
 if __name__ == "__main__":

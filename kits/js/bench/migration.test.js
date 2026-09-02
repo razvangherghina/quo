@@ -11,10 +11,12 @@ import {
   encode,
   depart,
   landed,
+  memoryDelivery,
   news,
   pack,
   readAnswer,
   readField,
+  remoteHandle,
   signingPair,
   writeArgument,
 } from '../src/index.js';
@@ -797,6 +799,104 @@ test('the replay window travels whole, so a caller with asks in flight survives 
   assert.ok(await at(2n), 'a caller with an ask in flight was killed by the move');
   // And once, like anywhere else.
   assert.equal(await at(2n), null);
+});
+
+// A handle is what a being actually holds, so the catch-up is asserted where a
+// being would meet it: a road under the wardens, and the ordinary field the
+// caller was calling all along. The road of distance zero waives no step.
+async function overARoad() {
+  const world = await walk();
+  const delivery = memoryDelivery();
+  for (const warden of [world.origin, world.destination, world.one.peer, world.two.peer]) {
+    warden.delivery = delivery;
+    warden.clock = still;
+    warden.random = () => RANDOM;
+    for (const hint of warden.hints) delivery.attach(hint, warden);
+  }
+  const ledger = (at) => remoteHandle(at.peer, at.row, world.being, LIST);
+  return { ...world, ledger };
+}
+
+test('a peer that missed the news meets silence, is rehoused, and reaches the new house', async () => {
+  const { origin, destination, being, two, moving, ledger } = await overARoad();
+  const handle = ledger(two);
+  const row = await two.peer.outboundFor(origin.name.pk);
+  assert.ok(row);
+
+  // The ask that met the move is silence, as every ask at a departed being is:
+  // the old door only points, and the word is not the type `count` declared.
+  // What the handle does with the silence is ask where the being went and hand
+  // the word to its own warden — the same steps the news would have taken.
+  assert.equal(await handle.count(), null, 'the ask that met the move was silence');
+  assert.equal(hex(handle.being), hex(moving.word.successor), 'and the handle moved with it');
+  assert.equal(await two.peer.outboundFor(origin.name.pk), null);
+  assert.equal(await two.peer.outboundFor(destination.name.pk), row, 'the same row, rehoused');
+  assert.equal(hex(row.padlock), hex(destination.padlock.pk));
+  assert.deepEqual(row.hints, destination.hints);
+  // A succession starts the news mark fresh, exactly as it does when the word
+  // arrives as news: the old key died with its count.
+  assert.equal(row.marks.mark, null);
+
+  // The destination points onward in the same shape, because the name the
+  // origin published is not the name the destination minted. One more silence,
+  // one more word, and the peer is home over the standing that travelled —
+  // nothing regranted and nobody asked.
+  assert.equal(await handle.count(), null, 'the arriving name is pointed onward too');
+  assert.equal(hex(handle.being), hex(landed(destination).word.successor));
+  assert.equal(await handle.count(), 2n, 'the next ask reaches the new house');
+  assert.equal(hex(being).length, 64);
+});
+
+test('a word the row has no commitment for rehouses nothing', async () => {
+  const { origin, being, two, moving, ledger } = await overARoad();
+  const handle = ledger(two);
+  const row = await two.peer.outboundFor(origin.name.pk);
+  const was = { warden: hex(row.warden), padlock: hex(row.padlock), hints: [...row.hints] };
+
+  // The word says where the being went, and what makes it believable is that
+  // only the house that committed can name a successor hashing to the
+  // commitment the peer already holds. A successor nobody committed to is a
+  // stranger's word, and a stranger announces nothing.
+  const forged = { ...moving.word, successor: (await signingPair(fixed(99))).pk };
+  assert.equal(await two.peer.believe(row, forged), null);
+  assert.equal(hex(row.warden), was.warden, 'the row is where it was');
+  assert.equal(hex(row.padlock), was.padlock);
+  assert.deepEqual(row.hints, was.hints);
+  assert.ok(await two.peer.outboundFor(origin.name.pk), 'and still at the old house');
+  assert.equal(hex(handle.being), hex(being), 'the handle stands where it stood');
+});
+
+test('the same word twice rehouses once, because the chain has moved on', async () => {
+  const { origin, destination, two, moving } = await overARoad();
+  const row = await two.peer.outboundFor(origin.name.pk);
+
+  assert.equal(hex(await two.peer.believe(row, moving.word)), hex(moving.word.successor));
+  const commitment = hex(row.commitment);
+
+  // The word replayed says a being the row no longer stands at succeeded: the
+  // ref was rekeyed to the successor when the word was believed, so there is
+  // nothing left for the second telling to move. The mark cannot be walked
+  // forward by it either — a succession left it fresh, and this changes nothing.
+  assert.equal(await two.peer.believe(row, moving.word), null);
+  assert.equal(hex(row.warden), hex(destination.name.pk));
+  assert.equal(hex(row.commitment), commitment);
+  assert.equal(row.marks.mark, null);
+});
+
+test('a peer that heard the news is not moved twice by meeting the word', async () => {
+  const { origin, destination, one, moving } = await overARoad();
+  const way = await wayTo(moving, fixed(22));
+  assert.notEqual(await tell(origin, one.peer, moving.voice, moving.word, 40n, way), null);
+  const row = await one.peer.outboundFor(destination.name.pk);
+  assert.ok(row, 'the news moved the row');
+  const ref = one.peer.handle(moving.word.successor);
+
+  // The word carries no news the row has not already believed: what refuses it
+  // is the chain rather than the count, exactly as a replayed news is refused.
+  assert.equal(await one.peer.believe(row, moving.word), null);
+  assert.equal(one.peer.handle(moving.word.successor), ref, 'nothing about the being changed');
+  assert.equal(hex(row.warden), hex(destination.name.pk));
+  assert.equal(hex(row.commitment), hex(moving.word.commitment));
 });
 
 test('the old door keeps no relation of a being that left', async () => {

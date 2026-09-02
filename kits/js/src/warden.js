@@ -681,7 +681,11 @@ export class Warden {
   // learn what fields exist would be back to composing envelopes by hand. Each
   // is an ordinary ask at the far door's own fields, answering a value or
   // silence like anything else.
-  introspect(row, beingPk) {
+  // `being` is read through a function because a handle's being is not fixed:
+  // a succession it believes renames the being it stands at, and these asks
+  // must follow it rather than the name the handle was made with.
+  introspect(row, being) {
+    const beingPk = () => (typeof being === 'function' ? being() : being);
     const at = async (name, ...values) => {
       const answered = await this.#say(row, {
         seq: row.seq + 1n,
@@ -691,14 +695,18 @@ export class Warden {
     };
     return {
       describe: () => at('describe'),
-      sketch: (target) => at('sketch', pkOf(target) ?? beingPk),
+      sketch: (target) => at('sketch', pkOf(target) ?? beingPk()),
+      // The one place a peer may ask where a being went. It answers the word
+      // the far door published, absence when nothing has moved, and silence
+      // when that voice never reached the being.
+      moved: (target) => at('moved', pkOf(target) ?? beingPk()),
       blueprint: (digestOf) => at('blueprint', digestOf),
       limit: () => at('limit'),
       handles: () => this.handles(row),
     };
   }
 
-  // The same four, under one warden: no seal and no judgment, because there are
+  // The same asks, under one warden: no seal and no judgment, because there are
   // no strangers here — and the same values, because a being written for one
   // kind of neighbour is installed anywhere. What a local handle stands on is
   // what a standing at that one being would reach.
@@ -712,6 +720,8 @@ export class Warden {
         if (!held() || !reach().has(hex(at))) return null;
         return this.sketchOf(at);
       },
+      moved: async (target) =>
+        held() ? (this.gone.get(hex(pkOf(target) ?? beingPk)) ?? null) : null,
       blueprint: async (digestOf) => (held() ? this.blueprintFor(reach(), digestOf) : null),
       limit: async () => (held() ? this.limit : null),
       handles: async () => (held() ? [localHandle(this, this.beings.get(hex(beingPk)))] : []),
@@ -1635,6 +1645,24 @@ export class Warden {
     }
     if (!(await this.#believe(place, payload, word))) return this.#hush('disbelieved');
     return this.#reply(payload, 'tell', null, random);
+  }
+
+  // A word met at the old door is the news's own bytes, so it is believed by
+  // the steps news is believed by and rehouses the row exactly as the news
+  // would have. What news proves with the envelope's signature this proves
+  // with the commitment: only the house that committed can name a successor
+  // hashing to the commitment the row already holds, and the answer that
+  // carried the word was signed by the warden the row names. It answers the
+  // name the being now wears, and null when nothing was believed — a word the
+  // row's commitment does not cover and a word already believed both leave the
+  // row exactly as it was.
+  async believe(row, word) {
+    if (!word?.being) return null;
+    const ref = row.beings.get(hex(word.being));
+    if (!ref) return null;
+    if (!(await this.#believe({ row, ref }, { voice: word.successor }, word))) return null;
+    await this.#persist();
+    return ref.being;
   }
 
   // The case is read off which fields are present: a succession carries the

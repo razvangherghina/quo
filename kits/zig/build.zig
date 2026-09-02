@@ -272,6 +272,7 @@ pub fn build(b: *std.Build) void {
                 .{ .name = "notation", .module = notation },
                 .{ .name = "wire", .module = wire },
                 .{ .name = "warden", .module = warden },
+                .{ .name = "quo", .module = quo },
             },
         }),
     });
