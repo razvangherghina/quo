@@ -1,6 +1,6 @@
 {
   "name": "@quo-systems/js",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "The Quo kit written from the constitution alone: a warden that judges what arrives at its one door, beings that hold standings and reach each other by handle, and the roads that carry the bytes",
   "keywords": [
     "quo",
@@ -31,6 +31,7 @@
     "./door": "./src/door.js",
     "./line": "./src/line.js",
     "./line-ws": "./src/line-ws.js",
+    "./tab": "./src/tab.js",
     "./package.json": "./package.json"
   },
   "files": [

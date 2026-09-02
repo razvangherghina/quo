@@ -561,7 +561,7 @@ fn landed(a: std.mem.Allocator, order: std.json.Value, out: *Out) !void {
 fn state(a: std.mem.Allocator, order: std.json.Value, out: *Out) !void {
     const w = try house();
     const being = try keyOf(order, "being");
-    const held = w.being(being) orelse {
+    const held = w.heldBeing(being) orelse {
         try out.text("{\"cargo\":null,\"cannot\":[]}");
         return;
     };

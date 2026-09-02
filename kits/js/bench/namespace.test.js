@@ -129,6 +129,17 @@ test("a being's own fault is the same silence at either shape", async () => {
   }
 });
 
+for (const reserved of ['cells', 'take']) {
+  test(`a blueprint declaring ${reserved} is refused`, async () => {
+    const { here } = await world();
+    await assert.rejects(
+      () => here.hold({}, { blueprint: `Thing\n  ${reserved}() bytes\n` }),
+      /may not declare/,
+      'the being provides this name, so a blueprint may not also claim it',
+    );
+  });
+}
+
 test('a name the blueprint does not declare is not on the handle at all', async () => {
   const { near, far } = await world();
   for (const handle of [near, far]) {

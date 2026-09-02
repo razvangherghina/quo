@@ -21,3 +21,18 @@ test('nothing sits in the corpus that the emitter does not write', () => {
 test('a second run of the emitter is byte-identical to the first', () => {
   assert.deepEqual(corpus(), emitted);
 });
+
+test('every commitment in the corpus derives from keys the corpus publishes', async () => {
+  const { material } = JSON.parse(readFileSync(join(here, 'material.json'), 'utf8'));
+  const of = (name) => Buffer.from(material[name], 'hex');
+  const commits = async (warden, heir) =>
+    Buffer.from(
+      await crypto.subtle.digest('SHA-256', Buffer.concat([of(warden), of(heir)])),
+    ).toString('hex');
+
+  // Article VII: warden pk then heir pk. Every heir here spends at this one door.
+  assert.equal(await commits('wardenName', 'wardenHeir'), material.wardenCommitment);
+  assert.equal(await commits('wardenName', 'beingHeir'), material.beingCommitment);
+  assert.equal(await commits('wardenName', 'voiceHeir'), material.voiceHeirCommitment);
+  assert.equal(await commits('wardenName', 'nextHeir'), material.nextHeirCommitment);
+});

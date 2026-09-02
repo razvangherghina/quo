@@ -237,6 +237,187 @@ fn why_it_fell_silent_is_told_inward_and_nothing_crosses_the_wire() {
     assert!(!reasons[0].is_empty());
 }
 
+// A ground that knocks at a door as a stranger and then accepts an invitation
+// there holds two rows at that one warden, each with its own voice. A label
+// resolved by warden alone lands on whichever came first — the knock's — and
+// every ask down it is signed by a key that has no standing at the being.
+#[test]
+fn a_label_names_the_row_it_was_kept_on_and_not_the_first_at_that_warden() {
+    let (alice, bob) = pair();
+    let (counter, count, _) = counter_at(&alice.warden);
+    let (holder, _, _) = counter_at(&bob.warden);
+
+    // The stranger's row comes first, so a warden-only match would take it.
+    bob.warden
+        .quo(holder)
+        .knock(&alice.warden.card())
+        .expect("a handle at the far door's public being");
+    let invitation = alice.warden.grant(counter).expect("a grant");
+    let quo = bob.warden.quo(holder);
+    let handle = sole(quo.accept(&invitation));
+    assert!(quo.label("counter", &handle));
+
+    assert_eq!(bump(&handle), Some(1));
+    let by_label = bob.warden.relation("counter").expect("the label");
+    assert_eq!(as_int(by_label.call("bump", &[])), Some(2));
+    assert_eq!(*count.lock().expect("the bench"), 2);
+}
+
+#[test]
+fn a_label_finds_that_same_row_again_after_a_restart() {
+    let store: Arc<dyn Store> = Arc::new(Memory::new());
+    let random = Counted::house();
+    let seeds = Seeds::drawn(random.as_ref());
+    let standing = |store: Arc<dyn Store>| {
+        Standing {
+            seeds: seeds.clone(),
+            clock: Arc::new(Still),
+            random: random.clone(),
+            store: None,
+            roads: vec![Road::Memory],
+            hints: Vec::new(),
+            limit: 0,
+        }
+        .keeping(store)
+    };
+
+    let alice = Host::stand(on(Arc::new(Memory::new()))).expect("a ground stands");
+    let (counter, count, _) = counter_at(&alice.warden);
+    let invitation = alice.warden.grant(counter).expect("a grant");
+
+    let seed = [0x33u8; KEY];
+    let heir_seed = [0x44u8; KEY];
+    let first = Host::stand(standing(store.clone())).expect("a ground stands");
+    let (object, _, _) = Counter::new();
+    let (holder, _) = first
+        .warden
+        .hold(
+            object,
+            COUNTER,
+            Holding {
+                seed: Some(seed),
+                heir_seed: Some(heir_seed),
+                ..Holding::default()
+            },
+        )
+        .expect("a being");
+    let quo = first.warden.quo(holder);
+    quo.knock(&alice.warden.card()).expect("a stranger's row");
+    let handle = sole(quo.accept(&invitation));
+    assert!(quo.label("counter", &handle));
+    assert_eq!(bump(&handle), Some(1));
+
+    first.close();
+    let second = Host::stand(standing(store)).expect("the ground stands again");
+    let (object, _, _) = Counter::new();
+    second
+        .warden
+        .hold(
+            object,
+            COUNTER,
+            Holding {
+                seed: Some(seed),
+                heir_seed: Some(heir_seed),
+                ..Holding::default()
+            },
+        )
+        .expect("the same being, held again");
+    let by_label = second.warden.relation("counter").expect("the label");
+    assert_eq!(as_int(by_label.call("bump", &[])), Some(2));
+    assert_eq!(*count.lock().expect("the bench"), 2);
+}
+
+// A ground decides what it offers a voice that merely knocks. Until it says
+// so, the stranger gets one room.
+#[test]
+fn a_being_the_warden_exposes_is_reached_by_a_stranger() {
+    let (alice, bob) = pair();
+    let (counter, count, _) = counter_at(&alice.warden);
+    let (holder, _, _) = counter_at(&bob.warden);
+
+    let at_door = bob
+        .warden
+        .quo(holder)
+        .knock(&alice.warden.card())
+        .expect("a handle at the far door's public being");
+    assert_eq!(
+        at_door.describe().map(|estate| estate.classes.len()),
+        Some(1)
+    );
+
+    assert!(alice.warden.expose(counter));
+    // Exposing a being it does not hold is refused rather than kept.
+    assert!(!alice.warden.expose([9u8; KEY]));
+    assert_eq!(
+        at_door.describe().map(|estate| estate.classes.len()),
+        Some(2)
+    );
+
+    // Concealed, the house has one room again.
+    assert!(alice.warden.conceal(counter));
+    assert!(!alice.warden.conceal(counter));
+    assert_eq!(
+        at_door.describe().map(|estate| estate.classes.len()),
+        Some(1)
+    );
+    assert_eq!(*count.lock().expect("the bench"), 0);
+}
+
+#[test]
+fn what_a_warden_exposes_survives_a_restart() {
+    let store: Arc<dyn Store> = Arc::new(Memory::new());
+    let random = Counted::house();
+    let seeds = Seeds::drawn(random.as_ref());
+    let standing = |store: Arc<dyn Store>| {
+        Standing {
+            seeds: seeds.clone(),
+            clock: Arc::new(Still),
+            random: random.clone(),
+            store: None,
+            roads: vec![Road::Memory],
+            hints: Vec::new(),
+            limit: 0,
+        }
+        .keeping(store)
+    };
+
+    let seed = [0x55u8; KEY];
+    let heir_seed = [0x66u8; KEY];
+    let first = Host::stand(standing(store.clone())).expect("a ground stands");
+    let (object, _, _) = Counter::new();
+    let (being, _) = first
+        .warden
+        .hold(
+            object,
+            COUNTER,
+            Holding {
+                seed: Some(seed),
+                heir_seed: Some(heir_seed),
+                public: true,
+                ..Holding::default()
+            },
+        )
+        .expect("a being");
+
+    first.close();
+    let second = Host::stand(standing(store)).expect("the ground stands again");
+    let (object, _, _) = Counter::new();
+    second
+        .warden
+        .hold(
+            object,
+            COUNTER,
+            Holding {
+                seed: Some(seed),
+                heir_seed: Some(heir_seed),
+                ..Holding::default()
+            },
+        )
+        .expect("the same being, held again");
+    // Held again without `public`, and still exposed: the store says so.
+    assert!(second.warden.conceal(being));
+}
+
 #[test]
 fn a_hint_is_stored_and_carried_as_an_opaque_string_never_parsed() {
     let (one, two) = pair();

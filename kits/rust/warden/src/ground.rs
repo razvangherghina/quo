@@ -151,9 +151,13 @@ pub trait Store: Send + Sync {
 pub enum Label {
     /// A being minted beside this one, under this warden.
     Near { being: [u8; KEY] },
-    /// A relation accepted at a far house, and what it opens.
+    /// A relation accepted at a far house, and what it opens. The voice names
+    /// which row: a ground that knocked at a door as a stranger and later
+    /// accepted an invitation there holds two rows at that one warden, and a
+    /// label matched by warden alone lands on whichever came first.
     Far {
         warden: [u8; KEY],
+        voice: [u8; KEY],
         being: [u8; KEY],
         digest: [u8; KEY],
     },
@@ -169,6 +173,8 @@ pub struct Snapshot {
     pub outbound: Vec<Outbound>,
     pub moved: Vec<([u8; KEY], Word)>,
     pub labels: Vec<(String, Label)>,
+    /// What this door offers every voice, the stranger included.
+    pub public: Vec<[u8; KEY]>,
 }
 
 /// The store a warden gets when the host hands in none: the records live as
@@ -371,6 +377,9 @@ pub struct Holding {
     pub heir_seed: Option<[u8; KEY]>,
     pub label: Option<String>,
     pub cells: Option<Vec<u8>>,
+    /// Offer the being to every voice, the stranger included, as `expose`
+    /// does after the fact.
+    pub public: bool,
 }
 
 impl Holding {
@@ -422,6 +431,7 @@ impl Warden {
             door.inbound = kept.inbound;
             door.outbound = kept.outbound;
             door.moved = kept.moved;
+            door.public = kept.public;
             for (label, kept) in kept.labels {
                 labels.insert(label, kept);
             }
@@ -494,6 +504,7 @@ impl Warden {
             inbound: state.door.inbound.clone(),
             outbound: state.door.outbound.clone(),
             moved: state.door.moved.clone(),
+            public: state.door.public.clone(),
             labels: state
                 .labels
                 .iter()
@@ -526,6 +537,15 @@ impl Warden {
         holding: Holding,
     ) -> Option<([u8; KEY], Handle)> {
         let parsed = quo_notation::parse(blueprint).ok()?;
+        // The only two names the kit needs that the notation can also spell,
+        // so the only two a blueprint could collide with. quo-truth.md, Part two.
+        if parsed
+            .fields
+            .iter()
+            .any(|field| field.name == "cells" || field.name == "take")
+        {
+            return None;
+        }
         let digest = parsed.digest();
         let seed = holding.seed.unwrap_or_else(|| self.0.random.draw());
         let heir_seed = holding.heir_seed.unwrap_or_else(|| self.0.random.draw());
@@ -559,6 +579,9 @@ impl Warden {
         if let Some(label) = holding.label {
             state.labels.insert(label, Label::Near { being });
         }
+        if holding.public && !state.door.public.contains(&being) {
+            state.door.public.push(being);
+        }
         self.keep(&state);
         drop(state);
         Some((
@@ -573,6 +596,32 @@ impl Warden {
         ))
     }
 
+    /// Offer a being this door holds to every voice, the stranger included;
+    /// `conceal` takes it back. **Exposure is not a standing**: a stranger
+    /// still spends no number and holds no row, and a holder's own row is
+    /// unchanged by it.
+    pub fn expose(&self, being: [u8; KEY]) -> bool {
+        let mut state = self.state();
+        if !state.beings.contains_key(&being) {
+            return false;
+        }
+        if !state.door.public.contains(&being) {
+            state.door.public.push(being);
+        }
+        self.keep(&state);
+        true
+    }
+
+    pub fn conceal(&self, being: [u8; KEY]) -> bool {
+        let mut state = self.state();
+        if !state.door.public.contains(&being) {
+            return false;
+        }
+        state.door.public.retain(|one| one != &being);
+        self.keep(&state);
+        true
+    }
+
     /// Release a being: drop the pointer, and every standing at it goes.
     pub fn release(&self, being: [u8; KEY]) -> bool {
         let mut state = self.state();
@@ -580,6 +629,7 @@ impl Warden {
             return false;
         }
         state.door.beings.retain(|held| held.being != being);
+        state.door.public.retain(|one| one != &being);
         let mut at = 0;
         while at < state.door.inbound.len() {
             state.door.inbound[at].beings.retain(|held| held != &being);
@@ -683,6 +733,7 @@ impl Warden {
             }
             Label::Far {
                 warden,
+                voice,
                 being,
                 digest,
             } => {
@@ -690,7 +741,7 @@ impl Warden {
                     .door
                     .outbound
                     .iter()
-                    .position(|row| row.warden == warden)?;
+                    .position(|row| row.warden == warden && row.voice == voice)?;
                 let text = state.texts.get(&digest)?;
                 let blueprint = Arc::new(quo_notation::parse(text).ok()?);
                 Some(Handle {
@@ -1045,6 +1096,7 @@ impl Warden {
                 };
                 Label::Far {
                     warden: row.warden,
+                    voice: row.voice,
                     being: handle.being,
                     digest: handle.blueprint.digest(),
                 }
@@ -1392,6 +1444,16 @@ impl Quo {
     /// Widen or narrow a standing.
     pub fn amend(&self, voice: [u8; KEY], add: &[[u8; KEY]], remove: &[[u8; KEY]]) -> bool {
         self.warden.amend(voice, add, remove)
+    }
+
+    /// Offer a being to every voice, the stranger included; `conceal` takes it
+    /// back.
+    pub fn expose(&self, being: [u8; KEY]) -> bool {
+        self.warden.expose(being)
+    }
+
+    pub fn conceal(&self, being: [u8; KEY]) -> bool {
+        self.warden.conceal(being)
     }
 
     /// Take a being away, and every standing at it with it.

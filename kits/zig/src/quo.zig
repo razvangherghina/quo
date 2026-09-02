@@ -80,11 +80,11 @@ pub const At = struct {
                 .under = self,
                 .reach = .{ .near = pk },
             },
-            .far => |one| Handle{
+            .far => |one| if (self.door.rowAt(one.warden, one.voice)) |at| Handle{
                 .door = self.door,
                 .under = self,
-                .reach = .{ .far = .{ .at = one.at, .being = one.being, .text = one.text } },
-            },
+                .reach = .{ .far = .{ .at = at, .being = one.being, .text = one.text } },
+            } else null,
         };
     }
 
@@ -107,6 +107,20 @@ pub const At = struct {
         self.door.take();
         defer self.door.give();
         return self.door.releaseBeing(target orelse self.being);
+    }
+
+    /// Offer a being to every voice, the stranger included; `conceal` takes it
+    /// back. No target opens this being itself, as `grant` does.
+    pub fn expose(self: At, target: ?Key) Fault!bool {
+        self.door.take();
+        defer self.door.give();
+        return self.door.expose(target orelse self.being);
+    }
+
+    pub fn conceal(self: At, target: ?Key) bool {
+        self.door.take();
+        defer self.door.give();
+        return self.door.conceal(target orelse self.being);
     }
 
     /// An invitation received as data, turned into handles — **with the
@@ -142,7 +156,10 @@ pub const At = struct {
             .near => |pk| .{ .local = pk },
             .far => |one| .{
                 .far = .{
-                    .at = one.at,
+                    // The row is named rather than positioned: dropping any
+                    // earlier row shifts every index after it.
+                    .warden = self.door.houseAt(one.at) orelse return Error.Refused,
+                    .voice = self.door.voiceAt(one.at) orelse return Error.Refused,
                     .being = one.being,
                     // The label is the warden's record, so the text it keeps is
                     // the warden's to free.
@@ -848,6 +865,9 @@ pub const Holding = struct {
     seed: ?Key = null,
     heir_seed: ?Key = null,
     label: ?[]const u8 = null,
+    /// Offer the being to every voice, the stranger included, as `expose`
+    /// does after the fact.
+    public: bool = false,
 };
 
 /// Take an object up under a warden. What it gains is its cell filled in and
@@ -871,6 +891,7 @@ pub fn holding(
         door.give();
         return why;
     };
+    if (h.public) _ = door.expose(pk) catch {};
     door.give();
     object._quo = .{ .door = door, .being = pk };
     return .{

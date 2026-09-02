@@ -286,6 +286,11 @@ class RemoteHandle(Handle):
         )
         if envelope is None:
             return None
+        # Composing spent the row's number, and a number this door has spent is
+        # what a restart must not lose: a row restored one behind spends it
+        # again, and the far door judges the second a replay and answers
+        # silence — so the ask after a restart is the one that vanishes.
+        await self._warden.persist()
         return {
             "envelope": envelope,
             "seq": seq,
@@ -519,6 +524,14 @@ class Quo:
 
     def release(self, target: Any = None) -> bool:
         return self._warden.release_at(_pk_of(target, self.being))
+
+    def expose(self, target: Any = None) -> bool:
+        """Offer a being to every voice, the stranger included; ``conceal``
+        takes it back. No argument opens the being itself, as ``grant`` does."""
+        return self._warden.expose(_pk_of(target, self.being))
+
+    def conceal(self, target: Any = None) -> bool:
+        return self._warden.conceal(_pk_of(target, self.being))
 
     async def accept(
         self, invitation: wire.Invitation, label: Optional[str] = None

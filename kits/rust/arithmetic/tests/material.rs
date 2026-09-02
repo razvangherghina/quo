@@ -28,11 +28,12 @@ fn material() -> json::Json {
 }
 
 /// A signing pair: the seed, and the pk the algorithm derives from it.
-const SIGNING: [(&str, &str); 4] = [
+const SIGNING: [(&str, &str); 5] = [
     ("wardenNameSecret", "wardenName"),
     ("voiceSecret", "voice"),
     ("voiceHeirSecret", "voiceHeir"),
     ("successorSecret", "successor"),
+    ("nextHeirSecret", "nextHeir"),
 ];
 
 /// A sealing pair: the private key itself, and its public half.
@@ -44,15 +45,17 @@ const SEALING: [(&str, &str); 3] = [
 
 /// A commitment: the warden it would be spent at, the heir, and the digest.
 /// The warden's own commitment hashes its name under itself.
-const COMMITMENTS: [(&str, &str, &str); 2] = [
+const COMMITMENTS: [(&str, &str, &str); 4] = [
     ("wardenName", "wardenHeir", "wardenCommitment"),
     ("wardenName", "voiceHeir", "voiceHeirCommitment"),
+    ("wardenName", "beingHeir", "beingCommitment"),
+    ("wardenName", "nextHeir", "nextHeirCommitment"),
 ];
 
 /// Names the file fixes without giving anything to derive them from: a
-/// being's own name, and two commitments whose heirs are not in the file.
-/// They are thirty-two bytes and nothing more is claimed of them.
-const OPAQUE: [&str; 3] = ["being", "beingCommitment", "nextHeirCommitment"];
+/// being's own name, and the heir its commitment is over. They are
+/// thirty-two bytes and nothing more is claimed of them.
+const OPAQUE: [&str; 2] = ["being", "beingHeir"];
 
 #[test]
 fn every_name_in_the_material() {

@@ -12,6 +12,7 @@ import {
   readAnswer,
   readField,
   writeArgument,
+  decode,
   seal,
   sealingPair,
   signingPair,
@@ -416,6 +417,64 @@ test('a stranger reaches the public being and nothing else', async () => {
     }),
     null,
   );
+});
+
+test('a being the warden exposes is reached by a stranger; a concealed one is silence again', async () => {
+  const SHOP = `Shop
+  products() [text]
+`;
+  const warden = await ground();
+  const shop = await holding(
+    warden,
+    { products: () => ['pear', 'plum'] },
+    { seed: fixed(30), blueprint: SHOP, public: true },
+  );
+  await holding(warden, { read: () => 'n' }, { seed: fixed(31), blueprint: NOTE });
+
+  const shown = await answered(warden, stranger, {}, 'describe');
+  assert.equal(shown.classes.length, 2);
+  assert.ok(shown.classes.some((c) => c.beings.some((b) => hex(b.being) === hex(shop))));
+
+  const asked = await answered(warden, stranger, { being: shop, method: invoke('products') });
+  assert.deepEqual(decode({ list: { base: 'text' } }, asked.data), ['pear', 'plum']);
+  const at = await digest(parse(SHOP));
+  assert.equal(
+    await answered(warden, stranger, { method: field('blueprint', at) }, 'blueprint'),
+    SHOP,
+  );
+
+  assert.equal(warden.conceal(shop), true);
+  assert.equal(
+    await warden.judge(await ask(warden, stranger, { being: shop, method: invoke('products') }), {
+      clock: still,
+      random: RANDOM,
+    }),
+    null,
+  );
+  assert.equal((await answered(warden, stranger, {}, 'describe')).classes.length, 1);
+});
+
+test('what a warden exposes survives a restart through the store', async () => {
+  const SHOP = `Shop
+  products() [text]
+`;
+  const store = {
+    snapshot: null,
+    save: async (s) => (store.snapshot = s),
+    load: async () => store.snapshot,
+  };
+  const first = await ground({ store });
+  const shop = await holding(
+    first,
+    { products: () => [] },
+    { seed: fixed(30), blueprint: SHOP, public: true },
+  );
+  await first.keep();
+  const again = await ground({ store });
+  await holding(again, { products: () => ['pear'] }, { seed: fixed(30), blueprint: SHOP });
+  assert.ok(again.public.has(hex(shop)));
+  const asked = await answered(again, stranger, { being: shop, method: invoke('products') });
+  assert.deepEqual(decode({ list: { base: 'text' } }, asked.data), ['pear']);
 });
 
 test('the old door only points: a moved being answers only `moved`, work is silence', async () => {

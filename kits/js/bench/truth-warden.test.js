@@ -173,6 +173,31 @@ test('what must survive a restart lives in the store the host handed in', async 
   assert.ok(being);
 });
 
+test('a label survives a restart onto the row it named, not another at the same door', async () => {
+  const delivery = memoryDelivery();
+  const store = new MemoryStore();
+  const alice = await Warden.open({ seeds: seeds(random), clock: still, random, delivery });
+  const bobSeeds = seeds(random);
+  let bob = await Warden.open({ seeds: bobSeeds, clock: still, random, delivery, store });
+  delivery.attach('mem://alice', alice);
+  delivery.attach('mem://bob', bob);
+  alice.publish('mem://alice');
+  bob.publish('mem://bob');
+
+  const counter = new Counter();
+  await alice.hold(counter, { blueprint: COUNTER });
+  assert.ok(await bob.knock(alice.card(), { label: 'front' }));
+  const [handle] = await bob.accept(await counter._quo.grant(counter), { label: 'counter' });
+  assert.equal(await handle.bump(), 1n);
+  await bob.keep();
+
+  bob = await Warden.open({ seeds: bobSeeds, clock: still, random, delivery, store });
+  delivery.attach('mem://bob', bob);
+  const kept = bob.labels.get('counter');
+  assert.equal(await kept.handle.bump(), 2n);
+  assert.ok(bob.labels.get('front'));
+});
+
 // "The graph is nobody's — every being holds only its own edges, so no one
 // holds the whole." The whole-graph half of that is a claim about the world and
 // no case can hold it: nothing here can speak for every vantage point that

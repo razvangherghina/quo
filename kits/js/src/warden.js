@@ -20,6 +20,11 @@ import { hex, unhex } from './bytes.js';
 import { allowanceNow, closure, localHandle, pkOf, remoteHandle, within } from './quo.js';
 
 const same = (a, b) => a instanceof Uint8Array && b instanceof Uint8Array && hex(a) === hex(b);
+
+const beyond = (estate, other) => {
+  const seen = new Set(other.classes.flatMap((c) => c.beings.map((b) => hex(b.being))));
+  return estate.classes.some((c) => c.beings.some((b) => !seen.has(hex(b.being))));
+};
 const key32 = (value) => value instanceof Uint8Array && value.length === 32;
 // What a say answers when no road carried it — not the far door's silence,
 // which is `null`, and never an answer. Truthy on purpose: nothing reading an
@@ -357,6 +362,7 @@ export class Warden {
     // The digests of the blueprints this door offers to anyone who asks, filled
     // as they are learned.
     this.declares = new Set();
+    this.public = new Set();
     // Commitments this door will take a standing over for, held at the door
     // rather than as rows: an armed commitment is nobody's standing until it is
     // proved, and a lock is never a standing.
@@ -424,6 +430,13 @@ export class Warden {
   // judgment time.
   async #learn(blueprint) {
     const parsed = parse(blueprint);
+    // The only two names the kit needs that the notation can also spell, so
+    // the only two a blueprint could collide with. quo-truth.md, Part two.
+    for (const field of parsed.fields) {
+      if (field.name === 'cells' || field.name === 'take') {
+        throw new Error(`a blueprint may not declare ${field.name}: it is the being's own seam`);
+      }
+    }
     const text = print(parsed);
     const at = await digest(parsed);
     this.texts.set(hex(at), text);
@@ -478,7 +491,10 @@ export class Warden {
   // methods are called with decoded arguments and answer plain values, which
   // the warden encodes by the field's declared answer type. The being never
   // sees a byte. Its cells, when it moves, are what its own `cells()` says.
-  async hold(object, { seed, heirSeed, blueprint, cells, label = null } = {}) {
+  async hold(
+    object,
+    { seed, heirSeed, blueprint, cells, label = null, public: shown = false } = {},
+  ) {
     const keys = await signingPair(seed ?? this.random());
     const heir = await signingPair(heirSeed ?? seed ?? this.random());
     const learned = await this.#learn(blueprint);
@@ -518,8 +534,25 @@ export class Warden {
     this.beings.set(hex(keys.pk), being);
     object._quo = closure(this, being);
     if (label) this.labels.set(label, { local: keys.pk });
+    if (shown) this.public.add(hex(keys.pk));
     await this.#persist();
     return { being: keys.pk, handle: localHandle(this, being) };
+  }
+
+  // Exposure is not a standing: a stranger still spends no number and holds
+  // no row, and no holder's row changes.
+  expose(beingPk) {
+    if (!beingPk || !this.beings.has(hex(beingPk))) return false;
+    this.public.add(hex(beingPk));
+    this.#persistSoon();
+    return true;
+  }
+
+  conceal(beingPk) {
+    if (!beingPk) return false;
+    const was = this.public.delete(hex(beingPk));
+    if (was) this.#persistSoon();
+    return was;
   }
 
   // Release a being: drop the pointer, and its standings go with it.
@@ -527,6 +560,7 @@ export class Warden {
     if (!beingPk) return false;
     const at = hex(beingPk);
     if (!this.beings.delete(at)) return false;
+    this.public.delete(at);
     for (const [voice, row] of this.inbound) {
       row.beings.delete(at);
       if (row.beings.size === 0) this.inbound.delete(voice);
@@ -666,9 +700,26 @@ export class Warden {
     if (!second) return this.#abandon(row);
     row.heir = { pk: heir.pk, secret: heir.secret };
 
-    const handles = await this.handles(row, { label, estate: readField('describe', second.data) });
+    // An answer alone does not prove the takeover: a door answers a voice it
+    // has never met as a stranger, commitment ignored, and a stranger's describe
+    // is an answer too — one that lists what the door exposes. A takeover that
+    // landed shows this voice at least one being a stranger is not shown.
+    const estate = readField('describe', second.data);
+    const shown = await this.#shown(invitation);
+    if (shown && !beyond(estate, shown)) return this.#abandon(row);
+
+    const handles = await this.handles(row, { label, estate });
     if (!handles) return this.#abandon(row);
     return handles;
+  }
+
+  async #shown(invitation) {
+    const voice = await signingPair(this.random());
+    const row = this.remember(invitation, { voicePk: voice.pk, voiceSecret: voice.secret });
+    row.seq = 0n;
+    const answered = await this.#say(row, { seq: 1n });
+    this.#abandon(row);
+    return answered && answered !== WEATHER ? readField('describe', answered.data) : null;
   }
 
   // A card is not an invitation: it names a house and the way to it, and no
@@ -804,6 +855,7 @@ export class Warden {
     const h = (bytes) => (bytes ? hex(bytes) : null);
     return {
       hints: [...this.hints],
+      public: [...this.public],
       texts: [...this.texts],
       inbound: [...this.inbound.values()].map((row) => ({
         voice: h(row.voice),
@@ -839,6 +891,7 @@ export class Warden {
         label,
         local: h(kept.local),
         warden: kept.row ? h(kept.row.warden) : null,
+        voice: kept.row ? h(kept.row.voice.pk) : null,
         being: h(kept.being),
         digest: h(kept.digest),
       })),
@@ -873,6 +926,7 @@ export class Warden {
     if (!kept) return;
     const u = (text) => (text === null ? null : unhex(text));
     this.hints = [...kept.hints];
+    for (const at of kept.public ?? []) this.public.add(at);
     for (const [at, text] of kept.texts) this.texts.set(at, text);
     for (const row of kept.inbound) {
       this.inbound.set(
@@ -921,7 +975,9 @@ export class Warden {
         this.labels.set(one.label, { local: unhex(one.local) });
         continue;
       }
-      const row = this.outbound.find((r) => hex(r.warden) === one.warden);
+      const row = this.outbound.find(
+        (r) => hex(r.warden) === one.warden && hex(r.voice.pk) === one.voice,
+      );
       const text = this.texts.get(one.digest);
       if (!row || !text) continue;
       const being = unhex(one.being);
@@ -1506,8 +1562,8 @@ export class Warden {
     this.#offer(payload.voice, kind ?? 'stranger');
 
     const reach = stranger
-      ? new Set([hex(this.name.pk)])
-      : new Set([...row.beings, hex(this.name.pk)]);
+      ? new Set([hex(this.name.pk), ...this.public])
+      : new Set([...row.beings, hex(this.name.pk), ...this.public]);
 
     if (!payload.being && !payload.method) {
       // Neither — the warden describes the estate, and the estate means what

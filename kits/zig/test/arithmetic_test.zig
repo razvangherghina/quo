@@ -60,12 +60,15 @@ const Keys = struct {
     wardenHeir: []const u8,
     wardenCommitment: []const u8,
     being: []const u8,
+    beingHeir: []const u8,
     beingCommitment: []const u8,
     voice: []const u8,
     voiceSecret: []const u8,
     voiceHeir: []const u8,
     voiceHeirSecret: []const u8,
     voiceHeirCommitment: []const u8,
+    nextHeir: []const u8,
+    nextHeirSecret: []const u8,
     nextHeirCommitment: []const u8,
     padlock: []const u8,
     padlockSecret: []const u8,
@@ -253,25 +256,28 @@ const derived = [_][]const u8{
     "padlock",
     "returnPadlock",
     "ephemeral",
+    "nextHeir",
     "wardenCommitment",
     "voiceHeirCommitment",
+    "beingCommitment",
+    "nextHeirCommitment",
 };
 
 const pinned = [_][]const u8{
     "wardenNameSecret",
     "voiceSecret",
     "voiceHeirSecret",
+    "nextHeirSecret",
     "successorSecret",
     "padlockSecret",
     "returnPadlockSecret",
     "ephemeralSecret",
     // The warden's heir: the corpus publishes no secret for it.
     "wardenHeir",
-    // A being's name, and two commitments over heirs the corpus does not
-    // publish, so nothing here can recompute them.
+    // A being's name, and the heir its commitment is over: the corpus
+    // publishes no secret for either.
     "being",
-    "beingCommitment",
-    "nextHeirCommitment",
+    "beingHeir",
 };
 
 test "the fixed keys" {
@@ -323,8 +329,9 @@ test "the fixed keys" {
     try expectHex(a, m.returnPadlock, &(try arithmetic.sealingPair(try key(m.returnPadlockSecret))).public, "returnPadlock");
     try expectHex(a, m.ephemeral, &(try arithmetic.sealingPair(try key(m.ephemeralSecret))).public, "ephemeral");
 
-    // The commitments the corpus publishes both halves of: a warden's own
-    // name hashed under itself, and the voice's heir at that warden.
+    // Every commitment in the corpus, each over a heir the corpus publishes.
+    // A stranger holds this file and nothing else, so a commitment whose
+    // preimage is absent is one they can only copy.
     const warden_name = try key(m.wardenName);
     try expectHex(
         a,
@@ -338,6 +345,19 @@ test "the fixed keys" {
         &arithmetic.commitment(warden_name, try key(m.voiceHeir)),
         "voiceHeirCommitment",
     );
+    try expectHex(
+        a,
+        m.beingCommitment,
+        &arithmetic.commitment(warden_name, try key(m.beingHeir)),
+        "beingCommitment",
+    );
+    try expectHex(
+        a,
+        m.nextHeirCommitment,
+        &arithmetic.commitment(warden_name, try key(m.nextHeir)),
+        "nextHeirCommitment",
+    );
+    try expectHex(a, m.nextHeir, &(try arithmetic.signingPair(try key(m.nextHeirSecret))).public, "nextHeir");
 }
 
 test "the agreement is the same from either side, on the corpus's own keys" {

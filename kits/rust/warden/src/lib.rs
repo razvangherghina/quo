@@ -288,6 +288,9 @@ pub struct Door {
     /// window is, is the warden's own.
     pub window: i64,
     pub beings: Vec<Resident>,
+    /// What this door offers every voice, the stranger included: the warden's
+    /// own choice of what its public face holds beside itself.
+    pub public: Vec<[u8; KEY]>,
     /// The blueprint texts this door holds, which is what `blueprint` hands
     /// back and what `receive` is judged against.
     pub blueprints: Vec<String>,
@@ -341,6 +344,7 @@ impl Door {
                 commitment: own_commitment,
                 cells: Vec::new(),
             }],
+            public: Vec::new(),
             blueprints: vec![WARDEN_BLUEPRINT.to_string()],
             inbound: Vec::new(),
             outbound: Vec::new(),
@@ -374,6 +378,11 @@ impl Door {
     /// flag on anything — it is this one identity.
     pub fn reaches(&self, voice: &[u8; KEY], being: &[u8; KEY]) -> bool {
         if being == &self.name {
+            return true;
+        }
+        // What this door exposes, every voice reaches. **Exposure is not a
+        // standing**: it grants no row and spends no number.
+        if self.public.contains(being) {
             return true;
         }
         self.inbound
@@ -438,9 +447,16 @@ impl Door {
         let mut reachable: Vec<&Resident> = vec![self
             .resident(&self.name)
             .expect("the public being always stands")];
+        for being in &self.public {
+            if let Some(held) = self.resident(being) {
+                reachable.push(held);
+            }
+        }
         if let Some(row) = self.inbound.iter().find(|row| &row.voice == voice) {
             for being in &row.beings {
-                if being == &self.name {
+                // The name and whatever is exposed are already in, and a being
+                // listed twice would be two rooms of one house.
+                if being == &self.name || self.public.contains(being) {
                     continue;
                 }
                 if let Some(held) = self.resident(being) {

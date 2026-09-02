@@ -432,6 +432,89 @@ fn carriedHere(
     return .silence;
 }
 
+// What a ground offers a voice that merely knocks is a record like any other:
+// a door that forgot it on a restart would quietly stop serving the thing it
+// was standing there to serve.
+test "what a warden exposes survives a restart" {
+    const gpa = std.testing.allocator;
+    var threaded: std.Io.Threaded = .init(gpa, .{});
+    defer threaded.deinit();
+    const io = threaded.io();
+
+    var kept: host.MemoryStore = .{ .gpa = gpa };
+    defer kept.deinit();
+
+    const seeds = host.seeds(random);
+    const being_seed = random();
+    const opening: host.Opening = .{
+        .seeds = seeds,
+        .clock = still,
+        .random = random,
+        .io = io,
+        .roads = &.{.memory},
+        .store = kept.store(),
+    };
+
+    var being: warden.Key = undefined;
+    {
+        var here: host.Host = undefined;
+        try host.Host.open(gpa, opening, &here);
+        var counter: Counter = .{};
+        const held = try quo.holding(
+            &here.door,
+            Counter,
+            &counter,
+            COUNTER,
+            .{ .seed = being_seed, .public = true },
+            gpa,
+        );
+        being = held.being();
+        here.close();
+    }
+
+    var again: host.Host = undefined;
+    try host.Host.open(gpa, opening, &again);
+    defer again.close();
+    var counter: Counter = .{};
+    _ = try quo.holding(&again.door, Counter, &counter, COUNTER, .{ .seed = being_seed }, gpa);
+    // Held again without `public`, and still exposed: the store says so.
+    try std.testing.expect(again.door.isExposed(being));
+    try std.testing.expect(again.door.conceal(being));
+}
+
+// Labels used to name a row by its position in the outbound list, and `drop`
+// and `forget` remove from that list without fixing anything up — so dropping
+// any earlier row moved every later label onto its neighbour, live. A row is
+// named by its far warden and the voice held there now, which no removal moves.
+test "a label finds its own row after an earlier one is dropped" {
+    const gpa = std.testing.allocator;
+    var pair: Pair = undefined;
+    try Pair.init(gpa, &pair);
+    defer pair.deinit();
+
+    // Two relations at Alice, so Bob's label sits at position one.
+    var first: Counter = .{};
+    const one = try quo.holding(pair.alice, Counter, &first, COUNTER, .{}, gpa);
+    const to_first = try one.under.grant(gpa, null);
+    defer gpa.free(to_first.hints);
+    var second: Counter = .{};
+    const two = try quo.holding(pair.alice, Counter, &second, COUNTER, .{}, gpa);
+    const to_second = try two.under.grant(gpa, null);
+    defer gpa.free(to_second.hints);
+
+    _ = try joining(pair.bob, gpa, to_first, "first");
+    var kept = try joining(pair.bob, gpa, to_second, "second");
+    try std.testing.expectEqual(@as(?i64, 1), try kept.call(gpa, i64, "bump", .{}));
+
+    // The row the first label named goes. The second label must still answer
+    // its own being rather than the one that shifted into its old place.
+    try std.testing.expect(pair.bob.drop(0));
+    var again = walk(pair.bob).relation("second").?;
+    try std.testing.expectEqual(@as(?i64, 2), try again.call(gpa, i64, "bump", .{}));
+    try std.testing.expectEqual(@as(i64, 2), second.n);
+    try std.testing.expectEqual(@as(i64, 0), first.n);
+}
+
 test "a delivery that answers in its response needs no platform, and opens without one" {
     const gpa = std.testing.allocator;
 

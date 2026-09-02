@@ -257,6 +257,8 @@ export function closure(warden, being) {
         remove: (changes?.remove ?? []).map(pkOf),
       }),
     release: (target) => warden.release(pkOf(target)),
+    expose: (target) => warden.expose(pkOf(target ?? being.pk)),
+    conceal: (target) => warden.conceal(pkOf(target ?? being.pk)),
     accept: (invitation, options) => warden.accept(invitation, { ...options, being: being.pk }),
     knock: (card, options) => warden.knock(card, { ...options, being: being.pk }),
     hold: (object, options) => warden.hold(object, options),

@@ -952,6 +952,11 @@ pub const BeingRow = struct {
     /// The succession this door published for a being that left, which is all
     /// `moved` ever answers and all the old door ever does again.
     moved: ?Word = null,
+    /// Whether this door is the one the being left. A pointer may be published
+    /// at a door that still holds the being — a new door points too, for the
+    /// name the arriving being wore — so a word alone does not mean departed.
+    /// Only the door the being departed from stops holding it.
+    departed: bool = false,
     /// The ordinary pointer to the object, wearing the one shape the warden
     /// knows it by. Absent for a pointer row, and for a being the door holds
     /// keys for but nothing behind — which is silence like any other.
@@ -1113,9 +1118,11 @@ pub const Call = struct {
 pub const LabelAt = union(enum) {
     /// A being this warden holds.
     local: Key,
-    /// A relation: which outbound row, which being at the far house, and the
-    /// text of that being's class, which is what makes its fields callable.
-    far: struct { at: usize, being: Key, text: []u8 },
+    /// A relation: which outbound row — named by the far warden and the voice
+    /// held there, because a position shifts the moment any earlier row is
+    /// dropped — which being at the far house, and the text of that being's
+    /// class, which is what makes its fields callable.
+    far: struct { warden: Key, voice: Key, being: Key, text: []u8 },
 };
 
 pub const Label = struct {
@@ -1263,6 +1270,10 @@ pub const Warden = struct {
     /// nowhere, and a being reaches its relations by them.
     labels: std.ArrayList(Label) = .empty,
 
+    /// What this door offers every voice, the stranger included: the warden's
+    /// own choice of what its public face holds beside itself.
+    exposed: std.ArrayList(Key) = .empty,
+
     /// The platform, handed in like the clock and the randomness: what the
     /// door waits and takes its turns on. **It is not a road** — no socket,
     /// no address and no hint is reachable through it, and nothing here ever
@@ -1291,6 +1302,7 @@ pub const Warden = struct {
         for (self.inbound.items) |*row| row.deinit(self.gpa);
         for (self.outbound.items) |*row| row.deinit(self.gpa);
         for (self.beings.items) |*row| row.deinit(self.gpa);
+        self.exposed.deinit(self.gpa);
         for (self.labels.items) |*one| one.deinit(self.gpa);
         for (self.hints.items) |one| self.gpa.free(one);
         self.hints.deinit(self.gpa);
@@ -1337,6 +1349,15 @@ pub const Warden = struct {
             if (std.mem.eql(u8, &row.pk, &pk)) return row;
         }
         return null;
+    }
+
+    /// A being this door still holds, as against one that departed from here.
+    /// The pointer a departure publishes is kept as a row of the same list, and
+    /// a door that read a departed being as held could pack it again — one
+    /// being in two houses, which is what its cargo being nothing prevents.
+    pub fn heldBeing(self: Warden, pk: Key) ?BeingRow {
+        const row = self.being(pk) orelse return null;
+        return if (row.departed) null else row;
     }
 
     /// The public being's pk is the warden's own name, and it is reachable by
@@ -1386,11 +1407,14 @@ pub const Warden = struct {
     pub fn estateFor(self: Warden, a: std.mem.Allocator, voice: ?Key) std.mem.Allocator.Error!Estate {
         var reachable: std.ArrayList(Key) = .empty;
         try reachable.append(a, self.name);
+        for (self.exposed.items) |one| try reachable.append(a, one);
         if (voice) |v| {
             for (self.inbound.items) |row| {
                 if (!std.mem.eql(u8, &row.voice, &v)) continue;
                 for (row.beings.items) |b| {
-                    if (self.isPublic(b)) continue;
+                    // The name and whatever is exposed are already in, and a
+                    // being listed twice would be two rooms of one house.
+                    if (self.isPublic(b) or self.isExposed(b)) continue;
                     try reachable.append(a, b);
                 }
             }
@@ -1483,8 +1507,18 @@ pub const Warden = struct {
         return Error.Refused;
     }
 
+    /// Whether this door offers that being to every voice. **Exposure is not a
+    /// standing**: it grants no row and spends no number.
+    pub fn isExposed(self: Warden, pk: Key) bool {
+        for (self.exposed.items) |one| {
+            if (std.mem.eql(u8, &one, &pk)) return true;
+        }
+        return false;
+    }
+
     pub fn mayReach(self: Warden, voice: ?Key, pk: Key) bool {
         if (self.isPublic(pk)) return true;
+        if (self.isExposed(pk)) return true;
         const v = voice orelse return false;
         for (self.inbound.items) |row| {
             if (std.mem.eql(u8, &row.voice, &v) and row.reaches(pk)) return true;
@@ -1925,6 +1959,13 @@ pub const Warden = struct {
         return self.outbound.items[at].warden;
     }
 
+    /// The voice this ground holds at a relation, which with the far house
+    /// names the row whatever its position becomes.
+    pub fn voiceAt(self: Warden, at: usize) ?Key {
+        if (at >= self.outbound.items.len) return null;
+        return self.outbound.items[at].voice;
+    }
+
     /// Believe a word, or refuse it. **A peer believes it by a key it already
     /// holds, and there are only two**: a signing key succeeded is believed by
     /// the heir it committed, and a padlock replaced is believed by the name,
@@ -2329,7 +2370,7 @@ pub const Warden = struct {
         heir: Key,
         cells: []const u8,
     ) Fault!Cargo {
-        const row = self.being(being_pk) orelse return Error.Refused;
+        const row = self.heldBeing(being_pk) orelse return Error.Refused;
         if (!std.mem.eql(u8, &arithmetic.commitment(self.name, heir), &row.commitment)) {
             return Error.Refused;
         }
@@ -2451,6 +2492,12 @@ pub const Warden = struct {
         errdefer a.free(told);
         _ = self.forget(being_pk);
         try self.publish(being_pk, word);
+        // This is the door it left, so it is no longer a being here: its cargo
+        // is nothing from now on, exactly as for one that never arrived. The
+        // standings stay, and are what a peer is pointed by.
+        for (self.beings.items) |*held| {
+            if (std.mem.eql(u8, &held.pk, &being_pk)) held.departed = true;
+        }
         return .{ .word = word, .peers = told };
     }
 
@@ -3131,6 +3178,14 @@ pub const Warden = struct {
         shape.* = try notation.parse(self.gpa, text);
         errdefer shape.deinit();
 
+        // The only two names the kit needs that the notation can also spell,
+        // so the only two a blueprint could collide with. quo-truth.md, Part two.
+        for (shape.class.fields) |field| {
+            if (std.mem.eql(u8, field.name, "cells") or std.mem.eql(u8, field.name, "take")) {
+                return Error.Refused;
+            }
+        }
+
         const fresh: BeingRow = .{
             .pk = keys.public,
             .secret = seed,
@@ -3160,9 +3215,33 @@ pub const Warden = struct {
         return keys.public;
     }
 
+    /// Offer a being this door holds to every voice, the stranger included;
+    /// `conceal` takes it back. A holder's own row is unchanged by either.
+    pub fn expose(self: *Warden, pk: Key) Fault!bool {
+        if (self.heldBeing(pk) == null) return false;
+        if (self.isExposed(pk)) return true;
+        try self.exposed.append(self.gpa, pk);
+        self.persist() catch {};
+        return true;
+    }
+
+    pub fn conceal(self: *Warden, pk: Key) bool {
+        var i: usize = 0;
+        while (i < self.exposed.items.len) {
+            if (std.mem.eql(u8, &self.exposed.items[i], &pk)) {
+                _ = self.exposed.orderedRemove(i);
+                self.persist() catch {};
+                return true;
+            }
+            i += 1;
+        }
+        return false;
+    }
+
     /// Let a being go. **A released being takes every standing at it away**,
     /// and whoever held one meets a silence indistinguishable from anything.
     pub fn releaseBeing(self: *Warden, pk: Key) bool {
+        _ = self.conceal(pk);
         var found = false;
         var i: usize = 0;
         while (i < self.beings.items.len) {
@@ -3211,6 +3290,18 @@ pub const Warden = struct {
             } else i += 1;
         }
         try self.labels.append(self.gpa, .{ .name = try self.gpa.dupe(u8, text), .at = at });
+    }
+
+    /// Which outbound row a far warden and a voice name, or nothing. One being
+    /// may hold two rows at one house — a stranger's from a knock and an
+    /// accepted one — so the voice is what tells them apart.
+    pub fn rowAt(self: *Warden, far: Key, voice: Key) ?usize {
+        for (self.outbound.items, 0..) |row, i| {
+            if (!std.mem.eql(u8, &row.warden, &far)) continue;
+            if (!std.mem.eql(u8, &row.voice, &voice)) continue;
+            return i;
+        }
+        return null;
     }
 
     /// What a label points at, or nothing. **Nothing resolves a label but
@@ -3772,27 +3863,33 @@ pub const Warden = struct {
 
         const named = try a.alloc(wire.Value, self.labels.items.len);
         for (self.labels.items, named) |one, *slot| {
-            const fields = try a.alloc(wire.Value, 4);
+            const fields = try a.alloc(wire.Value, 5);
             fields[0] = .{ .text = one.name };
             switch (one.at) {
                 .local => |pk| {
                     fields[1] = try maybeKey(a, pk);
-                    fields[2] = .{ .integer = 0 };
-                    fields[3] = .{ .text = "" };
+                    fields[2] = .absent;
+                    fields[3] = .absent;
+                    fields[4] = .{ .text = "" };
                 },
                 .far => |far| {
                     fields[1] = try maybeKey(a, far.being);
-                    fields[2] = .{ .integer = @intCast(far.at) };
-                    fields[3] = .{ .text = far.text };
+                    fields[2] = try maybeKey(a, far.warden);
+                    fields[3] = try maybeKey(a, far.voice);
+                    fields[4] = .{ .text = far.text };
                 },
             }
             slot.* = .{ .record = fields };
         }
 
-        const whole = try a.alloc(wire.Value, 3);
+        const shown = try a.alloc(wire.Value, self.exposed.items.len);
+        for (self.exposed.items, shown) |one, *slot| slot.* = .{ .b32 = one };
+
+        const whole = try a.alloc(wire.Value, 4);
         whole[0] = .{ .list = held };
         whole[1] = .{ .list = bound };
         whole[2] = .{ .list = named };
+        whole[3] = .{ .list = shown };
         return wire.encode(gpa, "keeping", blueprint.records, .{ .record = whole });
     }
 
@@ -3816,7 +3913,7 @@ pub const Warden = struct {
         var read = wire.decode(a, "keeping", blueprint.records, owned) catch return Error.Refused;
         defer read.deinit();
 
-        const whole = try fieldsOf(read.value, 3);
+        const whole = try fieldsOf(read.value, 4);
         for (try listOf(whole[0])) |one| {
             const f = try fieldsOf(one, 8);
             var beings: std.ArrayList(Key) = .empty;
@@ -3856,13 +3953,13 @@ pub const Warden = struct {
         }
 
         for (try listOf(whole[2])) |one| {
-            const f = try fieldsOf(one, 4);
+            const f = try fieldsOf(one, 5);
             const label = switch (f[0]) {
                 .text => |t| t,
                 else => return Error.Refused,
             };
             const pk = (try maybeKeyOf(f[1])) orelse continue;
-            const text = switch (f[3]) {
+            const text = switch (f[4]) {
                 .text => |t| t,
                 else => return Error.Refused,
             };
@@ -3870,11 +3967,16 @@ pub const Warden = struct {
                 try self.keepLabel(label, .{ .local = pk });
             } else {
                 try self.keepLabel(label, .{ .far = .{
-                    .at = @intCast(try integerOf(f[2])),
+                    .warden = (try maybeKeyOf(f[2])) orelse return Error.Refused,
+                    .voice = (try maybeKeyOf(f[3])) orelse return Error.Refused,
                     .being = pk,
                     .text = try self.gpa.dupe(u8, text),
                 } });
             }
+        }
+
+        for (try listOf(whole[3])) |one| {
+            try self.exposed.append(self.gpa, try keyOf(one));
         }
     }
 };
@@ -3891,6 +3993,7 @@ const keeping_text =
     \\  inbound [held]
     \\  outbound [bound]
     \\  labels [named]
+    \\  exposed [b32]
     \\
     \\held
     \\  voice b32
@@ -3918,7 +4021,8 @@ const keeping_text =
     \\named
     \\  label text
     \\  being b32?
-    \\  at int
+    \\  warden b32?
+    \\  voice b32?
     \\  text text
     \\
 ;

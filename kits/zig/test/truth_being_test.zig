@@ -650,6 +650,43 @@ test "a handle's describe shows what the row names, and never the rest of the es
     try std.testing.expectEqualSlices(u8, &digest, &sketch.digest);
 }
 
+// A ground decides what it offers a voice that merely knocks. Until it says
+// so, the stranger gets one room.
+test "a being the warden exposes is reached by a stranger" {
+    const gpa = std.testing.allocator;
+    var world: World = undefined;
+    try World.init(gpa, &world);
+    defer world.deinit();
+
+    const card = try world.phone.card(gpa);
+    defer gpa.free(card.hints);
+    const knocked = (try world.at_walker.under.knock(card)).?;
+
+    {
+        var seen = (try knocked.describe(gpa)).?;
+        defer seen.deinit();
+        try std.testing.expectEqual(@as(usize, 1), seen.estate.classes.len);
+    }
+
+    try std.testing.expect(try world.phone.expose(world.at_rex.being()));
+    // Exposing a being it does not hold is refused rather than kept.
+    try std.testing.expect(!try world.phone.expose(@splat(0x09)));
+    {
+        var seen = (try knocked.describe(gpa)).?;
+        defer seen.deinit();
+        try std.testing.expectEqual(@as(usize, 2), seen.estate.classes.len);
+    }
+
+    // Concealed, the house has one room again.
+    try std.testing.expect(world.phone.conceal(world.at_rex.being()));
+    try std.testing.expect(!world.phone.conceal(world.at_rex.being()));
+    {
+        var seen = (try knocked.describe(gpa)).?;
+        defer seen.deinit();
+        try std.testing.expectEqual(@as(usize, 1), seen.estate.classes.len);
+    }
+}
+
 test "a knock is held as a stranger: the public being and nothing else" {
     const gpa = std.testing.allocator;
     var world: World = undefined;

@@ -157,6 +157,12 @@ class TheKitsOwnNames(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(await handle.here(), "here")
             self.assertIsNone(await handle.absent())
 
+    async def test_a_blueprint_declaring_cells_or_take_is_refused(self) -> None:
+        """The two names the notation can spell that the being already owns."""
+        for reserved in ("cells", "take"):
+            with self.assertRaises(ValueError):
+                await self.here.hold(object(), f"Thing\n  {reserved}() bytes\n")
+
     async def test_a_name_the_blueprint_does_not_declare_is_not_there(self) -> None:
         """The refusal is asserted as strictly as the acceptance."""
         for handle in (self.far, self.near):

@@ -2224,6 +2224,9 @@ test "XIII — the old door only points" {
     // row that answers `moved` and nothing else.
     try ground.door.publish(@splat(0x5b), word);
     try std.testing.expect(ground.door.being(@splat(0x5b)) != null);
+    // And a pointer published here is not a departure from here: the new door
+    // points too, for the name the arriving being wore, and still holds it.
+    try std.testing.expect(ground.door.heldBeing(@splat(0x5b)) != null);
     try ground.door.publish(ground.thing, word);
 
     // The one ask the old door answers about a being that left.

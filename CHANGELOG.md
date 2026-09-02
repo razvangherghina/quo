@@ -11,6 +11,53 @@ Entries before 0.2.0 covered the JavaScript kit alone.
 Nothing here carries a compatibility promise before 1.0.0. The wire may move,
 and a version is the only safe thing to depend on.
 
+## 0.5.0
+
+**New, in all five kits: a warden exposes beings to a stranger.** A ground
+decides what it offers a voice that merely knocks. Until now a stranger saw the
+warden's own being and nothing else, so a ground had no way to offer a greeter,
+a catalogue or a notice to somebody who has no invitation yet.
+
+**What is new.** A being may be held as public, and `expose` and `conceal` move
+one after the fact — on the warden and on a being's own closure, where no
+target means the being itself. What is exposed is **reached**, not merely
+listed: a stranger calls its fields and may ask for its class text. Exposure is
+kept in the store and dropped when the being is released.
+
+**What it is not.** Exposure is not a standing. A stranger still spends no
+number and holds no row, a holder's own row is unchanged, and nothing on the
+wire changes. Articles X and XII say it now; Article X's "being public is not a
+flag on anything" is retired, because it was true when the public being was the
+only thing a stranger could see.
+
+**Fixed, in four kits: a label landed on the wrong outbound row.** A ground that
+knocks at a door as a stranger and later accepts an invitation there holds two
+rows at that one far warden. Every kit resolved a label by the far warden alone,
+so a label kept on the accepted row came back on the knock's, and every ask down
+it was signed by a key with no standing at the being. A label now names the row
+by warden and voice. Rust was wrong live and not only after a restart; Zig named
+rows by their position in a list that dropping any earlier row shifts.
+
+**Fixed, in Go and Zig: a departed being was still held.** After a migration the
+old door kept the being beside the succession, so it could pack it again — one
+being in two houses. Its cargo is nothing from now on, as for one that never
+arrived. The standings stay, and are what a peer is pointed by.
+
+**Fixed, in Python: a caller's spent number is written down.** A restarted
+caller came back one number behind and its next ask met silence, the far door
+judging a replay. Every persist in that kit sat on the answering side.
+
+**Fixed, in all five kits: `cells` and `take` are reserved.** They are the pair
+a being provides rather than receives, so they stand outside the `_quo`
+namespace the notation cannot spell. A blueprint declaring either would make one
+name mean a caller's ask and the warden's own migration hook at once, and a
+warden refuses such a blueprint now.
+
+**The pinned corpus publishes every heir its commitments are over.**
+`beingHeir`, `nextHeir` and `nextHeirSecret` join `material.json`, so all four
+commitments derive from bytes the corpus itself carries. Additive: no existing
+value moved.
+
 ## 0.4.0
 
 **Breaking, in JavaScript and Python: the kit's own names move behind `_quo`.**

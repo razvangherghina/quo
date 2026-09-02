@@ -369,6 +369,25 @@ fn named(estate: &Estate) -> Vec<[u8; KEY]> {
         .collect()
 }
 
+// The two names the notation can spell that the being already owns: it
+// provides cells and take rather than receiving them, so a blueprint
+// declaring either would make one name mean a caller's ask and the warden's
+// own migration hook at once.
+#[test]
+fn a_blueprint_declaring_cells_or_take_is_refused() {
+    let world = world();
+    for reserved in ["cells", "take"] {
+        let text = format!("Thing\n  {reserved}() bytes\n");
+        assert!(
+            world
+                .phone
+                .hold(Profile, &text, Holding::default())
+                .is_none(),
+            "a blueprint declaring {reserved} was held"
+        );
+    }
+}
+
 #[test]
 fn accepting_answers_a_handle_per_being_the_standing_names() {
     let world = world();

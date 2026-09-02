@@ -884,7 +884,9 @@ what the warden already holds, and never a being's state.
   asker already reaches a being of that class or the warden's own public
   being declares it. Otherwise silence.
 - **The stranger's case** — no standing anywhere, so the estate is the
-  warden's own public being. Being public is not a flag on anything.
+  warden's own public being and whatever that warden exposes beside it.
+  **What a warden exposes, every voice reaches**, and a warden that
+  exposes nothing shows a stranger one room.
 
 **Every describe is scoped by the same binary record, without
 exception.**
@@ -1102,10 +1104,13 @@ silence and never says which step it was.**
    it received.
 7. **Route.** Being and method — the being is invoked and answers.
    Being, no method — the warden describes that one being. Neither — the
-   warden describes the estate, which means what that voice may reach,
-   read off the inbound record. Method, no being — the warden's own
-   being answers. No standing anywhere — the stranger's case, the
-   describe of whatever the warden's own public being exposes.
+   warden describes the estate, which means what that voice may reach:
+   the inbound record, and what this warden exposes, which every voice
+   reaches. Method, no being — the warden's own being answers. No
+   standing anywhere — the stranger's case, which is that same reach
+   with no record under it. **What a warden exposes is reached, not
+   merely listed**: a describe naming a being no ask could reach would
+   be a worse answer than naming nothing.
 8. **Answer.** Sealed to the return padlock the payload carried, and
    signed by the warden's own name.
 

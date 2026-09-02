@@ -214,6 +214,7 @@ class Material(unittest.TestCase):
         "voice": "voiceSecret",
         "voiceHeir": "voiceHeirSecret",
         "successor": "successorSecret",
+        "nextHeir": "nextHeirSecret",
     }
     DERIVED_SEALING = {
         "padlock": "padlockSecret",
@@ -223,22 +224,24 @@ class Material(unittest.TestCase):
     DERIVED_COMMITMENTS = {
         "wardenCommitment": ("wardenName", "wardenHeir"),
         "voiceHeirCommitment": ("wardenName", "voiceHeir"),
+        "beingCommitment": ("wardenName", "beingHeir"),
+        "nextHeirCommitment": ("wardenName", "nextHeir"),
     }
     ROOTS = frozenset(
         {
             "wardenNameSecret",
             "voiceSecret",
             "voiceHeirSecret",
+            "nextHeirSecret",
             "successorSecret",
             "padlockSecret",
             "returnPadlockSecret",
             "ephemeralSecret",
             "wardenHeir",
-            # A being's identity and the commitments whose heirs the file does
-            # not carry. Nothing in the material derives them; other areas do.
+            # A being's identity, and the heir its commitment is over. Nothing
+            # in the material derives these; other areas do.
             "being",
-            "beingCommitment",
-            "nextHeirCommitment",
+            "beingHeir",
         }
     )
 
@@ -262,7 +265,7 @@ class Material(unittest.TestCase):
             | self.ROOTS
         )
         self.assertEqual(claimed, set(self.material))
-        self.assertEqual(len(self.material), 20)
+        self.assertEqual(len(self.material), 23)
 
     def test_signing_pairs(self) -> None:
         for public, secret in self.DERIVED_SIGNING.items():

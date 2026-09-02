@@ -515,6 +515,9 @@ class Warden:
         self.arriving: dict = {}
         #: What the last ``receive`` took in, until :meth:`landed` reads it.
         self.arrived: Optional[tuple] = None
+        #: What this door offers every voice, the stranger included: the
+        #: warden's own choice of what its public face holds beside itself.
+        self.exposed: set = set()
         self.public = Being(
             pk=self.name,
             digest=WARDEN_DIGEST,
@@ -546,9 +549,14 @@ class Warden:
         return bytes(pk) in [bytes(one) for one in standing.beings]
 
     def _reaches(self, standing: Optional[Standing], pk: bytes) -> Optional[Being]:
-        """The public being is reachable by everyone, holders included."""
+        """The public being is reachable by everyone, holders included, and so
+        is whatever this door exposes. **Exposure is not a standing**: it grants
+        no row and spends no number, which is why it is not read by ``_named``.
+        """
         if pk == self.name:
             return self.public
+        if bytes(pk) in self.exposed:
+            return self.beings.get(bytes(pk))
         if not self._named(standing, pk):
             return None
         return self.beings.get(bytes(pk))
@@ -556,10 +564,14 @@ class Warden:
     def estate(self, standing: Optional[Standing]) -> dict:
         """Every being that voice may reach, given as digests with the pks under each.
 
-        The stranger's case is the warden's own public being, and being public
-        is not a flag on anything.
+        The stranger's case is the warden's own public being and whatever this
+        door exposes beside it.
         """
         reachable = [self.public]
+        for pk in self.exposed:
+            being = self.beings.get(bytes(pk))
+            if being is not None:
+                reachable.append(being)
         if standing is not None:
             for pk in standing.beings:
                 being = self.beings.get(bytes(pk))
@@ -727,6 +739,10 @@ class Warden:
         """Answered only if the asker already reaches a being of that class, or
         the warden's own public being declares it. Otherwise silence."""
         allowed = {bytes(self.public.digest)}
+        for pk in self.exposed:
+            being = self.beings.get(bytes(pk))
+            if being is not None:
+                allowed.add(bytes(being.digest))
         if standing is not None:
             for pk in standing.beings:
                 being = self.beings.get(bytes(pk))
@@ -1157,6 +1173,7 @@ class Warden:
         secret: Optional[bytes] = None,
         heir_secret: Optional[bytes] = None,
         label: Optional[str] = None,
+        public: bool = False,
     ) -> "Handle":
         """Hold an object: mint its keys, keep the pointer and the class text.
 
@@ -1173,6 +1190,13 @@ class Warden:
         secret = self.mint() if secret is None else bytes(secret)
         heir_secret = self.mint() if heir_secret is None else bytes(heir_secret)
         parsed = notation.parse(blueprint)
+        # The only two names the kit needs that the notation can also spell,
+        # so the only two a blueprint could collide with. quo-truth.md, Part two.
+        for one in parsed.klass.fields:
+            if one.name in ("cells", "take"):
+                raise ValueError(
+                    f"a blueprint may not declare {one.name}: it is the being's own seam"
+                )
         text = notation.render(parsed)
         digest = notation.digest(text)
         self.blueprints[digest] = text
@@ -1192,8 +1216,28 @@ class Warden:
         obj._quo = Quo(self, held)
         if label is not None:
             self.labels[label] = {"local": pk}
+        if public:
+            self.exposed.add(bytes(pk))
         await self.persist()
         return LocalHandle(self, held)
+
+    def expose(self, being: bytes) -> bool:
+        """Offer a being this door holds to every voice, the stranger included;
+        :meth:`conceal` takes it back. **Exposure is not a standing**: a
+        stranger still spends no number and holds no row, and a holder's own row
+        is unchanged by it."""
+        if bytes(being) not in self.beings:
+            return False
+        self.exposed.add(bytes(being))
+        self.persist_soon()
+        return True
+
+    def conceal(self, being: bytes) -> bool:
+        if bytes(being) not in self.exposed:
+            return False
+        self.exposed.discard(bytes(being))
+        self.persist_soon()
+        return True
 
     async def hold_beside(
         self, obj: Any, blueprint: str, label: Optional[str] = None
@@ -1391,6 +1435,16 @@ class Warden:
         )
         self.outbound.append(row)
         return row
+
+    def _row_at(self, far: bytes, voice: Optional[str]) -> Optional[Relation]:
+        """The outbound row at that warden held by that voice."""
+        if voice is None:
+            return self.relation(far)
+        wanted = bytes.fromhex(voice)
+        for row in self.outbound:
+            if bytes(row.warden) == bytes(far) and bytes(row.voice) == wanted:
+                return row
+        return None
 
     def relation(self, far: bytes) -> Optional[Relation]:
         for row in self.outbound:
@@ -1749,6 +1803,7 @@ class Warden:
             return False
         self.secrets.pop(at, None)
         self.heirs.pop(at, None)
+        self.exposed.discard(at)
         for standing in list(self.inbound):
             beings = [bytes(one) for one in standing.beings if bytes(one) != at]
             standing.beings = beings
@@ -1984,11 +2039,15 @@ class Warden:
                     "label": label,
                     "local": kept["local"].hex() if kept.get("local") else None,
                     "warden": kept["row"].warden.hex() if kept.get("row") else None,
+                    # The voice is what tells two rows at one far warden apart.
+                    "voice": kept["row"].voice.hex() if kept.get("row") else None,
                     "being": kept["being"].hex() if kept.get("being") else None,
                     "digest": kept["digest"].hex() if kept.get("digest") else None,
                 }
                 for label, kept in self.labels.items()
             ],
+            # Sorted, so the snapshot does not differ from itself between runs.
+            "exposed": sorted(one.hex() for one in self.exposed),
         }
 
     async def persist(self) -> None:
@@ -2056,11 +2115,16 @@ class Warden:
                     },
                 )
             )
+        for one in kept.get("exposed", []):
+            self.exposed.add(bytes.fromhex(one))
         for one in kept["labels"]:
             if one["local"] is not None:
                 self.labels[one["label"]] = {"local": bytes.fromhex(one["local"])}
                 continue
-            row = self.relation(bytes.fromhex(one["warden"]))
+            # Not `relation()`, which answers the first row at a warden: a
+            # ground that knocked there as a stranger and then accepted an
+            # invitation holds two, and the label named one of them.
+            row = self._row_at(bytes.fromhex(one["warden"]), one.get("voice"))
             text = self.blueprints.get(bytes.fromhex(one["digest"]))
             if row is None or text is None:
                 continue

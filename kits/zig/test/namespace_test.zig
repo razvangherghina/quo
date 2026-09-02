@@ -169,6 +169,22 @@ test "every name this kit uses for itself is a field a being may declare" {
     }
 }
 
+test "a blueprint declaring cells or take is refused" {
+    const gpa = std.testing.allocator;
+    var world: World = undefined;
+    try World.init(gpa, &world);
+    defer world.deinit();
+
+    // The two names the notation can spell that the being already owns.
+    inline for (.{ "cells", "take" }) |reserved| {
+        var thing: Clash = .{};
+        try std.testing.expectError(
+            error.Refused,
+            q.holding(world.here, Clash, &thing, "Thing\n  " ++ reserved ++ "() bytes\n", .{}, gpa),
+        );
+    }
+}
+
 test "the handle's own facts stand beside the fields, and answer their own" {
     const gpa = std.testing.allocator;
     var world: World = undefined;

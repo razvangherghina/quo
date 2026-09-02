@@ -1,0 +1,81 @@
+# The five kits, as a stranger installs them, driven through every scenario.
+#
+# `kits` runs each kit at its own path in this checkout, which is the one thing
+# a stranger does not have: what reaches them is a package, built from a file
+# list and a manifest. A packaging mistake can ship a kit that installs
+# cleanly, derives the right warden digest, and still gets an article wrong —
+# `@quo-systems/js@0.1.0` shipped a corpus behind the tree and no verdict here
+# could see it. The scratch install every release ends with catches a bad
+# publish; this catches a bad publish that behaves.
+#
+# Run it with the version just published, as the last step of a release. It
+# also runs weekly, which is what catches the other drift: a publish that was
+# fine and a tree that walked away from it.
+name: conformance-published
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'The published version to drive, e.g. 0.4.0'
+        required: true
+  schedule:
+    # Monday, early. Nothing here is urgent; a week is soon enough to learn
+    # that a published kit and this text have parted company.
+    - cron: '17 5 * * 1'
+
+permissions:
+  contents: read
+
+jobs:
+  drive:
+    runs-on: ubuntu-latest
+    strategy:
+      # Every kit answers for itself. A red one names itself rather than
+      # cancelling the four that might have been green.
+      fail-fast: false
+      matrix:
+        kit: [js, go, python, rust, zig]
+    steps:
+      - uses: actions/checkout@v5
+
+      # The runner and the scenarios are this repository's. Node drives them
+      # whichever kit is under test, so it is set up for every leg.
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - uses: actions/setup-go@v6
+        if: matrix.kit == 'go'
+        with:
+          go-version: 'stable'
+          cache: false
+
+      - uses: actions/setup-python@v6
+        if: matrix.kit == 'python'
+        with:
+          python-version: '3.13'
+
+      - uses: dtolnay/rust-toolchain@stable
+        if: matrix.kit == 'rust'
+
+      - uses: mlugg/setup-zig@v2
+        if: matrix.kit == 'zig'
+        with:
+          version: '0.16.0'
+
+      # The version comes from the dispatch, or — on the weekly run, where
+      # nobody typed one — from what the JS kit's manifest says this tree is
+      # at. The five carry one version, so one manifest answers for all five.
+      - name: The version to drive
+        id: at
+        run: |
+          version="${{ github.event.inputs.version }}"
+          if [ -z "$version" ]; then
+            version=$(node -p "require('./kits/js/package.json').version")
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "driving ${{ matrix.kit }} $version"
+
+      - name: Every scenario, against the published kit
+        run: node tools/conform-published.mjs ${{ matrix.kit }} ${{ steps.at.outputs.version }}
