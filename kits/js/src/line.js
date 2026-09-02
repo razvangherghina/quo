@@ -22,17 +22,17 @@
 // without a word, because a peer that cannot frame cannot be spoken to.
 //
 // This file names a host, so it lives behind its own export beside the door and
-// the portable barrel stays host-free.
+// the portable barrel stays host-free. The host is named inside `dial` and
+// `listen` rather than at the top, because `line-ws.js` imports `hold` from
+// here and a tab loads that: a static `node:net` would be read on a platform
+// that has none, the moment the module loaded.
 //
 // The line has a second address form — the same frames as the binary messages
 // of a WebSocket — and it lives in `line-ws.js` beside this one. Everything
 // above the bytes is the same line, so the body below (`hold`, and the cap
 // arithmetic it rests on) is exported and shared rather than written twice:
 // what differs between the two forms is only what carries a frame's bytes.
-import { createConnection, createServer } from 'node:net';
-import { ANSWER, concat, kindOf } from './envelope.js';
-import { readAnswer } from './warden.js';
-import { hex } from './bytes.js';
+import { concat } from './envelope.js';
 
 const LENGTH = 8;
 
@@ -113,52 +113,27 @@ export function capOf(warden, limit, declares) {
 // `end`, `destroy`, and `data`/`end`/`close`/`error` events. A `node:net`
 // socket is one; the WebSocket carrier in `line-ws.js` is the other, and every
 // rule below reads the same over either, which is the point.
-export function hold(warden, socket, { clock, random, cap, far }) {
-  // What this end is waiting to hear, keyed by the far warden and the number of
-  // the ask. Both facts are the caller's own — it built the ask — and neither
-  // travels outside a seal.
-  const pending = new Map();
+export function hold(warden, socket, { cap, far }) {
   let buffer = new Uint8Array(0);
   let alive = true;
   let pumping = false;
-
-  // Closing a line resolves its pending asks to null — the same nothing a shut
-  // door gives.
-  function settleAll() {
-    for (const waiter of pending.values()) waiter.settle(null);
-    pending.clear();
-  }
+  const closers = [];
 
   function drop() {
+    if (!alive) return;
     alive = false;
-    settleAll();
     socket.destroy();
+    for (const fn of closers) fn();
   }
 
-  // An arriving frame is resolved by unsealing and by nothing else, and the
-  // record byte inside the seal says which of the two it is — nothing is tried
-  // as one record and then as the other. An answer is collected against the
-  // return padlock the ask carried, which is this warden's own, and pairs by
-  // the warden and the seq inside the seal; an answer nothing awaits is
-  // ordinary silence. Otherwise the envelope is a say, handed to judgment; its
-  // answer, when there is one, goes back as a frame.
+  // An arriving frame goes to the warden's one door and nowhere else. The line
+  // never opens a seal: which record the frame carries, whether an answer is
+  // awaited, whether a say is judged — the warden decides all of it, and hands
+  // back bytes to send or nothing. The line itself is passed along as the
+  // road the frame arrived on, so delivery can find its way back down it.
   async function arrive(envelope) {
-    if ((await kindOf({ envelope, padlockSecret: warden.padlock.secret })) === ANSWER) {
-      for (const [key, waiter] of pending) {
-        const answer = await readAnswer({
-          envelope,
-          padlockSecret: warden.padlock.secret,
-          wardenPk: waiter.warden,
-        });
-        if (!answer || answer.seq !== waiter.seq) continue;
-        pending.delete(key);
-        waiter.settle(envelope);
-        return;
-      }
-      return;
-    }
-    const back = await warden.judge(envelope, { clock, random: random() });
-    if (back !== null && alive) send(back);
+    const back = await warden.arrive(envelope, line);
+    if (back !== null && back !== undefined && alive) send(back);
   }
 
   // Every byte this end puts on the road goes through here, so the far cap is
@@ -187,7 +162,10 @@ export function hold(warden, socket, { clock, random, cap, far }) {
         if (buffer.length - LENGTH < size) break;
         const envelope = buffer.slice(LENGTH, LENGTH + size);
         buffer = buffer.slice(LENGTH + size);
-        await arrive(envelope);
+        // Each end reads while it writes. A frame's judgment may itself wait
+        // for an answer down this same line, so the pump hands the frame on
+        // and reads the next; answers return in whatever order work finishes.
+        arrive(envelope).catch(() => {});
       }
     } finally {
       pumping = false;
@@ -203,8 +181,9 @@ export function hold(warden, socket, { clock, random, cap, far }) {
   // broken framing as any other and gets the same wordless drop.
   socket.on('end', () => (buffer.length > 0 ? drop() : line.close()));
   socket.on('close', () => {
+    if (!alive) return;
     alive = false;
-    settleAll();
+    for (const fn of closers) fn();
   });
   // The line is dumb: no reconnect, no keep-alive, no health probe. A socket
   // error is a line that has stopped carrying, and re-dialling is the caller's
@@ -216,36 +195,23 @@ export function hold(warden, socket, { clock, random, cap, far }) {
     get open() {
       return alive;
     },
-    // Send one envelope down the line. `expect` names the ask this end wants an
-    // answer to — the far warden and the seq it was sealed with, both of them
-    // the caller's own knowledge of the ask it built. Handed none, this is a
-    // say: the frame goes and nothing is waited for.
-    carry(envelope, expect = null) {
-      if (!alive) return Promise.resolve(null);
-      if (BigInt(envelope.length) > far) return Promise.resolve(null);
-      if (!expect) {
-        send(envelope);
-        return Promise.resolve(null);
-      }
-      // The road's own demultiplexer, keyed the way the core's awaiting record
-      // is: one return padlock — this warden's own — one far warden and one
-      // number. The judgment is the core's, in `Warden#hear`, and this map is
-      // only which promise a frame belongs to. It refuses a duplicate key for
-      // its own reason: a second waiter under one key would silently displace
-      // the first.
-      const key = `${hex(expect.warden)}:${expect.seq}`;
-      if (pending.has(key)) return Promise.resolve(null);
-      send(envelope);
-      return new Promise((settle) => {
-        pending.set(key, { warden: expect.warden, seq: expect.seq, settle });
-      });
+    // Send one envelope down the line and wait for nothing: whatever comes
+    // back arrives as a frame of its own and goes to the warden's door. `true`
+    // is a frame on the road; `false` is a line that would not take it.
+    carry(envelope) {
+      if (!alive) return false;
+      return send(envelope);
+    },
+    // Told when the line stops carrying, so whoever holds it can let go.
+    onClose(fn) {
+      closers.push(fn);
     },
     close() {
       if (!alive) return;
       alive = false;
-      settleAll();
       socket.end();
       socket.destroy();
+      for (const fn of closers) fn();
     },
   };
   return line;
@@ -254,17 +220,13 @@ export function hold(warden, socket, { clock, random, cap, far }) {
 // Open a line to a `tcp://host:port` hint. The dialling half publishes nothing:
 // it is reachable only down the lines it holds, which is the tab's case made
 // real.
-export function dial(warden, hint, { clock, random, limit = null }) {
+export async function dial(warden, hint, { clock, random, limit = null }) {
   const at = road(hint);
-  if (!at) return Promise.reject(new Error('NOT_A_LINE'));
+  if (!at) throw new Error('NOT_A_LINE');
   // The cap is resolved before the socket is: an end that cannot promise the
   // default does not open a connection it would have to fail on.
-  let cap;
-  try {
-    cap = capOf(warden, limit, false);
-  } catch (refusal) {
-    return Promise.reject(refusal);
-  }
+  const cap = capOf(warden, limit, false);
+  const { createConnection } = await import('node:net');
   return new Promise((resolve, reject) => {
     const socket = createConnection({ host: at.host, port: at.port }, () => {
       socket.removeListener('error', reject);
@@ -278,18 +240,14 @@ export function dial(warden, hint, { clock, random, limit = null }) {
 // its warden the road, exactly as `serve` already does — and `close` retracts
 // it. `accepted` is handed each line as it arrives, for a ground that means to
 // push down a connection somebody else opened.
-export function listen(
+export async function listen(
   warden,
   { clock, random, host = '127.0.0.1', port = 0, limit = null, hint = null, accepted = null },
 ) {
   // The cap is judged before anything is bound: a warden that holds less than
   // the default and declares nothing never publishes a road.
-  let cap;
-  try {
-    cap = capOf(warden, limit, true);
-  } catch (refusal) {
-    return Promise.reject(refusal);
-  }
+  const cap = capOf(warden, limit, true);
+  const { createServer } = await import('node:net');
   const lines = new Set();
   // Whoever dialled published nothing, so what this end may send down an
   // accepted line is the default and only the default.

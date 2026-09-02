@@ -31,7 +31,7 @@ pub const Kind = enum(u8) {
     say = 0,
     answer = 1,
 
-    fn of(byte: u8) Error!Kind {
+    pub fn of(byte: u8) Error!Kind {
         return switch (byte) {
             0 => .say,
             1 => .answer,
@@ -421,6 +421,25 @@ pub fn open(
     expected: Kind,
     envelope: []const u8,
 ) Fault!Opened {
+    var opened = try unseal(gpa, padlock_secret, envelope);
+    errdefer opened.deinit();
+    if (opened.payload != expected) return Error.Refused;
+    return opened;
+}
+
+/// Unseal without saying which record is expected: the byte in front of the
+/// payload is read rather than assumed, and what comes back says which of the
+/// two arrived.
+///
+/// **This is the warden's, and only the warden's.** A road that called it
+/// would be a road that opened a seal, which is the one thing a road may
+/// never do. It exists because one entry point takes anything a road brings
+/// and must sort an answer from an ask itself, having unsealed exactly once.
+pub fn unseal(
+    gpa: std.mem.Allocator,
+    padlock_secret: Key,
+    envelope: []const u8,
+) Fault!Opened {
     if (envelope.len < key_length) return Error.Refused;
     const ephemeral: Key = envelope[0..key_length].*;
     const box = envelope[key_length..];
@@ -435,7 +454,8 @@ pub fn open(
     const signed = inner[0 .. inner.len - signature_length];
     const signature: Signature = inner[inner.len - signature_length ..][0..signature_length].*;
 
-    var opened = try decodePayload(gpa, expected, signed);
+    if (signed.len == 0) return Error.Refused;
+    var opened = try decodeRecord(gpa, try Kind.of(signed[0]), signed[1..]);
     errdefer opened.deinit();
 
     try arithmetic.verify(opened.payload.signer(), signed, signature);

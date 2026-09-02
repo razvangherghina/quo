@@ -14,7 +14,7 @@
 use quo_envelope::{Allowance, Method};
 use quo_warden as warden;
 use quo_wire::{Invitation, Value};
-use warden::{Departing, Reach, Resident, Route, Tell, Warden};
+use warden::{Departing, Door, Reach, Resident, Route, Tell};
 
 const LAMP: &str = "Lamp\n  lit() bool\n";
 
@@ -27,9 +27,9 @@ fn pk(secret: &[u8; 32]) -> [u8; 32] {
 }
 
 /// A door with nothing but its public being standing.
-fn door(name: u8, padlock: u8, own_heir: u8) -> Warden {
+fn door(name: u8, padlock: u8, own_heir: u8) -> Door {
     let name_secret = seed(name);
-    Warden::new(
+    Door::new(
         name_secret,
         seed(padlock),
         quo_arithmetic::commitment(&pk(&name_secret), &pk(&seed(own_heir))),
@@ -54,9 +54,9 @@ fn lit() -> Method {
 
 /// Everything the three houses hold before anything moves.
 struct World {
-    origin: Warden,
-    destination: Warden,
-    peer: Warden,
+    origin: Door,
+    destination: Door,
+    peer: Door,
     /// The being that travels, by the name it wears at the origin.
     traveller: [u8; 32],
     /// Its committed heir, which the cargo is packed under.
@@ -161,7 +161,7 @@ fn world() -> World {
 
 /// Let a voice in at a being, the way a grant does: the row, the commitment to
 /// its heir, and the name that commitment was minted under.
-fn warden_grants(door: &mut Warden, voice: [u8; 32], invitation: &Invitation, being: [u8; 32]) {
+fn warden_grants(door: &mut Door, voice: [u8; 32], invitation: &Invitation, being: [u8; 32]) {
     door.inbound.push(warden::Inbound {
         voice,
         commitment: invitation.commitment,
@@ -175,7 +175,7 @@ fn warden_grants(door: &mut Warden, voice: [u8; 32], invitation: &Invitation, be
 }
 
 /// One turn of a door that answers for itself, and the sealed answer back.
-fn served(door: &mut Warden, message: &[u8], mint: Option<&[[u8; 32]; 2]>) -> Vec<u8> {
+fn served(door: &mut Door, message: &[u8], mint: Option<&[[u8; 32]; 2]>) -> Vec<u8> {
     let verdict = door.judge(message, 0).expect("a message this door admits");
     let data = door
         .answer(&verdict, mint)

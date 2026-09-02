@@ -1,13 +1,22 @@
-// The JS kit as a subject another kit can knock on, and knock with. Every
-// other kit already has one — Go's `cmd/subject`, Rust's, Zig's, Python's —
-// and the JS kit did not, because in the process crossing it was always the
-// driver holding a warden in its own memory. A ground standing in a container
-// cannot be driven that way: it is reached only across a socket, so the JS kit
-// needs the same command shape as its peers.
+// The JS kit as a subject another kit can knock on, and knock with. A ground
+// standing in a container is reached only across a socket, so every kit carries
+// the same command shape and this is JS's.
 //
-// The contract is the Go subject's, verbatim, because that is the one every
-// other kit was written against: two modes, `serve` and `speak`; one facts line
-// on startup carrying `quo`, `role`, the five keys and the roads; `-line` to
+// A subject is not a host, and it stands below that seam on purpose. It exists
+// to prove the kit from outside, which means composing what no application may:
+// an ask naming neither being nor method, argument bytes deliberately malformed,
+// an ask at a being whose blueprint it does not hold, the seq it spent read back
+// directly. Every one of those is a thing the host's surface refuses by design —
+// a handle encodes through the blueprint, so it can never produce the malformed
+// input a refusal is asserted with. So this file drives the warden's own entry
+// point, the way a wire suite hand-writes bytes, and does not use `host.js`.
+// The seam never grows a raw-ask surface to accommodate a subject: that would
+// ship every application a public way around the blueprint, permanently, for
+// the benefit of the harness.
+//
+// The contract is the one every kit is written against: two modes, `serve` and
+// `speak`; one facts line on startup carrying `quo`, `role`, the five keys and
+// the roads; `-line` to
 // swap the carriage without changing anything above it; `-blueprint` to ask the
 // far warden for the text behind every digest a describe named; `-hold` to hold
 // a being of this ground's own down a line it dialled.
@@ -34,8 +43,8 @@ import {
   WARDEN_DIGEST,
   Warden,
   commitment,
+  current,
   decode,
-  encodeAll,
   parse,
   reach,
   readAnswer,
@@ -63,10 +72,6 @@ const fieldOf = (name) => FIELDS.find((one) => one.name === name);
 const BRIEF = `Brief
   filed() int
 `;
-const BRIEF_RECORDS = recordsOf(parse(BRIEF));
-const BRIEF_FIELDS = parse(BRIEF).fields;
-const briefField = (name) => BRIEF_FIELDS.find((one) => one.name === name);
-
 const LIMIT = 1_048_576n;
 const hex = (bytes) => Buffer.from(bytes).toString('hex');
 const un = (text) => Uint8Array.from(Buffer.from(text, 'hex'));
@@ -144,15 +149,19 @@ function invitation(said, hints) {
 function counter() {
   return {
     total: 0n,
-    bump(args) {
-      this.total += decode(fieldOf('bump').args[0].type, args, RECORDS);
-      return encodeAll([fieldOf('bump').answer], [this.total], RECORDS);
+    bump(by) {
+      this.total += by;
+      return this.total;
     },
     count() {
-      return encodeAll([fieldOf('count').answer], [this.total], RECORDS);
+      return this.total;
     },
   };
 }
+
+let grain = 100;
+const random = () => new Uint8Array(32).fill((grain += 7) % 251);
+const clock = () => Date.now();
 
 function stand() {
   return Warden.open({
@@ -160,30 +169,28 @@ function stand() {
     padlockSeed: draw(),
     heirSeed: draw(),
     limit: LIMIT,
+    clock,
+    random,
   });
 }
 
-let grain = 100;
-const random = () => new Uint8Array(32).fill((grain += 7) % 251);
-const clock = () => Date.now();
-
 // One exchange over whichever road was handed in: compose the ask, put it down
-// the road, and open what came back. A `null` is silence, which is a ground
-// speaking and never an error, and it is reported where it happened.
+// the road, and read what the record settles on. A road that answers in its
+// response hands the bytes straight back and they go to this ground's own
+// door; a road that answers by a frame of its own says only that it carried,
+// and the record waits. A `null` is silence, which is a ground speaking and
+// never an error, and it is reported where it happened.
 function conversation(ground, row, send) {
   let seq = 0n;
   return async (name, over) => {
     seq += 1n;
     const spent = seq;
-    const back = await send(await ground.ask(row, { seq: spent, random: draw(), ...over }), spent);
-    const answer =
-      back === null || back === undefined
-        ? null
-        : await readAnswer({
-            envelope: back,
-            padlockSecret: ground.padlock.secret,
-            wardenPk: row.warden,
-          });
+    const envelope = await ground.ask(row, { seq: spent, random: draw(), ...over });
+    const waiting = ground.pending(row, spent, 10_000n);
+    const back = envelope === null ? null : await send(envelope, spent);
+    if (back === null || back === undefined) ground.forgo(row, spent);
+    else if (back !== true) await ground.arrive(back);
+    const answer = await waiting;
     if (!answer) {
       emit({ quo: 1, step: name, seq: Number(spent), silence: true });
       return null;
@@ -283,7 +290,7 @@ async function serve(args) {
           for (const settle of waiting.splice(0)) settle(line);
         },
       })
-    : await hangDoor(warden, { clock, random, host, port, limit: LIMIT });
+    : await hangDoor(warden, { host, port, limit: LIMIT });
   const invited = await warden.grant(being, { voiceSeed: draw(), heirSeed: draw() });
   emit({
     quo: 1,
@@ -310,7 +317,12 @@ async function serve(args) {
 }
 
 async function counterBeing(warden) {
-  return warden.hold(counter(), { seed: draw(), heirSeed: draw(), blueprint: COUNTER });
+  const { being } = await warden.hold(counter(), {
+    seed: draw(),
+    heirSeed: draw(),
+    blueprint: COUNTER,
+  });
+  return being;
 }
 
 // The other half of `-hold`, and the half only a listening ground can play: an
@@ -320,9 +332,7 @@ async function counterBeing(warden) {
 async function push(warden, said, line, on) {
   const row = warden.remember(invitation(said, []));
   const held = await line();
-  const exchange = conversation(warden, row, (message, seq) =>
-    held.carry(message, { warden: row.warden, seq }),
-  );
+  const exchange = conversation(warden, row, (message) => (held.carry(message) ? true : null));
   const estate = await opening(row, exchange);
   if (!estate) return;
   emit({ quo: 1, step: 'pushed', far: hex(row.warden), voice: hex(row.voice.pk) });
@@ -338,8 +348,11 @@ async function relay(warden, facts, entry, found) {
   let book = null;
   let row = null;
   const brief = {
-    async filed(args, leash) {
-      if (args.length !== 0 || book === null) return null;
+    async filed() {
+      // The leash belongs to the message and reaches the being in scope. It is
+      // handed straight on, never widened.
+      const leash = current()?.leash ?? null;
+      if (book === null) return null;
       const onward = leash?.onward() ?? null;
       const answer = await ask({
         being: book,
@@ -358,11 +371,14 @@ async function relay(warden, facts, entry, found) {
         silence: answer === null,
       });
       if (answer === null) return null;
-      const total = decode(fieldOf('count').answer, answer.data, RECORDS);
-      return encodeAll([briefField('filed').answer], [total], BRIEF_RECORDS);
+      return decode(fieldOf('count').answer, answer.data, RECORDS);
     },
   };
-  const being = await warden.hold(brief, { seed: draw(), heirSeed: draw(), blueprint: BRIEF });
+  const { being } = await warden.hold(brief, {
+    seed: draw(),
+    heirSeed: draw(),
+    blueprint: BRIEF,
+  });
   // The relation belongs to the being that spends it, not to the house: it is
   // `Brief` that reaches the far house, and nothing else here may.
   row = warden.remember(invitation(far, far.hints), { being });
@@ -422,7 +438,7 @@ async function speak(args) {
       )
     : null;
   const send = road
-    ? (message, seq) => road.carry(message, { warden: row.warden, seq })
+    ? (message) => (road.carry(message) ? true : null)
     : (message) => reach(row.hints, message);
   const exchange = conversation(guest, row, send);
 
@@ -442,7 +458,11 @@ async function speak(args) {
 // what its own object was left holding once the line is let go.
 async function held(guest, far, road) {
   const own = counter();
-  const being = await guest.hold(own, { seed: draw(), heirSeed: draw(), blueprint: COUNTER });
+  const { being } = await guest.hold(own, {
+    seed: draw(),
+    heirSeed: draw(),
+    blueprint: COUNTER,
+  });
   const granted = await guest.grant(being, { voiceSeed: draw(), heirSeed: draw(), hints: [] });
   emit({
     quo: 1,

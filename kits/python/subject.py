@@ -40,11 +40,24 @@ line this command prints is one JSON object carrying the member ``quo``.
 
 This file is an entry point, not part of the kit. It sits outside the package
 so that importing ``quo`` still pulls in no host.
+
+**It stands its own ground rather than using ``quo.host``, and does so on
+purpose.** A subject exists to prove the kit from outside, which means it must
+compose what no application may. Three of the things it does have no surface on
+the host and are not owed one: it raises a door at distance zero with no hint
+at all, because at distance zero the door itself is the address and there is
+nothing to publish; it keeps the accepted lines in the order it first heard
+from them, so ``-push`` can spend a standing down a connection this ground
+never opened; and it drives the warden from a synchronous command with a loop
+of its own on a thread of its own. The seam never grows a surface to
+accommodate a harness, so the harness reaches past it — and everything else
+here is the warden's own public API, called rather than reproduced.
 """
 
 from __future__ import annotations
 
 import argparse
+import asyncio
 import json
 import os
 import queue
@@ -58,9 +71,10 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "src
 
 from quo import (  # noqa: E402
     arithmetic,
+    being,
     call,
     carriage,
-    envelope,
+    delivery,
     line,
     notation,
     warden,
@@ -99,71 +113,164 @@ def note(*what: Any) -> None:
 
 class Counter:
     """An ordinary object. It never learns it has an address, judges nothing,
-    and sees no key."""
+    sees no key and never touches a byte: the warden decodes what arrives by
+    the blueprint and encodes what this answers by it."""
 
     def __init__(self) -> None:
         self.total = 0
 
-    def invoke(self, name: str, args: bytes, leash: warden.Leash) -> bytes:
-        if name == "bump":
-            # Bytes left after the declared arguments are the being's to
-            # refuse, never the warden's.
-            if len(args) != 8:
-                raise ValueError("bump takes one int")
-            self.total += int.from_bytes(args, "big", signed=True)
-        elif name == "count":
-            if args:
-                raise ValueError("count takes nothing")
-        else:
-            raise ValueError("the blueprint declares no such field")
-        return self.total.to_bytes(8, "big", signed=True)
+    def bump(self, by: int) -> int:
+        self.total += by
+        return self.total
+
+    def count(self) -> int:
+        return self.total
 
 
 class Ground:
-    """This command's warden with the one lock that keeps it to itself.
+    """This command's warden, the loop it judges on, and delivery beneath it.
 
-    A warden is not concurrent, and both roads reach it from several threads at
-    once: an HTTP door serves each request on its own, and a line judges
-    arriving frames on its reader while the main thread composes asks.
+    Every road ends in :meth:`arrive`, the warden's one entry point, and no
+    road here opens a seal: the record byte inside says whether an answer or an
+    ask arrived, and only the warden reads it. What this object keeps per peer
+    is an address — a padlock — beside the line that peer's asks arrive on, and
+    the warden is what puts them together, having judged the frame.
     """
 
     def __init__(self, limit: int = LIMIT) -> None:
-        self.warden = warden.Warden(
-            name_secret=draw(),
-            padlock_secret=draw(),
-            limit=limit,
-            heir=arithmetic.signing_public(draw()),
+        self.loop = asyncio.new_event_loop()
+        self.spinning = threading.Thread(target=self._spin, daemon=True)
+        self.spinning.start()
+        #: Lines this ground holds, from either end, keyed by the padlock whose
+        #: asks arrive on them.
+        self.by_padlock: dict = {}
+        #: Lines this ground dialled, keyed by the hint.
+        self.by_hint: dict = {}
+        #: Every line this ground has been spoken on, in the order it first
+        #: heard from them: what the pushing half spends its standings down.
+        self.accepted: queue.Queue = queue.Queue()
+        self.known: set = set()
+        #: A door at distance zero, when that is the road.
+        self.zero: Any = None
+        self.warden = self.run(
+            warden.Warden.open(
+                delivery.Seeds(name=draw(), padlock=draw(), heir=draw()),
+                random=draw,
+                limit=limit,
+                delivery=self,
+                allowance=ALLOWANCE,
+            )
         )
-        self.lock = threading.Lock()
 
-    def judge(self, message: bytes) -> Optional[bytes]:
-        """The whole of what a door does with an arriving message."""
-        with self.lock:
+    def _spin(self) -> None:
+        asyncio.set_event_loop(self.loop)
+        self.loop.run_forever()
+
+    def run(self, work: Any) -> Any:
+        """Run one piece of the warden's work on this ground's own loop.
+
+        A warden is not concurrent, and every road reaches it from a thread of
+        its own: an HTTP door serves each request on one, and a line reads on
+        another. One loop is what keeps the door to itself.
+        """
+        return asyncio.run_coroutine_threadsafe(work, self.loop).result(timeout=30)
+
+    def call(self, fn: Callable, *args: Any, **kwargs: Any) -> Any:
+        async def once():
+            return fn(*args, **kwargs)
+
+        return self.run(once())
+
+    def arrive(self, message: bytes, via: Any = None) -> Optional[bytes]:
+        """What every road hands this ground, and the whole of what it hands."""
+        return self.run(self.warden.arrive(message, via=via))
+
+    # -- delivery, which the warden was handed and calls downward
+
+    def arrived(self, padlock: bytes, via: Any) -> None:
+        if via is None or not getattr(via, "open", False):
+            return
+        self.by_padlock[bytes(padlock)] = via
+        if id(via) not in self.known:
+            self.known.add(id(via))
+            self.accepted.put(via)
+
+    async def send(self, row: dict, message: bytes) -> Any:
+        for hint in row["hints"]:
             try:
-                return self.warden.judge(message).answer
+                if hint.startswith("tcp://"):
+                    held = self.dial(hint)
+                    held.send(message)
+                    return being.CARRIED
+                if hint.startswith("http://") or hint.startswith("https://"):
+                    body = await asyncio.to_thread(carriage.post, hint, message)
+                    return body or None
+            except (carriage.CarriageError, line.LineError, OSError) as bad:
+                note("weather:", bad)
+                continue
+        if self.zero is not None:
+            return await asyncio.to_thread(call.post, self.zero, message) or None
+        back = self.by_padlock.get(bytes(row["padlock"]))
+        if back is not None and back.open:
+            back.send(message)
+            return being.CARRIED
+        return None
+
+    def dial(self, hint: str):
+        held = self.by_hint.get(hint)
+        if held is not None and held.open:
+            return held
+        held = line.dial(hint)
+        # This end reads against its own appetite, which is not the default.
+        held.cap = self.warden.limit
+        self.by_hint[hint] = held
+        self.pump(held)
+        return held
+
+    def frame(self, road, message: bytes) -> None:
+        """One frame off a line, at either end: handed to the warden on this
+        ground's loop and answered when the judgment finishes.
+
+        **This reader never waits for that judgment**, because a judgment may
+        itself be waiting for an answer arriving on this very line, and a
+        reader blocked on it would be waiting for bytes only it can read.
+        """
+        work = asyncio.run_coroutine_threadsafe(
+            self.warden.arrive(message, via=road), self.loop
+        )
+
+        def answered(done) -> None:
+            try:
+                reply = done.result()
             except Exception as bad:
-                # Silence is the whole of every refusal, and the reason never
-                # travels. It goes to this host's own stderr and nowhere else.
                 note("refused:", bad)
-                return None
+                return
+            if not reply:
+                return
+            try:
+                road.send(reply)
+            except (line.LineError, OSError):
+                pass
 
-    def ask(self, row: warden.Relation, **over: Any) -> tuple[bytes, int]:
-        with self.lock:
-            return self.warden.ask(row, draw(), allowance=ALLOWANCE, **over)
+        work.add_done_callback(answered)
+        return None
 
-    def hear(self, message: bytes) -> dict:
-        with self.lock:
-            return self.warden.hear(message)
+    def pump(self, held) -> None:
+        """One reader thread per line this ground dialled. The listening end
+        gets the same reader from its own listener."""
+        threading.Thread(
+            target=line.serve, args=(held, self.frame), daemon=True
+        ).start()
 
 
 # ------------------------------------------------------------------- serve
 
 
-def stranger(ground: Ground, being: bytes, hint: str) -> None:
+def stranger(ground: Ground, at: bytes, hint: str) -> None:
     """Mint the invitation and print the facts line: everything a stranger
     needs to speak to this ground, over whichever road it was given."""
-    ground.warden.hints = (hint,)
-    invitation = ground.warden.invite(being, draw(), draw())
+    ground.warden.publish(hint)
+    invitation = ground.call(ground.warden.invite, at, draw(), draw())
     emit(
         {
             "quo": 1,
@@ -191,7 +298,7 @@ def serve(argv: list) -> int:
     host, _, port = flags.listen.rpartition(":")
 
     ground = Ground(flags.limit)
-    being = ground.warden.hold(COUNTER, Counter().invoke, draw(), draw())
+    at = ground.run(ground.warden.hold(Counter(), COUNTER, draw(), draw())).being
 
     if flags.framed:
         # A ground that pushes keeps every line it accepts, because the
@@ -200,16 +307,15 @@ def serve(argv: list) -> int:
         pushing = Pushing(ground) if flags.pushing else None
         # The listening half is the one that knows where it ended up, so it is
         # the one with a road to grant. Nothing above this changes: the same
-        # warden judges the same messages.
+        # warden judges the same messages, and the road hands every frame to
+        # its one entry point whether this ground pushes or not.
         ears = line.Listener(
-            pushing.arrive
-            if pushing
-            else (lambda _road, message: ground.judge(message)),
+            ground.frame,
             host=host or "127.0.0.1",
             port=int(port),
             cap=flags.limit,
         ).start()
-        stranger(ground, being, ears.hint)
+        stranger(ground, at, ears.hint)
         if pushing is not None:
             threading.Thread(target=pushing.told, args=(flags,), daemon=True).start()
         # The listener runs itself, so there is no serve loop to hold this
@@ -221,9 +327,9 @@ def serve(argv: list) -> int:
         raise SystemExit("a push can only ride a line")
 
     door = carriage.Door(
-        ground.judge, host=host or "127.0.0.1", port=int(port), limit=flags.limit
+        ground.arrive, host=host or "127.0.0.1", port=int(port), limit=flags.limit
     ).start()
-    stranger(ground, being, door.hint)
+    stranger(ground, at, door.hint)
     while True:
         time.sleep(3600)
 
@@ -236,43 +342,14 @@ class Pushing:
     ground's own to hand over however it likes — so it arrives one JSON object
     per line on stdin, and each is spent on a line this door accepted.
 
-    Every frame that lands on an accepted line is either an answer to something
-    this ground pushed or a say for it to judge, and the seal says which: an
-    answer opens under the byte a caller expects and a say does not. Nothing
-    about the frame carries the difference, which is the point.
+    **Nothing here reads a frame.** Which line a push rides is delivery's, and
+    it finds it by the padlock the warden handed down after judging what
+    arrived on it. A row with no hints has no road to post to, and the line
+    that voice's last ask came in on is the whole of its way back.
     """
 
     def __init__(self, ground: Ground) -> None:
         self.ground = ground
-        self.accepted: queue.Queue = queue.Queue()
-        self.known: set = set()
-        self.waiting: dict = {}
-        self.lock = threading.Lock()
-
-    def arrive(self, road: line.Line, message: bytes) -> Optional[bytes]:
-        with self.lock:
-            if id(road) not in self.known:
-                self.known.add(id(road))
-                self.accepted.put(road)
-        try:
-            answer = self.ground.hear(message)
-        except warden.Silence:
-            return self.ground.judge(message)
-        with self.lock:
-            box = self.waiting.pop((bytes(answer["warden"]), answer["seq"]), None)
-        if box is not None:
-            box.put(answer)
-        return None
-
-    def carry(self, road: line.Line, message: bytes, far: bytes, seq: int):
-        box: queue.Queue = queue.Queue(maxsize=1)
-        with self.lock:
-            self.waiting[(bytes(far), seq)] = box
-        road.send(message)
-        try:
-            return box.get(timeout=10)
-        except queue.Empty:
-            return None
 
     def told(self, flags: Any) -> None:
         for said in sys.stdin:
@@ -292,17 +369,12 @@ class Pushing:
             heir_secret=bytes.fromhex(said["heirSecret"]),
             hints=(),
         )
-        with self.ground.lock:
-            row = self.ground.warden.stand(invitation)
-        road = Down(self, self.accepted.get())
+        row = self.ground.call(self.ground.warden.stand, invitation)
+        # Wait until a line has been spoken on, because until a peer has said
+        # something there is no way back to it at all.
+        self.ground.accepted.get()
 
-        step = exchange(
-            self.ground,
-            road,
-            row,
-            "describe",
-            next_heir=draw(),
-        )
+        step = exchange(self.ground, row, "describe", next_heir=draw())
         if step is None:
             return
         classes = classes_of(step["data"])
@@ -312,7 +384,6 @@ class Pushing:
             return
         answered = exchange(
             self.ground,
-            road,
             row,
             "ask",
             being=being_named(flags.being, classes, row),
@@ -322,100 +393,24 @@ class Pushing:
             emit({**answered, "data": (answered["data"] or b"").hex()})
 
 
-class Down:
-    """One accepted line, as a road: what ``exchange`` puts an ask down."""
-
-    def __init__(self, pushing: Pushing, road: line.Line) -> None:
-        self.pushing = pushing
-        self.road = road
-
-    def carry(self, message: bytes, far: bytes, seq: int) -> Optional[dict]:
-        return self.pushing.carry(self.road, message, far, seq)
-
-
 # ------------------------------------------------------------------- speak
-
-
-class Held:
-    """A dialled line, read by one thread that sorts what arrives.
-
-    A frame is either an answer to something this ground asked or a say for it
-    to judge, and the seal says which: an answer opens under the byte a caller
-    expects and a say does not. Nothing about the frame carries the difference,
-    which is the point.
-    """
-
-    def __init__(self, road: line.Line, ground: Ground) -> None:
-        self.road = road
-        self.ground = ground
-        self.waiting: dict = {}
-        self.lock = threading.Lock()
-        threading.Thread(target=self._read, daemon=True).start()
-
-    def _read(self) -> None:
-        while True:
-            try:
-                message = self.road.receive()
-            except line.LineError:
-                return
-            if message is None:
-                return
-            try:
-                answer = self.ground.hear(message)
-            except warden.Silence:
-                reply = self.ground.judge(message)
-                if reply is not None:
-                    try:
-                        self.road.send(reply)
-                    except line.LineError:
-                        return
-                continue
-            key = (bytes(answer["warden"]), answer["seq"])
-            with self.lock:
-                box = self.waiting.pop(key, None)
-            if box is not None:
-                box.put(answer)
-
-    def carry(self, message: bytes, far: bytes, seq: int) -> Optional[dict]:
-        """Put one ask down the line and wait for its answer.
-
-        Silence has no wire form here, so nothing comes back at all and the
-        deadline is this caller's own affair.
-        """
-        box: queue.Queue = queue.Queue(maxsize=1)
-        with self.lock:
-            self.waiting[(bytes(far), seq)] = box
-        self.road.send(message)
-        try:
-            return box.get(timeout=10)
-        except queue.Empty:
-            return None
 
 
 def exchange(
     ground: Ground,
-    road: Optional[Any],
     row: warden.Relation,
     name: str,
-    hand: Optional[Callable[[bytes], bytes]] = None,
     **over: Any,
 ) -> Optional[dict]:
-    """One utterance, put down whichever road the far door offered, and what
-    came back opened. ``None`` is silence, which is a door speaking and not an
-    error.
+    """One utterance, handed to delivery, and what came back opened.
 
-    ``hand`` is a road that answers in the same breath — the common carriage,
-    or distance zero. A line answers on its own thread instead, so ``road``
-    and ``hand`` are the two shapes a road can have and never both at once.
+    ``None`` is silence, which is a door speaking and not an error. **Nothing
+    at this call site names a road**: which one carried it, and whether the
+    answer came back in the same breath or as a frame of its own later, is
+    delivery's affair and the warden's.
     """
-    message, seq = ground.ask(row, **over)
-    if road is not None:
-        answer = road.carry(message, row.warden, seq)
-    else:
-        if hand is None:
-            raise SystemExit("no road to put this ask down")
-        reply = hand(message)
-        answer = ground.hear(reply) if reply else None
+    seq = row.seq + 1
+    answer = ground.run(ground.warden.spend(row, seq=seq, **over))
     if answer is None:
         emit({"quo": 1, "step": name, "seq": seq, "silence": True})
         return None
@@ -475,7 +470,7 @@ def being_named(which: str, classes: list, row: warden.Relation) -> Optional[byt
     return bytes.fromhex(which)
 
 
-def held(ground: Ground, far: bytes, road: Held) -> int:
+def held(ground: Ground, far: bytes, road) -> int:
     """The other half of a line, and the half a door cannot have: this ground
     holds a being of its own and grants the ground it dialled a standing at it.
 
@@ -485,9 +480,8 @@ def held(ground: Ground, far: bytes, road: Held) -> int:
     once the line is let go.
     """
     own = Counter()
-    with ground.lock:
-        being = ground.warden.hold(COUNTER, own.invoke, draw(), draw())
-        invitation = ground.warden.invite(being, draw(), draw(), hints=())
+    at = ground.run(ground.warden.hold(own, COUNTER, draw(), draw())).being
+    invitation = ground.call(ground.warden.invite, at, draw(), draw(), hints=())
     emit(
         {
             "quo": 1,
@@ -503,14 +497,12 @@ def held(ground: Ground, far: bytes, road: Held) -> int:
     # The far end closes the line when it has finished asking, and a line is
     # dumb — it has no event to wait on, only the fact of whether it is still
     # carrying. Leaving before it is let go would be leaving mid-answer.
-    at = time.monotonic()
-    while road.road.open:
-        if time.monotonic() - at > 10:
+    since = time.monotonic()
+    while road.open:
+        if time.monotonic() - since > 10:
             raise SystemExit("the line this ground opened was never let go")
         time.sleep(0.01)
-    with ground.lock:
-        total = own.total
-    emit({"quo": 1, "step": "held", "being": being.hex(), "total": total})
+    emit({"quo": 1, "step": "held", "being": at.hex(), "total": own.total})
     return 0
 
 
@@ -528,9 +520,9 @@ def at_distance_zero() -> tuple:
     two houses really are two.
     """
     far = Ground(LIMIT)
-    being = far.warden.hold(COUNTER, Counter().invoke, draw(), draw())
-    door = call.Door(far.judge, limit=far.warden.limit).start()
-    invitation = far.warden.invite(being, draw(), draw(), hints=())
+    at = far.run(far.warden.hold(Counter(), COUNTER, draw(), draw())).being
+    door = call.Door(far.arrive, limit=far.warden.limit).start()
+    invitation = far.call(far.warden.invite, at, draw(), draw(), hints=())
     emit(
         {
             "quo": 1,
@@ -568,16 +560,13 @@ def speak(argv: list) -> int:
     parser.add_argument("facts", nargs="?", default="")
     flags = parser.parse_args(argv)
 
-    road: Optional[Held] = None
-    hand: Optional[Callable[[bytes], bytes]] = None
-
+    door = None
     if flags.zero:
         if flags.framed:
             raise SystemExit("distance zero has no line under it")
         if flags.facts:
             raise SystemExit("a door at distance zero is raised here, not addressed")
-        far, door, invitation = at_distance_zero()
-        hand = lambda message: call.post(door, message)  # noqa: E731
+        _far, door, invitation = at_distance_zero()
     else:
         if not flags.facts:
             raise SystemExit("usage: subject speak [flags] <facts>")
@@ -596,29 +585,20 @@ def speak(argv: list) -> int:
     # A caller is always a being, and always one its own warden holds — so this
     # mode is a whole ground too, not a bare key.
     ground = Ground()
-    row = ground.warden.stand(invitation)
+    ground.zero = door
+    row = ground.call(ground.warden.stand, invitation)
 
     # Which road this ground speaks over is the whole of what -line and -zero
-    # change. Everything below is the same warden saying the same things.
+    # change, and it is delivery's alone. Everything below is the same warden
+    # saying the same things, with nothing at a call site naming a road.
+    dialled = None
     if flags.framed:
-        dialled = line.dial(line_in(list(invitation.hints)))
-        # This end reads against its own appetite, which is not the default.
-        dialled.cap = ground.warden.limit
-        road = Held(dialled, ground)
-    elif hand is None:
-        hand = lambda message: carriage.post(row.hints[0], message)  # noqa: E731
+        dialled = ground.dial(line_in(list(invitation.hints)))
 
     # Whoever minted a voice has seen its keys, so the holder's first act is a
     # rotate-and-ask to a key nobody else has ever seen. It asks nothing, and
     # what comes back is what this voice now stands at.
-    step = exchange(
-        ground,
-        road,
-        row,
-        "describe",
-        hand=hand,
-        next_heir=draw(),
-    )
+    step = exchange(ground, row, "describe", next_heir=draw())
     if step is None:
         return 0  # the door answered silence, and it has already been reported
     classes = classes_of(step["data"])
@@ -633,10 +613,8 @@ def speak(argv: list) -> int:
             # field on every other being.
             fetched = exchange(
                 ground,
-                road,
                 row,
                 "blueprint",
-                hand=hand,
                 being=row.warden,
                 method={"name": "blueprint", "args": blob},
             )
@@ -646,14 +624,11 @@ def speak(argv: list) -> int:
             emit({**fetched, "data": None, "digest": one["digest"], "text": text})
 
     if flags.method:
-        being = being_named(flags.being, classes, row)
         answered = exchange(
             ground,
-            road,
             row,
             "ask",
-            hand=hand,
-            being=being,
+            being=being_named(flags.being, classes, row),
             method={"name": flags.method, "args": bytes.fromhex(flags.blob)},
         )
         if answered is not None:
@@ -661,9 +636,9 @@ def speak(argv: list) -> int:
 
     if not flags.holding:
         return 0
-    if road is None:
+    if dialled is None:
         raise SystemExit("a standing granted back can only ride a line")
-    return held(ground, row.warden, road)
+    return held(ground, row.warden, dialled)
 
 
 def main(argv: list) -> int:

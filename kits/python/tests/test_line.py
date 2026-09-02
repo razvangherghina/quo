@@ -8,6 +8,7 @@ The socket is real: a listener binds an ephemeral loopback port and is torn
 down with the case. Nothing here is faked.
 """
 
+import asyncio
 import socket
 import unittest
 
@@ -340,10 +341,9 @@ class ARealDoorBehindTheLine(unittest.TestCase):
         )
 
         def judge(_line, message):
-            try:
-                return self.warden.judge(message).answer
-            except pins.warden.Silence:
-                return None
+            # The road hands the whole envelope to the warden's one entry
+            # point and takes bytes or silence back. It opens no seal.
+            return asyncio.run(self.warden.arrive(message))
 
         try:
             self.listener = line.Listener(judge).start()
@@ -363,14 +363,14 @@ class ARealDoorBehindTheLine(unittest.TestCase):
         answer = pins.opened(self.opened.receive())
         self.assertEqual(answer["warden"], self.warden.name)
         self.assertEqual(answer["seq"], 1)
-        self.assertEqual(answer["data"], b"lit")
+        self.assertEqual(answer["data"], pins.LIT)
 
     def test_iii_a_frame_that_fails_the_judgment_is_silence_and_the_line_lives_on(
         self,
     ) -> None:
         refused = self.ask(seq=1)
         self.opened.send(refused)
-        self.assertEqual(pins.opened(self.opened.receive())["data"], b"lit")
+        self.assertEqual(pins.opened(self.opened.receive())["data"], pins.LIT)
         self.opened.send(refused)  # a replay, which is silence
         self.opened.socket.settimeout(0.4)
         with self.assertRaises((TimeoutError, socket.timeout)):

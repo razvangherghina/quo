@@ -26,7 +26,7 @@ const RANDOM = fixed(200);
 
 const LIST = `ToDo
   add(title text) bool
-  complete(id text) bool
+  complete() bool
 `;
 
 const NOTE = `Note
@@ -45,10 +45,16 @@ function ground(over = {}) {
   });
 }
 
+// A being answers plain values; the warden encodes them by the declared type.
 function todo() {
   return {
-    complete: () => utf8.encode('done'),
+    complete: () => true,
   };
+}
+
+// The pk alone, where a case names a being and never calls it from here.
+async function holding(warden, object, options) {
+  return (await warden.hold(object, options)).being;
 }
 
 function ask(warden, voice, over = {}) {
@@ -98,12 +104,9 @@ function invoke(name, args = new Uint8Array(0)) {
 // A ground holding two lists and a note, with one voice granted at one list.
 async function estate() {
   const warden = await ground({ limit: 65_536n });
-  const one = await warden.hold(todo(), { seed: fixed(5), blueprint: LIST });
-  const two = await warden.hold(todo(), { seed: fixed(11), blueprint: LIST });
-  const note = await warden.hold(
-    { read: () => utf8.encode('n') },
-    { seed: fixed(12), blueprint: NOTE },
-  );
+  const one = await holding(warden, todo(), { seed: fixed(5), blueprint: LIST });
+  const two = await holding(warden, todo(), { seed: fixed(11), blueprint: LIST });
+  const note = await holding(warden, { read: () => 'n' }, { seed: fixed(12), blueprint: NOTE });
   const voice = await signingPair(fixed(6));
   await warden.grant(one, { voiceSeed: fixed(6), heirSeed: fixed(7) });
   warden.amend(voice.pk, { add: [two] });

@@ -36,9 +36,23 @@
 //! space. Every line this command prints is one JSON object carrying the
 //! member `quo`, and that is the whole of its contract with a driver.
 //!
-//! **This is a host, so this is where the host things are.** The clock, the
-//! sockets and every draw of randomness live here; the crates beneath reach
-//! for none of them.
+//! **A subject is not a host, and this one stands below the host's seam on
+//! purpose.** It exists to prove the kit from outside, which means composing
+//! what no application may: an ask naming neither being nor method, argument
+//! bytes handed over as raw hex and deliberately malformed, an ask at a being
+//! whose blueprint this side does not hold, and the seq it spent read straight
+//! back. Every one of those is something `quo::host` refuses by design — a
+//! handle encodes through the blueprint, so it cannot produce the input a
+//! refusal is asserted with, and it never hands its caller a number. So this
+//! drives [`Door`] itself, the way a wire suite hand-writes bytes, and it
+//! stands its own roads because a ground is one thing and cannot be half a
+//! host. **The seam never grows a raw-ask surface to accommodate this**: that
+//! would ship every application a public way around the blueprint, permanently,
+//! for the harness's benefit.
+//!
+//! Standing below the seam, this file is where the host things are for this
+//! binary: the clock, the sockets and every draw of randomness. The crates
+//! beneath it reach for none of them.
 
 #[path = "../../support/json.rs"]
 mod json;
@@ -56,7 +70,7 @@ use quo_arithmetic as arithmetic;
 use quo_envelope::{Allowance, Method};
 use quo_line::{Arrival, Line, Listener};
 use quo_notation::{Blueprint, Type};
-use quo_warden::{warden_digest, Estate, Inbound, Resident, Route, Warden, KEY};
+use quo_warden::{warden_digest, Door, Estate, Inbound, Resident, Route, KEY};
 use quo_wire::Value;
 
 /// The class the door holds. A stranger is told none of this: it learns the
@@ -96,7 +110,7 @@ fn main() {
 /// judges arriving frames on its reader while the main thread composes asks
 /// of its own — so it is reached only under one lock.
 struct Ground {
-    w: Warden,
+    w: Door,
     /// The being this ground holds, and the number inside it. An ordinary
     /// object: it never learns it has an address, judges nothing, and sees no
     /// key.
@@ -111,7 +125,7 @@ impl Ground {
         let heir = arithmetic::signing_pk(&draw()?);
         let name = arithmetic::signing_pk(&name_secret);
         Ok(Ground {
-            w: Warden::new(
+            w: Door::new(
                 name_secret,
                 draw()?,
                 arithmetic::commitment(&name, &heir),

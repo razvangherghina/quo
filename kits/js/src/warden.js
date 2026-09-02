@@ -15,7 +15,8 @@ import {
   untag,
 } from './envelope.js';
 import { commitment as commit, sealingPair, sign, signingPair, verify } from './arithmetic.js';
-import { hex } from './bytes.js';
+import { hex, unhex } from './bytes.js';
+import { allowanceNow, closure, localHandle, pkOf, remoteHandle, within } from './quo.js';
 
 const same = (a, b) => a instanceof Uint8Array && b instanceof Uint8Array && hex(a) === hex(b);
 const key32 = (value) => value instanceof Uint8Array && value.length === 32;
@@ -282,20 +283,50 @@ export class Warden {
   // ground, and no constructor can wait.
   static async open(options) {
     const warden = new Warden(options);
-    warden.name = await signingPair(options.nameSeed);
-    warden.padlock = await sealingPair(options.padlockSeed);
-    warden.heir = await signingPair(options.heirSeed);
+    const seeds = options.seeds ?? {
+      name: options.nameSeed,
+      padlock: options.padlockSeed,
+      heir: options.heirSeed,
+    };
+    warden.name = await signingPair(seeds.name);
+    warden.padlock = await sealingPair(seeds.padlock);
+    warden.heir = await signingPair(seeds.heir);
     // For a warden's own name the heir would spend at itself.
     warden.commitment = await commit(warden.name.pk, warden.heir.pk);
     for (const text of options.declares ?? []) {
       warden.declares.add(hex((await warden.#learn(text)).at));
     }
+    // What must survive a restart is read back from the store the host handed
+    // in: both records and the replay marks. The beings themselves are
+    // pointers and cannot be stored; the host holds them again on the same
+    // seeds, and the rows find them by name.
+    if (warden.store) await warden.#restore();
     return warden;
   }
 
-  constructor({ hints = [], limit = 0n } = {}) {
+  constructor({
+    hints = [],
+    limit = 0n,
+    clock = null,
+    random = null,
+    delivery = null,
+    store = null,
+    allowance = { time: 5_000n, hops: 8n },
+  } = {}) {
     this.hints = [...hints];
     this.limit = limit;
+    // Handed in by the host, never reached for: the clock, the randomness, the
+    // store the records live in, and delivery — the one thing beneath the
+    // warden that reads a hint.
+    this.clock = clock;
+    this.random = random;
+    this.delivery = delivery;
+    this.store = store;
+    // The allowance a walk is born with when a being starts one of its own.
+    this.allowance = allowance;
+    // Private labels beside the outbound rows: they resolve nothing and travel
+    // nowhere, and a being reaches its relations by them.
+    this.labels = new Map();
     this.beings = new Map();
     // Inbound: which voices may reach which beings, keyed by the voice's pk.
     this.inbound = new Map();
@@ -436,34 +467,397 @@ export class Warden {
   // digest. A being is named by its pk, and the warden minted it. Its heir
   // lives under its warden, because nobody hand-manages three hundred keys —
   // and the commitment serves the peer, which receives it in every describe.
-  async hold(object, { seed, heirSeed, blueprint, cells }) {
-    const keys = await signingPair(seed);
-    const heir = await signingPair(heirSeed ?? seed);
+  //
+  // The object is a plain class and stays one. What it gains is the closure
+  // at `object.quo`, the one API a being has to Quo, and a codec: its declared
+  // methods are called with decoded arguments and answer plain values, which
+  // the warden encodes by the field's declared answer type. The being never
+  // sees a byte. Its cells, when it moves, are what its own `cells()` says.
+  async hold(object, { seed, heirSeed, blueprint, cells, label = null } = {}) {
+    const keys = await signingPair(seed ?? this.random());
+    const heir = await signingPair(heirSeed ?? seed ?? this.random());
     const learned = await this.#learn(blueprint);
-    this.beings.set(hex(keys.pk), {
+    const parsed = parse(blueprint);
+    const records = recordsOf(parsed);
+    const fields = new Map(parsed.fields.map((field) => [field.name, field]));
+    const being = {
       pk: keys.pk,
       secret: keys.secret,
       heir,
       commitment: await commit(this.name.pk, heir.pk),
       object,
-      cells: cells ?? (() => new Uint8Array(0)),
+      cells:
+        cells ?? (() => (typeof object.cells === 'function' ? object.cells() : new Uint8Array(0))),
+      take: (bytes) => object.take?.(bytes),
       digest: learned.at,
       // The scope of every grant at this being: what its blueprint does not
       // declare does not exist for it, so the door serves nothing else.
       declares: learned.declares,
-    });
-    return keys.pk;
+      fields,
+      records,
+      // The being's method, invoked by the door with the caller and the leash
+      // in scope, arguments decoded and the answer encoded. What must be bytes
+      // or nothing at the wire is made so here, never by the being.
+      invoke: async (name, blob, call) => {
+        const field = fields.get(name);
+        const args = decodeAll(
+          field.args.map((arg) => arg.type),
+          blob,
+          records,
+        );
+        const value = await within(call, () => object[name](...args));
+        if (!field.answer) return null;
+        return encode(field.answer, value, records);
+      },
+    };
+    this.beings.set(hex(keys.pk), being);
+    object.quo = closure(this, being);
+    if (label) this.labels.set(label, { local: keys.pk });
+    await this.#persist();
+    return { being: keys.pk, handle: localHandle(this, being) };
   }
 
   // Release a being: drop the pointer, and its standings go with it.
   release(beingPk) {
+    if (!beingPk) return false;
     const at = hex(beingPk);
     if (!this.beings.delete(at)) return false;
     for (const [voice, row] of this.inbound) {
       row.beings.delete(at);
       if (row.beings.size === 0) this.inbound.delete(voice);
     }
+    for (const [label, kept] of this.labels) {
+      if (kept.local && hex(kept.local) === at) this.labels.delete(label);
+    }
+    this.#persistSoon();
     return true;
+  }
+
+  // A handle by its private label: a being minted beside this one, or a
+  // relation accepted under that label. Nothing resolves a label but this map.
+  relation(label) {
+    const kept = this.labels.get(label);
+    if (!kept) return null;
+    if (kept.local) {
+      const being = this.beings.get(hex(kept.local));
+      return being ? localHandle(this, being) : null;
+    }
+    return kept.handle ?? null;
+  }
+
+  // The leash a call is handed: the allowance that arrived, the clock reading
+  // taken at arrival, and the clock to take the second reading by.
+  leash(allowance, arrived) {
+    return new Leash(allowance, arrived, this.clock);
+  }
+
+  // Mark an ask as awaiting again, for a caller resending the identical
+  // envelope after silence. The number stays what it was.
+  await(row, seq) {
+    const pending = awaits(this.padlock.pk, seq);
+    if (!row.awaiting.has(pending)) row.awaiting.set(pending, null);
+  }
+
+  // One ask down an outbound row, sealed, posted and settled — the warden's own
+  // half of what a handle does, for the acts the warden makes on its own
+  // account: the rotations, the describe, a blueprint by digest.
+  async #say(row, options) {
+    const allowance = allowanceNow(this);
+    if (!allowance) return null;
+    const envelope = await this.ask(row, { ...options, allowance, random: this.random() });
+    if (!envelope) return null;
+    const promise = this.pending(row, options.seq, allowance.time);
+    const back = await this.delivery.send(
+      { padlock: row.padlock.slice(), hints: [...row.hints] },
+      envelope,
+    );
+    // A road that answers in its response has answered: bytes, or the empty
+    // body that is silence's wire form. A road that answers through the door
+    // says neither, and the promise waits for what arrives.
+    if (back === null) this.forgo(row, options.seq);
+    else if (back) await this.arrive(back);
+    return promise;
+  }
+
+  // Accepting an invitation, whole, into handles. Two rotations, both to keys
+  // nobody else has seen; then the standing is read from the far door.
+  async accept(invitation, { label = null, being = null } = {}) {
+    if (!this.delivery) return null;
+    const voice = await signingPair(this.random());
+    const heir = await signingPair(this.random());
+    const row = this.remember(invitation, { being });
+
+    row.seq = 0n;
+    const first = await this.#say(row, {
+      seq: 1n,
+      commitment: await commit(invitation.warden, voice.pk),
+    });
+    if (!first) return this.#abandon(row);
+    row.voice = { pk: voice.pk, secret: voice.secret };
+    row.seq = 0n;
+    const second = await this.#say(row, {
+      seq: 1n,
+      commitment: await commit(invitation.warden, heir.pk),
+    });
+    if (!second) return this.#abandon(row);
+    row.heir = { pk: heir.pk, secret: heir.secret };
+
+    const handles = await this.handles(row, { label, estate: readField('describe', second.data) });
+    if (!handles) return this.#abandon(row);
+    return handles;
+  }
+
+  // A card is not an invitation: it names a house and the way to it, and no
+  // voice. So the knock is signed by a key minted here and placed nowhere at
+  // the far door, which is what being a stranger is — and what a stranger is
+  // shown is the estate with one room in it, the far door's public being.
+  async knock(card, { label = null, being = null } = {}) {
+    if (!this.delivery) return null;
+    const voice = await signingPair(this.random());
+    const row = this.remember(card, {
+      voicePk: voice.pk,
+      voiceSecret: voice.secret,
+      being,
+    });
+    row.seq = 0n;
+    const answered = await this.#say(row, { seq: 1n });
+    const estate = readField('describe', answered?.data ?? null);
+    const shown = estate?.classes.find((one) => same(one.digest, WARDEN_DIGEST));
+    const target = shown?.beings[0];
+    if (!target) return this.#abandon(row);
+    this.note(row.warden, { being: target.being, commitment: target.commitment });
+    const handle = remoteHandle(this, row, target.being, WARDEN_BLUEPRINT);
+    if (label) this.labels.set(label, { row, being: target.being, digest: WARDEN_DIGEST, handle });
+    await this.#persist();
+    return handle;
+  }
+
+  // The standing, read from the far door as it stands now: a handle for every
+  // being the estate names, the warden's own public being apart, because that
+  // one is reached by every voice and is what a knock answers with. A standing
+  // widened by an amend is found here rather than remembered, so a holder that
+  // describes again holds what was added.
+  //
+  // An array, not a record keyed by being: every handle names its own being at
+  // `handle.being`, so a caller matches by that, and the order is the estate's
+  // own — classes by digest, beings by key, both ascending — which is derived
+  // from the bytes and the same at every ground. A record would key on a hex
+  // string the caller has to spell.
+  async handles(row, { label = null, estate = null } = {}) {
+    const answered = estate ? null : await this.#say(row, { seq: row.seq + 1n });
+    const shown = estate ?? readField('describe', answered?.data ?? null);
+    if (!shown) return null;
+    const handles = [];
+    for (const one of shown.classes) {
+      if (same(one.digest, WARDEN_DIGEST)) continue;
+      let text = this.texts.get(hex(one.digest));
+      if (!text) {
+        const asked = await this.#say(row, {
+          seq: row.seq + 1n,
+          method: { name: 'blueprint', args: writeArgument('blueprint', one.digest) },
+        });
+        text = readField('blueprint', asked?.data ?? null);
+        if (!text) continue;
+        this.texts.set(hex(one.digest), text);
+      }
+      for (const target of one.beings) {
+        this.note(row.warden, { being: target.being, commitment: target.commitment });
+        const handle = remoteHandle(this, row, target.being, text);
+        handles.push(handle);
+        // A label is a private name for one being, so it names the first the
+        // estate gives; the rest of the standing is in what comes back.
+        if (label && !this.labels.has(label)) {
+          this.labels.set(label, { row, being: target.being, digest: one.digest, handle });
+        }
+      }
+    }
+    if (handles.length === 0) return null;
+    await this.#persist();
+    return handles;
+  }
+
+  // Describe is one of the five things that cross, so it is on the handle
+  // beside the being's own fields: a being that could invoke a field but not
+  // learn what fields exist would be back to composing envelopes by hand. Each
+  // is an ordinary ask at the far door's own fields, answering a value or
+  // silence like anything else.
+  introspect(row, beingPk) {
+    const at = async (name, ...values) => {
+      const answered = await this.#say(row, {
+        seq: row.seq + 1n,
+        method: { name, args: writeArgument(name, ...values) },
+      });
+      return readField(name, answered?.data ?? null);
+    };
+    return {
+      describe: () => at('describe'),
+      sketch: (target) => at('sketch', pkOf(target) ?? beingPk),
+      blueprint: (digestOf) => at('blueprint', digestOf),
+      limit: () => at('limit'),
+      handles: () => this.handles(row),
+    };
+  }
+
+  // The same four, under one warden: no seal and no judgment, because there are
+  // no strangers here — and the same values, because a being written for one
+  // kind of neighbour is installed anywhere. What a local handle stands on is
+  // what a standing at that one being would reach.
+  introspectLocal(beingPk) {
+    const held = () => this.beings.has(hex(beingPk));
+    const reach = () => new Set([hex(beingPk), hex(this.name.pk)]);
+    return {
+      describe: async () => (held() ? this.estate(reach()) : null),
+      sketch: async (target) => {
+        const at = pkOf(target) ?? beingPk;
+        if (!held() || !reach().has(hex(at))) return null;
+        return this.sketchOf(at);
+      },
+      blueprint: async (digestOf) => (held() ? this.blueprintFor(reach(), digestOf) : null),
+      limit: async () => (held() ? this.limit : null),
+      handles: async () => (held() ? [localHandle(this, this.beings.get(hex(beingPk)))] : []),
+    };
+  }
+
+  #abandon(row) {
+    this.outbound = this.outbound.filter((one) => one !== row);
+    return null;
+  }
+
+  // The records, as the store keeps them: every fact a restart must not lose,
+  // written as plain data. Beings are pointers and are not here; the host
+  // holds them again on the same seeds, and the rows find them by name.
+  #snapshot() {
+    const h = (bytes) => (bytes ? hex(bytes) : null);
+    return {
+      hints: [...this.hints],
+      texts: [...this.texts],
+      inbound: [...this.inbound.values()].map((row) => ({
+        voice: h(row.voice),
+        commitment: h(row.commitment),
+        name: h(row.name),
+        beings: [...row.beings],
+        mark: row.mark === null ? null : String(row.mark),
+        spent: row.window().map(String),
+        padlock: h(row.padlock),
+        hints: [...row.hints],
+      })),
+      outbound: this.outbound.map((row) => ({
+        warden: h(row.warden),
+        commitment: h(row.commitment),
+        padlock: h(row.padlock),
+        voice: h(row.voice.pk),
+        secret: h(row.voice.secret),
+        heir: h(row.heir?.pk),
+        heirSecret: h(row.heir?.secret),
+        hints: [...row.hints],
+        seq: String(row.seq),
+        news: row.marks.mark === null ? null : String(row.marks.mark),
+        being: h(row.being),
+        beings: [...row.beings.values()].map((ref) => ({
+          being: h(ref.being),
+          commitment: h(ref.commitment),
+          warden: h(ref.warden),
+          padlock: h(ref.padlock),
+          hints: [...ref.hints],
+        })),
+      })),
+      labels: [...this.labels].map(([label, kept]) => ({
+        label,
+        local: h(kept.local),
+        warden: kept.row ? h(kept.row.warden) : null,
+        being: h(kept.being),
+        digest: h(kept.digest),
+      })),
+    };
+  }
+
+  async #persist() {
+    if (!this.store) return;
+    await this.store.save(this.#snapshot());
+  }
+
+  // Write the records now, whatever has happened since the last act that owed
+  // a write. The store is written on the acts that change it — a grant, an
+  // accept, an amend — and not on every ask, because a write per message would
+  // be a store standing in the way of the wire. The cost of that is a ground
+  // which stops between two asks and comes back holding a number the far door
+  // has already spent: its first ask is refused as the replay it looks exactly
+  // like. A ground that knows it is stopping owes itself this, and a host's
+  // `close` is where it is owed.
+  async keep() {
+    await this.#persist();
+  }
+
+  // For the synchronous acts: the write is owed, not awaited.
+  #persistSoon() {
+    if (!this.store) return;
+    this.store.save(this.#snapshot());
+  }
+
+  async #restore() {
+    const kept = await this.store.load();
+    if (!kept) return;
+    const u = (text) => (text === null ? null : unhex(text));
+    this.hints = [...kept.hints];
+    for (const [at, text] of kept.texts) this.texts.set(at, text);
+    for (const row of kept.inbound) {
+      this.inbound.set(
+        row.voice,
+        new Standing({
+          voice: u(row.voice),
+          commitment: u(row.commitment),
+          name: u(row.name),
+          beings: row.beings.map(unhex),
+          padlock: u(row.padlock),
+          hints: row.hints,
+          mark: row.mark === null ? null : BigInt(row.mark),
+          spent: row.spent.map(BigInt),
+        }),
+      );
+    }
+    for (const row of kept.outbound) {
+      const restored = {
+        warden: u(row.warden),
+        commitment: u(row.commitment),
+        padlock: u(row.padlock),
+        voice: { pk: u(row.voice), secret: u(row.secret) },
+        heir: row.heir ? { pk: u(row.heir), secret: u(row.heirSecret) } : null,
+        hints: row.hints,
+        marks: adoptedMarks(row.news === null ? 0n : BigInt(row.news)),
+        being: u(row.being),
+        seq: BigInt(row.seq),
+        beings: new Map(
+          row.beings.map((ref) => [
+            ref.being,
+            {
+              being: u(ref.being),
+              commitment: u(ref.commitment),
+              warden: u(ref.warden),
+              padlock: u(ref.padlock),
+              hints: ref.hints,
+            },
+          ]),
+        ),
+        awaiting: new Map(),
+      };
+      this.outbound.push(restored);
+    }
+    for (const one of kept.labels) {
+      if (one.local) {
+        this.labels.set(one.label, { local: unhex(one.local) });
+        continue;
+      }
+      const row = this.outbound.find((r) => hex(r.warden) === one.warden);
+      const text = this.texts.get(one.digest);
+      if (!row || !text) continue;
+      const being = unhex(one.being);
+      this.labels.set(one.label, {
+        row,
+        being,
+        digest: unhex(one.digest),
+        handle: remoteHandle(this, row, being, text),
+      });
+    }
   }
 
   // Succeed the warden's own name. The heir this door committed to spends, and
@@ -499,10 +893,10 @@ export class Warden {
   // Grant: mint a voice, write the inbound row, hand out the invitation. The
   // holder's heir is committed with this door's name inside the hash, so a
   // commitment is valid only at the door it was minted for.
-  async grant(beingPk, { voiceSeed, heirSeed, padlock, hints }) {
-    if (!this.beings.has(hex(beingPk))) return null;
-    const voice = await signingPair(voiceSeed);
-    const heir = await signingPair(heirSeed);
+  async grant(beingPk, { voiceSeed, heirSeed, padlock, hints } = {}) {
+    if (!beingPk || !this.beings.has(hex(beingPk))) return null;
+    const voice = await signingPair(voiceSeed ?? this.random());
+    const heir = await signingPair(heirSeed ?? this.random());
     this.inbound.set(
       hex(voice.pk),
       new Standing({
@@ -514,6 +908,7 @@ export class Warden {
         hints: hints ?? [],
       }),
     );
+    await this.#persist();
     // What a holder holds is five things.
     return {
       warden: this.name.pk,
@@ -521,7 +916,7 @@ export class Warden {
       padlock: this.padlock.pk,
       heirPublic: heir.pk,
       heirSecret: heir.secret,
-      hints: this.hints,
+      hints: [...this.hints],
     };
   }
 
@@ -551,8 +946,9 @@ export class Warden {
     const row = this.inbound.get(hex(voicePk));
     if (!row) return false;
     for (const being of add) if (this.beings.has(hex(being))) row.beings.add(hex(being));
-    for (const being of remove) row.beings.delete(hex(being));
+    for (const being of remove) if (being) row.beings.delete(hex(being));
     if (row.beings.size === 0) this.inbound.delete(hex(voicePk));
+    this.#persistSoon();
     return true;
   }
 
@@ -585,7 +981,10 @@ export class Warden {
       commitment: invitation.commitment,
       padlock: invitation.padlock,
       voice: { pk: voicePk ?? invitation.heirPublic, secret: voiceSecret ?? invitation.heirSecret },
-      heir: { pk: invitation.heirPublic, secret: invitation.heirSecret },
+      // A card carries no heir, because it opens no standing to take over.
+      heir: invitation.heirPublic
+        ? { pk: invitation.heirPublic, secret: invitation.heirSecret }
+        : null,
       hints: invitation.hints,
       marks: new Marks(),
       being,
@@ -601,7 +1000,7 @@ export class Warden {
       // that padlock, that warden and that seq, so the caller keeps the record
       // that check reads — in the core, because the check is owed whether or
       // not a socket was involved.
-      awaiting: new Set(),
+      awaiting: new Map(),
     };
     this.outbound.push(row);
     return row;
@@ -625,7 +1024,7 @@ export class Warden {
       being: beingPk,
       seq: relation.seq,
       beings: new Map(),
-      awaiting: new Set(),
+      awaiting: new Map(),
     };
     this.outbound.push(row);
     return row;
@@ -748,15 +1147,7 @@ export class Warden {
   // what a source pushing into a subscriber uses like anything else.
   ask(
     row,
-    {
-      seq,
-      commitment = null,
-      allowance = { time: 5_000n, hops: 8n },
-      leash = null,
-      being,
-      method,
-      random,
-    },
+    { seq, commitment = null, allowance = this.allowance, leash = null, being, method, random },
   ) {
     // An answer is paired to its ask by the padlock, the warden and the seq,
     // and by nothing else. Two asks out at once carrying the same three would
@@ -786,8 +1177,56 @@ export class Warden {
     // the refusal without waiting on the seal.
     if (!envelope) return null;
     if (typeof seq === 'bigint' && seq > row.seq) row.seq = seq;
-    row.awaiting.add(pending);
+    row.awaiting.set(pending, null);
     return envelope;
+  }
+
+  // The promise an awaiting ask resolves: the decoded answer record when one
+  // arrives through the door, `null` when the caller's own deadline passes or
+  // the ask is forgone. Delivery never touches this; the road hands whatever
+  // comes back to `arrive`, and `arrive` settles it.
+  pending(row, seq, deadline = null) {
+    const pending = awaits(this.padlock.pk, seq);
+    if (!row.awaiting.has(pending)) return Promise.resolve(null);
+    return new Promise((settle) => {
+      let timer = null;
+      const done = (answer) => {
+        if (timer) clearTimeout(timer);
+        settle(answer);
+      };
+      if (deadline !== null) {
+        timer = setTimeout(() => {
+          row.awaiting.delete(pending);
+          done(null);
+        }, Number(deadline));
+        timer.unref?.();
+      }
+      row.awaiting.set(pending, done);
+    });
+  }
+
+  // The one entry point for arriving bytes, whatever road carried them. The
+  // record byte inside the seal says which of the two records arrived, and
+  // only the warden reads it: an answer settles the ask awaiting it and the
+  // road gets nothing back; a say is judged and the road gets bytes or silence.
+  // A road never opens a seal to route.
+  //
+  // `via` is the road the bytes arrived on, opaque to the warden and handed
+  // back to delivery beside the caller's padlock once the way back is
+  // refreshed — so a peer that publishes nothing can be reached down the line
+  // it holds, and the road never had to open a seal to be remembered.
+  async arrive(envelope, via = null) {
+    let inside;
+    try {
+      inside = await unbox(envelope, this.padlock.secret);
+    } catch {
+      return this.#hush('not ours');
+    }
+    if (inside.bytes.length > 0 && inside.bytes[0] === ANSWER_BYTE) {
+      await this.hear(envelope);
+      return null;
+    }
+    return this.judge(envelope, { clock: this.clock, random: this.random(), via });
   }
 
   // The caller's own judgment of an answer — Article XII's shorter road, whole.
@@ -809,7 +1248,11 @@ export class Warden {
     const pending = awaits(this.padlock.pk, answer.seq);
     for (const row of this.outbound) {
       if (!same(row.warden, answer.warden)) continue;
-      if (row.awaiting.delete(pending)) return answer;
+      if (!row.awaiting.has(pending)) continue;
+      const settle = row.awaiting.get(pending);
+      row.awaiting.delete(pending);
+      settle?.(answer);
+      return answer;
     }
     return null;
   }
@@ -819,21 +1262,26 @@ export class Warden {
   // the number stays spent, because a message the far door judged spent it
   // there whatever this end does with its own record.
   forgo(row, seq) {
-    return row.awaiting.delete(awaits(this.padlock.pk, seq));
+    const pending = awaits(this.padlock.pk, seq);
+    if (!row.awaiting.has(pending)) return false;
+    const settle = row.awaiting.get(pending);
+    row.awaiting.delete(pending);
+    settle?.(null);
+    return true;
   }
 
   // The judgment, in order. Every failure is the same failure: silence, which
   // here is `null`, and the door never says which step it was.
-  async judge(envelope, { clock, random }) {
+  async judge(envelope, { clock, random, via = null }) {
     try {
-      return await this.#judge(envelope, clock, random);
+      return await this.#judge(envelope, clock, random, via);
     } catch (thrown) {
       // The warden is the global try/catch, and it never throws.
       return this.#hush('threw', { thrown });
     }
   }
 
-  async #judge(envelope, clock, random) {
+  async #judge(envelope, clock, random, via) {
     // The first of the two readings the dwell is the difference of. It is taken
     // before anything is unsealed, because what it marks is when the message
     // arrived and not when the door got round to it.
@@ -874,11 +1322,22 @@ export class Warden {
     // only when a message spends an heir. A plain ask carrying one is refused.
     if (row && payload.commitment) return this.#hush('ask carrying a commitment');
     if (!row) {
+      const matched = [];
       for (const [at, candidate] of this.inbound) {
         // Hashed against the name the commitment was minted under, never this
         // door's current name: after a name succession an older standing must
         // still be able to rotate.
         if (!same(await commit(candidate.name, payload.voice), candidate.commitment)) continue;
+        matched.push([at, candidate]);
+      }
+      // Matching more than one standing is silence. No order over the records
+      // is law, so a door that chose between them would choose differently from
+      // the next, and a granter that committed one heir at two standings has
+      // made its own error. Every match is gathered before anything moves,
+      // because a door that took the first it found would have chosen.
+      if (matched.length > 1) return this.#hush('ambiguous rotation');
+      if (matched.length === 1) {
+        const [at, candidate] = matched[0];
         // A rotation carrying no fresh commitment is a standing that could be
         // taken over once and never again.
         if (!payload.commitment) return this.#hush('rotation without a commitment');
@@ -888,7 +1347,6 @@ export class Warden {
         this.inbound.set(hex(payload.voice), candidate);
         row = candidate;
         kind = 'rotation';
-        break;
       }
     }
 
@@ -941,6 +1399,12 @@ export class Warden {
       // destroy its way back on its first ask.
       if (payload.hints.length > 0) row.hints = payload.hints;
     }
+    // The number is spent and the way back refreshed: what a restart must not
+    // lose has just changed.
+    await this.#persist();
+    // Delivery learns the road this padlock's asks arrive on, as an address
+    // beside an opaque token. It reads nothing else of the message.
+    if (via && this.delivery?.arrived) this.delivery.arrived(payload.padlock.slice(), via);
 
     // 5. Spend the leash, judged on what arrived: a budget at or below zero, or
     // a hop count below zero, is silence. A hop count of zero is a legal leash
@@ -972,7 +1436,7 @@ export class Warden {
     if (!payload.being && !payload.method) {
       // Neither — the warden describes the estate, and the estate means what
       // that voice may reach. A stranger gets a house with one room in it.
-      return this.#reply(payload, 'describe', this.#estate(reach), random);
+      return this.#reply(payload, 'describe', this.estate(reach), random);
     }
     // Method, no being — the warden's own being answers. Addressing the door
     // alone is how you speak to the ground's own affairs, so a caller reaching
@@ -985,7 +1449,7 @@ export class Warden {
 
     if (!payload.method) {
       // Being, no method — the warden describes that one being.
-      return this.#reply(payload, 'sketch', this.#sketch(payload.being), random);
+      return this.#reply(payload, 'sketch', this.sketchOf(payload.being), random);
     }
 
     // The warden is a being, so its own fields are reached the ordinary way.
@@ -1009,8 +1473,9 @@ export class Warden {
     // The blueprint is the scope: a name it never declared is not reached for
     // on the object at all.
     if (!being.declares.has(payload.method.name)) return this.#hush('undeclared', where);
-    const field = being.object[payload.method.name];
-    if (typeof field !== 'function') return this.#hush('unserved', where);
+    if (typeof being.object[payload.method.name] !== 'function') {
+      return this.#hush('unserved', where);
+    }
 
     // The warden never looks inside a method's arguments. A being in the middle
     // of a chain does its own work before it answers, and reaching another
@@ -1018,13 +1483,18 @@ export class Warden {
     // must be bytes or nothing is what the field settles on.
     let data;
     try {
-      data = await field.call(being.object, payload.method.args, leash);
+      data = await being.invoke(payload.method.name, payload.method.args, {
+        caller: { voice: payload.voice.slice(), kind: kind ?? 'stranger' },
+        leash,
+      });
     } catch (thrown) {
       // The fault the being itself caused, which is the one an answering layer
       // most wants back. Outward it is the same silence as every other.
       return this.#hush('threw', { ...where, thrown });
     }
-    if (data !== undefined && !(data instanceof Uint8Array)) return this.#hush('not bytes', where);
+    if (data !== undefined && data !== null && !(data instanceof Uint8Array)) {
+      return this.#hush('not bytes', where);
+    }
 
     // 7. Answer. Sealed to the return padlock the payload carried, signed by
     // the warden's own name, and naming the ask by its seq.
@@ -1043,7 +1513,7 @@ export class Warden {
 
     switch (name) {
       case 'describe':
-        return this.#reply(payload, 'describe', this.#estate(reach), random);
+        return this.#reply(payload, 'describe', this.estate(reach), random);
       case 'limit':
         return this.#reply(payload, 'limit', this.limit, random);
       case 'sketch':
@@ -1051,37 +1521,35 @@ export class Warden {
         // outside your standing is silence — a door that answered "absent"
         // would be a door confirming the being exists.
         if (!reach.has(hex(args[0]))) return this.#hush('out of reach', { method: name });
-        return this.#reply(payload, 'sketch', this.#sketch(args[0]), random);
+        return this.#reply(payload, 'sketch', this.sketchOf(args[0]), random);
       case 'moved': {
         // Legal ask, legal answer: nothing has moved, so `moved` answers
         // absence. Outside the standing it is silence, exactly as for sketch.
         //
         // A being this door has moved on is reached by the succession it
-        // published and by nothing else: an arriving row names the being by
-        // the name the destination minted and by that name alone, so the name
-        // it wore before is in no standing here. If a published pointer were
-        // not reach enough, the old door could not point about the one being
-        // Article XIII sends every peer behind the news to ask it about.
+        // published, and by nothing else — to a holder who reached it before,
+        // never to a stranger. At the old door the standings still name the
+        // being that left, so reaching the name asked about is the whole test.
+        // At a destination they name it by the key this house minted, and the
+        // name it wore before is in no standing here: reaching the successor
+        // the published word names is what "reached it before" means there.
+        // Neither door points for a voice that never reached the being — that
+        // would be a door telling whoever holds anything here that this being
+        // exists and where it went.
         const at = hex(args[0]);
-        if (!reach.has(at) && !(this.gone.has(at) && !stranger)) {
-          return this.#hush('out of reach', { method: name });
-        }
-        return this.#reply(payload, 'moved', this.gone.get(at) ?? null, random);
+        const word = this.gone.get(at) ?? null;
+        const pointed = word?.successor ? reach.has(hex(word.successor)) : false;
+        if (!reach.has(at) && !pointed) return this.#hush('out of reach', { method: name });
+        return this.#reply(payload, 'moved', word, random);
       }
       case 'blueprint': {
         // Answered only if the asker already reaches a being of that class, or
         // the warden's own public being declares it. Otherwise silence: a door
         // that answered any digest put to it would be a door that could be
         // asked what it runs, and a probe with a guessed hash is still a probe.
-        const at = hex(args[0]);
-        const text = this.texts.get(at);
-        if (!text) return this.#hush('unknown blueprint', { method: name });
-        const reached = [...reach].some(
-          (being) => hex(this.#digestOf(being) ?? new Uint8Array(0)) === at,
-        );
-        if (!reached && !this.declares.has(at)) {
-          return this.#hush('undeclared blueprint', { method: name });
-        }
+        if (!this.texts.has(hex(args[0]))) return this.#hush('unknown blueprint', { method: name });
+        const text = this.blueprintFor(reach, args[0]);
+        if (!text) return this.#hush('undeclared blueprint', { method: name });
         return this.#reply(payload, 'blueprint', text, random);
       }
       case 'receive': {
@@ -1115,7 +1583,7 @@ export class Warden {
   // class carry one digest, so a thousand lists cost one interface. Classes by
   // their digest bytes ascending, beings under each by their pk bytes
   // ascending — two wardens describing one estate produce one byte sequence.
-  #estate(reach) {
+  estate(reach) {
     const byDigest = new Map();
     for (const at of reach) {
       const digestOf = this.#digestOf(at);
@@ -1135,10 +1603,22 @@ export class Warden {
   // Its pk, the digest of its blueprint, and its heir commitment — which is
   // what lets the peer believe that being's succession when the news comes.
   // Never the being's state, because a describe is not a read.
-  #sketch(beingPk) {
+  sketchOf(beingPk) {
     const digestOf = this.#digestOf(hex(beingPk));
     if (!digestOf) return null;
     return { being: beingPk, digest: digestOf, commitment: this.#commitmentOf(hex(beingPk)) };
+  }
+
+  // The blueprint rule, one place: the text is answered only if the asker
+  // already reaches a being of that class, or the public being declares it.
+  blueprintFor(reach, digestOf) {
+    const at = hex(digestOf);
+    const text = this.texts.get(at);
+    if (!text) return null;
+    const reached = [...reach].some(
+      (being) => hex(this.#digestOf(being) ?? new Uint8Array(0)) === at,
+    );
+    return reached || this.declares.has(at) ? text : null;
   }
 
   // News: believed by a key the peer already holds, and there are only two.
@@ -1245,13 +1725,13 @@ export class Warden {
     if (!same(await digest(parse(armed.blueprint)), cargo.digest)) return null;
     this.expected = null;
 
-    const pk = await this.hold(armed.object, {
+    const { being: pk } = await this.hold(armed.object, {
       seed: armed.seed,
       heirSeed: armed.heirSeed,
       blueprint: armed.blueprint,
       cells: armed.cells,
     });
-    armed.take?.(cargo.cells);
+    (armed.take ?? this.beings.get(hex(pk)).take)(cargo.cells);
 
     // The register of standings travels with the being, and the replay marks
     // with it, or every peer's spent numbers would come round again at the new
@@ -1363,7 +1843,7 @@ async function readAnswerBytes(envelope, padlockSecret) {
 // One awaiting ask, as the key the record is a set of: the padlock the answer
 // will be sealed to and the number the ask spent. The far warden is the row it
 // hangs on, which is the third of the three.
-function awaits(padlockPk, seq) {
+export function awaits(padlockPk, seq) {
   return `${hex(padlockPk)}:${seq}`;
 }
 
@@ -1375,61 +1855,8 @@ export function readField(field, data) {
   return decode(declared.answer, data, WARDEN_RECORDS);
 }
 
-// Accepting an invitation, whole. An invitation is spent, not held: whoever
-// minted the voice has seen its keys and its heirs, so until the holder is
-// standing on a key it generated itself, the granter can still speak as the
-// holder at its own door. That takes two rotations, and forgetting the second
-// is the mistake this helper exists to make unmakeable.
-//
-// The first rotate-and-ask is signed by the invitation's heir — the only key
-// the granting door will take the standing over for — and commits to a fresh
-// voice nobody else has seen. The second is signed by that voice and commits
-// to a fresh heir, and it is the one that carries the caller's own ask. After
-// it, every key the granter ever held for this standing is dead.
-//
-// Nothing here is wire: it is the raw path composed, and the raw path stays
-// open. `send` is the road, handed in like the clock and the randomness — one
-// envelope out, the sealed answer or null back.
-export async function accept(
-  warden,
-  invitation,
-  { voiceSeed, heirSeed, spentBy = null, being = null, method = null, allowance, random, send },
-) {
-  if (typeof send !== 'function' || typeof random !== 'function') return null;
-  const voice = await signingPair(voiceSeed);
-  const heir = await signingPair(heirSeed);
-  const row = warden.remember(invitation, { being: spentBy ?? null });
-
-  // Every rotation starts the far door's mark fresh, so each act counts from
-  // one against the standing it has just taken over.
-  const rotate = (commitment, over = {}) => {
-    row.seq = 0n;
-    return warden.ask(row, { seq: 1n, commitment, allowance, random: random(), ...over });
-  };
-
-  const first = await rotate(await commit(invitation.warden, voice.pk));
-  if (!first) return null;
-  const opening = await send(first);
-  // Both rotations open the count at one, because each starts the far door's
-  // mark fresh — so the two asks carry the same padlock, warden and seq, and
-  // their answers cannot be told apart. The opening is handed back sealed for
-  // the caller to judge, which is what stops awaiting it here; without this
-  // the second ask is the one the kit refuses to send.
-  warden.forgo(row, 1n);
-
-  row.voice = { pk: voice.pk, secret: voice.secret };
-  const commitment = await commit(invitation.warden, heir.pk);
-  const envelope = await rotate(commitment, { being, method });
-  if (!envelope) return null;
-  const answer = await send(envelope);
-  row.heir = { pk: heir.pk, secret: heir.secret };
-
-  // What the caller must keep: the row it now spends, the voice it stands on,
-  // the heir it committed to, and that commitment.
-  return { row, voice, heir, commitment, opening, envelope, answer };
-}
-
-// And its inverse: a field's arguments in declared order, concatenated.
+// The inverse of `readField`: a field's arguments in declared order,
+// concatenated.
 export function writeArgument(field, ...values) {
   const declared = wardenField(field);
   if (!declared) return new Uint8Array(0);

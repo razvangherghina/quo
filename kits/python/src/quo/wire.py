@@ -29,6 +29,8 @@ __all__ = [
     "records_of",
     "encode",
     "decode",
+    "encode_all",
+    "decode_all",
 ]
 
 
@@ -307,3 +309,33 @@ def decode(
     value = _read(type_, reader, records or {})
     reader.done()
     return value
+
+
+def encode_all(
+    types: Sequence[Type],
+    values: Sequence[Any],
+    records: Optional[Mapping[str, Block]] = None,
+) -> bytes:
+    """A field's arguments, in declared order, written and concatenated.
+
+    No count and no separator ride between them: the declared types are the
+    whole framing, which is why a field's arguments can be read back from the
+    blueprint alone.
+    """
+    if len(types) != len(values):
+        raise WireError("arguments that are not the ones the field declares")
+    return b"".join(
+        _write(type_, value, records or {}) for type_, value in zip(types, values)
+    )
+
+
+def decode_all(
+    types: Sequence[Type], data: bytes, records: Optional[Mapping[str, Block]] = None
+) -> list:
+    """The inverse: every declared argument off exactly these bytes, and no more."""
+    if not isinstance(data, (bytes, bytearray)):
+        raise WireError(f"not bytes: {data!r}")
+    reader = _Reader(bytes(data))
+    values = [_read(type_, reader, records or {}) for type_ in types]
+    reader.done()
+    return values

@@ -11,6 +11,36 @@ Entries before 0.2.0 covered the JavaScript kit alone.
 Nothing here carries a compatibility promise before 1.0.0. The wire may move,
 and a version is the only safe thing to depend on.
 
+## 0.3.0
+
+**Every kit has the same three-layer shape, and a being's seam is complete.**
+The warden is road-agnostic and never byte-agnostic; a road hands every frame
+to the warden's one entry point and never opens a seal; the being is a plain
+class handed a closure; the host stands roads, hands in the seeds, the clock
+and the store, and does delivery. This release is the five kits brought level
+on that shape, with the leftovers of the older one gone.
+
+**What a being can do at a handle grew.** Accepting an invitation answers one
+handle per being the standing names, so a standing that opens two beings, or
+one widened later, is reachable by its holder — before, every kit collapsed
+it to the first being it found. A being may knock at a card and be shown what
+that door shows a stranger. And every handle carries the four introspections
+the door answers — `describe`, `sketch`, `blueprint` and `limit` — as
+ordinary asks, so a being that could invoke a field can also learn what
+fields exist without composing an envelope by hand. Nothing on the wire moved
+for any of it.
+
+**The warden is the only editor of its records, in every kit.** Zig's being
+layer had been removing outbound rows itself; Rust shipped a second delivery
+inside its core crate; Python's host stood its in-process road twice and
+never retracted a closed road's hints; Go carried a second entry point beside
+`Arrive` and handed out its padlock secret. All gone. Each kit's conformance
+subject now states, at its head, why it stands below the seam and what it
+composes that no application may.
+
+**Every README describes the kit that exists**, with examples run against the
+tree before they were written down: the being's closure, the host, the roads.
+
 ## 0.2.0
 
 **The first release of all five kits together, and the first with every

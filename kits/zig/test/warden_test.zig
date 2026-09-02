@@ -668,9 +668,20 @@ test "VIII — an onward ask carries less, and the road is never counted" {
     try std.testing.expect(warden.onward(.{ .time = 250, .hops = 4 }, 400) == null);
     try std.testing.expect(warden.onward(.{ .time = 250, .hops = 4 }, 249) != null);
 
-    // No door beneath may widen it, so a dwell that reads backwards hands
-    // nothing onward rather than handing on more than arrived.
-    try std.testing.expect(warden.onward(.{ .time = 250, .hops = 4 }, -10) == null);
+    // Where this door's own two readings yield a dwell below zero the onward
+    // budget is the arriving one. No door widens a leash, and no door refuses
+    // a peer for a clock that is its own.
+    const back = warden.onward(.{ .time = 250, .hops = 4 }, -10).?;
+    try std.testing.expectEqual(@as(i64, 250), back.time);
+    try std.testing.expectEqual(@as(i64, 3), back.hops);
+
+    // However far backwards it went, and whatever the arriving budget was.
+    const far = warden.onward(.{ .time = 5000, .hops = 4 }, -1_000_000).?;
+    try std.testing.expectEqual(@as(i64, 5000), far.time);
+
+    // A budget already at its floor is still refused: the clamp is on the
+    // dwell, not a licence to send under a leash that cannot be spent.
+    try std.testing.expect(warden.onward(.{ .time = 250, .hops = 0 }, -10) == null);
 }
 
 // -------------------------------------------------------- XII, the judgment
@@ -827,14 +838,20 @@ test "XIV — news is not a rotation and does not use the commitment field" {
     }));
     news.deinit();
 
-    // The same voice announcing itself with a commitment in the say is not
-    // news announcing a succession; that field is the heir's alone.
-    try std.testing.expectError(warden.Error.Refused, ground.door.judge(try ground.letter(.{
+    // The same voice announcing itself with a commitment in the say is still
+    // news, and the field is ignored rather than refused. Article XI names two
+    // refusals on it — a plain ask carrying one, a rotation carrying none — and
+    // they are the only two: a door that refused news for a stray field would
+    // meet a succession with silence, and a house that has succeeded and is not
+    // believed is a house nobody can reach.
+    var stray = try ground.door.judge(try ground.letter(.{
         .voice_secret = ground.far.secret,
         .commitment = @splat(0x33),
         .seq = 2,
         .method = .{ .name = "tell", .args = "" },
-    })));
+    }));
+    defer stray.deinit();
+    try std.testing.expect(stray.placement == .news);
 
     // The heir the far warden committed to is also found in the outbound
     // record, because a succession is believed by a key already held.
@@ -1280,6 +1297,55 @@ test "the caller side stands in the kit: remember, ask, rotate and hear" {
     defer heard.deinit();
     try std.testing.expectEqual(seq, heard.payload.answer.seq);
     try std.testing.expectEqualSlices(u8, &ground.door.name, &heard.payload.answer.warden);
+}
+
+test "VIII — a door whose clock went backwards hands onward what arrived, and its count moves" {
+    const gpa = std.testing.allocator;
+    var arena = std.heap.ArenaAllocator.init(gpa);
+    defer arena.deinit();
+    const a = arena.allocator();
+
+    // The middle door of a chain: it took a call under some leash and now
+    // composes the onward ask to the far ground, having read its own clock
+    // twice — and the second reading came out below the first.
+    var far = try Ground.init(gpa);
+    defer far.deinit();
+    try far.admit();
+
+    var middle = try holding(gpa);
+    defer middle.deinit();
+    const at = try middle.remember(invitationOf(&far));
+    const next = try arithmetic.signingPair(@splat(0x43));
+    const rotated, _ = try middle.rotate(a, at, @splat(0x44), next.secret, .{});
+    var landed = try far.door.judge(rotated);
+    landed.deinit();
+    const before = middle.outbound.items[at].seq;
+
+    const arriving: warden.Leash = .{ .time = 5000, .hops = 4 };
+    const arrival: i64 = 9000;
+    const handed_onward: i64 = 8900;
+    const leash = warden.onward(arriving, handed_onward - arrival) orelse
+        return error.@"the onward ask was withheld for this door's own clock";
+
+    const composed, const seq = try middle.ask(a, at, @splat(0x46), .{
+        .being = far.thing,
+        .method = .{ .name = "count", .args = "" },
+        .allowance = .{ .time = leash.time, .hops = leash.hops },
+    });
+
+    // What the far door actually reads off the wire: the budget that arrived,
+    // neither more nor less, and one hop fewer. Asserting the returned struct
+    // alone would not catch a kit that composed different bytes.
+    var verdict = try far.door.judge(composed);
+    defer verdict.deinit();
+    try std.testing.expectEqual(@as(i64, 5000), verdict.say.allowance.time);
+    try std.testing.expectEqual(@as(i64, 3), verdict.say.allowance.hops);
+
+    // And the state moved with the bytes. A door that withholds the ask
+    // leaves this where it was, which is wrong in the record as well as on
+    // the wire.
+    try std.testing.expectEqual(before + 1, seq);
+    try std.testing.expectEqual(seq, middle.outbound.items[at].seq);
 }
 
 test "accept spends an invitation whole, in two rotations, and the granter's keys die" {
@@ -1797,13 +1863,14 @@ test "XIV — a being's succession is believed against that being's own commitme
         0,
         being.public,
         arithmetic.commitment(ground.far.public, successor.public),
+        null,
     );
     // The house's own name is not a being of it: its commitment is the row's,
     // and a second copy under the beings would be a second place to believe
     // one succession from.
     try std.testing.expectError(
         warden.Error.Refused,
-        ground.door.note(0, ground.far.public, @splat(0x44)),
+        ground.door.note(0, ground.far.public, @splat(0x44), null),
     );
 
     // The house's committed heir announces the being's succession. It is a key
@@ -2178,12 +2245,19 @@ test "XIII — the old door only points" {
         ground.door.movedFor(null, ground.thing),
     );
 
-    // And a pointer is reach enough for a holder, because an arriving row
-    // names the being by the destination's name alone — so after the move the
-    // name the being wore stands in no standing anywhere, and if the pointer
-    // were not reach the old door could not point about the one being every
-    // peer behind the news comes to ask it about.
+    // And a pointer is reach enough for a holder that reaches where the being
+    // went, and for no other. At the old door the standings still name the
+    // being that left, which the ask above uses; at a destination they name it
+    // by the key that house minted, so reaching the successor is what
+    // reached-it-before means there. A holder that reaches neither is a
+    // stranger to this being: a door that pointed for it would tell whoever
+    // holds anything here that this being exists and where it went.
     ground.door.inbound.items[0].beings.clearRetainingCapacity();
+    try std.testing.expectError(
+        warden.Error.Refused,
+        ground.door.movedFor(ground.voice.public, ground.thing),
+    );
+    try ground.door.inbound.items[0].beings.append(gpa, @splat(0x50));
     const still = try ground.door.movedFor(ground.voice.public, ground.thing);
     try std.testing.expectEqualSlices(u8, &@as(Key, @splat(0x50)), &still.?.successor.?);
 }

@@ -2,9 +2,12 @@
 
 Article III names three carriages. This is the third: two houses in one device
 or one process handing envelope bytes as bytes, a private carriage like any
-other, needing no naming because no wire exists to disagree about. There is no
-hint, because a hint is where to send bytes and here the door itself is the
-address.
+other, needing no naming because no wire exists to disagree about. This road
+defines no hint, because a hint is where to send bytes and here the door itself
+is the address. A host holding several grounds may still name its doors — the
+one in ``quo.host`` publishes a ``mem://`` hint per ground so a warden can be
+reached from elsewhere in the process — but that name is the host's own and
+nothing here reads one.
 
 **Distance zero waives no step of the judgment.** The bytes handed over are the
 same sealed, signed envelope the common carriage would have carried, and the

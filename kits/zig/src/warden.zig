@@ -651,13 +651,16 @@ pub fn spendLeash(arriving: Leash) Error!void {
 /// two readings taken at the ends of the judgment, the road never counted.
 /// Where either would fall below zero, or the budget to zero, the onward ask
 /// is not made and null comes back; the work already routed stands.
+///
+/// A dwell is never negative. Where this door's own two readings yield a
+/// dwell below zero the onward budget is the arriving one: a clock that has
+/// gone backwards is this door's fault and never the peer's, so the call is
+/// handed onward under what arrived rather than withheld.
 pub fn onward(arriving: Leash, dwell: i64) ?Leash {
     const hops = std.math.sub(i64, arriving.hops, 1) catch return null;
     if (hops < 0) return null;
-    const time = std.math.sub(i64, arriving.time, dwell) catch return null;
-    // No door hands onward more than it received, so a negative dwell cannot
-    // widen the budget.
-    if (dwell < 0) return null;
+    const spent = if (dwell > 0) dwell else 0;
+    const time = std.math.sub(i64, arriving.time, spent) catch return null;
     if (time <= 0) return null;
     return .{ .time = time, .hops = hops };
 }
@@ -791,6 +794,11 @@ pub const Inbound = struct {
 pub const FarBeing = struct {
     being: Key,
     commitment: Key,
+    /// That being's class, as the far door's `blueprint` answered it. It is
+    /// what makes the being's fields callable, and it is kept here rather than
+    /// beside a label because a standing may name more beings than a label
+    /// can, and because a re-read replaces it.
+    text: []u8 = &.{},
 };
 
 /// One outbound row: the invitation kept whole, plus the mark this door keeps
@@ -830,6 +838,7 @@ pub const Outbound = struct {
     pub fn deinit(self: *Outbound, gpa: std.mem.Allocator) void {
         self.news.deinit(gpa);
         self.awaiting.deinit(gpa);
+        for (self.beings.items) |one| gpa.free(one.text);
         self.beings.deinit(gpa);
         self.dropHints(gpa);
     }
@@ -883,6 +892,16 @@ pub const Arrived = struct {
 pub const Await = struct {
     padlock: Key,
     seq: i64,
+    /// The answer that arrived through the door for this ask, held until
+    /// whoever asked comes back for it. Owned by the warden's allocator.
+    answer: ?[]u8 = null,
+    /// True once the door has settled this ask, with an answer or without.
+    /// A road that answers later leaves this false until it does.
+    settled: bool = false,
+    /// What whoever asked is waiting on, where a road answers later. It lives
+    /// on its own rather than in the row, because the rows move as the list
+    /// they sit in grows and a waiter must not follow.
+    woken: ?*std.Io.Event = null,
 };
 
 /// Per being a warden keeps the ordinary pointer, the being's keys, and the
@@ -897,6 +916,181 @@ pub const BeingRow = struct {
     /// The succession this door published for a being that left, which is all
     /// `moved` ever answers and all the old door ever does again.
     moved: ?Word = null,
+    /// The ordinary pointer to the object, wearing the one shape the warden
+    /// knows it by. Absent for a pointer row, and for a being the door holds
+    /// keys for but nothing behind — which is silence like any other.
+    organ: ?Organ = null,
+    /// The blueprint parsed once, when the being is held, and never again at
+    /// judgment time. It owns the text `text` points at.
+    shape: ?*notation.Blueprint = null,
+    /// The bytes the blueprint was parsed out of, where this row owns them.
+    /// A parse borrows its text, so the two are kept and dropped together; a
+    /// row standing on a text somebody else owns holds nothing here.
+    owned_text: ?[]u8 = null,
+    /// True where the parse above belongs to this row and must be dropped
+    /// with it.
+    owns_shape: bool = false,
+
+    pub fn deinit(self: *BeingRow, gpa: std.mem.Allocator) void {
+        if (self.owned_text) |bytes| gpa.free(bytes);
+        self.owned_text = null;
+        if (!self.owns_shape) return;
+        if (self.shape) |one| {
+            one.deinit();
+            gpa.destroy(one);
+        }
+        self.shape = null;
+        self.owns_shape = false;
+    }
+
+    /// The field of that name this being's blueprint declares, or nothing.
+    /// **The blueprint is the scope**: a name it does not declare is not
+    /// reached for on the object at all.
+    pub fn declares(self: BeingRow, name: []const u8) ?notation.Field {
+        const shape = self.shape orelse return null;
+        for (shape.class.fields) |f| {
+            if (std.mem.eql(u8, f.name, name)) return f;
+        }
+        return null;
+    }
+};
+
+// ---------------------------------------------- what the host hands in
+
+/// A row as delivery sees it: the way back and nothing else. **The warden
+/// holds hints without reading them**, and hands them on unparsed.
+pub const Row = struct {
+    padlock: Key,
+    hints: []const []const u8 = &.{},
+};
+
+/// What a road said about an envelope handed to it.
+pub const Carried = union(enum) {
+    /// The road answers in its response and this is the answer, owned by the
+    /// caller's allocator.
+    answered: []u8,
+    /// The road carried it and whatever comes back will arrive through the
+    /// door as a message of its own.
+    later,
+    /// Nothing carried. The number was spent all the same.
+    silence,
+};
+
+/// Delivery, handed to the warden at open and the one thing beneath it that
+/// reads a hint. The warden gives it an envelope and a row view, and nothing
+/// else ever passes down this way but a padlock beside an opaque token.
+pub const Delivery = struct {
+    context: *anyopaque,
+    send: *const fn (*anyopaque, std.mem.Allocator, Row, []const u8) std.mem.Allocator.Error!Carried,
+    /// The warden's one call downward: having judged a frame, it says which
+    /// padlock's asks arrive on the road this one came in on. The token is
+    /// the road's own and the warden never read it.
+    arrived: ?*const fn (*anyopaque, Key, ?*anyopaque) void = null,
+    /// Whether this road may ever answer `.later` — that is, bring an answer
+    /// back through the door on a thread of its own rather than in the
+    /// response it hands straight back. A road that says so is the whole
+    /// reason a warden needs a platform, and `open` refuses one declared here
+    /// with no `io` beside it.
+    later: bool = false,
+};
+
+/// Where the records live. The store's shape is the warden's; where it lives
+/// is the host's.
+pub const Store = struct {
+    context: *anyopaque,
+    save: *const fn (*anyopaque, []const u8) anyerror!void,
+    /// The bytes come back owned by the caller's allocator, or nothing where
+    /// the store is empty.
+    load: *const fn (*anyopaque, std.mem.Allocator) anyerror!?[]u8,
+};
+
+/// The inward channel: why the door fell silent, told to its own house.
+/// Nothing here crosses the wire.
+pub const Observer = struct {
+    context: *anyopaque,
+    hush: *const fn (*anyopaque, []const u8) void,
+};
+
+/// Which kind of caller the judgment found. A fact for telling callers apart,
+/// never a judgment: permission lives in the inbound record alone.
+pub const Kind = enum { holder, rotation, stranger, local };
+
+pub const Caller = struct {
+    voice: ?Key = null,
+    kind: Kind,
+};
+
+/// What the warden hands a being's method, per call.
+pub const Call = struct {
+    caller: Caller,
+    /// The allowance that arrived, and the clock reading taken when it did.
+    /// The being hands it on and never widens it.
+    leash: Leash,
+    arrived: i64,
+};
+
+/// A private label beside a row: it resolves nothing and travels nowhere.
+/// Either a being minted beside another one here, or a relation accepted at
+/// a house elsewhere.
+pub const LabelAt = union(enum) {
+    /// A being this warden holds.
+    local: Key,
+    /// A relation: which outbound row, which being at the far house, and the
+    /// text of that being's class, which is what makes its fields callable.
+    far: struct { at: usize, being: Key, text: []u8 },
+};
+
+pub const Label = struct {
+    name: []u8,
+    at: LabelAt,
+
+    pub fn deinit(self: *Label, gpa: std.mem.Allocator) void {
+        gpa.free(self.name);
+        switch (self.at) {
+            .far => |one| gpa.free(one.text),
+            .local => {},
+        }
+    }
+};
+
+/// A clock and a randomness that stand in until a host hands the real ones
+/// in. Neither is fit for a ground: the first never moves, and the second
+/// draws nothing at all. They exist so a `Warden` built as a plain struct —
+/// which is how every judgment case in this kit's bench builds one — has the
+/// two fields filled with something that will not reach for a global.
+pub fn stillClock() i64 {
+    return 0;
+}
+
+pub fn zeroRandom() Key {
+    return std.mem.zeroes(Key);
+}
+
+/// A being as the warden holds it: an ordinary pointer and the one way in.
+/// **The being never sees a byte and never touches a key** — the wrapper on
+/// the far side of `invoke` decodes the arguments and encodes the answer.
+pub const Organ = struct {
+    context: *anyopaque,
+    /// Answers bytes owned by `gpa`, or nothing for a field that declares no
+    /// answer. `Error.Refused` is the being's own fault, and is silence.
+    ///
+    /// The field and the blueprint's records come with the call because the
+    /// door has already found them: **what a being's method is given and what
+    /// it answers are both the blueprint's declared types**, and the wrapper
+    /// on the other side of this is what turns one into the other. The being
+    /// never sees a byte.
+    invoke: *const fn (
+        *anyopaque,
+        std.mem.Allocator,
+        notation.Field,
+        []const notation.Block,
+        []const u8,
+        Call,
+    ) Fault!?[]u8,
+    /// What of the being's state moves with it. Provided by the being, not
+    /// received: a being that provides neither moves with nothing.
+    cells: ?*const fn (*anyopaque, std.mem.Allocator) Fault![]u8 = null,
+    take: ?*const fn (*anyopaque, []const u8) Fault!void = null,
 };
 
 // -------------------------------------------------------------- the verdict
@@ -964,6 +1158,49 @@ pub const Warden = struct {
     /// How wide the replay window is, is the warden's own.
     width: i64 = 64,
 
+    /// The roads this ground publishes, told to the warden rather than fixed
+    /// at birth: a door on an ephemeral port has no address until it is
+    /// listening. Every mint after one is published carries it.
+    hints: std.ArrayList([]u8) = .empty,
+
+    // Handed in at open by the host, never reached for.
+
+    /// Milliseconds since the epoch. The judgment takes two readings and the
+    /// difference is this door's dwell.
+    clock: *const fn () i64 = stillClock,
+    /// Thirty-two fresh bytes. Every key and every ephemeral secret comes
+    /// from here, and nothing in this kit draws one without being handed it.
+    random: *const fn () Key = zeroRandom,
+    /// The one thing beneath the warden that reads a hint.
+    delivery: ?Delivery = null,
+    /// Where both records, the keys, the marks and the labels survive a
+    /// restart.
+    store: ?Store = null,
+    /// Why the door fell silent, told inward.
+    observer: ?Observer = null,
+    /// The leash a walk is born with when a being starts one of its own.
+    allowance: envelope.Allowance = .{ .time = 5000, .hops = 8 },
+
+    /// Private labels beside the rows: they resolve nothing and travel
+    /// nowhere, and a being reaches its relations by them.
+    labels: std.ArrayList(Label) = .empty,
+
+    /// The platform, handed in like the clock and the randomness: what the
+    /// door waits and takes its turns on. **It is not a road** — no socket,
+    /// no address and no hint is reachable through it, and nothing here ever
+    /// asks it to carry a byte.
+    ///
+    /// A warden handed none is a warden nobody runs two threads at, which is
+    /// exactly what a warden built as a plain struct for one judgment is.
+    /// Then there is nothing to take turns over and nothing that could bring
+    /// an answer in later, so a road that answers later meets silence.
+    io: ?std.Io = null,
+    /// One door, many roads, and a road that reads a frame must not be the
+    /// thread that judges it — so what the records hold is guarded here. It
+    /// is let go around a being's own work, because a being answering a call
+    /// may make one of its own.
+    lock: std.Io.Mutex = .init,
+
     inbound: std.ArrayList(Inbound) = .empty,
     outbound: std.ArrayList(Outbound) = .empty,
     beings: std.ArrayList(BeingRow) = .empty,
@@ -975,11 +1212,46 @@ pub const Warden = struct {
     pub fn deinit(self: *Warden) void {
         for (self.inbound.items) |*row| row.deinit(self.gpa);
         for (self.outbound.items) |*row| row.deinit(self.gpa);
+        for (self.beings.items) |*row| row.deinit(self.gpa);
+        for (self.labels.items) |*one| one.deinit(self.gpa);
+        for (self.hints.items) |one| self.gpa.free(one);
+        self.hints.deinit(self.gpa);
+        self.labels.deinit(self.gpa);
         self.inbound.deinit(self.gpa);
         self.outbound.deinit(self.gpa);
         self.beings.deinit(self.gpa);
         self.arms.deinit(self.gpa);
         if (self.arrived) |*one| one.deinit(self.gpa);
+    }
+
+    /// The roads, as everything that mints wants them: borrowed, and only for
+    /// as long as nothing publishes.
+    pub fn roads(self: Warden, a: std.mem.Allocator) std.mem.Allocator.Error![]const []const u8 {
+        const out = try a.alloc([]const u8, self.hints.items.len);
+        for (self.hints.items, out) |from, *into| into.* = from;
+        return out;
+    }
+
+    /// A warden does not know where it stands until something stands it up.
+    /// Roads accumulate, because a warden offers as many as it has and none
+    /// is authoritative; telling it the same road twice adds nothing.
+    pub fn publishRoad(self: *Warden, hint: []const u8) std.mem.Allocator.Error!void {
+        for (self.hints.items) |one| {
+            if (std.mem.eql(u8, one, hint)) return;
+        }
+        try self.hints.append(self.gpa, try self.gpa.dupe(u8, hint));
+    }
+
+    /// A road that has stopped carrying is not a road. Retracting one is not
+    /// news on its own; it only stops the dead road being minted into
+    /// anything new.
+    pub fn retractRoad(self: *Warden, hint: []const u8) void {
+        var i: usize = 0;
+        while (i < self.hints.items.len) {
+            if (std.mem.eql(u8, self.hints.items[i], hint)) {
+                self.gpa.free(self.hints.orderedRemove(i));
+            } else i += 1;
+        }
     }
 
     pub fn being(self: Warden, pk: Key) ?BeingRow {
@@ -1091,6 +1363,48 @@ pub const Warden = struct {
         return Error.Refused;
     }
 
+    /// The three describes again, for a handle at a being under this same
+    /// warden. **Under one warden there are no strangers and no voices**, so
+    /// there is nothing to scope by: what a neighbour is shown is what the
+    /// door holds. They answer the same shapes the wire ones do, because a
+    /// being written for one kind of neighbour is installed anywhere.
+    pub fn estateWithin(self: Warden, gpa: std.mem.Allocator) Fault!ReadEstate {
+        var arena = std.heap.ArenaAllocator.init(gpa);
+        errdefer arena.deinit();
+        const a = arena.allocator();
+
+        var digests: std.ArrayList(Key) = .empty;
+        for (self.beings.items) |row| {
+            var known = false;
+            for (digests.items) |d| {
+                if (std.mem.eql(u8, &d, &row.digest)) known = true;
+            }
+            if (!known) try digests.append(a, row.digest);
+        }
+        const classes = try a.alloc(Class, digests.items.len);
+        for (digests.items, classes) |d, *slot| {
+            var beings: std.ArrayList(Held) = .empty;
+            for (self.beings.items) |row| {
+                if (!std.mem.eql(u8, &row.digest, &d)) continue;
+                try beings.append(a, .{ .being = row.pk, .commitment = row.commitment });
+            }
+            slot.* = .{ .digest = d, .beings = beings.items };
+        }
+        return .{ .arena = arena, .estate = try order(a, .{ .classes = classes }) };
+    }
+
+    pub fn sketchWithin(self: Warden, pk: Key) Error!Sketch {
+        const row = self.being(pk) orelse return Error.Refused;
+        return .{ .being = row.pk, .digest = row.digest, .commitment = row.commitment };
+    }
+
+    pub fn blueprintWithin(self: Warden, want: Key) Error![]const u8 {
+        for (self.beings.items) |row| {
+            if (std.mem.eql(u8, &row.digest, &want)) return row.text;
+        }
+        return Error.Refused;
+    }
+
     pub fn mayReach(self: Warden, voice: ?Key, pk: Key) bool {
         if (self.isPublic(pk)) return true;
         const v = voice orelse return false;
@@ -1156,8 +1470,9 @@ pub const Warden = struct {
     /// eight is `answer`.
     pub fn judge(self: *Warden, letter: []const u8) Fault!Verdict {
         // What a caller can compute before sending, so it is judged before
-        // anything is unsealed.
-        if (letter.len > self.limit) return Error.Refused;
+        // anything is unsealed. A limit of zero is a door that published
+        // none, and it reads whatever arrives.
+        if (self.limit > 0 and letter.len > self.limit) return Error.Refused;
 
         // 1. Unseal with the warden's own secret, and decode what comes out.
         // 2. Verify the signature over the payload, using the voice the
@@ -1236,9 +1551,21 @@ pub const Warden = struct {
         // Not found there, but its hash matches a standing's heir commitment
         // → a rotation, and the standing changes hands before anything else
         // is judged.
-        for (self.inbound.items, 0..) |*row, i| {
+        //
+        // Every match is counted before anything moves. Matching more than one
+        // standing is silence: no order over the records is law, so a door that
+        // took the first it found would have chosen, and the next door would
+        // choose differently. A granter that committed one heir at two
+        // standings has made its own error.
+        var matched: ?usize = null;
+        for (self.inbound.items, 0..) |row, i| {
             const claimed = arithmetic.commitment(row.minted_name, say.voice);
             if (!std.mem.eql(u8, &claimed, &row.commitment)) continue;
+            if (matched != null) return Error.Refused;
+            matched = i;
+        }
+        if (matched) |i| {
+            const row = &self.inbound.items[i];
             // Every rotation carries a fresh commitment, or a standing could
             // be taken over once and never again.
             const fresh = say.commitment orelse return Error.Refused;
@@ -1253,13 +1580,17 @@ pub const Warden = struct {
         // relation with, or as the heir it committed → news.
         for (self.outbound.items, 0..) |row, i| {
             const claimed = arithmetic.commitment(row.warden, say.voice);
+            // News is not a rotation and does not use this field, and a
+            // carried commitment is ignored rather than refused: the two
+            // refusals Article XI names are the only two. A door that refused
+            // news for a stray field would meet a succession with silence,
+            // which is the one message a house cannot afford to have refused —
+            // and the value most likely to be carried by mistake is the one
+            // this row already holds, so the door would find a match.
             if (std.mem.eql(u8, &row.warden, &say.voice)) {
-                // News is not a rotation and does not use this field.
-                if (say.commitment != null) return Error.Refused;
                 return .{ .news = .{ .at = i, .by_heir = false } };
             }
             if (std.mem.eql(u8, &claimed, &row.commitment)) {
-                if (say.commitment != null) return Error.Refused;
                 return .{ .news = .{ .at = i, .by_heir = true } };
             }
             // Or as the heir a being at that house committed, which a describe
@@ -1268,7 +1599,6 @@ pub const Warden = struct {
             // placed here rather than read off the word.
             for (row.beings.items) |far| {
                 if (!std.mem.eql(u8, &claimed, &far.commitment)) continue;
-                if (say.commitment != null) return Error.Refused;
                 return .{ .news = .{ .at = i, .by_heir = true, .being = far.being } };
             }
         }
@@ -1454,20 +1784,48 @@ pub const Warden = struct {
     /// A peer that means to believe that being's succession must keep it: the
     /// news arrives signed by a key this door has never seen, and the hash
     /// against this commitment is the only thing that recognises it.
-    pub fn note(self: *Warden, at: usize, pk: Key, commitment: Key) Fault!void {
+    /// `text` is that being's class as the far door answered it, kept beside
+    /// the commitment so a handle can call through it. Nothing where the
+    /// caller has not read one; a second note with one replaces what stands.
+    pub fn note(self: *Warden, at: usize, pk: Key, commitment: Key, text: ?[]const u8) Fault!void {
         if (at >= self.outbound.items.len) return Error.Refused;
         const row = &self.outbound.items[at];
         // The house's name and its public being are one key, and its
         // commitment is the row's own. A second copy under the beings would be
         // a second place to believe one succession from.
         if (std.mem.eql(u8, &row.warden, &pk)) return Error.Refused;
+        const kept: []u8 = if (text) |one| try self.gpa.dupe(u8, one) else &.{};
+        errdefer self.gpa.free(kept);
         for (row.beings.items) |*far| {
             if (std.mem.eql(u8, &far.being, &pk)) {
                 far.commitment = commitment;
+                if (text != null) {
+                    self.gpa.free(far.text);
+                    far.text = kept;
+                }
                 return;
             }
         }
-        try row.beings.append(self.gpa, .{ .being = pk, .commitment = commitment });
+        try row.beings.append(self.gpa, .{ .being = pk, .commitment = commitment, .text = kept });
+    }
+
+    /// The class this door has read for one being at a far house, or nothing
+    /// where it has read none. It lives as long as the relation does, which is
+    /// what a handle calls through.
+    pub fn textAt(self: Warden, at: usize, pk: Key) ?[]const u8 {
+        if (at >= self.outbound.items.len) return null;
+        for (self.outbound.items[at].beings.items) |far| {
+            if (std.mem.eql(u8, &far.being, &pk)) {
+                return if (far.text.len == 0) null else far.text;
+            }
+        }
+        return null;
+    }
+
+    /// The far house a relation stands at, which is also its public being.
+    pub fn houseAt(self: Warden, at: usize) ?Key {
+        if (at >= self.outbound.items.len) return null;
+        return self.outbound.items[at].warden;
     }
 
     /// Believe a word, or refuse it. **A peer believes it by a key it already
@@ -1716,14 +2074,18 @@ pub const Warden = struct {
             }
             break :pointer null;
         };
-        const holder = holder: {
-            const v = voice orelse break :holder false;
-            for (self.inbound.items) |row| {
-                if (std.mem.eql(u8, &row.voice, &v)) break :holder true;
-            }
-            break :holder false;
+        // To a holder who reached it before, never to a stranger — and holding
+        // a standing at some other being here is not having reached this one.
+        // At the old door the standings still name the being that left, which
+        // `mayReach` catches; at a destination they name it by the key this
+        // house minted, so reaching the successor the published word names is
+        // what reached-it-before means there.
+        const pointed = pointed: {
+            const word = pointer orelse break :pointed false;
+            const successor = word.successor orelse break :pointed false;
+            break :pointed self.mayReach(voice, successor);
         };
-        if (!self.mayReach(voice, being_pk) and !(pointer != null and holder)) {
+        if (!self.mayReach(voice, being_pk) and !pointed) {
             return Error.Refused;
         }
         return pointer;
@@ -1761,6 +2123,18 @@ pub const Warden = struct {
     pub fn holds(self: *Warden, at: usize, being_pk: Key) Error!void {
         if (at >= self.outbound.items.len) return Error.Refused;
         self.outbound.items[at].holder = being_pk;
+    }
+
+    /// Drop one relation by the index `remember` answered with. It is what an
+    /// acceptance that never completed gives back, and it is the warden's own
+    /// act because **the two records are edited here and nowhere else**: a
+    /// caller reaching into the list would be the door's judgment written
+    /// outside the door.
+    pub fn drop(self: *Warden, at: usize) bool {
+        if (at >= self.outbound.items.len) return false;
+        var gone = self.outbound.orderedRemove(at);
+        gone.deinit(self.gpa);
+        return true;
     }
 
     /// Drop the relations a being holds outward, and say how many went. It is
@@ -2051,7 +2425,11 @@ pub const Warden = struct {
     ///
     /// Nothing has been spent yet, so the voice this row speaks with is the
     /// heir it was handed, until the first ask rotates it.
-    pub fn remember(self: *Warden, inv: wire.Invitation) std.mem.Allocator.Error!usize {
+    /// Keep an invitation as a relation. **The roads are copied in**: an
+    /// invitation is read out of a message or handed over by whoever minted
+    /// it, and both die long before the relation does — a row pointing at
+    /// freed bytes is a way back that reads as whatever landed there next.
+    pub fn remember(self: *Warden, inv: wire.Invitation) Fault!usize {
         try self.outbound.append(self.gpa, .{
             .warden = inv.warden,
             .commitment = inv.commitment,
@@ -2061,9 +2439,34 @@ pub const Warden = struct {
             .heir = inv.heir,
             .heir_secret = inv.heir_secret,
             .news = .{ .width = self.width },
-            .hints = inv.hints,
         });
-        return self.outbound.items.len - 1;
+        const at = self.outbound.items.len - 1;
+        try self.outbound.items[at].keepHints(self.gpa, inv.hints);
+        return at;
+    }
+
+    /// Keep a card as a relation: the same row, standing on a voice this
+    /// ground minted for itself rather than one a granter handed over.
+    ///
+    /// **A card is a standing at nothing**, so the voice is nobody's grant and
+    /// there is no rotation to make: the far door finds this voice in no
+    /// record and answers it as the stranger it is. The secret is handed in,
+    /// as every key in this kit is.
+    pub fn approach(self: *Warden, held: wire.Card, voice_secret: Key) Fault!usize {
+        const voice = try arithmetic.signingPair(voice_secret);
+        try self.outbound.append(self.gpa, .{
+            .warden = held.warden,
+            .commitment = held.commitment,
+            .padlock = held.padlock,
+            .voice = voice.public,
+            .secret = voice_secret,
+            .heir = voice.public,
+            .heir_secret = voice_secret,
+            .news = .{ .width = self.width },
+        });
+        const at = self.outbound.items.len - 1;
+        try self.outbound.items[at].keepHints(self.gpa, held.hints);
+        return at;
     }
 
     /// What one utterance reaches for. `next` is the pk this ask commits to,
@@ -2231,6 +2634,7 @@ pub const Warden = struct {
         const row = &self.outbound.items[at];
         for (row.awaiting.items, 0..) |one, i| {
             if (one.seq == seq and std.mem.eql(u8, &one.padlock, &self.padlock)) {
+                if (one.answer) |bytes| self.gpa.free(bytes);
                 _ = row.awaiting.orderedRemove(i);
                 return true;
             }
@@ -2330,4 +2734,1028 @@ pub const Warden = struct {
             .seq = seq,
         };
     }
+
+    // ------------------------------------------------- what the host opens
+
+    /// The three seeds a warden is founded on: the name it is known by, the
+    /// padlock every message to it is sealed with, and the heir its name
+    /// commits to. Handed in and never reached for.
+    pub const Seeds = struct {
+        name: Key,
+        padlock: Key,
+        heir: Key,
+    };
+
+    pub const Opening = struct {
+        seeds: Seeds,
+        /// Milliseconds since the epoch.
+        clock: *const fn () i64,
+        /// Thirty-two fresh bytes, per draw.
+        random: *const fn () Key,
+        /// The platform the door waits and takes its turns on. **A delivery
+        /// that declares `later` must have one**: without it there is no
+        /// thread to bring the answer in and nothing to wait on, so the ask
+        /// would fall silent at the moment the answer arrived rather than
+        /// here. A ground whose roads all answer in the response they hand
+        /// back has one thread and needs none.
+        io: ?std.Io = null,
+        delivery: ?Delivery = null,
+        store: ?Store = null,
+        observer: ?Observer = null,
+        limit: usize = 0,
+        width: i64 = 64,
+        allowance: envelope.Allowance = .{ .time = 5000, .hops = 8 },
+    };
+
+    /// Open a warden on what the host hands it. **A warden is opened, not
+    /// built**: its keys are derived from the seeds it is handed, its public
+    /// being is minted, and whatever a previous life left in the store is
+    /// read back before it answers anything.
+    pub fn open(gpa: std.mem.Allocator, o: Opening) Fault!Warden {
+        // The one thing an opening can be wrong about that nothing later can
+        // recover from: a road that answers through the door, and no platform
+        // to hold the ask open until it does.
+        if (o.delivery) |d| {
+            if (d.later and o.io == null) return Error.Refused;
+        }
+
+        const named = try arithmetic.signingPair(o.seeds.name);
+        const sealing = try arithmetic.sealingPair(o.seeds.padlock);
+        const heir = try arithmetic.signingPair(o.seeds.heir);
+
+        var self: Warden = .{
+            .gpa = gpa,
+            .name = named.public,
+            .name_secret = o.seeds.name,
+            .padlock = sealing.public,
+            .padlock_secret = o.seeds.padlock,
+            .limit = o.limit,
+            .width = o.width,
+            .clock = o.clock,
+            .random = o.random,
+            .io = o.io,
+            .delivery = o.delivery,
+            .store = o.store,
+            .observer = o.observer,
+            .allowance = o.allowance,
+        };
+        errdefer self.deinit();
+
+        // The public being: every warden has one, it is a being like any
+        // other, and it is named by the warden's own name.
+        const shape = try gpa.create(notation.Blueprint);
+        errdefer gpa.destroy(shape);
+        shape.* = try notation.parse(gpa, blueprint_text);
+        try self.beings.append(gpa, .{
+            .pk = named.public,
+            .secret = o.seeds.name,
+            .digest = digest(),
+            .commitment = arithmetic.commitment(named.public, heir.public),
+            .text = shape.canonical,
+            .shape = shape,
+            .owns_shape = true,
+        });
+
+        // What must survive a restart is read back from the store the host
+        // handed in. The beings themselves are pointers and cannot be stored;
+        // the host holds them again on the same seeds, and the rows find them
+        // by name.
+        try self.restore();
+        return self;
+    }
+
+    /// Take the door's turn, and give it back. Where no platform was handed
+    /// in there is only one thread and nothing to take turns over.
+    ///
+    /// The layer above the warden — the being's own API, and the host — reads
+    /// and writes the same records, so both take the same turn. Nothing
+    /// beneath the door ever does: a road hands bytes to `arrive` and knows
+    /// none of this.
+    pub fn take(self: *Warden) void {
+        const io = self.io orelse return;
+        self.lock.lockUncancelable(io);
+    }
+
+    pub fn give(self: *Warden) void {
+        const io = self.io orelse return;
+        self.lock.unlock(io);
+    }
+
+    /// Who is told, inward, when the door falls silent.
+    pub fn observe(self: *Warden, o: ?Observer) void {
+        self.observer = o;
+    }
+
+    /// Every silence goes through here, so the two directions cannot drift:
+    /// outward it is always nothing, inward it is a reason. An observer that
+    /// falls over is the observer's problem and never the caller's.
+    fn hush(self: *Warden, reason: []const u8) ?[]u8 {
+        if (self.observer) |o| o.hush(o.context, reason);
+        return null;
+    }
+
+    // ------------------------------------------------------ holding a being
+
+    pub const Holding = struct {
+        /// The text of the class this being shows. It is copied in.
+        blueprint: []const u8,
+        /// The ordinary pointer, wearing the shape the warden knows it by.
+        organ: Organ,
+        /// The key the being is named by, and the one it commits to. A seed
+        /// handed in is what lets a restarted host hold the same object under
+        /// the same name, which is the whole of why a standing survives one.
+        seed: ?Key = null,
+        heir_seed: ?Key = null,
+        /// A private label, so a being minted beside another is reachable.
+        label: ?[]const u8 = null,
+    };
+
+    /// Hold an object: mint its keys, keep the pointer, and parse the class
+    /// it shows. **The class is free and the surface is bound** — what the
+    /// blueprint does not declare does not exist for that being, and the door
+    /// serves nothing else.
+    pub fn hold(self: *Warden, h: Holding) Fault!Key {
+        const seed = h.seed orelse self.random();
+        const keys = try arithmetic.signingPair(seed);
+        const heir = try arithmetic.signingPair(h.heir_seed orelse seed);
+
+        const shape = try self.gpa.create(notation.Blueprint);
+        errdefer self.gpa.destroy(shape);
+        const text = try self.gpa.dupe(u8, h.blueprint);
+        errdefer self.gpa.free(text);
+        shape.* = try notation.parse(self.gpa, text);
+        errdefer shape.deinit();
+
+        const fresh: BeingRow = .{
+            .pk = keys.public,
+            .secret = seed,
+            .digest = shape.digest(),
+            .commitment = arithmetic.commitment(self.name, heir.public),
+            .text = shape.canonical,
+            .organ = h.organ,
+            .shape = shape,
+            .owned_text = text,
+            .owns_shape = true,
+        };
+
+        // A being held twice under one name is one being: the second hold is
+        // the host taking the same object up again after a restart, and the
+        // standings that were read back are already pointing at it.
+        for (self.beings.items) |*row| {
+            if (!std.mem.eql(u8, &row.pk, &keys.public)) continue;
+            row.deinit(self.gpa);
+            row.* = fresh;
+            if (h.label) |one| try self.keepLabel(one, .{ .local = keys.public });
+            return keys.public;
+        }
+
+        try self.beings.append(self.gpa, fresh);
+        if (h.label) |one| try self.keepLabel(one, .{ .local = keys.public });
+        try self.persist();
+        return keys.public;
+    }
+
+    /// Let a being go. **A released being takes every standing at it away**,
+    /// and whoever held one meets a silence indistinguishable from anything.
+    pub fn releaseBeing(self: *Warden, pk: Key) bool {
+        var found = false;
+        var i: usize = 0;
+        while (i < self.beings.items.len) {
+            if (std.mem.eql(u8, &self.beings.items[i].pk, &pk)) {
+                var gone = self.beings.orderedRemove(i);
+                gone.deinit(self.gpa);
+                found = true;
+            } else i += 1;
+        }
+        if (!found) return false;
+
+        var at: usize = 0;
+        while (at < self.inbound.items.len) {
+            const row = &self.inbound.items[at];
+            var j: usize = 0;
+            while (j < row.beings.items.len) {
+                if (std.mem.eql(u8, &row.beings.items[j], &pk)) {
+                    _ = row.beings.orderedRemove(j);
+                } else j += 1;
+            }
+            if (row.beings.items.len == 0) {
+                var gone = self.inbound.orderedRemove(at);
+                gone.deinit(self.gpa);
+            } else at += 1;
+        }
+
+        var k: usize = 0;
+        while (k < self.labels.items.len) {
+            const one = self.labels.items[k];
+            if (one.at == .local and std.mem.eql(u8, &one.at.local, &pk)) {
+                var gone = self.labels.orderedRemove(k);
+                gone.deinit(self.gpa);
+            } else k += 1;
+        }
+        self.persist() catch {};
+        return true;
+    }
+
+    /// Keep a private label beside a row.
+    pub fn keepLabel(self: *Warden, text: []const u8, at: LabelAt) Fault!void {
+        var i: usize = 0;
+        while (i < self.labels.items.len) {
+            if (std.mem.eql(u8, self.labels.items[i].name, text)) {
+                var gone = self.labels.orderedRemove(i);
+                gone.deinit(self.gpa);
+            } else i += 1;
+        }
+        try self.labels.append(self.gpa, .{ .name = try self.gpa.dupe(u8, text), .at = at });
+    }
+
+    /// What a label points at, or nothing. **Nothing resolves a label but
+    /// this**: labels travel nowhere and mean nothing at any other door.
+    pub fn labelled(self: *Warden, text: []const u8) ?Label {
+        for (self.labels.items) |one| {
+            if (std.mem.eql(u8, one.name, text)) return one;
+        }
+        return null;
+    }
+
+    // ----------------------------------------------------- the social acts
+
+    /// Who holds a place at this being, **as voices only**. Marks, windows,
+    /// padlocks and hints stay at the door.
+    pub fn standingsAt(
+        self: Warden,
+        a: std.mem.Allocator,
+        being_pk: Key,
+    ) std.mem.Allocator.Error![]Key {
+        var out: std.ArrayList(Key) = .empty;
+        for (self.inbound.items) |row| {
+            if (row.reaches(being_pk)) try out.append(a, row.voice);
+        }
+        return out.toOwnedSlice(a);
+    }
+
+    /// Open a being to somebody: mint a voice, record it at that being, and
+    /// hand back the five things a holder holds. **A grant names the being it
+    /// opens** — there is no grant of a house.
+    pub fn grant(self: *Warden, a: std.mem.Allocator, being_pk: Key) Fault!wire.Invitation {
+        if (self.being(being_pk) == null) return Error.Refused;
+        const voice = try arithmetic.signingPair(self.random());
+        const heir = try arithmetic.signingPair(self.random());
+
+        var beings: std.ArrayList(Key) = .empty;
+        errdefer beings.deinit(self.gpa);
+        try beings.append(self.gpa, being_pk);
+        try self.inbound.append(self.gpa, .{
+            .voice = voice.public,
+            .commitment = arithmetic.commitment(self.name, heir.public),
+            .minted_name = self.name,
+            .beings = beings,
+            .window = .{ .width = self.width },
+        });
+        try self.persist();
+
+        return .{
+            .warden = self.name,
+            .commitment = self.being(self.name).?.commitment,
+            .padlock = self.padlock,
+            .heir = heir.public,
+            .heir_secret = heir.secret,
+            .hints = try self.roads(a),
+        };
+    }
+
+    /// The four things a stranger holds: the invitation without the voice.
+    /// **It opens nothing** — whoever holds it can reach this door and be
+    /// answered as the stranger they are, and a card is what a door may
+    /// publish anywhere.
+    pub fn card(self: *Warden, a: std.mem.Allocator) Fault!wire.Card {
+        return .{
+            .warden = self.name,
+            .commitment = self.being(self.name).?.commitment,
+            .padlock = self.padlock,
+            .hints = try self.roads(a),
+        };
+    }
+
+    /// Amend a standing: beings added, beings taken away. **Taking the last
+    /// one away is release, and there is no separate act for it** — the row
+    /// goes, the holder is a stranger at its next call, and nobody is told.
+    pub fn amend(self: *Warden, voice: Key, add: []const Key, remove: []const Key) Fault!bool {
+        const at = self.standingAt(voice) orelse return false;
+        for (add) |pk| {
+            if (self.being(pk) == null) continue;
+            const row = &self.inbound.items[at];
+            if (!row.reaches(pk)) try row.beings.append(self.gpa, pk);
+        }
+        for (remove) |pk| {
+            const row = &self.inbound.items[at];
+            var i: usize = 0;
+            while (i < row.beings.items.len) {
+                if (std.mem.eql(u8, &row.beings.items[i], &pk)) {
+                    _ = row.beings.orderedRemove(i);
+                } else i += 1;
+            }
+        }
+        if (self.inbound.items[at].beings.items.len == 0) {
+            var gone = self.inbound.orderedRemove(at);
+            gone.deinit(self.gpa);
+        }
+        try self.persist();
+        return true;
+    }
+
+    // ------------------------------------------------- the one entry point
+
+    /// **One entry point for anything a road brings.** The record byte inside
+    /// the seal says which of the two records arrived, and only the warden
+    /// reads it: an answer settles the ask awaiting it and the road gets
+    /// nothing back; a say is judged and the road gets bytes or silence.
+    ///
+    /// **A road never opens a seal to route.** `via` is the road the bytes
+    /// arrived on, opaque to the warden and handed back to delivery beside
+    /// the caller's padlock once the way back is refreshed — so a peer that
+    /// publishes nothing can be reached down the line it holds, and the road
+    /// never had to read a byte of what it carried to be remembered.
+    ///
+    /// The bytes that come back are the caller's to free. Nothing here ever
+    /// raises: every failure is the same failure.
+    pub fn arrive(
+        self: *Warden,
+        gpa: std.mem.Allocator,
+        letter: []const u8,
+        via: ?*anyopaque,
+    ) ?[]u8 {
+        self.take();
+        return self.arriveHeld(gpa, letter, via);
+    }
+
+    /// The same, with the door's lock already in hand and given up before it
+    /// returns.
+    fn arriveHeld(
+        self: *Warden,
+        gpa: std.mem.Allocator,
+        letter: []const u8,
+        via: ?*anyopaque,
+    ) ?[]u8 {
+        // The first of the two readings the dwell is the difference of, taken
+        // before anything is unsealed: it marks when the message arrived and
+        // not when the door got round to it.
+        const arrived_at = self.clock();
+
+        // The published limit binds on every road and not only on the one
+        // with a socket in it. It is what a caller can compute before
+        // sending, so it is spent before anything is unsealed.
+        if (self.limit > 0 and letter.len > self.limit) {
+            defer self.give();
+            return self.hush("over the limit");
+        }
+
+        var opened = envelope.unseal(gpa, self.padlock_secret, letter) catch {
+            defer self.give();
+            return self.hush("not ours");
+        };
+        switch (opened.payload) {
+            .answer => |said| {
+                defer opened.deinit();
+                defer self.give();
+                self.settle(gpa, said, letter);
+                return null;
+            },
+            .say => opened.deinit(),
+        }
+        return self.serve(gpa, letter, via, arrived_at);
+    }
+
+    /// The eight steps, then the being's own work with the door's lock let go
+    /// around it. What comes back is the sealed answer or silence.
+    fn serve(
+        self: *Warden,
+        gpa: std.mem.Allocator,
+        letter: []const u8,
+        via: ?*anyopaque,
+        arrived_at: i64,
+    ) ?[]u8 {
+        var verdict = self.judge(letter) catch {
+            defer self.give();
+            return self.hush("refused");
+        };
+        defer verdict.deinit();
+
+        // Delivery learns the road this padlock's asks arrive on, as an
+        // address beside an opaque token. **That is the warden's one call
+        // downward**, and it reads nothing else of the message.
+        switch (verdict.placement) {
+            .ask, .rotation => if (self.delivery) |d| {
+                if (d.arrived) |told| told(d.context, verdict.say.padlock, via);
+            },
+            else => {},
+        }
+        self.persist() catch {};
+
+        const data: ?[]u8 = self.work(gpa, verdict, arrived_at) catch {
+            defer self.give();
+            return self.hush("refused");
+        };
+        defer if (data) |bytes| gpa.free(bytes);
+        defer self.give();
+        return self.answer(gpa, self.random(), verdict.say, data) catch self.hush("refused");
+    }
+
+    /// Step eight's first half: whatever the routing named, done. The lock is
+    /// held on the way in and on the way out, and let go only around the
+    /// being's own method — because **a being answering a call may make one**,
+    /// and the second would otherwise meet a door its own caller is standing
+    /// in.
+    fn work(self: *Warden, gpa: std.mem.Allocator, verdict: Verdict, arrived_at: i64) Fault!?[]u8 {
+        const voice: ?Key = switch (verdict.placement) {
+            .stranger => null,
+            else => verdict.say.voice,
+        };
+        switch (verdict.routing) {
+            .own => return self.own(gpa, verdict),
+            .estate, .stranger => {
+                var scratch = std.heap.ArenaAllocator.init(gpa);
+                defer scratch.deinit();
+                return try encodeEstate(gpa, try self.estateFor(scratch.allocator(), voice));
+            },
+            .sketch => |pk| return try self.sketchAnswer(gpa, voice, pk),
+            .invoke => |call| {
+                if (self.isPublic(call.being)) return self.own(gpa, verdict);
+                const row = self.being(call.being) orelse return Error.Refused;
+                // The blueprint is the scope: a name it never declared is not
+                // reached for on the object at all.
+                const field = row.declares(call.method.name) orelse return Error.Refused;
+                const organ = row.organ orelse return Error.Refused;
+                const records = row.shape.?.records;
+
+                self.give();
+                const answered = organ.invoke(organ.context, gpa, field, records, call.method.args, .{
+                    .caller = .{
+                        .voice = voice,
+                        .kind = switch (verdict.placement) {
+                            .ask => .holder,
+                            .rotation => .rotation,
+                            else => .stranger,
+                        },
+                    },
+                    .leash = .{
+                        .time = verdict.say.allowance.time,
+                        .hops = verdict.say.allowance.hops,
+                    },
+                    .arrived = arrived_at,
+                });
+                self.take();
+                return answered;
+            },
+        }
+    }
+
+    // ------------------------------------------------ the caller's own side
+
+    /// Settle the ask an arriving answer belongs to. **An answer nothing
+    /// awaits is the same silence as every other failure**, and settling one
+    /// spends the record, so the same bytes never answer twice.
+    fn settle(self: *Warden, gpa: std.mem.Allocator, said: Answer, letter: []const u8) void {
+        for (self.outbound.items) |*row| {
+            if (!std.mem.eql(u8, &row.warden, &said.warden)) continue;
+            for (row.awaiting.items) |*one| {
+                if (one.seq != said.seq) continue;
+                if (!std.mem.eql(u8, &one.padlock, &self.padlock)) continue;
+                if (one.settled) return;
+                one.answer = gpa.dupe(u8, letter) catch null;
+                one.settled = true;
+                if (one.woken) |event| {
+                    if (self.io) |io| event.set(io);
+                }
+                return;
+            }
+        }
+    }
+
+    /// Mark an ask as awaiting again, for a caller resending the identical
+    /// envelope after silence. The number stays what it was.
+    fn awaitAgain(self: *Warden, at: usize, seq: i64) Fault!void {
+        const row = &self.outbound.items[at];
+        for (row.awaiting.items) |*one| {
+            if (one.seq == seq and std.mem.eql(u8, &one.padlock, &self.padlock)) {
+                if (one.answer) |bytes| self.gpa.free(bytes);
+                one.answer = null;
+                one.settled = false;
+                return;
+            }
+        }
+        try row.awaiting.append(self.gpa, .{ .padlock = self.padlock, .seq = seq });
+    }
+
+    fn awaitingAt(self: *Warden, at: usize, seq: i64) ?usize {
+        for (self.outbound.items[at].awaiting.items, 0..) |one, i| {
+            if (one.seq == seq and std.mem.eql(u8, &one.padlock, &self.padlock)) return i;
+        }
+        return null;
+    }
+
+    /// The row as delivery sees it: the way back and nothing else.
+    fn viewOf(self: *Warden, a: std.mem.Allocator, at: usize) std.mem.Allocator.Error!Row {
+        const row = self.outbound.items[at];
+        const hints = try a.alloc([]const u8, row.hints.len);
+        for (row.hints, hints) |from, *into| into.* = from;
+        return .{ .padlock = row.padlock, .hints = hints };
+    }
+
+    /// One sealed envelope and the number it spent, kept so a caller that met
+    /// silence resends the identical bytes rather than a fresh message.
+    pub const Sealed = struct {
+        at: usize,
+        seq: i64,
+        envelope: []u8,
+        deadline: i64,
+
+        pub fn deinit(self: *Sealed, gpa: std.mem.Allocator) void {
+            gpa.free(self.envelope);
+        }
+    };
+
+    /// Seal one ask down a relation, ready to be sent. The number is spent
+    /// here, which is what makes a resend a resend.
+    pub fn sealAsk(self: *Warden, gpa: std.mem.Allocator, at: usize, r: Reach) Fault!Sealed {
+        var reaching = r;
+        const roads_now = try self.roads(gpa);
+        defer gpa.free(roads_now);
+        reaching.hints = roads_now;
+        const sealed, const seq = try self.ask(gpa, at, self.random(), reaching);
+        return .{
+            .at = at,
+            .seq = seq,
+            .envelope = sealed,
+            .deadline = self.clock() + reaching.allowance.time,
+        };
+    }
+
+    /// Hand a sealed ask to delivery and wait for what settles it. **The same
+    /// bytes may be sent again**: every message spends a number once, so the
+    /// far door either already honoured that number and answers the resend
+    /// with silence, or never saw it and honours it now.
+    pub fn sendSealed(self: *Warden, gpa: std.mem.Allocator, s: Sealed) Fault!?envelope.Opened {
+        self.take();
+        defer self.give();
+        return self.sendHeld(gpa, s);
+    }
+
+    fn sendHeld(self: *Warden, gpa: std.mem.Allocator, s: Sealed) Fault!?envelope.Opened {
+        const d = self.delivery orelse return null;
+        try self.awaitAgain(s.at, s.seq);
+
+        var scratch = std.heap.ArenaAllocator.init(gpa);
+        const view = try self.viewOf(scratch.allocator(), s.at);
+        // Delivery is beneath the door and takes its own time, so the door is
+        // not held through it: a road that answers by dialling back would
+        // otherwise arrive at a door its own caller is standing in.
+        self.give();
+        const carried = d.send(d.context, gpa, view, s.envelope);
+        self.take();
+        scratch.deinit();
+
+        switch (carried catch Carried.silence) {
+            // A road that answers in its response has answered. What it hands
+            // back comes in through the one entry point like anything else,
+            // because the road that carried it read none of it.
+            .answered => |bytes| {
+                defer gpa.free(bytes);
+                if (self.arriveHeld(gpa, bytes, null)) |extra| gpa.free(extra);
+                self.take();
+            },
+            // A road that answers through the door says nothing here; what
+            // comes back arrives as a message of its own. One that never
+            // declared it could is a road contradicting its own opening, and
+            // the wait it is asking for is one nothing here can hold.
+            .later => if (!d.later) {
+                _ = self.forgo(s.at, s.seq);
+                _ = self.hush("delivery answered later without declaring it");
+                return null;
+            },
+            .silence => {
+                _ = self.forgo(s.at, s.seq);
+                return null;
+            },
+        }
+        return self.awaitAnswer(gpa, s);
+    }
+
+    /// Take the answer this ask was settled with, or nothing. Taking it
+    /// spends the record.
+    fn taken(self: *Warden, gpa: std.mem.Allocator, s: Sealed) Fault!?envelope.Opened {
+        const i = self.awaitingAt(s.at, s.seq) orelse return null;
+        const one = &self.outbound.items[s.at].awaiting.items[i];
+        if (!one.settled) return null;
+        const bytes = one.answer;
+        one.answer = null;
+        _ = self.outbound.items[s.at].awaiting.orderedRemove(i);
+        const raw = bytes orelse return null;
+        defer gpa.free(raw);
+        return envelope.open(gpa, self.padlock_secret, .answer, raw) catch null;
+    }
+
+    /// Wait until the ask is settled or its own deadline passes. The door is
+    /// given up while waiting, which is what lets a road's own thread bring
+    /// the answer in through the one entry point.
+    ///
+    /// **The leash is what ends the wait.** An answer that never comes is
+    /// silence when the budget the ask carried runs out, and silence means
+    /// refused, broken or absent with no way to tell which.
+    fn awaitAnswer(self: *Warden, gpa: std.mem.Allocator, s: Sealed) Fault!?envelope.Opened {
+        if (try self.taken(gpa, s)) |opened| return opened;
+        const io = self.io orelse {
+            // Nobody can bring one in later, so there is nothing to wait for.
+            _ = self.forgo(s.at, s.seq);
+            return null;
+        };
+
+        var event: std.Io.Event = .unset;
+        const i = self.awaitingAt(s.at, s.seq) orelse return null;
+        self.outbound.items[s.at].awaiting.items[i].woken = &event;
+
+        const left = s.deadline - self.clock();
+        if (left > 0) {
+            self.give();
+            event.waitTimeout(io, .{ .duration = .{
+                .clock = .awake,
+                .raw = .{ .nanoseconds = @as(i96, left) * std.time.ns_per_ms },
+            } }) catch {};
+            self.take();
+        }
+
+        // The row may have moved while the door was given up, so it is found
+        // again rather than remembered.
+        if (self.awaitingAt(s.at, s.seq)) |j| {
+            self.outbound.items[s.at].awaiting.items[j].woken = null;
+        }
+        if (try self.taken(gpa, s)) |opened| return opened;
+        _ = self.forgo(s.at, s.seq);
+        return null;
+    }
+
+    /// Seal and send in one act, which is what an ordinary call is.
+    pub fn askAt(self: *Warden, gpa: std.mem.Allocator, at: usize, r: Reach) Fault!?envelope.Opened {
+        self.take();
+        defer self.give();
+        var sealed = self.sealAsk(gpa, at, r) catch return null;
+        defer sealed.deinit(gpa);
+        return self.sendHeld(gpa, sealed);
+    }
+
+    // ---------------------------------------------------------- the store
+
+    /// Write everything a restart must not lose into the store the host
+    /// handed in. **The store's shape is the warden's; where it lives is the
+    /// host's** — what goes down is the two records whole, the replay marks
+    /// beneath them, and the private labels.
+    ///
+    /// Beings are pointers and are not here. The host holds them again on the
+    /// same seeds, and the rows find them by the name those seeds mint.
+    ///
+    /// A store that cannot be written is the host's fault and never the
+    /// caller's, so nothing here is raised outward.
+    pub fn persist(self: *Warden) Fault!void {
+        const s = self.store orelse return;
+        const bytes = try self.snapshot(self.gpa);
+        defer self.gpa.free(bytes);
+        s.save(s.context, bytes) catch {};
+    }
+
+    /// The snapshot, as the store keeps it.
+    pub fn snapshot(self: *Warden, gpa: std.mem.Allocator) Fault![]u8 {
+        var arena = std.heap.ArenaAllocator.init(gpa);
+        defer arena.deinit();
+        const a = arena.allocator();
+
+        var blueprint = try notation.parse(a, keeping_text);
+        defer blueprint.deinit();
+
+        const held = try a.alloc(wire.Value, self.inbound.items.len);
+        for (self.inbound.items, held) |row, *slot| {
+            const beings = try a.alloc(wire.Value, row.beings.items.len);
+            for (row.beings.items, beings) |pk, *one| one.* = .{ .being = pk };
+            const spent = try a.alloc(wire.Value, row.window.spent.items.len);
+            for (row.window.spent.items, spent) |n, *one| one.* = .{ .integer = n };
+            const fields = try a.alloc(wire.Value, 8);
+            fields[0] = .{ .b32 = row.voice };
+            fields[1] = .{ .b32 = row.commitment };
+            fields[2] = .{ .b32 = row.minted_name };
+            fields[3] = .{ .list = beings };
+            fields[4] = .{ .integer = row.window.mark };
+            fields[5] = .{ .list = spent };
+            fields[6] = try maybeKey(a, row.padlock);
+            fields[7] = try hintsValue(a, row.hints);
+            slot.* = .{ .record = fields };
+        }
+
+        const bound = try a.alloc(wire.Value, self.outbound.items.len);
+        for (self.outbound.items, bound) |row, *slot| {
+            const fields = try a.alloc(wire.Value, 11);
+            fields[0] = .{ .being = row.warden };
+            fields[1] = .{ .b32 = row.commitment };
+            fields[2] = .{ .b32 = row.padlock };
+            fields[3] = .{ .b32 = row.voice };
+            fields[4] = .{ .b32 = row.secret };
+            fields[5] = .{ .b32 = row.heir };
+            fields[6] = .{ .b32 = row.heir_secret };
+            fields[7] = .{ .integer = row.seq };
+            fields[8] = .{ .integer = row.news.mark };
+            fields[9] = try maybeKey(a, row.holder);
+            fields[10] = try hintsValue(a, row.hints);
+            slot.* = .{ .record = fields };
+        }
+
+        const named = try a.alloc(wire.Value, self.labels.items.len);
+        for (self.labels.items, named) |one, *slot| {
+            const fields = try a.alloc(wire.Value, 4);
+            fields[0] = .{ .text = one.name };
+            switch (one.at) {
+                .local => |pk| {
+                    fields[1] = try maybeKey(a, pk);
+                    fields[2] = .{ .integer = 0 };
+                    fields[3] = .{ .text = "" };
+                },
+                .far => |far| {
+                    fields[1] = try maybeKey(a, far.being);
+                    fields[2] = .{ .integer = @intCast(far.at) };
+                    fields[3] = .{ .text = far.text };
+                },
+            }
+            slot.* = .{ .record = fields };
+        }
+
+        const whole = try a.alloc(wire.Value, 3);
+        whole[0] = .{ .list = held };
+        whole[1] = .{ .list = bound };
+        whole[2] = .{ .list = named };
+        return wire.encode(gpa, "keeping", blueprint.records, .{ .record = whole });
+    }
+
+    /// Read back what a previous life left. A store that holds nothing, or
+    /// bytes this warden cannot read, leaves it standing as it opened.
+    pub fn restore(self: *Warden) Fault!void {
+        const s = self.store orelse return;
+        const bytes = (s.load(s.context, self.gpa) catch null) orelse return;
+        defer self.gpa.free(bytes);
+        self.takeSnapshot(bytes) catch {};
+    }
+
+    fn takeSnapshot(self: *Warden, raw: []const u8) Fault!void {
+        var arena = std.heap.ArenaAllocator.init(self.gpa);
+        defer arena.deinit();
+        const a = arena.allocator();
+
+        var blueprint = try notation.parse(a, keeping_text);
+        defer blueprint.deinit();
+        const owned = try a.dupe(u8, raw);
+        var read = wire.decode(a, "keeping", blueprint.records, owned) catch return Error.Refused;
+        defer read.deinit();
+
+        const whole = try fieldsOf(read.value, 3);
+        for (try listOf(whole[0])) |one| {
+            const f = try fieldsOf(one, 8);
+            var beings: std.ArrayList(Key) = .empty;
+            errdefer beings.deinit(self.gpa);
+            for (try listOf(f[3])) |pk| try beings.append(self.gpa, try keyOf(pk));
+            var window: Window = .{ .mark = try integerOf(f[4]), .width = self.width };
+            errdefer window.deinit(self.gpa);
+            for (try listOf(f[5])) |n| try window.spent.append(self.gpa, try integerOf(n));
+            try self.inbound.append(self.gpa, .{
+                .voice = try keyOf(f[0]),
+                .commitment = try keyOf(f[1]),
+                .minted_name = try keyOf(f[2]),
+                .beings = beings,
+                .window = window,
+                .padlock = try maybeKeyOf(f[6]),
+            });
+            try self.inbound.items[self.inbound.items.len - 1]
+                .keepHints(self.gpa, try hintsOf(a, f[7]));
+        }
+
+        for (try listOf(whole[1])) |one| {
+            const f = try fieldsOf(one, 11);
+            try self.outbound.append(self.gpa, .{
+                .warden = try keyOf(f[0]),
+                .commitment = try keyOf(f[1]),
+                .padlock = try keyOf(f[2]),
+                .voice = try keyOf(f[3]),
+                .secret = try keyOf(f[4]),
+                .heir = try keyOf(f[5]),
+                .heir_secret = try keyOf(f[6]),
+                .seq = try integerOf(f[7]),
+                .news = .{ .mark = try integerOf(f[8]), .width = self.width },
+                .holder = try maybeKeyOf(f[9]),
+            });
+            try self.outbound.items[self.outbound.items.len - 1]
+                .keepHints(self.gpa, try hintsOf(a, f[10]));
+        }
+
+        for (try listOf(whole[2])) |one| {
+            const f = try fieldsOf(one, 4);
+            const label = switch (f[0]) {
+                .text => |t| t,
+                else => return Error.Refused,
+            };
+            const pk = (try maybeKeyOf(f[1])) orelse continue;
+            const text = switch (f[3]) {
+                .text => |t| t,
+                else => return Error.Refused,
+            };
+            if (text.len == 0) {
+                try self.keepLabel(label, .{ .local = pk });
+            } else {
+                try self.keepLabel(label, .{ .far = .{
+                    .at = @intCast(try integerOf(f[2])),
+                    .being = pk,
+                    .text = try self.gpa.dupe(u8, text),
+                } });
+            }
+        }
+    }
 };
+
+/// What a restart must not lose, written as one record. **This is the
+/// warden's own shape and crosses no wire** — no peer ever reads it, no
+/// digest of it is carried, and it is written with this kit's own encoder
+/// only because the encoder is already here and already exact.
+const keeping_text =
+    \\Keeping
+    \\  kept() keeping
+    \\
+    \\keeping
+    \\  inbound [held]
+    \\  outbound [bound]
+    \\  labels [named]
+    \\
+    \\held
+    \\  voice b32
+    \\  commitment b32
+    \\  mintedName b32
+    \\  beings [being]
+    \\  mark int
+    \\  spent [int]
+    \\  padlock b32?
+    \\  hints [text]
+    \\
+    \\bound
+    \\  warden being
+    \\  commitment b32
+    \\  padlock b32
+    \\  voice b32
+    \\  secret b32
+    \\  heir b32
+    \\  heirSecret b32
+    \\  seq int
+    \\  news int
+    \\  holder b32?
+    \\  hints [text]
+    \\
+    \\named
+    \\  label text
+    \\  being b32?
+    \\  at int
+    \\  text text
+    \\
+;
+
+// ------------------------------------------ reading the warden's own answers
+
+/// An estate and the arena that owns every byte it points at.
+pub const ReadEstate = struct {
+    arena: std.heap.ArenaAllocator,
+    estate: Estate,
+
+    pub fn deinit(self: *ReadEstate) void {
+        self.arena.deinit();
+    }
+};
+
+/// The answer a `describe` came back with, read as the type the Warden
+/// blueprint declares for it. A caller needs this to find the one being an
+/// invitation opened.
+pub fn decodeEstate(gpa: std.mem.Allocator, raw: []const u8) Fault!ReadEstate {
+    var arena = std.heap.ArenaAllocator.init(gpa);
+    errdefer arena.deinit();
+    const a = arena.allocator();
+
+    const blueprint = try shapes(a);
+    const owned = try a.dupe(u8, raw);
+    const read = wire.decode(a, "estate", blueprint.records, owned) catch return Error.Refused;
+
+    const fields = try fieldsOf(read.value, 1);
+    const classes_raw = try listOf(fields[0]);
+    const classes = try a.alloc(Class, classes_raw.len);
+    for (classes_raw, classes) |one, *slot| {
+        const f = try fieldsOf(one, 2);
+        const beings_raw = try listOf(f[1]);
+        const beings = try a.alloc(Held, beings_raw.len);
+        for (beings_raw, beings) |b, *into| {
+            const g = try fieldsOf(b, 2);
+            into.* = .{ .being = try keyOf(g[0]), .commitment = try keyOf(g[1]) };
+        }
+        slot.* = .{ .digest = try keyOf(f[0]), .beings = beings };
+    }
+    return .{ .arena = arena, .estate = .{ .classes = classes } };
+}
+
+/// The answer a `sketch` came back with: the being it describes, or absence
+/// where the far door answered one. Silence is not here — it never arrived.
+pub fn decodeSketch(gpa: std.mem.Allocator, raw: []const u8) Fault!?Sketch {
+    var arena = std.heap.ArenaAllocator.init(gpa);
+    defer arena.deinit();
+    const a = arena.allocator();
+    var blueprint = try shapes(a);
+    defer blueprint.deinit();
+    const owned = try a.dupe(u8, raw);
+    var read = wire.decode(a, "sketch?", blueprint.records, owned) catch return Error.Refused;
+    defer read.deinit();
+    const held = switch (read.value) {
+        .absent => return null,
+        .present => |one| one.*,
+        else => return Error.Refused,
+    };
+    const f = try fieldsOf(held, 3);
+    return .{
+        .being = try keyOf(f[0]),
+        .digest = try keyOf(f[1]),
+        .commitment = try keyOf(f[2]),
+    };
+}
+
+/// The answer a `limit` came back with.
+pub fn decodeLimit(gpa: std.mem.Allocator, raw: []const u8) Fault!i64 {
+    var arena = std.heap.ArenaAllocator.init(gpa);
+    defer arena.deinit();
+    const a = arena.allocator();
+    var blueprint = try shapes(a);
+    defer blueprint.deinit();
+    const owned = try a.dupe(u8, raw);
+    var read = wire.decode(a, "int", blueprint.records, owned) catch return Error.Refused;
+    defer read.deinit();
+    return integerOf(read.value);
+}
+
+/// The one argument `sketch(being being)` takes, written as that field
+/// declares it.
+pub fn writeBeing(gpa: std.mem.Allocator, pk: Key) Fault![]u8 {
+    var arena = std.heap.ArenaAllocator.init(gpa);
+    defer arena.deinit();
+    var blueprint = try shapes(arena.allocator());
+    defer blueprint.deinit();
+    return wire.encode(gpa, "being", blueprint.records, .{ .being = pk }) catch Error.Refused;
+}
+
+/// The one argument `blueprint(digest b32)` takes, written as that field
+/// declares it.
+pub fn writeDigest(gpa: std.mem.Allocator, want: Key) Fault![]u8 {
+    var arena = std.heap.ArenaAllocator.init(gpa);
+    defer arena.deinit();
+    var blueprint = try shapes(arena.allocator());
+    defer blueprint.deinit();
+    return wire.encode(gpa, "b32", blueprint.records, .{ .b32 = want }) catch Error.Refused;
+}
+
+/// The text `blueprint` answered with, or nothing where it answered absence.
+/// The bytes come back owned by `gpa`.
+pub fn readBlueprint(gpa: std.mem.Allocator, data: []const u8) Fault!?[]u8 {
+    var arena = std.heap.ArenaAllocator.init(gpa);
+    defer arena.deinit();
+    const a = arena.allocator();
+    var blueprint = try shapes(a);
+    defer blueprint.deinit();
+    const owned = try a.dupe(u8, data);
+    var read = wire.decode(a, "text?", blueprint.records, owned) catch return null;
+    defer read.deinit();
+    return switch (read.value) {
+        .absent => null,
+        .present => |one| switch (one.*) {
+            .text => |t| try gpa.dupe(u8, t),
+            else => null,
+        },
+        else => null,
+    };
+}
+
+pub const Allowance = envelope.Allowance;
+
+fn maybeKey(a: std.mem.Allocator, pk: ?Key) std.mem.Allocator.Error!wire.Value {
+    const held = pk orelse return .absent;
+    const one = try a.create(wire.Value);
+    one.* = .{ .b32 = held };
+    return .{ .present = one };
+}
+
+fn maybeKeyOf(value: wire.Value) Error!?Key {
+    return switch (value) {
+        .absent => null,
+        .present => |one| try keyOf(one.*),
+        else => Error.Refused,
+    };
+}
+
+fn listOf(value: wire.Value) Error![]const wire.Value {
+    return switch (value) {
+        .list => |l| l,
+        else => Error.Refused,
+    };
+}

@@ -11,15 +11,27 @@
 //! - **Its door is three calls where the JS one is a single `judge`**: `judge`
 //!   settles the route, `own` answers the warden's own fields, and `answer`
 //!   seals. Stitching those is ordinary glue — no step is skipped, none is
-//!   invented, and **the field dispatch is the kit's own** since `own` landed.
+//!   invented, and **the field dispatch is the kit's own**.
 //! - **A being's answer is never the warden's**, so `.invoke` comes back here.
 //!   The being in this contract does one thing or nothing.
 //! - **Its `judge` reads no clock.** Both readings are the host's, and the
 //!   kit's own `onward` does the arithmetic against them — which is why the
 //!   leash below is never computed here.
 //!
-//! **It composes no cargo and no migration news**, so `state` reads the two
-//! records directly and `depart` and `landed` say what the kit cannot do.
+//! **It composes no cargo and no migration news**, so `depart` and `landed`
+//! say what the kit cannot do.
+//!
+//! **This subject stands below the kit's own seam, and reaches past it on
+//! purpose.** It drives the warden's own entry points rather than the host
+//! module and the being's API, because it must compose what no application
+//! may: bytes a handle could never produce, a say at a being whose blueprint
+//! this process does not hold, and a door's records read as they stand. It
+//! reads both records directly in three places — `state` reports every inbound
+//! and outbound row, `invoke` finds the relation to walk onward down by the far
+//! warden's name in the outbound record, and `send` finds the relation to speak
+//! down the same way — and no surface above the warden offers any of that. The
+//! seam grows nothing to accommodate this file: what it needs, it reaches for
+//! here.
 
 const std = @import("std");
 const arithmetic = @import("arithmetic");
@@ -73,6 +85,22 @@ var roads: []const []const u8 = &.{};
 fn house() !*warden.Warden {
     if (door) |*one| return one;
     return error.NoWardenStoodUp;
+}
+
+/// The clock and the randomness this contract hands the door: finite lists,
+/// drawn in the order the scenario fixed. The warden takes each as an
+/// argument at `open` and reaches for neither.
+///
+/// **Drawing past the end is a fault the scenario must hear about**, and the
+/// warden's own signature has nowhere to put one — so a queue that ran out
+/// answers the one value that cannot be mistaken for a reading, and the
+/// scenario sees it as a refusal rather than as a plausible number.
+fn ticked() i64 {
+    return clock.draw() catch std.math.minInt(i64);
+}
+
+fn drawn() Key {
+    return random.draw() catch std.mem.zeroes(Key);
 }
 
 fn un(text: []const u8) ![32]u8 {
@@ -198,6 +226,8 @@ fn stand(a: std.mem.Allocator, order: std.json.Value, out: *Out) !void {
         old.deinit();
         door = null;
     }
+    for (pointers.items) |one| gpa.destroy(one);
+    pointers = .empty;
     onward_specs = .empty;
     handed = .empty;
 
@@ -215,6 +245,11 @@ fn stand(a: std.mem.Allocator, order: std.json.Value, out: *Out) !void {
         .padlock_secret = padlock_secret,
         .limit = if (limit > 0) @intCast(limit) else std.math.maxInt(usize),
         .width = 64,
+        // Handed in, never reached for. This subject stands a warden from the
+        // seeds the scenario names rather than opening one on them, because
+        // the contract hands it the two keys already derived.
+        .clock = ticked,
+        .random = drawn,
     };
     const w = try house();
 
@@ -246,14 +281,14 @@ fn stand(a: std.mem.Allocator, order: std.json.Value, out: *Out) !void {
         const heir = try keyOf(one, "heirSeed");
         const pk = signingPublic(secret);
         const text = try gpa.dupe(u8, str(one, "blueprint") orelse "");
-        var parsed = try notation.parse(gpa, text);
-        defer parsed.deinit();
-        try w.beings.append(gpa, .{
-            .pk = pk,
-            .secret = secret,
-            .digest = parsed.digest(),
-            .commitment = arithmetic.commitment(w.name, signingPublic(heir)),
-            .text = text,
+        const pointer = try gpa.create(Held);
+        pointer.* = .{ .being = pk };
+        try pointers.append(gpa, pointer);
+        _ = try w.hold(.{
+            .blueprint = text,
+            .organ = pointer.organ(),
+            .seed = secret,
+            .heir_seed = heir,
         });
         if (get(one, "onward")) |spec_on| {
             try onward_specs.append(gpa, .{ .being = pk, .spec = .{
@@ -361,11 +396,11 @@ fn stand(a: std.mem.Allocator, order: std.json.Value, out: *Out) !void {
 /// queue. Recomputing it here would be the subject doing the arithmetic the
 /// case is about, and the case would then measure this file rather than the
 /// warden.
-fn invoke(a: std.mem.Allocator, being: Key, method: envelope.Method, arrived: warden.Leash, arrival: i64) !void {
+fn invoke(a: std.mem.Allocator, being: Key, method: []const u8, arrived: warden.Leash, arrival: i64) !void {
     const w = try house();
     for (onward_specs.items) |one| {
         if (!std.mem.eql(u8, &one.being, &being)) continue;
-        if (!std.mem.eql(u8, one.spec.when, method.name)) continue;
+        if (!std.mem.eql(u8, one.spec.when, method)) continue;
         var at: ?usize = null;
         for (w.outbound.items, 0..) |row, index| {
             if (std.mem.eql(u8, &row.warden, &one.spec.at)) at = index;
@@ -387,38 +422,52 @@ fn invoke(a: std.mem.Allocator, being: Key, method: envelope.Method, arrived: wa
     }
 }
 
+/// The being this contract has, as the warden holds it: an ordinary pointer
+/// the door invokes. What it does is what the scenario said — an onward ask,
+/// or nothing at all — and it never sees a byte of the seal or a key.
+///
+/// Which being is being invoked is the pointer's own, so the pk is what the
+/// context carries.
+const Held = struct {
+    being: Key,
+
+    fn organ(self: *Held) warden.Organ {
+        return .{ .context = @ptrCast(self), .invoke = served };
+    }
+
+    fn served(
+        context: *anyopaque,
+        a: std.mem.Allocator,
+        field: notation.Field,
+        records: []const notation.Block,
+        args: []const u8,
+        call: warden.Call,
+    ) (warden.Error || std.mem.Allocator.Error)!?[]u8 {
+        _ = records;
+        _ = args;
+        const self: *Held = @ptrCast(@alignCast(context));
+        invoke(a, self.being, field.name, call.leash, call.arrived) catch {};
+        // The one thing a being in this contract ever answers is nothing at
+        // all, written as no bytes rather than as an absent optional.
+        return try a.dupe(u8, "");
+    }
+};
+
+/// One pointer per being the scenario stood, kept for as long as the door is.
+var pointers: std.ArrayList(*Held) = .empty;
+
 /// The door: bytes in, bytes out, or nothing — and nothing is silence.
+///
+/// **One entry point takes whatever arrives.** The record byte inside the
+/// seal says which of the two records it is and only the door reads it, so
+/// nothing above this line sorts anything or looks inside a seal.
 fn doorVerb(a: std.mem.Allocator, order: std.json.Value, out: *Out) !void {
     const w = try house();
     for (handed.items) |one| gpa.free(one);
     handed.clearRetainingCapacity();
 
     const letter = try unSlice(a, str(order, "bytes") orelse "");
-    const arrival = try clock.draw();
-    var verdict = w.judge(letter) catch return silence(out);
-    defer verdict.deinit();
-
-    const data: ?[]const u8 = switch (verdict.routing) {
-        .invoke => |call| blk: {
-            if (w.isPublic(call.being)) break :blk w.own(a, verdict) catch return silence(out);
-            invoke(a, call.being, call.method, .{
-                .time = verdict.say.allowance.time,
-                .hops = verdict.say.allowance.hops,
-            }, arrival) catch {};
-            break :blk &.{};
-        },
-        .estate => try warden.encodeEstate(a, try w.estateFor(a, verdict.say.voice)),
-        .stranger => try warden.encodeEstate(a, try w.estateFor(a, null)),
-        // `sketchAnswer` rather than `encodeSketch`: the Warden blueprint
-        // declares `sketch(being being) sketch?`, so what it answers with
-        // wears the optional the field declared. The kit knows that; this file
-        // must not decide it.
-        .sketch => |pk| w.sketchAnswer(a, verdict.say.voice, pk) catch return silence(out),
-        .own => w.own(a, verdict) catch return silence(out),
-    };
-
-    const ephemeral = try random.draw();
-    const sealed = w.answer(a, ephemeral, verdict.say, data) catch return silence(out);
+    const sealed = w.arrive(a, letter, null) orelse return silence(out);
     try out.text("{\"answer\":");
     try out.hexed(sealed);
     try out.text(",\"onward\":[");
@@ -522,13 +571,29 @@ fn state(a: std.mem.Allocator, order: std.json.Value, out: *Out) !void {
     try out.hexed(&held.digest);
     try out.text(",\"cells\":\"\",\"standings\":[");
 
-    var wrote: usize = 0;
-    for (w.inbound.items) |row| {
-        var reaches = false;
+    // The rows that stand at this being, by the voice's bytes ascending. That
+    // order is the contract's own so that two readings of one state are one
+    // text — the law derives an estate's order and says nothing about a
+    // cargo's — and a subject that reported its records in whatever order it
+    // holds them would make a scenario read as a divergence.
+    var standing: std.ArrayList(usize) = .empty;
+    for (w.inbound.items, 0..) |row, at| {
         for (row.beings.items) |one| {
-            if (std.mem.eql(u8, &one, &being)) reaches = true;
+            if (std.mem.eql(u8, &one, &being)) {
+                try standing.append(a, at);
+                break;
+            }
         }
-        if (!reaches) continue;
+    }
+    std.mem.sort(usize, standing.items, w, struct {
+        fn less(rows: @TypeOf(w), l: usize, r: usize) bool {
+            return std.mem.lessThan(u8, &rows.inbound.items[l].voice, &rows.inbound.items[r].voice);
+        }
+    }.less);
+
+    var wrote: usize = 0;
+    for (standing.items) |index| {
+        const row = w.inbound.items[index];
         if (wrote > 0) try out.text(",");
         wrote += 1;
         try out.text("{\"voice\":");

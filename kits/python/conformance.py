@@ -1,6 +1,6 @@
 """The Python kit answering the conformance subject contract.
 
-Kit-specific glue: seven verbs over JSON lines, a warden stood up from handed
+Kit-specific glue: nine verbs over JSON lines, a warden stood up from handed
 keys, a door handed bytes, and the records read back as Article IX's ``cargo``.
 It is written from ``papers/quo-conformance-contract.md`` and from this kit's own
 public API, and it decides nothing: it stands a warden, hands it what it is
@@ -8,6 +8,17 @@ given, and reports what came back.
 
 This file is an entry point, not part of the kit. It sits outside the package
 so that importing ``quo`` still pulls in no host.
+
+**It stands below the host seam on purpose, and uses no part of ``quo.host``.**
+A subject has to compose what no application may: an ask naming neither being
+nor method, argument bytes that are deliberately malformed, an ask at a being
+whose blueprint it does not hold, and the seq it spent read back directly.
+Every one of those is a thing the host's surface refuses by design — a handle
+encodes through the blueprint, so it can never produce the malformed input a
+refusal is asserted with — and the seam never grows a raw-ask surface to
+accommodate a harness. So this file drives ``Warden`` and its ``judge``
+directly, the way a wire suite hand-writes bytes, and reaches for the warden's
+own methods everywhere the host would have had one.
 
 Three things this kit spells differently from the two the contract was written
 beside, none of which is a decision this file is allowed to make:
@@ -27,13 +38,14 @@ beside, none of which is a decision this file is allowed to make:
 
 from __future__ import annotations
 
+import asyncio
 import json
 import sys
 from typing import Any, Callable, Optional
 
 sys.path.insert(0, "src")
 
-from quo import arithmetic, notation, warden as kit  # noqa: E402
+from quo import arithmetic, being as being_api, notation, warden as kit  # noqa: E402
 
 
 def un(text: str) -> bytes:
@@ -132,7 +144,7 @@ def mint() -> bytes:
     return queue_of("random").draw()
 
 
-def being_of(one: dict) -> Callable[[str, bytes, kit.Leash], Optional[bytes]]:
+def being_of(one: dict) -> Any:
     """The one thing a being in this contract ever does.
 
     A warden never makes an onward ask of its own: it hands the leash to the
@@ -140,22 +152,28 @@ def being_of(one: dict) -> Callable[[str, bytes, kit.Leash], Optional[bytes]]:
     only way Article VIII's onward rules can be reached at all.
 
     **It decides nothing.** The scenario named the far warden, the being, the
-    method and the ephemeral key, and what this returns is never asserted.
+    method and the ephemeral key, and what this answers is never asserted.
 
-    **The leash spent is the one this kit handed the being**, passed straight
-    back to `ask`, which reads the allowance off it at the moment of sealing.
-    Recomputing it here would be the subject doing the arithmetic the case is
-    about, and the case would then measure this file rather than the warden.
+    **The leash spent is the one this kit handed the being**, read out of the
+    call in scope and passed straight back to `ask`, which reads the allowance
+    off it at the moment of sealing. Recomputing it here would be the subject
+    doing the arithmetic the case is about, and the case would then measure
+    this file rather than the warden.
     """
     spec = one.get("onward")
+    if not spec:
+        # A being with no method at all. Every field its blueprint declares is
+        # then a field it does not serve, which is the door's own silence.
+        return type("Mute", (), {})()
 
-    def invoke(name: str, args: bytes, leash: kit.Leash) -> Optional[bytes]:
-        if not spec or spec["when"] != name:
-            return b""
+    def go(_self, *args: Any) -> int:
+        # What the field declares is the scenario's business; this being only
+        # ever reaches onward, and what it answers is asserted nowhere.
         row = door_of().relation(un(spec["at"]))
         if row is None:
             raise RuntimeError(f"no relation at {spec['at']}")
         method = spec.get("method")
+        call = being_api.current()
         try:
             composed, _ = door_of().ask(
                 row,
@@ -167,17 +185,17 @@ def being_of(one: dict) -> Callable[[str, bytes, kit.Leash], Optional[bytes]]:
                     else None
                 ),
                 seq=int(spec["seq"]),
-                leash=leash,
+                leash=call.leash if call is not None else None,
             )
         except kit.Silence:
             # A leash with nothing left to spend composes nothing, and the being
             # answers anyway: Article VIII withholds the onward ask while "the
             # work already routed stands".
-            return b""
+            return 0
         house.onward.append(composed)
-        return b""
+        return 0
 
-    return invoke
+    return type("Onward", (), {spec["when"]: go})()
 
 
 def cargo_of(being_pk: bytes) -> Optional[dict]:
@@ -211,6 +229,11 @@ def cargo_of(being_pk: bytes) -> Optional[dict]:
     standings.sort(key=lambda one: str(one["voice"]))
     relations = []
     for row in w.outbound:
+        # A cargo is what travels with this being, and an outbound row travels
+        # with the being that may spend it. A row this door owns itself names
+        # no holder and goes nowhere.
+        if row.holder is None or bytes(row.holder) != being_pk:
+            continue
         relations.append(
             {
                 "warden": hx(row.warden),
@@ -246,15 +269,20 @@ def stand(order: dict) -> dict:
         heir=arithmetic.signing_public(heir_secret) if heir_secret else None,
     )
     w = door_of()
-    w.hints = tuple(spec.get("hints") or ())
+    w.publish(*(spec.get("hints") or ()))
     house.clock = Queue("clock", [int(one) for one in order.get("clock") or []])
     house.random = Queue("random", [un(one) for one in order.get("random") or []])
 
     beings = []
     for one in order.get("beings") or []:
-        pk = w.hold(
-            one["blueprint"], being_of(one), un(one["seed"]), un(one["heirSeed"])
-        )
+        pk = asyncio.run(
+            w.hold(
+                being_of(one),
+                one["blueprint"],
+                un(one["seed"]),
+                un(one["heirSeed"]),
+            )
+        ).being
         w.beings[pk].cells = un(one.get("cells") or "")
         beings.append(hx(pk))
 
@@ -293,6 +321,9 @@ def stand(order: dict) -> dict:
                 heir=arithmetic.signing_public(un(one["heirSeed"])),
                 heir_secret=un(one["heirSeed"]),
                 hints=tuple(one.get("hints") or ()),
+                # Which of this door's beings may spend the row, which is what
+                # makes it travel with that being's cargo.
+                holder=uno(one.get("being")),
             )
         )
 
@@ -329,7 +360,9 @@ def door(order: dict) -> dict:
     """
     house.onward = []
     try:
-        judged = door_of().judge(un(order["bytes"]), clock=queue_of("clock").draw)
+        judged = asyncio.run(
+            door_of().judge(un(order["bytes"]), clock=queue_of("clock").draw)
+        )
     except kit.Silence:
         return {"answer": None, "onward": [hx(one) for one in house.onward]}
     return {"answer": hx(judged.answer), "onward": [hx(one) for one in house.onward]}
@@ -423,12 +456,11 @@ def landed(order: dict) -> dict:
 def state(order: dict) -> dict:
     """The records, as cargo, and the facts this kit cannot report at all.
 
-    `relations` is every outbound row this door holds rather than the ones that
-    would travel with this being: **this kit's `Relation` carries no holder**,
-    so which being may spend which relation is a fact it has no way to give.
-    Every scenario driven so far holds at most one outbound row, where the two
-    lists are the same list; a door holding more would have to declare it in
-    `cannot` rather than report a wrong one.
+    The cargo is what would travel with this being rather than a dump of the
+    records: a standing is a voice's row as it goes with this being, and a
+    relation is one this being may spend, which the kit's `Relation` names in
+    its `holder`. `cannot` is empty because every field the contract asks for
+    is one this kit holds.
     """
     return {"cargo": cargo_of(un(order["being"])), "cannot": []}
 

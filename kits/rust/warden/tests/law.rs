@@ -15,7 +15,7 @@ use hex::key;
 use quo_envelope::{Allowance, Method, Say};
 use quo_warden as warden;
 use quo_wire::Value;
-use warden::{Inbound, Outbound, Placement, Resident, Route, Standing, Warden, Word};
+use warden::{Door, Inbound, Outbound, Placement, Resident, Route, Standing, Word};
 
 const DOOR_NAME_SECRET: &str = "9f21c0d5b3e64a1187ac0f3d5e2b7c48a6d10f93b27c4e58d0a1b3c5d7e9f012";
 const DOOR_PADLOCK_SECRET: &str =
@@ -75,8 +75,8 @@ fn small_digest() -> [u8; 32] {
 
 /// A door with its public being standing, one other being of another class,
 /// and nothing granted to anyone.
-fn door() -> Warden {
-    let mut warden = Warden::new(
+fn door() -> Door {
+    let mut warden = Door::new(
         key(DOOR_NAME_SECRET),
         key(DOOR_PADLOCK_SECRET),
         [1u8; 32],
@@ -95,7 +95,7 @@ fn door() -> Warden {
 
 /// Mint a voice, record that it may reach these beings, and commit to its
 /// heir — which is the whole of letting someone in.
-fn grant(warden: &mut Warden, voice: [u8; 32], heir: [u8; 32], beings: Vec<[u8; 32]>) {
+fn grant(warden: &mut Door, voice: [u8; 32], heir: [u8; 32], beings: Vec<[u8; 32]>) {
     let commitment = quo_arithmetic::commitment(&warden.name, &heir);
     warden.inbound.push(Inbound {
         voice,
@@ -111,7 +111,7 @@ fn grant(warden: &mut Warden, voice: [u8; 32], heir: [u8; 32], beings: Vec<[u8; 
 
 /// An outbound row: a relation this door holds with a far warden, which is
 /// where news is placed.
-fn relate(warden: &mut Warden, far: [u8; 32], far_heir: [u8; 32]) {
+fn relate(warden: &mut Door, far: [u8; 32], far_heir: [u8; 32]) {
     let commitment = quo_arithmetic::commitment(&far, &far_heir);
     warden.outbound.push(Outbound {
         warden: far,
@@ -130,7 +130,7 @@ fn relate(warden: &mut Warden, far: [u8; 32], far_heir: [u8; 32]) {
     });
 }
 
-fn a_say(warden: &Warden, voice: [u8; 32], seq: i64) -> Say {
+fn a_say(warden: &Door, voice: [u8; 32], seq: i64) -> Say {
     Say {
         voice,
         recipient: warden.name,
@@ -147,7 +147,7 @@ fn a_say(warden: &Warden, voice: [u8; 32], seq: i64) -> Say {
     }
 }
 
-fn sealed(warden: &Warden, voice_secret: &str, say: &Say) -> Vec<u8> {
+fn sealed(warden: &Door, voice_secret: &str, say: &Say) -> Vec<u8> {
     quo_envelope::seal(
         &key(voice_secret),
         &key(EPHEMERAL_SECRET),
@@ -1144,6 +1144,80 @@ fn viii_the_road_is_never_counted() {
     );
 }
 
+/// Where a door's own two readings yield a dwell below zero, the onward
+/// budget is the arriving one. Subtracting the dwell as it stands would add
+/// to it, and the rule that no door widens a leash is absolute.
+#[test]
+fn viii_a_dwell_below_zero_hands_on_the_arriving_budget() {
+    let arrived = Allowance {
+        time: 5_000,
+        hops: 4,
+    };
+    let onward = warden::onward(&arrived, 9_000, 8_900).expect("an onward ask");
+    assert_eq!(
+        onward.time, 5_000,
+        "the budget that arrived, neither more nor less"
+    );
+    assert_eq!(onward.hops, 3, "and the hop count still falls by one");
+
+    // However far backwards the clock went.
+    assert_eq!(
+        warden::onward(&arrived, 9_000, -1_000_000).map(|a| a.time),
+        Some(5_000)
+    );
+
+    // The clamp is on the dwell and is not a licence to send under a leash
+    // that cannot be spent.
+    let spent = Allowance { time: 5, hops: 0 };
+    assert_eq!(warden::onward(&spent, 9_000, 8_900), None);
+}
+
+/// The bytes, not just the number: the far door reads the arriving budget off
+/// the wire, and this door's outbound count moved with it.
+#[test]
+fn viii_a_backwards_clock_still_composes_the_onward_ask() {
+    let mut far = door();
+    let public = far.name;
+    grant(&mut far, voice(), heir(), vec![public]);
+    let mut middle = holder();
+
+    let at = middle.remember(&invitation(&far));
+    let (rotated, _) = middle
+        .rotate(
+            at,
+            &key(EPHEMERAL_SECRET),
+            &key(FRESH_VOICE_SECRET),
+            &warden::Reach::default(),
+        )
+        .expect("it composes");
+    far.judge(&rotated, 0).expect("the heir rotates");
+    let before = middle.outbound[at].seq;
+
+    let arrived = Allowance {
+        time: 5_000,
+        hops: 4,
+    };
+    let leash = warden::onward(&arrived, 9_000, 8_900)
+        .expect("the onward ask is not withheld for this door's own clock");
+    let (composed, seq) = middle
+        .ask(
+            at,
+            &[0x96u8; 32],
+            &warden::Reach {
+                allowance: leash,
+                ..warden::Reach::default()
+            },
+        )
+        .expect("it composes");
+
+    let verdict = far.judge(&composed, 0).expect("the far door honours it");
+    assert_eq!(verdict.say.allowance.time, 5_000);
+    assert_eq!(verdict.say.allowance.hops, 3);
+
+    assert_eq!(seq, before + 1, "the count moves with the bytes");
+    assert_eq!(middle.outbound[at].seq, seq);
+}
+
 #[test]
 fn viii_an_onward_ask_that_would_exhaust_the_budget_is_not_made() {
     let arrived = Allowance { time: 50, hops: 3 };
@@ -1619,9 +1693,9 @@ fn xiv_the_news_mark_and_the_send_count_are_two_counters() {
 // ---- Article XIV, the name's own succession ---------------------------
 
 /// A door whose own heir commitment is real, so its name can actually move.
-fn succeeding_door() -> Warden {
+fn succeeding_door() -> Door {
     let name = quo_arithmetic::signing_pk(&key(DOOR_NAME_SECRET));
-    Warden::new(
+    Door::new(
         key(DOOR_NAME_SECRET),
         key(DOOR_PADLOCK_SECRET),
         quo_arithmetic::commitment(&name, &door_heir()),
@@ -1858,8 +1932,8 @@ const FRESH_VOICE_SECRET: &str = "5111223344556677889900aabbccddeeff112233445566
 const FRESH_HEIR_SECRET: &str = "52223344556677889900aabbccddeeff112233445566778899aabbccddeeff01";
 
 /// A holder's own door: it grants nothing and holds nothing, it only calls.
-fn holder() -> Warden {
-    Warden::new(
+fn holder() -> Door {
+    Door::new(
         key(HOLDER_NAME_SECRET),
         key(HOLDER_PADLOCK_SECRET),
         [9u8; 32],
@@ -1870,7 +1944,7 @@ fn holder() -> Warden {
 
 /// The invitation a door with a standing committed to `heir()` corresponds
 /// to: the five things a holder holds.
-fn invitation(granter: &Warden) -> warden::Invitation {
+fn invitation(granter: &Door) -> warden::Invitation {
     warden::Invitation {
         warden: granter.name,
         commitment: quo_arithmetic::commitment(&granter.name, &heir()),

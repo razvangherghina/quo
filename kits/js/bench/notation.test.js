@@ -1,7 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { parse, print, canonicalBytes, digest, encode, Refusal } from '../src/index.js';
+import {
+  SCALARS,
+  parse,
+  print,
+  printType,
+  canonicalBytes,
+  digest,
+  encode,
+  Refusal,
+} from '../src/index.js';
 
 // The two blueprints the law writes out, copied byte for byte.
 const TODO = `ToDo
@@ -261,6 +270,34 @@ test('a record may not reach itself, directly or through another', () => {
   );
   refusedWith('ToDo\n  items() [node]\n\nnode\n  next [node]\n', 'RECORD_RECURSION');
   refusedWith('ToDo\n  items() [node]\n\nnode\n  next node?\n', 'RECORD_RECURSION');
+});
+
+test('one type prints back to the form it was written in, combinators included', () => {
+  // `printType` is on the barrel and in the published API reference, so it is
+  // read and called on its own, by a caller holding one type and no blueprint.
+  // Everything else here goes through `print`, which would stay green if this
+  // dropped a combinator on a type no law blueprint happens to write.
+  // Read from the closed set rather than copied, so a type added to it without
+  // a written form goes red here.
+  for (const one of SCALARS) {
+    const blueprint = parse(`Thing\n  field() ${one}\n`);
+    assert.equal(printType(blueprint.fields[0].answer), one);
+  }
+
+  const combined = ['int?', '[int]', '[int]?', '[int?]', '[[int]?]?', 'row', '[row]?'];
+  for (const one of combined) {
+    const record = one.includes('row') ? '\nrow\n  at int\n' : '';
+    const blueprint = parse(`Thing\n  field() ${one}\n${record}`);
+    assert.equal(printType(blueprint.fields[0].answer), one);
+  }
+
+  // An argument's type reads the same as an answer's: there is one written
+  // form, not two.
+  const blueprint = parse('Thing\n  field(one [text]?, two bytes) bool\n');
+  assert.deepEqual(
+    blueprint.fields[0].args.map((a) => printType(a.type)),
+    ['[text]?', 'bytes'],
+  );
 });
 
 test('a record may hold a record that holds no record', () => {

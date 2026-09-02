@@ -3,8 +3,10 @@
 // export, which is what lets a ground that only calls out — a tab, a worker —
 // import the kit without importing a host's API it could never satisfy.
 //
-// This is the only file in the kit that names a host.
-import { createServer } from 'node:http';
+// The host is named inside `serve` rather than at the top of the file, and that
+// is what lets a bundler follow `host.js` into a tab: a static `node:http` here
+// would be read the moment the module loaded, on a platform that has none.
+// Nothing but a ground standing this road ever reaches the import.
 import { concat } from './envelope.js';
 
 // TLS is redundant crypto Quo does not rely on for a single guarantee; it is
@@ -20,10 +22,11 @@ import { concat } from './envelope.js';
 // where the socket is not the address: behind a proxy or a tunnel the door
 // listens on loopback and the world reaches it by a domain. Handed none, the
 // door publishes the socket it actually bound.
-export function serve(
+export async function serve(
   warden,
-  { clock, random, host = '127.0.0.1', port = 0, limit = null, hint = null },
+  { host = '127.0.0.1', port = 0, limit = null, hint = null } = {},
 ) {
+  const { createServer } = await import('node:http');
   const server = createServer((incoming, outgoing) => {
     const chunks = [];
     incoming.on('data', (chunk) => chunks.push(chunk));
@@ -32,15 +35,10 @@ export function serve(
       // Over the published limit is silence, exactly as any other refusal: a
       // door that took an unbounded body would be a door anyone can exhaust.
       const answer =
-        limit !== null && BigInt(message.length) > limit
-          ? null
-          : await warden.judge(message, {
-              clock,
-              random: random(),
-            });
+        limit !== null && BigInt(message.length) > limit ? null : await warden.arrive(message);
       // Silence is an empty body. No status code carries meaning, so the
       // refusal and the answer leave by the same door.
-      outgoing.end(answer === null ? new Uint8Array(0) : answer);
+      outgoing.end(answer ? answer : new Uint8Array(0));
     });
   });
   return new Promise((resolve) => {

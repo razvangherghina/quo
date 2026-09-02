@@ -27,7 +27,7 @@ use std::time::Duration;
 
 use hex::key;
 use quo_envelope::{Allowance, Answer, Message, Method, Say};
-use quo_warden::{Inbound, Resident, Route, Warden, KEY};
+use quo_warden::{Door, Inbound, Resident, Route, KEY};
 
 const COUNTER: &str = "Counter\n  bump(by int) int\n  count() int\n";
 const LIMIT: i64 = 1 << 20;
@@ -61,7 +61,7 @@ const PATIENCE: Duration = Duration::from_millis(400);
 /// [`VOICE_SECRET`]. Exactly the ground every case judges against, rebuilt
 /// per road.
 struct Ground {
-    w: Warden,
+    w: Door,
     being: [u8; KEY],
     total: i64,
     /// So a reply's ephemeral is never reused inside one road's run — the law
@@ -75,7 +75,7 @@ impl Ground {
         let heir = quo_arithmetic::signing_pk(&key(HEIR_SECRET));
         let being = quo_arithmetic::signing_pk(&key(BEING_SECRET));
         let voice = quo_arithmetic::signing_pk(&key(VOICE_SECRET));
-        let mut w = Warden::new(
+        let mut w = Door::new(
             key(WARDEN_SECRET),
             key(PADLOCK_SECRET),
             quo_arithmetic::commitment(&name, &heir),

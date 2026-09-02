@@ -94,6 +94,37 @@ pub fn decode(blueprint: &Blueprint, ty: &Type, bytes: &[u8]) -> Judged<Value> {
     Ok(value)
 }
 
+/// Write a field's arguments as the one opaque blob a method carries: each
+/// value of its declared type, in the declared order, one after another.
+///
+/// **This is not a second encoding.** It is [`encode`] applied in sequence, so
+/// a blob of one argument is byte for byte what `encode` writes, and a field
+/// that takes nothing carries nothing.
+pub fn encode_all(blueprint: &Blueprint, types: &[Type], values: &[Value]) -> Judged<Vec<u8>> {
+    if types.len() != values.len() {
+        return refuse("a call with a different count of values than declared types");
+    }
+    let mut out = Vec::new();
+    for (ty, value) in types.iter().zip(values) {
+        write(blueprint, ty, value, &mut out)?;
+    }
+    Ok(out)
+}
+
+/// Read a field's arguments back out of that blob. **Bytes left over after the
+/// declared arguments are refused** — Article XI.
+pub fn decode_all(blueprint: &Blueprint, types: &[Type], bytes: &[u8]) -> Judged<Vec<Value>> {
+    let mut reader = Reader { bytes, at: 0 };
+    let mut out = Vec::with_capacity(types.len());
+    for ty in types {
+        out.push(read(blueprint, ty, &mut reader)?);
+    }
+    if reader.at != bytes.len() {
+        return refuse("bytes left over after the arguments");
+    }
+    Ok(out)
+}
+
 fn record<'a>(blueprint: &'a Blueprint, name: &str) -> Judged<&'a quo_notation::Record> {
     match blueprint.records.iter().find(|shape| shape.name == name) {
         Some(shape) => Ok(shape),

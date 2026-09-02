@@ -12,12 +12,20 @@ reaches the being at its new address and is answered. A test that stopped at
 asserting the routing is how the hole this suite fills survived.
 """
 
+import asyncio
 import unittest
 
 from quo import arithmetic, envelope, notation, warden, wire
 
 LAMP = "Lamp\n  lit() bool\n"
 LAMP_DIGEST = notation.digest(LAMP)
+LIT = wire.encode(notation.Base("bool"), True)
+
+
+def judged(door: warden.Warden, *args, **kwargs) -> warden.Judgment:
+    """One judgment, run to completion."""
+    return asyncio.run(door.judge(*args, **kwargs))
+
 
 B32 = notation.Base("b32")
 MAYBE_WORD = notation.Maybe(warden.WORD_TYPE)
@@ -38,8 +46,11 @@ def a_door(name: int, padlock: int, heir: int, draws) -> warden.Warden:
     )
 
 
-def lamp(name: str, args: bytes, leash: warden.Leash):
-    return b"lit" if name == "lit" else None
+class Lamp:
+    """The traveller's own class. A cargo carries its state and never this."""
+
+    def lit(self) -> bool:
+        return True
 
 
 class AMigrationEndToEnd(unittest.TestCase):
@@ -55,7 +66,9 @@ class AMigrationEndToEnd(unittest.TestCase):
         self.destination.hints = ("https://landing.example",)
 
         # The traveller, and a peer standing at it.
-        self.traveller = self.origin.hold(LAMP, lamp, seed(30), seed(31))
+        self.traveller = asyncio.run(
+            self.origin.hold(Lamp(), LAMP, secret=seed(30), heir_secret=seed(31))
+        ).being
         self.origin.beings[self.traveller].cells = b"a lamp's own memory"
         invitation = self.origin.invite(
             self.traveller, seed(32), seed(33), hints=("https://origin.example",)
@@ -71,7 +84,7 @@ class AMigrationEndToEnd(unittest.TestCase):
             method={"name": "lit", "args": b""},
             next_heir=seed(35),
         )
-        self.assertEqual(self.origin.judge(message).placement, warden.ROTATION)
+        self.assertEqual(judged(self.origin, message).placement, warden.ROTATION)
         self.peer_secret = self.row.secret
 
         # The commitment a describe hands over, without which the peer holds
@@ -85,7 +98,7 @@ class AMigrationEndToEnd(unittest.TestCase):
 
         # The destination holds the class — the digest identifies rather than
         # delivers — and a standing for the origin to spend `receive` with.
-        self.assertEqual(self.destination.expect(LAMP, lamp), LAMP_DIGEST)
+        self.assertEqual(self.destination.expect(LAMP, Lamp), LAMP_DIGEST)
         gate = self.destination.invite(self.destination.name, seed(36), seed(37))
         self.gate = self.origin.stand(gate)
 
@@ -99,7 +112,7 @@ class AMigrationEndToEnd(unittest.TestCase):
             method={"name": "receive", "args": blob},
             next_heir=seed(39),
         )
-        judgment = self.destination.judge(message)
+        judgment = judged(self.destination, message)
         answered = self.origin.hear(judgment.answer)
         return wire.decode(B32, answered["data"], warden.WARDEN_RECORDS)
 
@@ -155,7 +168,7 @@ class AMigrationEndToEnd(unittest.TestCase):
         self.assertNotIn(self.traveller, self.origin.secrets)
 
         first = self.origin.news(told[0], first_secret, first_word, 1, seed(40))
-        self.assertEqual(self.peer.judge(first).placement, warden.NEWS)
+        self.assertEqual(judged(self.peer, first).placement, warden.NEWS)
         # Believed news rewrites the row entire, and the being's own entry with
         # it: the peer now reaches the being by the name the first rotation
         # moved it to, at the house that took it in.
@@ -170,7 +183,7 @@ class AMigrationEndToEnd(unittest.TestCase):
         second = self.destination.news(
             landed_peers[0], second_secret, second_word, 1, seed(41)
         )
-        self.assertEqual(self.peer.judge(second).placement, warden.NEWS)
+        self.assertEqual(judged(self.peer, second).placement, warden.NEWS)
         self.assertEqual(self.row.beings, {arrived_as: second_word["commitment"]})
 
         # The whole point of the move: the peer reaches the being at its new
@@ -181,16 +194,17 @@ class AMigrationEndToEnd(unittest.TestCase):
             being=arrived_as,
             method={"name": "lit", "args": b""},
         )
-        judgment = self.destination.judge(message)
+        judgment = judged(self.destination, message)
         self.assertEqual(judgment.placement, warden.ASK)
-        self.assertEqual(self.peer.hear(judgment.answer)["data"], b"lit")
+        self.assertEqual(self.peer.hear(judgment.answer)["data"], LIT)
 
         # The old door only points: it keeps the succession it published and
         # every other ask meets silence.
         self.assertEqual(self.origin.pointers[self.traveller], first_word)
         with self.assertRaises(warden.Silence):
-            self.origin.judge(
-                self.say_to(self.origin, self.peer_secret, 3, self.traveller)
+            judged(
+                self.origin,
+                self.say_to(self.origin, self.peer_secret, 3, self.traveller),
             )
 
         # The new door points as well, for the name the being wore before, and
@@ -202,7 +216,7 @@ class AMigrationEndToEnd(unittest.TestCase):
             being=self.destination.name,
             method={"name": "moved", "args": arg},
         )
-        judgment = self.destination.judge(message)
+        judgment = judged(self.destination, message)
         heard = self.peer.hear(judgment.answer)
         self.assertEqual(
             wire.decode(MAYBE_WORD, heard["data"], warden.WARDEN_RECORDS),
@@ -218,14 +232,15 @@ class AMigrationEndToEnd(unittest.TestCase):
         cargo = self.origin.pack(self.traveller)
         blob = wire.encode(warden.CARGO_TYPE, cargo, warden.WARDEN_RECORDS)
         with self.assertRaises(warden.Silence):
-            self.destination.judge(
+            judged(
+                self.destination,
                 self.say_to(
                     self.destination,
                     seed(50),
                     1,
                     self.destination.name,
                     {"name": "receive", "args": blob},
-                )
+                ),
             )
 
     def say_to(

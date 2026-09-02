@@ -3,7 +3,6 @@ import assert from 'node:assert/strict';
 import {
   Warden,
   Leash,
-  accept,
   readAnswer,
   seal,
   signingPair,
@@ -11,6 +10,10 @@ import {
   commitment,
   decodeAnswer,
   open,
+  encode,
+  decode,
+  current,
+  memoryDelivery,
   ANSWER_BLUEPRINT,
   parse,
   print,
@@ -25,9 +28,17 @@ const utf8 = new TextEncoder();
 const still = () => 1_000;
 const RANDOM = fixed(200);
 
+const TEXT = { base: 'text' };
+const BOOL = { base: 'bool' };
+// A method's arguments and its answer both ride the declared types, so a case
+// working at the envelope level writes and reads them the same way the door
+// does.
+const title = (value) => encode(TEXT, value);
+const answered = (data) => decode(BOOL, data);
+
 const LIST = `ToDo
   add(title text) bool
-  complete(id text) bool
+  complete() bool
   silent()
   breaks() bool
   lies() bool
@@ -39,28 +50,38 @@ function ground() {
     padlockSeed: fixed(2),
     heirSeed: fixed(3),
     hints: ['https://door.example'],
+    clock: still,
+    random: () => RANDOM,
   });
 }
 
+// The pk alone, where a case names a being and never calls it from here.
+async function holding(warden, object, options) {
+  return (await warden.hold(object, options)).being;
+}
+
 // An ordinary object. It carries no authority logic of any kind, never learns
-// it has an address, and never learns who is calling.
+// it has an address, and never learns who is calling. Its methods take decoded
+// arguments and answer plain values; the warden does the codec.
 function todo() {
   return {
     calls: [],
     leashes: [],
-    add(args, leash) {
-      this.calls.push(args);
-      this.leashes.push(leash);
-      return utf8.encode('added');
+    add(title) {
+      this.calls.push(title);
+      this.leashes.push(current()?.leash ?? null);
+      return true;
     },
     complete() {
-      return utf8.encode('done');
+      return true;
     },
     breaks() {
       throw new Error('the being fell over');
     },
+    // A value the field's declared type cannot carry. The being never touches
+    // bytes, so what refuses this is the codec at the door.
     lies() {
-      return 'not bytes';
+      return 'not a bool';
     },
     // A field may answer nothing: a command owed no reply is ordinary.
     silent() {},
@@ -101,7 +122,7 @@ function invoke(name, args = new Uint8Array(0)) {
 async function granted() {
   const warden = await ground();
   const object = todo();
-  const being = await warden.hold(object, { seed: fixed(5), blueprint: LIST });
+  const being = await holding(warden, object, { seed: fixed(5), blueprint: LIST });
   const voice = await signingPair(fixed(6));
   const heir = await signingPair(fixed(7));
   const invitation = await warden.grant(being, { voiceSeed: fixed(6), heirSeed: fixed(7) });
@@ -116,13 +137,16 @@ test('holding an object mints its keys and records its blueprint digest', async 
   const warden = await ground();
   const object = todo();
   const before = Object.keys(object).sort();
-  const being = await warden.hold(object, { seed: fixed(5), blueprint: LIST });
+  const being = await holding(warden, object, { seed: fixed(5), blueprint: LIST });
   // A being is named by its pk, and the warden minted it.
   assert.equal(being.length, 32);
   assert.equal(hex(being), hex((await signingPair(fixed(5))).pk));
-  // Nothing is ever injected into an object behind its back: the object's own
-  // source is untouched and it never learns it has an address.
-  assert.deepEqual(Object.keys(object).sort(), before);
+  // The object gains one thing and one only: the closure, which is the whole
+  // of its API to Quo. Nothing else of the object is touched, and nothing in
+  // the closure is a key or a road.
+  assert.deepEqual(Object.keys(object).sort(), [...before, 'quo'].sort());
+  assert.equal(typeof object.quo.grant, 'function');
+  for (const name of Object.keys(object.quo)) assert.ok(!/secret|padlock|seed/i.test(name), name);
   // The warden keeps the pointer, the being's keys, and the blueprint digest.
   const held = warden.beings.get(hex(being));
   assert.equal(held.object, object);
@@ -164,8 +188,8 @@ test('granting writes the row and hands out the five things', async () => {
 test('a being lists the voices holding a standing at it, and nothing of another being', async () => {
   const warden = await ground();
   const object = todo();
-  const beingOne = await warden.hold(object, { seed: fixed(5), blueprint: LIST });
-  const beingTwo = await warden.hold(todo(), { seed: fixed(11), blueprint: LIST });
+  const beingOne = await holding(warden, object, { seed: fixed(5), blueprint: LIST });
+  const beingTwo = await holding(warden, todo(), { seed: fixed(11), blueprint: LIST });
   const one = await signingPair(fixed(6));
   const two = await signingPair(fixed(12));
   const three = await signingPair(fixed(13));
@@ -203,7 +227,7 @@ test('a being lists the voices holding a standing at it, and nothing of another 
 
 test('a granted voice is answered, and the answer names the ask by its seq', async () => {
   const { warden, being, voice, object } = await granted();
-  const envelope = await ask(warden, voice, { being, method: invoke('add', utf8.encode('milk')) });
+  const envelope = await ask(warden, voice, { being, method: invoke('add', title('milk')) });
   const back = await warden.judge(envelope, { clock: still, random: RANDOM });
   assert.notEqual(back, null);
   const answer = await readAnswer({
@@ -212,9 +236,9 @@ test('a granted voice is answered, and the answer names the ask by its seq', asy
     wardenPk: warden.name.pk,
   });
   assert.equal(answer.seq, 1n);
-  assert.equal(Buffer.from(answer.data).toString(), 'added');
+  assert.equal(answered(answer.data), true);
   // The warden never looks inside the arguments; the being got them whole.
-  assert.equal(Buffer.from(object.calls[0]).toString(), 'milk');
+  assert.equal(object.calls[0], 'milk');
 });
 
 test('the door serves only what the being blueprint declares', async () => {
@@ -222,7 +246,7 @@ test('the door serves only what the being blueprint declares', async () => {
   const object = todo();
   // The object carries `complete`, but this being's blueprint declares only
   // `add`. What the blueprint does not declare does not exist for it.
-  const being = await warden.hold(object, {
+  const being = await holding(warden, object, {
     seed: fixed(5),
     blueprint: `ToDo
   add(title text) bool
@@ -240,7 +264,7 @@ test('the door serves only what the being blueprint declares', async () => {
   assert.equal(object.calls.length, 0);
 
   const declared = await warden.judge(
-    await ask(warden, voice, { seq: 2n, being, method: invoke('add', utf8.encode('milk')) }),
+    await ask(warden, voice, { seq: 2n, being, method: invoke('add', title('milk')) }),
     { clock: still, random: RANDOM },
   );
   const answer = await readAnswer({
@@ -248,7 +272,7 @@ test('the door serves only what the being blueprint declares', async () => {
     padlockSecret: caller.secret,
     wardenPk: warden.name.pk,
   });
-  assert.equal(Buffer.from(answer.data).toString(), 'added');
+  assert.equal(answered(answer.data), true);
 });
 
 test('the answer is signed by the warden own name and sealed to the return padlock', async () => {
@@ -446,7 +470,7 @@ test('the leash only shrinks, and the door hands onward less than it received', 
   await warden.judge(
     await ask(warden, voice, {
       being,
-      method: invoke('add', utf8.encode('x')),
+      method: invoke('add', title('x')),
       allowance: { time: 5_000n, hops: 4n },
     }),
     { clock: moving, random: RANDOM },
@@ -486,7 +510,7 @@ test('a hop count of zero forbids only the onward ask, and the local work stands
     await warden.judge(
       await ask(warden, voice, {
         being,
-        method: invoke('add', utf8.encode('endpoint')),
+        method: invoke('add', title('endpoint')),
         allowance: { time: 5_000n, hops: 0n },
       }),
       { clock: still, random: RANDOM },
@@ -542,15 +566,18 @@ test('a being that dwells in its own field hands onward a budget short by that d
   const relay = {
     sent: null,
     row: null,
-    async add(args, leash) {
+    async add() {
+      // The leash belongs to the message and reaches the being in scope, not
+      // as an argument it could have held in advance.
+      const leash = current().leash;
       // The work it does on the caller's behalf, before it reaches onward.
       moving();
       moving();
       this.sent = await warden.ask(this.row, { seq: 1n, leash, random: RANDOM });
-      return utf8.encode('added');
+      return true;
     },
   };
-  const being = await warden.hold(relay, { seed: fixed(96), blueprint: LIST });
+  const being = await holding(warden, relay, { seed: fixed(96), blueprint: LIST });
   relay.row = warden.remember(
     {
       warden: elsewhere.name.pk,
@@ -569,10 +596,10 @@ test('a being that dwells in its own field hands onward a budget short by that d
   // arrival, the two ticks of work, and the one taken at the moment of sealing.
   // The dwell is the difference between the first and the last.
   assert.notEqual(
-    await warden.judge(
-      await ask(warden, voice, { being, method: invoke('add', utf8.encode('x')) }),
-      { clock: moving, random: RANDOM },
-    ),
+    await warden.judge(await ask(warden, voice, { being, method: invoke('add', title('x')) }), {
+      clock: moving,
+      random: RANDOM,
+    }),
     null,
   );
 
@@ -661,7 +688,7 @@ test('an heir committed at one door hashes to nothing at another', async () => {
     heirSeed: fixed(22),
   });
   const object = todo();
-  const there = await elsewhere.hold(object, { seed: fixed(23), blueprint: LIST });
+  const there = await holding(elsewhere, object, { seed: fixed(23), blueprint: LIST });
   const next = await signingPair(fixed(8));
   assert.equal(
     await elsewhere.judge(
@@ -690,9 +717,52 @@ test('an heir committed at one door hashes to nothing at another', async () => {
 
 // Amending, releasing.
 
+test('nothing expires on its own: no door holds a timer and nothing sweeps', async () => {
+  // Page 09 says a standing ends when its warden drops the row and never
+  // otherwise, so a term-limited relationship is something an operator builds
+  // in its own scheduler. Someone will trust that in both directions — building
+  // a term on it and finding it does not end, or building a permanent one and
+  // finding it does — so the clock is what this case moves.
+  const { warden, being, voice } = await granted();
+  const granted_at = 1_000;
+  let now = granted_at;
+  const clock = () => now;
+
+  assert.notEqual(
+    await warden.judge(await ask(warden, voice, { seq: 1n, being, method: invoke('complete') }), {
+      clock,
+      random: RANDOM,
+    }),
+    null,
+  );
+
+  // A hundred years later, on this door's own clock, with nothing having
+  // touched the row in between.
+  now = granted_at + 100 * 365 * 24 * 60 * 60 * 1000;
+  assert.notEqual(
+    await warden.judge(await ask(warden, voice, { seq: 2n, being, method: invoke('complete') }), {
+      clock,
+      random: RANDOM,
+    }),
+    null,
+    'the standing outlived a century because nothing sweeps',
+  );
+
+  // And the row itself is untouched by the passage of time: the same voice, the
+  // same being, the same commitment it has held since the grant.
+  const row = warden.standing(voice.pk);
+  assert.notEqual(row, null);
+  assert.equal(hex(row.voice), hex(voice.pk), 'the same voice, a century on');
+
+  // The only thing that ends it is the warden dropping the row, which is the
+  // case below this one.
+  warden.amend(voice.pk, { remove: [being] });
+  assert.equal(warden.standing(voice.pk), null);
+});
+
 test('a standing is amended, not replaced, and nobody is told', async () => {
   const { warden, being, voice } = await granted();
-  const second = await warden.hold(todo(), { seed: fixed(11), blueprint: LIST });
+  const second = await holding(warden, todo(), { seed: fixed(11), blueprint: LIST });
   assert.equal(
     await warden.judge(await ask(warden, voice, { being: second, method: invoke('complete') }), {
       clock: still,
@@ -744,14 +814,14 @@ test('distance zero waives no step of the judgment', async () => {
 
   // The local road works: a well-formed sealed ask, handed straight to the
   // warden's judge in the same process, answers.
-  const envelope = await ask(warden, voice, { being, method: invoke('add', utf8.encode('milk')) });
+  const envelope = await ask(warden, voice, { being, method: invoke('add', title('milk')) });
   const back = await warden.judge(envelope, { clock: still, random: RANDOM });
   const answer = await readAnswer({
     envelope: back,
     padlockSecret: caller.secret,
     wardenPk: warden.name.pk,
   });
-  assert.equal(Buffer.from(answer.data).toString(), 'added');
+  assert.equal(answered(answer.data), true);
 
   // The same at distance zero refused: a signature stripped or corrupted in
   // what would have been transit meets silence even though there was no
@@ -760,7 +830,7 @@ test('distance zero waives no step of the judgment', async () => {
   const stranger = await ask(warden, voice, {
     seq: 2n,
     being,
-    method: invoke('add', utf8.encode('milk')),
+    method: invoke('add', title('milk')),
   });
   for (let at = 0; at < stranger.length; at += 1) {
     const bent = Uint8Array.from(stranger);
@@ -835,7 +905,7 @@ test('refused, broken, absent and unspendable are indistinguishable', async () =
   // which is exactly why a refusal at step six is not a free retry.
   assert.notEqual(
     await warden.judge(
-      await ask(warden, voice, { seq: 2n, being, method: invoke('add', utf8.encode('ok')) }),
+      await ask(warden, voice, { seq: 2n, being, method: invoke('add', title('ok')) }),
       { clock: still, random: RANDOM },
     ),
     null,
@@ -865,7 +935,7 @@ test('a voice in the outbound record is news, and news cannot invoke a being', a
     padlockSeed: fixed(81),
     heirSeed: fixed(82),
   });
-  const theirBeing = await far.hold(todo(), { seed: fixed(83), blueprint: LIST });
+  const theirBeing = await holding(far, todo(), { seed: fixed(83), blueprint: LIST });
   const invitation = await far.grant(theirBeing, { voiceSeed: fixed(84), heirSeed: fixed(85) });
   warden.remember(invitation, {
     voiceSecret: invitation.heirSecret,
@@ -998,7 +1068,12 @@ test('a holder behind a name succession succeeds once, and the rotation after it
       await ask(
         warden,
         heir,
-        { commitment: await commitment(retired, next.pk), seq: 1n, being, method: invoke('add') },
+        {
+          commitment: await commitment(retired, next.pk),
+          seq: 1n,
+          being,
+          method: invoke('add', title('x')),
+        },
         fixed(204),
       ),
       { clock: still, random: RANDOM },
@@ -1033,7 +1108,7 @@ test('a holder behind a name succession succeeds once, and the rotation after it
           commitment: await commitment(warden.name.pk, after.pk),
           seq: 1n,
           being,
-          method: invoke('add'),
+          method: invoke('add', title('x')),
         },
         fixed(205),
       ),
@@ -1061,7 +1136,7 @@ test('a hop count of zero is legal and a hop count below zero is silence', async
         seq: 1n,
         allowance: { time: 5_000n, hops: 0n },
         being,
-        method: invoke('add', utf8.encode('milk')),
+        method: invoke('add', title('milk')),
       }),
       { clock: still, random: RANDOM },
     ),
@@ -1076,7 +1151,7 @@ test('a hop count of zero is legal and a hop count below zero is silence', async
         seq: 2n,
         allowance: { time: 5_000n, hops: -1n },
         being,
-        method: invoke('add', utf8.encode('bread')),
+        method: invoke('add', title('bread')),
       }),
       { clock: still, random: RANDOM },
     ),
@@ -1125,80 +1200,67 @@ test('a caller reading an answer takes only the answer byte', async () => {
   );
 });
 
-// The accept helper: the raw path composed, and the raw path still open.
+// Accepting an invitation: the double rotation, done by the kit so that it
+// cannot be forgotten. The road is a delivery that hands the bytes straight to
+// the granting warden's one door.
 
-async function accepting(warden, invitation, over = {}) {
+async function accepting(granting, invitation, options = {}) {
+  const delivery = memoryDelivery();
   const caller = await Warden.open({
     nameSeed: fixed(80),
     padlockSeed: fixed(81),
     heirSeed: fixed(82),
+    clock: still,
+    random: () => crypto.getRandomValues(new Uint8Array(32)),
+    delivery,
   });
-  let grain = 150;
-  const taken = await accept(caller, invitation, {
-    voiceSeed: fixed(30),
-    heirSeed: fixed(31),
-    random: () => fixed((grain += 7) % 251),
-    send: (envelope) => warden.judge(envelope, { clock: still, random: RANDOM }),
-    ...over,
-  });
-  return { caller, taken };
+  for (const hint of invitation.hints) delivery.attach(hint, granting);
+  const [handle] = await caller.accept(invitation, options);
+  return { caller, handle, row: caller.outbound[0] };
 }
 
-test('accept spends the invitation whole and answers the ask it carried', async () => {
-  const { warden, being, voice, heir, invitation } = await granted();
-  const { caller, taken } = await accepting(warden, invitation, {
-    being,
-    method: invoke('add', utf8.encode('milk')),
-  });
-  const answer = await readAnswer({
-    envelope: taken.answer,
-    padlockSecret: caller.padlock.secret,
-    wardenPk: warden.name.pk,
-  });
-  assert.equal(Buffer.from(answer.data).toString(), 'added');
+test('accept spends the invitation whole, and the granter keys are dead after it', async () => {
+  const { warden, voice, heir, invitation } = await granted();
+  const { caller, handle, row } = await accepting(warden, invitation);
+  // The handle is what a being calls: every declared field an asynchronous
+  // method answering a value.
+  assert.equal(await handle.add('milk'), true);
 
   // The standing now stands on a key the caller generated and the granter
   // never saw, committed to an heir the granter never saw either.
-  const row = warden.standing(taken.voice.pk);
-  assert.ok(row);
-  assert.equal(hex(row.commitment), hex(await commitment(warden.name.pk, taken.heir.pk)));
-  assert.equal(hex(taken.commitment), hex(row.commitment));
+  const standing = warden.standing(row.voice.pk);
+  assert.ok(standing);
+  assert.equal(hex(standing.commitment), hex(await commitment(warden.name.pk, row.heir.pk)));
   // Both of the granter's keys are dead: the voice it minted and the heir it
   // handed out. A standing is transferred and never copied.
   assert.equal(warden.standing(voice.pk), null);
   assert.equal(warden.standing(heir.pk), null);
-  // And the row the caller keeps is the one it now spends.
-  assert.equal(hex(taken.row.voice.pk), hex(taken.voice.pk));
-  assert.equal(hex(taken.row.heir.pk), hex(taken.heir.pk));
+  assert.ok(caller.padlock.pk);
 });
 
-test("spentBy scopes the row to a being of the caller's own, apart from the being addressed", async () => {
+test("the row is scoped to a being of the caller's own, apart from the being addressed", async () => {
   const { warden, being, invitation } = await granted();
+  const delivery = memoryDelivery();
   const caller = await Warden.open({
     nameSeed: fixed(80),
     padlockSeed: fixed(81),
     heirSeed: fixed(82),
+    clock: still,
+    random: () => crypto.getRandomValues(new Uint8Array(32)),
+    delivery,
   });
-  const mine = await caller.hold(todo(), { seed: fixed(83), blueprint: LIST });
-  let grain = 150;
-  const taken = await accept(caller, invitation, {
-    voiceSeed: fixed(30),
-    heirSeed: fixed(31),
-    spentBy: mine,
-    being,
-    method: invoke('complete'),
-    random: () => fixed((grain += 7) % 251),
-    send: (envelope) => warden.judge(envelope, { clock: still, random: RANDOM }),
-  });
-  // The row is spent by the caller's own being, never the far being the ask
-  // addressed — the two options carry different meanings.
-  assert.equal(hex(taken.row.being), hex(mine));
-  assert.notEqual(hex(taken.row.being), hex(being));
+  for (const hint of invitation.hints) delivery.attach(hint, warden);
+  const mine = await holding(caller, todo(), { seed: fixed(83), blueprint: LIST });
+  assert.ok(await caller.accept(invitation, { being: mine }));
+  // The row is spent by the caller's own being, never the far being it opens
+  // — the two carry different meanings.
+  assert.equal(hex(caller.outbound[0].being), hex(mine));
+  assert.notEqual(hex(caller.outbound[0].being), hex(being));
 });
 
 test('a copy of the invitation can no longer take the standing', async () => {
   const { warden, being, invitation } = await granted();
-  await accepting(warden, invitation, { being, method: invoke('complete') });
+  await accepting(warden, invitation);
 
   // Somebody else holding the same invitation — the granter included — replays
   // the holder's first act at the door.
@@ -1251,7 +1313,7 @@ test('a warden is total over what it holds, and two wardens are strangers', asyn
 async function armed() {
   const warden = await ground();
   const object = todo();
-  const being = await warden.hold(object, { seed: fixed(5), blueprint: LIST });
+  const being = await holding(warden, object, { seed: fixed(5), blueprint: LIST });
   // The keys were made somewhere else entirely; the door is handed the hash.
   const key = await signingPair(fixed(30));
   warden.arm(await commitment(warden.name.pk, key.pk), { beings: [being] });
@@ -1275,7 +1337,7 @@ test('an armed commitment is claimed by a stranger, and the standing is written 
   assert.equal(warden.inbound.size, 0);
 
   const back = await warden.judge(
-    await claim(warden, key, { being, method: invoke('add', utf8.encode('milk')) }),
+    await claim(warden, key, { being, method: invoke('add', title('milk')) }),
     { clock: still, random: RANDOM },
   );
   const answer = await readAnswer({
@@ -1283,7 +1345,7 @@ test('an armed commitment is claimed by a stranger, and the standing is written 
     padlockSecret: caller.secret,
     wardenPk: warden.name.pk,
   });
-  assert.equal(Buffer.from(answer.data).toString(), 'added');
+  assert.equal(answered(answer.data), true);
 
   // The claimant's own keys are the holder, and the door minted nothing.
   const row = warden.standing(key.pk);
@@ -1299,7 +1361,7 @@ test('a wrong proof of an armed commitment is ordinary silence and leaves the ar
   // stranger reaches the public being alone.
   const thief = await signingPair(fixed(40));
   assert.equal(
-    await warden.judge(await claim(warden, thief, { being, method: invoke('add') }), {
+    await warden.judge(await claim(warden, thief, { being, method: invoke('add', title('x')) }), {
       clock: still,
       random: RANDOM,
     }),
@@ -1339,8 +1401,8 @@ test('an armed commitment is spent once, and a second claim on it meets silence'
 
 test('one outbound row is dropped at one far warden, and the being other rows stand', async () => {
   const warden = await ground();
-  const being = await warden.hold(todo(), { seed: fixed(5), blueprint: LIST });
-  const other = await warden.hold(todo(), { seed: fixed(50), blueprint: LIST });
+  const being = await holding(warden, todo(), { seed: fixed(5), blueprint: LIST });
+  const other = await holding(warden, todo(), { seed: fixed(50), blueprint: LIST });
 
   const houses = [];
   for (const at of [60, 70]) {
@@ -1449,7 +1511,7 @@ test('the verified caller is offered inward, and a stranger is offered as one', 
   // refuses was still offered — the caller is a fact, and the refusal is the
   // door's own.
   await warden.judge(
-    await ask(warden, voice, { seq: 2n, being: fixed(96), method: invoke('add') }),
+    await ask(warden, voice, { seq: 2n, being: fixed(96), method: invoke('add', title('x')) }),
     {
       clock: still,
       random: RANDOM,
@@ -1489,7 +1551,7 @@ test('the offer changes no byte of the answer', async () => {
   const two = await granted();
   const envelope = await ask(one.warden, one.voice, {
     being: one.being,
-    method: invoke('add', utf8.encode('milk')),
+    method: invoke('add', title('milk')),
   });
 
   const quiet = await one.warden.judge(envelope, { clock: still, random: RANDOM });
@@ -1679,7 +1741,7 @@ test('a fresh mark honours any number at or above one, so no door may require ex
 // which is what lets two answers be compared byte for byte.
 async function standing(object) {
   const warden = await ground();
-  const being = await warden.hold(object, { seed: fixed(5), blueprint: LIST });
+  const being = await holding(warden, object, { seed: fixed(5), blueprint: LIST });
   const voice = await signingPair(fixed(6));
   await warden.grant(being, { voiceSeed: fixed(6), heirSeed: fixed(7) });
   return { warden, object, being, voice };
@@ -1689,11 +1751,13 @@ test('a being never produces silence, whatever it answers', async () => {
   // A call meets two layers and only the first can be silent. Past the door the
   // being always answers, so nothing a being returns can make the door go
   // quiet — which is why a being that wants to say no says it in a field.
-  const said = utf8.encode('no, and here is why');
   const beings = {
-    'data where the field declares data': { add: () => utf8.encode('added'), silent() {} },
-    'a refusal written as data, which is the only way to refuse': { add: () => said, silent() {} },
-    'nothing at all, where the field answers nothing': { add: () => utf8.encode('x'), silent() {} },
+    'the value the field declares': { add: () => true, silent() {} },
+    'a refusal written into the field, which is the only way to refuse': {
+      add: () => false,
+      silent() {},
+    },
+    'nothing at all, where the field answers nothing': { add: () => true, silent() {} },
   };
 
   for (const [what, object] of Object.entries(beings)) {
@@ -1705,7 +1769,7 @@ test('a being never produces silence, whatever it answers', async () => {
         await ask(one.warden, one.voice, {
           seq: BigInt(at + 1),
           being: one.being,
-          method: invoke(field),
+          method: field === 'add' ? invoke('add', title('x')) : invoke(field),
         }),
         { clock: still, random: RANDOM },
       );
@@ -1713,18 +1777,21 @@ test('a being never produces silence, whatever it answers', async () => {
     }
   }
 
-  // And the refusal a being writes for itself arrives as ordinary data, named
-  // by the ask's own number like any other answer.
-  const refuser = await standing({ add: () => said, silent() {} });
+  // And the refusal a being writes for itself arrives as an ordinary answer,
+  // named by the ask's own number like any other.
+  const refuser = await standing({ add: () => false, silent() {} });
   const answer = await readAnswer({
     envelope: await refuser.warden.judge(
-      await ask(refuser.warden, refuser.voice, { being: refuser.being, method: invoke('add') }),
+      await ask(refuser.warden, refuser.voice, {
+        being: refuser.being,
+        method: invoke('add', title('x')),
+      }),
       { clock: still, random: RANDOM },
     ),
     padlockSecret: caller.secret,
     wardenPk: refuser.warden.name.pk,
   });
-  assert.equal(hex(answer.data), hex(said));
+  assert.equal(answered(answer.data), false);
   assert.equal(answer.seq, 1n);
 });
 

@@ -1,7 +1,7 @@
 {
   "name": "@quo-systems/js",
-  "version": "0.2.0",
-  "description": "The Quo kit written from the constitution alone: the canonical blueprint notation, the wire encoding of the closed types, the arithmetic and the envelope",
+  "version": "0.3.0",
+  "description": "The Quo kit written from the constitution alone: a warden that judges what arrives at its one door, beings that hold standings and reach each other by handle, and the roads that carry the bytes",
   "keywords": [
     "quo",
     "protocol",
@@ -27,6 +27,7 @@
   "sideEffects": false,
   "exports": {
     ".": "./src/index.js",
+    "./host": "./src/host.js",
     "./door": "./src/door.js",
     "./line": "./src/line.js",
     "./line-ws": "./src/line-ws.js",

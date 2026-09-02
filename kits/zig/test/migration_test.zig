@@ -151,6 +151,7 @@ const World = struct {
             self.at_origin,
             self.traveller,
             arithmetic.commitment(self.origin.name, self.committed),
+            null,
         );
 
         // The destination is armed for the class — the digest identifies

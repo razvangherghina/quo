@@ -36,8 +36,8 @@ async function peerAndFar({ farName = 60, farHeir = 62 } = {}) {
     padlockSeed: fixed(61),
     heirSeed: fixed(farHeir),
   });
-  const theirs = await far.hold(
-    { complete: () => utf8.encode('done') },
+  const { being: theirs } = await far.hold(
+    { complete: () => true },
     { seed: fixed(63), blueprint: LIST },
   );
   const invitation = await far.grant(theirs, { voiceSeed: fixed(64), heirSeed: fixed(65) });
@@ -182,7 +182,7 @@ test('the peer keeps one mark per far warden', async () => {
     padlockSeed: fixed(81),
     heirSeed: fixed(82),
   });
-  const theirs = await two.hold({}, { seed: fixed(83), blueprint: LIST });
+  const { being: theirs } = await two.hold({}, { seed: fixed(83), blueprint: LIST });
   const second = one.peer.remember(
     await two.grant(theirs, { voiceSeed: fixed(84), heirSeed: fixed(85) }),
     {},

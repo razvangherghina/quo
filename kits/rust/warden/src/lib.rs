@@ -15,15 +15,23 @@
 //! onward reading and every key minted arrive as arguments, which is what
 //! lets a whole judgment be reproduced rather than merely exercised.
 
+pub mod ground;
 pub mod shape;
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use quo_arithmetic::commitment;
+use quo_arithmetic::{commitment, signing_pk};
 use quo_envelope::{Answer, Message, Method, Say};
 use quo_wire::Value;
 
+pub use ground::{
+    as_bool, as_bytes, as_int, as_invitation, as_maybe, as_text, Being, Caller, Carried, Delivery,
+    Handle, Holding, Kind, Label, Memory, Nowhere, Opening, Quo, Seeds, Snapshot, Store, Via,
+    Warden, Way, DEFAULT_ALLOWANCE,
+};
 pub use quo_envelope::{Allowance, Answer as SealedAnswer, Method as Field};
+/// The address a stranger knocks at, and `stranger`'s one argument.
+pub use quo_wire::Card;
 /// The five things a holder holds. It is `remember`'s one argument, so a
 /// caller of this crate never has to reach for the wire crate itself.
 pub use quo_wire::Invitation;
@@ -253,9 +261,13 @@ pub struct Verdict {
     pub arrival: i64,
 }
 
-/// A door: one warden, its beings, and its two records.
+/// The door: the judgment, the two records, and the keys it is judged with.
+///
+/// It is the warden's judging half and nothing above it: no clock, no
+/// randomness, no socket and no being that is an object. [`Warden`] is the
+/// whole thing, and it holds one of these.
 #[derive(Debug, Clone)]
-pub struct Warden {
+pub struct Door {
     /// The warden's name, which is also its public being's pk.
     pub name: [u8; KEY],
     /// The secret half of the name, which signs every answer.
@@ -267,6 +279,11 @@ pub struct Warden {
     /// The largest message this door will accept, counted in bytes of the
     /// whole envelope as the carriage delivers it.
     pub limit: i64,
+    /// The roads this ground publishes. **A warden does not know where it
+    /// stands until something stands it up**, so a road is told to it rather
+    /// than fixed at birth, and every mint after that carries the roads that
+    /// are true then. A hint is an opaque string this door never parses.
+    pub hints: Vec<String>,
     /// How many numbers below the mark this door remembers. How wide the
     /// window is, is the warden's own.
     pub window: i64,
@@ -299,7 +316,7 @@ pub struct Arrived {
     pub voices: Vec<[u8; KEY]>,
 }
 
-impl Warden {
+impl Door {
     /// A door with its public being standing and nothing else. The public
     /// being's pk is the warden's own name, and the two are one key.
     pub fn new(
@@ -310,12 +327,13 @@ impl Warden {
         window: i64,
     ) -> Self {
         let name = quo_arithmetic::signing_pk(&name_secret);
-        Warden {
+        Door {
             name,
             name_secret,
             padlock: quo_arithmetic::sealing_pk(&padlock_secret),
             padlock_secret,
             limit,
+            hints: Vec::new(),
             window,
             beings: vec![Resident {
                 being: name,
@@ -329,6 +347,22 @@ impl Warden {
             moved: Vec::new(),
             arrived: None,
         }
+    }
+
+    /// Tell this door a road it can be reached on. Roads accumulate, because a
+    /// warden offers as many as it has and none is authoritative; telling it
+    /// the same road twice adds nothing.
+    pub fn publish(&mut self, hint: &str) {
+        if !self.hints.iter().any(|held| held == hint) {
+            self.hints.push(hint.to_string());
+        }
+    }
+
+    /// A road that has stopped carrying is not a road. Retracting one is not
+    /// news on its own: it only stops the dead road being minted into
+    /// anything new.
+    pub fn retract(&mut self, hint: &str) {
+        self.hints.retain(|held| held != hint);
     }
 
     fn resident(&self, being: &[u8; KEY]) -> Option<&Resident> {
@@ -414,7 +448,27 @@ impl Warden {
                 }
             }
         }
+        Door::classed(reachable)
+    }
 
+    /// Every being this door holds, in the same derived order. **It is the
+    /// house's own view and never crosses the wire**: under one warden there
+    /// are no voices and no strangers, so a being asking what stands beside it
+    /// is asking about itself.
+    pub fn own_estate(&self) -> Estate {
+        Door::classed(self.beings.iter().collect())
+    }
+
+    /// The sketch of a being this door holds, taken by the house itself.
+    pub fn own_sketch(&self, being: &[u8; KEY]) -> Option<Sketch> {
+        self.resident(being).map(|held| Sketch {
+            being: held.being,
+            digest: held.digest,
+            commitment: held.commitment,
+        })
+    }
+
+    fn classed(reachable: Vec<&Resident>) -> Estate {
         let mut classes: Vec<Class> = Vec::new();
         for held in reachable {
             let entry = Held {
@@ -483,11 +537,20 @@ impl Warden {
         // it wore before stands in no standing here. If a published pointer
         // were not reach enough, the old door could not point about the one
         // being Article XIII sends every peer behind the news to ask it about.
-        let holder = self.inbound.iter().any(|row| &row.voice == voice);
+        // To a holder who reached it before, never to a stranger — and holding
+        // a standing at some other being here is not having reached this one.
+        // At the old door the standings still name the being that left, which
+        // the first test catches; at a destination they name it by the key this
+        // house minted, so reaching the successor the published word names is
+        // what reached-it-before means there.
+        let pointed = pointer
+            .as_ref()
+            .and_then(|word| word.successor)
+            .is_some_and(|successor| self.reaches(voice, &successor));
         // Two ways to earn the answer, and naming them positively is the whole
         // rule: this voice still reaches the being here, or the being has left
-        // and this voice held a standing at the door before it did.
-        let may_ask = self.reaches(voice, being) || (pointer.is_some() && holder);
+        // and this voice reaches where it went.
+        let may_ask = self.reaches(voice, being) || pointed;
         if !may_ask {
             return refuse("a pointer for a being this voice may not reach");
         }
@@ -511,7 +574,16 @@ impl Warden {
         // must say `say`.
         let say = quo_envelope::open_at_door(&self.padlock_secret, envelope)
             .map_err(|why| Refused(why.0))?;
+        self.judge_say(say, arrival)
+    }
 
+    /// Steps three through seven, on a payload already unsealed and verified.
+    ///
+    /// The seal is opened once and by one party. A caller that has already
+    /// opened an envelope to read its record byte — which is what tells an
+    /// answer from a say — hands the say here rather than making the door
+    /// open the same envelope a second time.
+    pub fn judge_say(&mut self, say: Say, arrival: i64) -> Judged<Verdict> {
         // 3. Check the recipient, here and not later: a payload addressed
         // elsewhere must never touch this house's records.
         if say.recipient != self.name && say.recipient != self.padlock {
@@ -572,11 +644,23 @@ impl Warden {
         // standing must still be able to rotate. New commitments are filed
         // under the name the door has now, so the rotation after this one
         // matches at the new name.
-        if let Some(at) = self
+        //
+        // Every match is counted before anything moves. Matching more than one
+        // standing is silence: no order over the records is law, so a door that
+        // took the first it found would have chosen, and the next door would
+        // choose differently. A granter that committed one heir at two
+        // standings has made its own error.
+        let matched: Vec<usize> = self
             .inbound
             .iter()
-            .position(|row| commitment(&row.minted_at, &say.voice) == row.commitment)
-        {
+            .enumerate()
+            .filter(|(_, row)| commitment(&row.minted_at, &say.voice) == row.commitment)
+            .map(|(at, _)| at)
+            .collect();
+        if matched.len() > 1 {
+            return refuse("a hash matching more than one standing");
+        }
+        if let Some(&at) = matched.first() {
             let Some(next) = say.commitment else {
                 // Every rotation carries a fresh commitment, or a standing
                 // could be taken over once and never again.
@@ -1270,6 +1354,39 @@ impl Warden {
         self.outbound.len() - 1
     }
 
+    /// Keep a card as a relation this door speaks down **as a stranger**: the
+    /// far house's address and nothing else, with a voice minted here that
+    /// stands nowhere over there.
+    ///
+    /// The voice is not the far door's to know and was never granted, so the
+    /// row opens no standing: every say it composes is placed as a stranger
+    /// and is answered with what that door shows a stranger. The heir is minted
+    /// beside it because a row without one could never rotate if the far house
+    /// ever did grant this voice a place.
+    pub fn stranger(
+        &mut self,
+        card: &quo_wire::Card,
+        voice_secret: [u8; KEY],
+        heir_secret: [u8; KEY],
+    ) -> usize {
+        self.outbound.push(Outbound {
+            warden: card.warden,
+            commitment: card.commitment,
+            padlock: card.padlock,
+            voice: signing_pk(&voice_secret),
+            secret: voice_secret,
+            heir: signing_pk(&heir_secret),
+            heir_secret,
+            seq: 0,
+            news: 0,
+            hints: card.hints.clone(),
+            holder: None,
+            beings: BTreeMap::new(),
+            awaiting: BTreeSet::new(),
+        });
+        self.outbound.len() - 1
+    }
+
     /// Say which of this ground's beings spends a relation. It is a separate
     /// act because an invitation says nothing about who here will hold it, and
     /// a row that named nobody could not travel when that being moves.
@@ -1721,8 +1838,13 @@ pub fn spend_leash(allowance: &Allowance) -> Judged<()> {
 /// readings of one clock, the road never counted. Where either would fall
 /// below zero, or the budget to zero, **the onward ask is not made** and the
 /// work already routed stands.
+///
+/// A dwell is never negative. Where this door's own two readings yield a
+/// dwell below zero the onward budget is the arriving one: a clock that has
+/// gone backwards is this door's fault and never the peer's, and no door
+/// widens a leash.
 pub fn onward(arrived: &Allowance, arrival: i64, handed_onward: i64) -> Option<Allowance> {
-    let dwell = handed_onward - arrival;
+    let dwell = handed_onward.checked_sub(arrival)?.max(0);
     let time = arrived.time.checked_sub(dwell)?;
     let hops = arrived.hops.checked_sub(1)?;
     if time <= 0 || hops < 0 {

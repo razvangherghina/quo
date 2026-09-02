@@ -10,10 +10,6 @@
 // Calling out is `fetch`, which every ground has, so this file names no host
 // and runs wherever the kit does. Listening is the half that cannot be
 // portable, and it lives in `door.js` behind its own export.
-//
-// This file is also where a caller works out which roads it can speak, because
-// choosing among the hints a peer offered is the caller's whole job. It works
-// it out by trying, never by being told.
 
 // A hint is where to send bytes, and Quo never reads one: it is posted to
 // exactly as given.
@@ -23,79 +19,20 @@ export async function post(hint, envelope) {
   return body.length === 0 ? null : body;
 }
 
-// Which roads this ground can speak is not configured and not passed: the
-// caller finds out by trying to pick one up. A browser has no socket under it,
-// so the line does not load and the carriage is all there is; a ground that has
-// one loads it once and takes a `tcp://` hint from then on.
-//
-// The specifier is held in a variable on purpose. A bundler that could follow
-// it would pull `node:net` into a browser build and fail there, which is the
-// one place this must not fail — so the load stays a runtime question, asked
-// once and answered by the platform.
-const LINE = './line.js';
-const LINE_WS = './line-ws.js';
-const picked = new Map();
-
-async function lineRoad(specifier) {
-  if (!picked.has(specifier)) {
-    try {
-      picked.set(specifier, await import(specifier));
-    } catch {
-      picked.set(specifier, null);
-    }
-  }
-  return picked.get(specifier);
-}
-
-// The lines a ground holds, one per road it has dialled, kept because the line
-// is persistent by definition: a fresh connection per ask would be the common
-// carriage wearing a socket, and it would leave a ground that publishes nothing
-// unreachable between calls. They belong to the ground, so they are keyed by
-// its warden and go when it hangs up.
-const held = new WeakMap();
-
-async function overLine(road, hint, envelope, { warden, clock, random, far, seq }) {
-  let lines = held.get(warden);
-  if (!lines) held.set(warden, (lines = new Map()));
-  let line = lines.get(hint);
-  if (!line || !line.open) {
-    line = await road.dial(warden, hint, { clock, random });
-    lines.set(hint, line);
-  }
-  // The ask is named by the far warden and the number it was sealed with, both
-  // of them the caller's own knowledge of the ask it built. Handed neither,
-  // this is a say and nothing is waited for.
-  return line.carry(envelope, far && seq !== undefined ? { warden: far, seq } : null);
-}
-
-// Let go of every line this ground dialled. A line is a held resource and the
-// ground that took it up is the one that puts it down.
-export function hangUp(warden) {
-  for (const line of held.get(warden)?.values() ?? []) line.close();
-  held.delete(warden);
-}
-
 // There are several hints and none is authoritative: a hint is a guess about
-// the weather, so a caller tries them.
-export async function reach(hints, envelope, over = null) {
+// the weather, so a caller tries them. Holding a line is not this file's work
+// and never was the caller's: delivery, beneath the warden, is what holds the
+// roads a ground has dialled, and this is the common carriage alone.
+export async function reach(hints, envelope) {
   let last = null;
   for (const hint of hints) {
     try {
-      // `ws://` names nothing — in the clear the line is already `tcp://` — so
-      // a hint spelling it is not a road that failed, it is not a road. It is
-      // passed by in silence and never posted to.
-      if (hint.startsWith('ws://')) continue;
-      // The line's two address forms are one road above the bytes, so they are
-      // one branch here: which file carries it is the only difference.
-      const form = hint.startsWith('tcp://') ? LINE : hint.startsWith('wss://') ? LINE_WS : null;
-      if (form) {
-        // A road this ground cannot speak is not a road that failed to carry:
-        // nothing was sent, so it is not weather either. The caller moves on
-        // exactly as it would past a hint it had never been offered.
-        const road = over && (await lineRoad(form));
-        if (!road) continue;
-        return await overLine(road, hint, envelope, over);
-      }
+      // A road this carriage cannot speak is not a road that failed to carry:
+      // nothing was sent, so it is not weather either. The caller moves on
+      // exactly as it would past a hint it had never been offered. `ws://` is
+      // one of those — in the clear the line is already `tcp://`, so a hint
+      // spelling it is not a road at all.
+      if (/^(ws|tcp|wss):\/\//.test(hint)) continue;
       return await post(hint, envelope);
     } catch (error) {
       last = error;

@@ -7,16 +7,27 @@
 // sockets are concerned.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { Warden, commitment, post, readAnswer, readField, signingPair } from '../src/index.js';
+import {
+  Warden,
+  commitment,
+  decode,
+  encode,
+  post,
+  readAnswer,
+  readField,
+  signingPair,
+} from '../src/index.js';
 import { dial } from '../src/line.js';
 import { stand, unreachable } from './container/ground.js';
 
 const hex = (bytes) => Buffer.from(bytes).toString('hex');
 const bytes = (text) => Uint8Array.from(Buffer.from(text, 'hex'));
 const fixed = (fill) => new Uint8Array(32).fill(fill);
-const utf8 = new TextEncoder();
 const still = () => 1_000;
 const RANDOM = fixed(200);
+
+const TEXT = { base: 'text' };
+const INT = { base: 'int' };
 
 const LIST = `ToDo
   add(title text) bool
@@ -36,7 +47,13 @@ const skip = why ? `no container boundary to cross: ${why}` : false;
 
 // The host end: a warden that publishes no road of its own and only calls out.
 function caller() {
-  return Warden.open({ nameSeed: fixed(10), padlockSeed: fixed(11), heirSeed: fixed(12) });
+  return Warden.open({
+    nameSeed: fixed(10),
+    padlockSeed: fixed(11),
+    heirSeed: fixed(12),
+    clock: still,
+    random: grain(200),
+  });
 }
 
 // The invitation the container printed, back in the kit's own types.
@@ -102,7 +119,7 @@ test('the common carriage crosses a container boundary', { skip }, async (t) => 
   const said = await guest.ask(row, {
     seq: 2n,
     being,
-    method: { name: 'add', args: utf8.encode('milk') },
+    method: { name: 'add', args: encode(TEXT, 'milk') },
     random: RANDOM,
   });
   const answer = await read(guest, far, await post(facts.hint, said));
@@ -123,7 +140,7 @@ test('the common carriage crosses a container boundary', { skip }, async (t) => 
       }),
     ),
   );
-  assert.equal(Buffer.from(counted.data).toString(), '1');
+  assert.equal(decode(INT, counted.data), 1n);
 
   // The same envelope again is a spent number, and a spent number is silence —
   // the container's own marks refuse it, and nothing was added twice.
@@ -141,7 +158,7 @@ test('the common carriage crosses a container boundary', { skip }, async (t) => 
       }),
     ),
   );
-  assert.equal(Buffer.from(again.data).toString(), '1');
+  assert.equal(decode(INT, again.data), 1n);
 });
 
 test('the line crosses a container boundary, in both directions', { skip }, async (t) => {
@@ -158,36 +175,28 @@ test('the line crosses a container boundary, in both directions', { skip }, asyn
   const line = await dial(guest, facts.hint, { clock: still, random: grain(50) });
   t.after(() => line.close());
 
+  // The line carries and waits for nothing: an answer arrives as a frame of
+  // its own through this warden's one door, and the caller's own record is
+  // what settles the wait.
+  const askOver = async (options, field) => {
+    const envelope = await guest.ask(row, { random: RANDOM, ...options });
+    const waiting = guest.pending(row, options.seq, 5_000n);
+    assert.equal(line.carry(envelope), true);
+    const answer = await waiting;
+    if (!answer) return null;
+    return field === undefined ? answer : readField(field, answer.data);
+  };
+
   const next = await signingPair(fixed(22));
-  const estate = await read(
-    guest,
-    far,
-    await line.carry(
-      await guest.ask(row, {
-        seq: 1n,
-        commitment: await commitment(far, next.pk),
-        random: RANDOM,
-      }),
-      { warden: far, seq: 1n },
-    ),
-    'describe',
-  );
+  const estate = await askOver({ seq: 1n, commitment: await commitment(far, next.pk) }, 'describe');
   row.voice = { pk: row.heir.pk, secret: row.heir.secret };
   assert.ok(estate.classes.some((one) => one.beings.some((one) => hex(one.being) === facts.being)));
 
-  const answer = await read(
-    guest,
-    far,
-    await line.carry(
-      await guest.ask(row, {
-        seq: 2n,
-        being,
-        method: { name: 'add', args: utf8.encode('milk') },
-        random: RANDOM,
-      }),
-      { warden: far, seq: 2n },
-    ),
-  );
+  const answer = await askOver({
+    seq: 2n,
+    being,
+    method: { name: 'add', args: encode(TEXT, 'milk') },
+  });
   assert.equal(answer.seq, 2n);
 
   // The push. This side holds a being and publishes no road at all — it is
@@ -196,15 +205,19 @@ test('the line crosses a container boundary, in both directions', { skip }, asyn
   // has to change hands as data before anything can be spent.
   const mine = {
     lines: [],
-    add(args) {
-      this.lines.push(Buffer.from(args).toString());
-      return Uint8Array.of(1);
+    add(title) {
+      this.lines.push(title);
+      return true;
     },
     count() {
-      return utf8.encode(String(this.lines.length));
+      return BigInt(this.lines.length);
     },
   };
-  const here = await guest.hold(mine, { seed: fixed(60), heirSeed: fixed(61), blueprint: LIST });
+  const { being: here } = await guest.hold(mine, {
+    seed: fixed(60),
+    heirSeed: fixed(61),
+    blueprint: LIST,
+  });
   assert.deepEqual(guest.hints, []);
   const invitation = await guest.grant(here, { voiceSeed: fixed(62), heirSeed: fixed(63) });
   assert.deepEqual(invitation.hints, []);

@@ -17,9 +17,16 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { connect } from 'node:tls';
 import { createHash, randomBytes } from 'node:crypto';
-import { Warden, commitment, readAnswer, readField, signingPair } from '../src/index.js';
+import {
+  Warden,
+  commitment,
+  encode as encodeValue,
+  readAnswer,
+  readField,
+  signingPair,
+} from '../src/index.js';
 import { CAP, DEFAULT, dial, listen } from '../src/line-ws.js';
-import { reach } from '../src/carriage.js';
+import { host as stand } from '../src/host.js';
 
 const KEY = `-----BEGIN PRIVATE KEY-----
 MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDvArOtIaUweejL
@@ -86,15 +93,17 @@ const LIST = `ToDo
   count() int
 `;
 
+const TEXT = { base: 'text' };
+
 function todo() {
   return {
     lines: [],
-    add(args) {
-      this.lines.push(Buffer.from(args).toString());
-      return Uint8Array.of(1);
+    add(title) {
+      this.lines.push(title);
+      return true;
     },
     count() {
-      return utf8.encode(String(this.lines.length));
+      return BigInt(this.lines.length);
     },
   };
 }
@@ -107,14 +116,26 @@ const grain = (start) => {
 // Two grounds: one listening on an ephemeral loopback port and terminating its
 // own TLS, one that only ever dials out and publishes no road at all.
 async function grounds(options = {}) {
-  const host = await Warden.open({ nameSeed: fixed(1), padlockSeed: fixed(2), heirSeed: fixed(3) });
+  const host = await Warden.open({
+    nameSeed: fixed(1),
+    padlockSeed: fixed(2),
+    heirSeed: fixed(3),
+    clock: still,
+    random: grain(100),
+  });
   const guest = await Warden.open({
     nameSeed: fixed(10),
     padlockSeed: fixed(11),
     heirSeed: fixed(12),
+    clock: still,
+    random: grain(150),
   });
   const object = todo();
-  const being = await host.hold(object, { seed: fixed(5), heirSeed: fixed(6), blueprint: LIST });
+  const { being } = await host.hold(object, {
+    seed: fixed(5),
+    heirSeed: fixed(6),
+    blueprint: LIST,
+  });
   const accepted = [];
   const door = await listen(host, {
     clock: still,
@@ -133,6 +154,19 @@ async function read(from, farWardenPk, envelope, field) {
     padlockSecret: from.padlock.secret,
     wardenPk: farWardenPk,
   });
+  if (!answer) return null;
+  return field === undefined ? answer : readField(field, answer.data);
+}
+
+// An ask down a line: the line carries and waits for nothing, the answer
+// arrives as a message of its own through the warden's one door, and the
+// caller's own record is what settles the wait.
+async function askOver(line, from, row, options, field) {
+  const envelope = await from.ask(row, { random: RANDOM, ...options });
+  if (envelope === null) return null;
+  const waiting = from.pending(row, options.seq, 2_000n);
+  assert.equal(line.carry(envelope), true);
+  const answer = await waiting;
   if (!answer) return null;
   return field === undefined ? answer : readField(field, answer.data);
 }
@@ -261,17 +295,11 @@ test('an ask and its answer ride one wss line, and the road it publishes says so
   t.after(() => line.close());
 
   const next = await signingPair(fixed(22));
-  const estate = await read(
+  const estate = await askOver(
+    line,
     guest,
-    host.name.pk,
-    await line.carry(
-      await guest.ask(row, {
-        seq: 1n,
-        commitment: await commitment(host.name.pk, next.pk),
-        random: RANDOM,
-      }),
-      { warden: host.name.pk, seq: 1n },
-    ),
+    row,
+    { seq: 1n, commitment: await commitment(host.name.pk, next.pk) },
     'describe',
   );
   row.voice = { pk: row.heir.pk, secret: row.heir.secret };
@@ -280,19 +308,11 @@ test('an ask and its answer ride one wss line, and the road it publishes says so
   );
 
   // A second ask down the same connection: one WebSocket, many messages.
-  const answer = await read(
-    guest,
-    host.name.pk,
-    await line.carry(
-      await guest.ask(row, {
-        seq: 2n,
-        being,
-        method: { name: 'add', args: utf8.encode('milk') },
-        random: RANDOM,
-      }),
-      { warden: host.name.pk, seq: 2n },
-    ),
-  );
+  const answer = await askOver(line, guest, row, {
+    seq: 2n,
+    being,
+    method: { name: 'add', args: encodeValue(TEXT, 'milk') },
+  });
   assert.equal(answer.seq, 2n);
   assert.deepEqual(object.lines, ['milk']);
 });
@@ -337,7 +357,11 @@ test('a push rides back down a wss line the far end dialled out', async (t) => {
   const { host, guest } = world;
 
   const mine = todo();
-  const being = await guest.hold(mine, { seed: fixed(60), heirSeed: fixed(61), blueprint: LIST });
+  const { being } = await guest.hold(mine, {
+    seed: fixed(60),
+    heirSeed: fixed(61),
+    blueprint: LIST,
+  });
   assert.deepEqual(guest.hints, []);
 
   const invitation = await guest.grant(being, { voiceSeed: fixed(62), heirSeed: fixed(63) });
@@ -369,20 +393,12 @@ test('a push rides back down a wss line the far end dialled out', async (t) => {
 
   // The listener now asks down the connection it never opened: either end
   // originates, which is the line's shape on either form.
-  const answer = await read(
-    host,
-    guest.name.pk,
-    await world.accepted[0].carry(
-      await host.ask(row, {
-        seq: 1n,
-        commitment: await commitment(guest.name.pk, (await signingPair(fixed(65))).pk),
-        being,
-        method: { name: 'add', args: utf8.encode('bread') },
-        random: RANDOM,
-      }),
-      { warden: guest.name.pk, seq: 1n },
-    ),
-  );
+  const answer = await askOver(world.accepted[0], host, row, {
+    seq: 1n,
+    commitment: await commitment(guest.name.pk, (await signingPair(fixed(65))).pk),
+    being,
+    method: { name: 'add', args: encodeValue(TEXT, 'bread') },
+  });
   assert.equal(answer.seq, 1n);
   assert.deepEqual(mine.lines, ['bread']);
 });
@@ -562,39 +578,25 @@ test('a dialler stays under the cap the wss road declared', async (t) => {
 
   // Over what the road promised, the sender's own kit says no and no message
   // is written: the alternative is a frame the far end must drop.
-  assert.equal(await line.carry(new Uint8Array(5_000)), null);
+  assert.equal(line.carry(new Uint8Array(5_000)), false);
   assert.equal(line.open, true);
 
   const next = await signingPair(fixed(22));
   assert.ok(
-    await read(
+    await askOver(
+      line,
       guest,
-      host.name.pk,
-      await line.carry(
-        await guest.ask(row, {
-          seq: 1n,
-          commitment: await commitment(host.name.pk, next.pk),
-          random: RANDOM,
-        }),
-        { warden: host.name.pk, seq: 1n },
-      ),
+      row,
+      { seq: 1n, commitment: await commitment(host.name.pk, next.pk) },
       'describe',
     ),
   );
   row.voice = { pk: row.heir.pk, secret: row.heir.secret };
-  const answer = await read(
-    guest,
-    host.name.pk,
-    await line.carry(
-      await guest.ask(row, {
-        seq: 2n,
-        being,
-        method: { name: 'add', args: utf8.encode('milk') },
-        random: RANDOM,
-      }),
-      { warden: host.name.pk, seq: 2n },
-    ),
-  );
+  const answer = await askOver(line, guest, row, {
+    seq: 2n,
+    being,
+    method: { name: 'add', args: encodeValue(TEXT, 'milk') },
+  });
   assert.equal(answer.seq, 2n);
   assert.deepEqual(object.lines, ['milk']);
 });
@@ -652,20 +654,12 @@ test('the platform WebSocket carries the line where a socket cannot be opened', 
   const line = await dial(guest, world.door.hint, { clock: still, random: grain(50) });
   t.after(() => line.close());
 
-  const answer = await read(
-    guest,
-    host.name.pk,
-    await line.carry(
-      await guest.ask(row, {
-        seq: 1n,
-        commitment: await commitment(host.name.pk, (await signingPair(fixed(22))).pk),
-        being,
-        method: { name: 'add', args: utf8.encode('bread') },
-        random: RANDOM,
-      }),
-      { warden: host.name.pk, seq: 1n },
-    ),
-  );
+  const answer = await askOver(line, guest, row, {
+    seq: 1n,
+    commitment: await commitment(host.name.pk, (await signingPair(fixed(22))).pk),
+    being,
+    method: { name: 'add', args: encodeValue(TEXT, 'bread') },
+  });
   assert.equal(answer.seq, 1n);
   assert.deepEqual(object.lines, ['bread']);
 });
@@ -699,9 +693,20 @@ test('`ws://` names nothing, and a hint that is not a wss line is not dialled', 
     );
   }
 
-  // A caller offered nothing but `ws://` is offered no road: it is passed by
-  // in silence and never posted to.
-  assert.equal(await reach(['ws://127.0.0.1:1'], new Uint8Array(4)), null);
+  // A ground offered nothing but `ws://` is offered no road: in the clear the
+  // line is already `tcp://`, so delivery passes the hint by in silence and
+  // never posts to it.
+  const ground = await stand({
+    seeds: { name: fixed(93), padlock: fixed(94), heir: fixed(95) },
+    clock: still,
+    random: grain(200),
+  });
+  const carried = await ground.delivery.send(
+    { padlock: fixed(96), hints: ['ws://127.0.0.1:1'] },
+    new Uint8Array(4),
+  );
+  assert.equal(carried, null);
+  await ground.close();
 });
 
 test('a hint carries its path to the door untouched', async (t) => {

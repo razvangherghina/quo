@@ -22,7 +22,6 @@ from typing import Any, Callable, Optional, cast
 __all__ = [
     "CarriageError",
     "DEFAULT_TIMEOUT",
-    "hang_up",
     "post",
     "reach",
     "Door",
@@ -76,47 +75,6 @@ def post(hint: str, message: bytes, timeout: float = DEFAULT_TIMEOUT) -> bytes:
         connection.close()
 
 
-def _line_road() -> Any:
-    """The line road, if this platform has one under it.
-
-    Which roads a caller can speak is never configured and never passed: it
-    finds out by trying to pick one up. Python is always somewhere with sockets,
-    so this always succeeds — unlike the JS kit, which is the one that can be a
-    browser. It is written as a trial anyway, because the rule is the same rule
-    and a kit that hard-codes the answer stops stating it.
-    """
-    global _line
-    if _line is _unpicked:
-        try:
-            from . import line as picked
-
-            _line = picked
-        except ImportError:  # pragma: no cover - a platform with no sockets
-            _line = None
-    return _line
-
-
-_unpicked = object()
-_line: Any = _unpicked
-
-#: The lines a caller holds, one per road it has dialled. A line is persistent
-#: by definition: a fresh connection per ask would be the common carriage
-#: wearing a socket, and it would leave a ground that publishes nothing
-#: unreachable between calls.
-_held: dict[str, Any] = {}
-
-
-def hang_up() -> None:
-    """Let go of every line this caller dialled.
-
-    A line is a held resource and whoever took it up is the one that puts it
-    down.
-    """
-    for held in list(_held.values()):
-        held.close()
-    _held.clear()
-
-
 def reach(
     hints: list[str], message: bytes, timeout: float = DEFAULT_TIMEOUT
 ) -> Optional[bytes]:
@@ -133,20 +91,17 @@ def reach(
     be, and it is never the fault raised at the end. A list of nothing but such
     roads therefore returns ``None`` rather than raising: no road was tried, so
     there is no fault to report the road of.
+
+    **Holding a line is not this file's work.** Delivery, beneath the warden,
+    is what holds the roads a ground has dialled and what chooses between the
+    roads a ground can speak. This is the common carriage alone, and a hint on
+    any other road is walked past here.
     """
     last: Optional[Exception] = None
     for hint in hints:
         try:
-            if hint.startswith("tcp://"):
-                road = _line_road()
-                if road is None:
-                    continue
-                held = _held.get(hint)
-                if held is None or not held.open:
-                    held = road.dial(hint, timeout=timeout)
-                    _held[hint] = held
-                held.send(message)
-                return held.receive()
+            if not (hint.startswith("http://") or hint.startswith("https://")):
+                continue
             return post(hint, message, timeout=timeout)
         except (CarriageError, OSError) as bad:
             last = bad

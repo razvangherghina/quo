@@ -20,6 +20,7 @@ line binds another; distance zero binds nothing, because there is nothing to
 bind.
 """
 
+import asyncio
 import socket
 import unittest
 
@@ -82,11 +83,16 @@ class ARoad:
 
 
 def judging(door: warden.Warden):
+    """What every road is given: the warden's one entry point and nothing else.
+
+    A road hands whole envelope bytes over and takes bytes or silence back. It
+    holds no secret, opens no seal, and never learns whether it carried an ask
+    or an answer — the record byte inside the seal says that, and only the
+    warden reads it.
+    """
+
     def judge(message: bytes):
-        try:
-            return door.judge(message).answer
-        except pins.warden.Silence:
-            return None
+        return asyncio.run(door.arrive(message))
 
     return judge
 
@@ -185,17 +191,23 @@ class TheJudgment:
         answer = pins.opened(self.send(self.say(seq=1)))
         self.assertEqual(answer["warden"], self.warden.name)
         self.assertEqual(answer["seq"], 1)
-        self.assertEqual(answer["data"], b"lit")
+        self.assertEqual(answer["data"], pins.LIT)
 
     def test_xii_the_being_answers_and_never_learns_the_road(self) -> None:
         """Steps 1 through 6 are the warden's alone. The object behind the door
         is the same object on every road, and it is handed the same bytes."""
         seen = []
-        self.warden.beings[pins.BEING_PK].invoke = lambda name, args, leash: (
-            seen.append((name, args)) or b"lit"
-        )
-        self.assertEqual(pins.opened(self.send(self.say(seq=1)))["data"], b"lit")
-        self.assertEqual(seen, [("lit", b"")])
+
+        class Watching(pins.Lamp):
+            def lit(self) -> bool:
+                seen.append("lit")
+                return True
+
+        self.warden.beings[pins.BEING_PK].obj = Watching()
+        self.assertEqual(pins.opened(self.send(self.say(seq=1)))["data"], pins.LIT)
+        # The same object on every road, called once, and nothing reached it
+        # that says which road carried the ask.
+        self.assertEqual(seen, ["lit"])
 
     # -- step 1: unseal, and the leading byte
 
@@ -272,7 +284,7 @@ class TheJudgment:
             being=pins.BEING_PK,
             call=pins.method("lit"),
         )
-        self.assertEqual(pins.opened(self.send(rotation))["data"], b"lit")
+        self.assertEqual(pins.opened(self.send(rotation))["data"], pins.LIT)
         # The key that held the standing a moment ago now holds nothing, and a
         # voice at nothing reaches no granted being.
         self.assertEqual(self.send(self.say(seq=2, being=pins.BEING_PK)), SILENCE)
@@ -313,7 +325,7 @@ class TheJudgment:
         self,
     ) -> None:
         self.assertEqual(
-            pins.opened(self.send(self.say(seq=1, hops=0)))["data"], b"lit"
+            pins.opened(self.send(self.say(seq=1, hops=0)))["data"], pins.LIT
         )
 
     def test_viii_a_time_budget_at_or_below_zero_is_silence(self) -> None:
@@ -341,7 +353,7 @@ class TheJudgment:
         sealed = self.send(self.say(seq=1))
         with self.assertRaises(envelope.EnvelopeError):
             envelope.unseal(OTHER_PADLOCK_SECRET, sealed, envelope.ANSWER)
-        self.assertEqual(pins.opened(sealed)["data"], b"lit")
+        self.assertEqual(pins.opened(sealed)["data"], pins.LIT)
 
     def test_xii_every_failure_is_the_same_failure_and_says_no_step(self) -> None:
         """One fault per step, and the road hands back the same nothing for

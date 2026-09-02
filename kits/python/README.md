@@ -2,7 +2,8 @@
 
 Written from [the constitution](../../constitution.md) alone and judged
 against the pinned corpus in [`../js/vectors`](../js/vectors). Today it
-carries a core of five modules and the two roads.
+carries a core of seven modules, the three roads, and a host that stands them
+in front of a warden.
 
 - **`quo.notation`** — Article IV. A blueprint's canonical text, its SHA-256
   digest, and every text the notation refuses.
@@ -11,6 +12,13 @@ carries a core of five modules and the two roads.
 - **`quo.wire`** — Article V. The byte encoding of every closed type.
 - **`quo.envelope`** — Article XI. The sealed box and the two records inside it.
 - **`quo.warden`** — Articles IX and XII. The door, and the judgment in order.
+  `arrive` is its one entry point for arriving bytes, whatever road carried
+  them: it unseals once, reads the record byte itself, and answers bytes or
+  nothing.
+- **`quo.being`** — the whole of what a being has of Quo: the closure at
+  `obj.quo`, and the handle every declared field is an awaitable on.
+- **`quo.delivery`** — the seeds, the memory store and the delivery at
+  distance zero that a host may hand a warden instead of writing its own.
 
 And the roads, which are not the core:
 
@@ -18,16 +26,26 @@ And the roads, which are not the core:
   and bytes out. The only module that imports `http`.
 - **`quo.line`** — Article III. Framed envelopes over one persistent TCP
   connection. The only module that imports `socket`.
+- **`quo.call`** — Article III. Distance zero: bytes handed as bytes, with no
+  host under it at all.
 
-Importing `quo` gives the core and pulls in no host; a road is asked for by
+And one host, which is neither:
+
+- **`quo.host`** — a warden opened on handed seeds, the roads it is told stood
+  in front of its one door, and delivery beneath it. The only module that
+  knows every road by name, and it holds no secret.
+
+Importing `quo` gives the core and pulls in no road; a road is asked for by
 name, and `tests/test_roads.py` asserts that rather than trusting a reader to
 keep noticing it.
 
 One third-party import, and it is the whole of it: PyCA
 [`cryptography`](https://cryptography.io/), which carries Ed25519, X25519,
 AES-256-GCM and HKDF. SHA-256 still comes from `hashlib`, because a primitive
-the platform holds is taken from the platform. The core imports no host:
-nothing from `socket`, `http` or `asyncio`.
+the platform holds is taken from the platform. The core reaches no road:
+nothing from `socket` or `http`, and no road module. It does use `asyncio`,
+because every Quo call is asynchronous — a call answers with a value or with
+silence, and a handle is always awaited.
 
 ## What it needs
 
@@ -75,7 +93,71 @@ bytes is refused at the point of agreement, said as this module's own refusal
 rather than as whatever `cryptography` raised underneath.
 
 ```python
-from quo import carriage, line
+from quo.delivery import seeds
+from quo.host import host
+
+class Dog:
+    def __init__(self, name):
+        self.dogName = name
+
+    def name(self):
+        return self.dogName
+
+
+alice = await host(seeds(), roads=["http"])
+bob = await host(seeds(), roads=["http"])
+
+dog = Dog("Rex")
+await alice.warden.hold(dog, "Dog\n  name() text\n")
+invitation = dog.quo.grant()          # what a holder is handed, out of band
+[rex] = await bob.warden.accept(invitation, label="rex")
+await rex.name()                      # -> "Rex", or None for silence
+```
+
+A being is a plain class of yours. Holding it attaches `obj.quo`, and that
+closure is the whole of what a being has of Quo:
+
+```python
+obj.quo.caller             # during a call: the voice and the kind judged
+obj.quo.leash              # during a call: what arrived
+obj.quo.standings()        # who holds a place at me, as voices only
+obj.quo.relation(label)    # one handle, under a private label of my own
+await obj.quo.relations(label)   # a handle per being that label's row names
+obj.quo.grant(target)      # -> an invitation to a being here
+obj.quo.amend(voice, add=[...], remove=[...])
+obj.quo.release(target)
+await obj.quo.accept(invitation, label=...)  # -> a handle per being it names
+await obj.quo.knock(card, label=...)         # -> a handle, as a stranger
+await obj.quo.hold(object, blueprint, label=...)
+```
+
+Accepting answers a handle for each being the standing names, and each carries
+the being it is at, so a holder tells them apart. A standing widened after it
+was accepted is re-read from the far door with `relations(label)` rather than
+remembered. A card grants nothing: knocking with one answers a handle at that
+door's public being, held as a stranger, and what that door shows a stranger is
+all it answers.
+
+Beside its blueprint's fields, every handle carries the four introspections,
+each an ordinary ask at the far door and each answering a value or `None`:
+
+```python
+await rex.describe()          # the estate that door shows this voice
+await rex.sketch()            # this being's sketch; sketch(other) for another
+await rex.blueprint(digest)   # the text of a class this voice reaches
+await rex.limit()             # the largest envelope that door accepts
+```
+
+A being never sees a byte, a key or a road, and every declared field of a
+handle is an awaitable answering a value or `None`, because silence is what a
+Quo call has that a pointer call has not. A handle at a being under the same
+warden answers all of the same, by the same shape.
+
+```python
+from quo import call, carriage, line
+
+call.Door(handle, limit=...)            # a door at distance zero, no wire under it
+call.post(door, message)                # -> the sealed answer, or b"" for silence
 
 carriage.post(hint, message)            # -> the sealed answer, or b"" for silence
 carriage.Door(handle, limit=...)        # one POST in, one body out

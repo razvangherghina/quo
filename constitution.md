@@ -169,6 +169,16 @@ a call returns; a road that cannot carry the answer back has lost it,
 which is weather. No warden chooses another road for an answer, so no
 caller waits on one.
 
+**A road hands every frame it carries to the warden, and only the warden
+learns which record a frame carries.** A road reads framing and nothing
+else: it never opens a seal, never sorts asks from answers, and never
+decides that a frame is not worth handing over. The payload's leading
+byte says which record arrived, and it is inside the seal, so a road
+that acted on it read what was not addressed to it and became a second
+judge. Where one connection carries both directions, the road hands over
+what arrives and takes back what the warden returns, in that order and
+with no reading between.
+
 **One more road is named, so that strangers meet on it without
 agreement.** Naming makes a carriage standard, never mandatory: the
 common carriage stays the one every warden answers, because a browser

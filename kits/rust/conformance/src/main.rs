@@ -5,8 +5,17 @@
 //! `cargo`. Written from `papers/quo-conformance-contract.md` and this kit's own
 //! public API, and it decides nothing.
 //!
-//! Two things this kit spells differently from the three before it, neither of
-//! which is a decision this file is allowed to make:
+//! **A conformance subject is not a host.** It drives [`Door`] directly and
+//! pushes rows into the record by hand because the host's surface refuses what
+//! a scenario must compose: keys drawn from a finite handed list rather than
+//! the machine, an arrival reading given per judgment, a standing written into
+//! the record with no grant behind it, and both records read straight back.
+//! `quo::host` offers none of that and must not — a way around the blueprint
+//! and around the clock would ship to every application, permanently, for the
+//! harness's benefit. So this reaches past the seam, and says so here.
+//!
+//! Two things this kit spells differently, neither of which is a decision this
+//! file is allowed to make:
 //!
 //! - **Its door is three calls where the JS one is a single `judge`**: `judge`
 //!   settles the route, `answer` produces the data for every route but a
@@ -29,7 +38,7 @@ use std::io::{self, BufRead, Write};
 
 use json::Json;
 use quo_warden::{
-    Allowance, Field as Method, Inbound, Outbound, Reach, Resident, Route, Warden, Word, KEY,
+    Allowance, Door, Field as Method, Inbound, Outbound, Reach, Resident, Route, Word, KEY,
 };
 
 /// A finite list drawn in order. Drawing past the end is a fault the scenario
@@ -143,7 +152,7 @@ struct Onward {
 }
 
 struct House {
-    warden: Warden,
+    warden: Door,
     clock: Queue,
     random: Queue,
     /// The keys this door will mint for a being it is about to take in.
@@ -187,7 +196,7 @@ fn stand(order: &Json) -> Result<String, String> {
         }
     };
     let limit = number_of(spec, "limit", 0);
-    let mut warden = Warden::new(
+    let mut warden = Door::new(
         name_secret,
         padlock_secret,
         own,

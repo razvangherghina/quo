@@ -11,18 +11,20 @@ and a rotation is signed by the heir. A caller side that has only ever rotated
 once is a caller side nobody has tested, so every case here rotates twice.
 """
 
+import asyncio
 import unittest
 
 from quo import arithmetic, envelope, warden
 
 from test_warden import (
     BEING_BLUEPRINT,
-    BEING_COMMITMENT,
     BEING_DIGEST,
     BEING_PK,
     HEIR_SECRET,
     VOICE_SECRET,
+    a_being,
     a_warden,
+    judged,
     method,
     seed,
 )
@@ -57,7 +59,7 @@ class TheHeirAHolderHolds(unittest.TestCase):
 
         first = seed(70)
         message, _ = self.caller.ask(row, seed(71), next_heir=first)
-        self.assertEqual(self.granter.judge(message).placement, warden.ROTATION)
+        self.assertEqual(judged(self.granter, message).placement, warden.ROTATION)
 
         # The one no demo makes. It can only be signed by the key the first
         # rotation committed to; signing with the voice would present the
@@ -65,7 +67,7 @@ class TheHeirAHolderHolds(unittest.TestCase):
         # it as a holder carrying a commitment, which is refused.
         second = seed(72)
         message, _ = self.caller.ask(row, seed(73), next_heir=second)
-        self.assertEqual(self.granter.judge(message).placement, warden.ROTATION)
+        self.assertEqual(judged(self.granter, message).placement, warden.ROTATION)
 
         standing = self.granter.inbound[0]
         self.assertEqual(standing.voice, arithmetic.signing_public(first))
@@ -95,9 +97,9 @@ class TheAnswerAtTheCallersEnd(unittest.TestCase):
 
     def exchange(self, **over) -> tuple[bytes, int]:
         message, seq = self.caller.ask(self.row, seed(80), **over)
-        judged = self.granter.judge(message)
-        self.assertIsNotNone(judged.answer)
-        return judged.answer, seq
+        outcome = judged(self.granter, message)
+        self.assertIsNotNone(outcome.answer)
+        return outcome.answer, seq
 
     def test_an_answer_nothing_awaits_is_silence(self) -> None:
         reply, seq = self.exchange(next_heir=seed(81), method=method("limit"))
@@ -128,12 +130,7 @@ class TheAnswerAtTheCallersEnd(unittest.TestCase):
             mint=lambda: seed(52),
             heir=arithmetic.signing_public(seed(53)),
         )
-        other.beings[BEING_PK] = warden.Being(
-            pk=BEING_PK,
-            digest=BEING_DIGEST,
-            commitment=BEING_COMMITMENT,
-            invoke=lambda name, args, leash: None,
-        )
+        other.beings[BEING_PK] = a_being()
         other.blueprints[BEING_DIGEST] = BEING_BLUEPRINT
         theirs = other.invite(BEING_PK, seed(54), seed(55))
 
@@ -142,7 +139,7 @@ class TheAnswerAtTheCallersEnd(unittest.TestCase):
         # Sealed to this caller's padlock rather than the asker's own.
         elsewhere.padlock = self.caller.padlock
         message, _ = elsewhere.ask(away, seed(56), next_heir=seed(57))
-        reply = other.judge(message).answer
+        reply = judged(other, message).answer
         self.assertIsNotNone(reply)
 
         # It unseals here, it says `answer`, and its signature verifies against
@@ -170,17 +167,23 @@ class TheAnswerAtTheCallersEnd(unittest.TestCase):
         self,
     ) -> None:
         caller = a_caller(first=110)
-        taken = caller.accept(
-            self.invitation,
-            lambda message: self.granter.judge(message).answer,
-            method=method("limit"),
-        )
-        # Accept hands the opening back sealed rather than judging it, so it
-        # stops awaiting that one; the second is the caller's own call.
-        self.assertEqual(len(taken.row.awaiting), 1)
-        answer = caller.hear(taken.answer)
-        self.assertEqual(answer["seq"], taken.seq)
-        self.assertEqual(len(taken.row.awaiting), 0)
+
+        class Straight:
+            """This case's own delivery: bytes straight to the granting door."""
+
+            def arrived(inner, padlock, via) -> None:
+                return None
+
+            async def send(inner, row, message):
+                return (await self.granter.judge(message)).answer
+
+        caller.delivery = Straight()
+        [handle] = asyncio.run(caller.accept(self.invitation, label="lamp"))
+        self.assertIsNotNone(handle)
+        # Every ask accept made was settled by the answer that came back, so
+        # nothing is left awaiting: an ask nobody is waiting on any more is an
+        # answer that could never be paired.
+        self.assertEqual(len(caller.outbound[0].awaiting), 0)
 
 
 class TheNumberACallerOpensWith(unittest.TestCase):
@@ -195,9 +198,9 @@ class TheNumberACallerOpensWith(unittest.TestCase):
         opening = 4_096
         message, seq = caller.ask(row, seed(86), next_heir=seed(87), seq=opening)
         self.assertEqual(seq, opening)
-        judged = granter.judge(message)
-        self.assertEqual(judged.placement, warden.ROTATION)
-        self.assertEqual(caller.hear(judged.answer)["seq"], opening)
+        outcome = judged(granter, message)
+        self.assertEqual(outcome.placement, warden.ROTATION)
+        self.assertEqual(caller.hear(outcome.answer)["seq"], opening)
 
         # A rotation starts the far door's mark fresh, so the number above one
         # is honoured and the mark moves there.

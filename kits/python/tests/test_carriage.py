@@ -11,6 +11,7 @@ for no guarantee; the bench runs the same road without it, because a
 certificate would prove nothing the seal does not already prove.
 """
 
+import asyncio
 import http.client
 import unittest
 
@@ -174,10 +175,9 @@ class ARealDoorBehindTheCarriage(unittest.TestCase):
         )
 
         def judge(message):
-            try:
-                return self.warden.judge(message).answer
-            except pins.warden.Silence:
-                return None
+            # The road hands the whole envelope to the warden's one entry
+            # point and takes bytes or silence back. It opens no seal.
+            return asyncio.run(self.warden.arrive(message))
 
         self.door = carriage.Door(judge, limit=self.warden.limit)
         self.addCleanup(self.door.close)
@@ -190,7 +190,7 @@ class ARealDoorBehindTheCarriage(unittest.TestCase):
         answer = pins.opened(body)
         self.assertEqual(answer["warden"], self.warden.name)
         self.assertEqual(answer["seq"], 1)
-        self.assertEqual(answer["data"], b"lit")
+        self.assertEqual(answer["data"], pins.LIT)
 
     def test_iii_a_message_the_door_refuses_comes_back_as_an_empty_body(self) -> None:
         stranger = pins.say(self.warden, being=pins.BEING_PK, call=pins.method("lit"))
@@ -212,43 +212,34 @@ class ARealDoorBehindTheCarriage(unittest.TestCase):
 
 
 class TheRoadACallerTakes(OverARealSocket):
-    """Article III: a warden offers as many roads as it has, and a caller tries them."""
+    """Article III: a warden offers as many roads as it has, and a caller tries
+    the ones it can speak.
 
-    def setUp(self) -> None:
-        super().setUp()
-        self.addCleanup(carriage.hang_up)
-        self.spoken = 0
-        self.road = line.Listener(self._answer, host="127.0.0.1", port=0).start()
-        self.addCleanup(self.road.close)
-
-    def _answer(self, _held: line.Line, message: bytes) -> bytes:
-        # The line's own door: whatever arrives is echoed, which is all this
-        # case needs — what it is about is which road the bytes took.
-        self.spoken += 1
-        return message
+    Which road a ground takes across all the roads it has is delivery's, under
+    the host, and is asserted there. This is the common carriage's own half of
+    the rule: it speaks HTTP and walks past everything else.
+    """
 
     def test_iii_a_caller_takes_the_road_it_can_speak_and_is_told_nothing(
         self,
     ) -> None:
-        # The house stands on both roads at once and ranks neither: it offers
-        # what it has, and choosing is the caller's whole job. Nothing at the
-        # call site names a road.
-        hints = [self.road.hint, self.door.hint]
-        self.assertEqual(carriage.reach(hints, b"hello"), b"hello")
-        self.assertEqual(self.spoken, 1, "the line carried it, not the carriage")
+        # The house offers what it has and ranks nothing. Nothing at the call
+        # site names a road, and a hint on a road this carriage cannot speak
+        # is walked past rather than tried.
+        hints = ["tcp://127.0.0.1:9", "pigeon://loft", self.door.hint]
+        self.assertEqual(
+            carriage.reach(hints, b"hello"), carriage.post(self.door.hint, b"hello")
+        )
 
     def test_iii_a_road_the_caller_cannot_speak_is_not_a_road_that_failed(
         self,
     ) -> None:
         # Nothing was sent down it, so no door spoke and no road broke: it is
-        # neither silence nor weather. Here the tcp road is weather and the
-        # carriage answers, and what comes back is the answer.
-        self.assertEqual(
-            carriage.reach(["tcp://127.0.0.1:9", self.door.hint], b"hello"),
-            carriage.post(self.door.hint, b"hello"),
-        )
-        # And a road that is weather all the way down is raised as weather,
-        # never as an answer a door gave.
+        # neither silence nor weather, and a list of nothing else raises no
+        # fault at all, because there is no road to report the fault of.
+        self.assertIsNone(carriage.reach(["tcp://127.0.0.1:9"], b"hello"))
+        # A road that is weather all the way down is raised as weather, never
+        # as an answer a door gave.
         with self.assertRaises(carriage.CarriageError):
             carriage.reach(["http://127.0.0.1:1/"], b"hello")
 

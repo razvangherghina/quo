@@ -276,10 +276,18 @@ fn readSource(gpa: std.mem.Allocator, name: []const u8) ![]u8 {
     return std.Io.Dir.cwd().readFileAlloc(threaded.io(), path, gpa, .limited(1 << 20));
 }
 
-test "the five below never reach a host: the carriage is where std.http lives" {
+test "nothing above the roads reaches a host: the carriage is where std.http lives" {
     const gpa = std.testing.allocator;
 
-    for ([_][]const u8{ "notation.zig", "arithmetic.zig", "wire.zig", "envelope.zig", "warden.zig" }) |name| {
+    const above = [_][]const u8{
+        "notation.zig",
+        "arithmetic.zig",
+        "wire.zig",
+        "envelope.zig",
+        "warden.zig",
+        "quo.zig",
+    };
+    for (above) |name| {
         const text = try readSource(gpa, name);
         defer gpa.free(text);
         try std.testing.expect(std.mem.indexOf(u8, text, "std.http") == null);

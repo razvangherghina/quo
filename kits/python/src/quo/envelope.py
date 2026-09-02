@@ -36,6 +36,7 @@ __all__ = [
     "payload",
     "sign_payload",
     "seal",
+    "open_envelope",
     "unseal",
 ]
 
@@ -150,19 +151,13 @@ def seal(
         raise EnvelopeError(str(bad)) from bad
 
 
-def unseal(secret: bytes, envelope: bytes, expect: int) -> dict:
-    """Open an envelope and read the one record this receiver expects.
+def open_envelope(secret: bytes, envelope: bytes) -> tuple[int, dict]:
+    """Open an envelope once and say which of the two records was inside.
 
-    ``expect`` is the byte the leading byte must be: a door expects a ``say``,
-    a caller reading an answer expects an ``answer``. Position decides nothing
-    and the payload says what it is, so a record arriving under the other
-    byte is refused here rather than read as the other record.
-
-    Unsealing, decoding and verifying the signature are one act. What comes
-    back is the record; placing the voice, checking the recipient and
-    everything after it are the judgment's, not the envelope's.
+    The leading byte is what says it, and only the receiver ever reads it: a
+    road hands whole envelopes over and never learns whether it carried an ask
+    or an answer. Unsealing, decoding and verifying the signature are one act.
     """
-    wanted = _type_of(expect)
     if not isinstance(envelope, (bytes, bytearray)):
         raise EnvelopeError("an envelope is bytes")
     envelope = bytes(envelope)
@@ -179,13 +174,31 @@ def unseal(secret: bytes, envelope: bytes, expect: int) -> dict:
         raise EnvelopeError("no payload behind the signature")
     body = inside[:-SIGNATURE_LENGTH]
     signature = inside[-SIGNATURE_LENGTH:]
-    if body[0] != expect:
-        raise EnvelopeError(f"a record presented under the byte {body[0]}")
+    kind = body[0]
+    wanted = _type_of(kind)
     try:
         record = wire.decode(wanted, body[1:], RECORDS)
     except wire.WireError as bad:
         raise EnvelopeError(str(bad)) from bad
-    voice = record["voice"] if expect == SAY else record["warden"]
+    voice = record["voice"] if kind == SAY else record["warden"]
     if not arithmetic.verify(voice, body, signature):
         raise EnvelopeError("a signature that does not stand")
+    return kind, record
+
+
+def unseal(secret: bytes, envelope: bytes, expect: int) -> dict:
+    """Open an envelope and read the one record this receiver expects.
+
+    ``expect`` is the byte the leading byte must be: a door expects a ``say``,
+    a caller reading an answer expects an ``answer``. Position decides nothing
+    and the payload says what it is, so a record arriving under the other
+    byte is refused here rather than read as the other record.
+
+    What comes back is the record; placing the voice, checking the recipient
+    and everything after it are the judgment's, not the envelope's.
+    """
+    _type_of(expect)
+    kind, record = open_envelope(secret, envelope)
+    if kind != expect:
+        raise EnvelopeError(f"a record presented under the byte {kind}")
     return record

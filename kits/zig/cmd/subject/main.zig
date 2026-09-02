@@ -31,10 +31,34 @@
 //! space. Every line this command prints on stdout is one JSON object
 //! carrying the member `quo`; everything else it has to say goes to stderr.
 //!
-//! This file is the host, not the kit. Everything here that is not a call
-//! into a module — minting an invitation, keeping the caller's own records,
-//! composing an ask, drawing randomness, running an accept loop — is a
-//! ground's own affair, and the kit below declines to do any of it.
+//! This file is the host, not the kit. Which roads stand, where they listen,
+//! how bytes get onto them, when this process draws a key and what it prints
+//! are a ground's own affairs, and the kit below declines to do any of them.
+//! Everything above the road is the kit's: the door takes whatever arrives at
+//! its one entry point and judges it, the being's own method answers, and
+//! nothing here ever opens a seal.
+//!
+//! **It stands below the kit's own seam, and reaches past it on purpose.** It
+//! is not an application: it exists to be driven from outside by a harness in
+//! another language, and every ask it composes it composes by hand, at
+//! `sealAsk` and `rotate`, rather than through a handle. That is deliberate,
+//! because each of the four things it must be able to say is one the being's
+//! API refuses by design — a handle encodes through the blueprint, so it
+//! cannot produce them:
+//!
+//! - `-args` is hex the harness chose, including bytes no encoder would write.
+//! - A bare describe names neither being nor method; a handle always names a
+//!   field.
+//! - `-being` may name a being whose blueprint this process does not hold, and
+//!   `-blueprint` asks for that text at the far door itself.
+//! - The seq each message spent is printed, and a handle spends one and keeps
+//!   it.
+//!
+//! It stands its own roads for the same reason: it listens where it is told,
+//! publishes the host it was given, holds exactly one line at a time and must
+//! know when that line ends. **The seam grows none of that to accommodate
+//! this file** — `src/host.zig` is what an application stands on, and what is
+//! wanted here is reached for here.
 
 const std = @import("std");
 const arithmetic = @import("arithmetic");
@@ -42,6 +66,7 @@ const notation = @import("notation");
 const wire = @import("wire");
 const envelope = @import("envelope");
 const warden = @import("warden");
+const quo = @import("quo");
 const carriage = @import("carriage");
 const line = @import("line");
 const zero = @import("zero");
@@ -178,6 +203,14 @@ fn draw() Key {
     return out;
 }
 
+/// The clock the door takes its two readings by, handed in like the
+/// randomness. A dwell is the difference between them, so what it counts in
+/// is milliseconds.
+fn clock() i64 {
+    const now = std.Io.Clock.now(.real, host);
+    return @intCast(@divFloor(now.nanoseconds, std.time.ns_per_ms));
+}
+
 fn hexOf(gpa: std.mem.Allocator, raw: []const u8) ![]u8 {
     const out = try gpa.alloc(u8, raw.len * 2);
     _ = std.fmt.bufPrint(out, "{x}", .{raw}) catch unreachable;
@@ -295,15 +328,22 @@ fn opened(gpa: std.mem.Allocator) !Line {
 
 // ------------------------------------------------------------- the ground
 
-/// One ordinary object. It never learns it has an address, judges nothing,
-/// and sees no key.
+/// The being this ground holds. It is an ordinary Zig struct: its public
+/// methods are the fields its blueprint declares, and the kit builds the
+/// dispatch from the type itself. **It never sees a byte and never touches a
+/// key** — what reaches it is an `i64`, and what it answers is an `i64`.
 const Counter = struct {
+    quo: quo.Cell = .{},
     total: i64 = 0,
-};
 
-const Held = struct {
-    pk: Key,
-    object: Counter,
+    pub fn bump(self: *Counter, by: i64) !i64 {
+        self.total = try std.math.add(i64, self.total, by);
+        return self.total;
+    }
+
+    pub fn count(self: *Counter) i64 {
+        return self.total;
+    }
 };
 
 /// The five things a holder holds. The law never says in what form a door
@@ -320,234 +360,193 @@ const Facts = struct {
     hints: []const []const u8,
 };
 
-/// A whole ground: a warden, the objects behind its beings, and the two
-/// things a warden does not keep — its own heir commitment, and the roads it
-/// publishes.
+/// A whole ground: a warden, the object behind its one being, and the road
+/// its own bytes leave by.
+///
+/// **Everything above the road is the kit's now.** The warden is opened on
+/// the seeds, the clock and the randomness this host hands it; the being is
+/// held with its dispatch built from its own type; the grant, the judgment
+/// and the answering are the door's. What is left here is what a host is
+/// for: which roads stand, how bytes get onto them, and what this command
+/// prints.
 const Ground = struct {
     gpa: std.mem.Allocator,
     io: std.Io,
-    door: warden.Warden,
-    /// The commitment to this house's own successor, which every invitation
-    /// carries so a holder can believe news from the name that follows.
-    heir_commitment: Key,
-    hints: []const []const u8 = &.{},
-    held: std.ArrayList(Held) = .empty,
+    door: warden.Warden = undefined,
+    counter: Counter = .{},
+    being: Key = std.mem.zeroes(Key),
     /// The one blueprint every warden holds, parsed once: the records the
-    /// warden's own answers are written under.
+    /// warden's own answers are read under.
     own: notation.Blueprint,
-    counter: notation.Blueprint,
-    /// The one lock that keeps this ground to itself. A warden is not
-    /// concurrent, and a ground that pushes is reached from two threads at
-    /// once: the reader of a line judges what arrives while the pushing half
-    /// composes asks of its own.
-    lock: std.Io.Mutex = .init,
+    /// How this ground's outbound bytes leave. A listening door that never
+    /// asks out has none.
+    road: Road = .none,
 
-    fn stand(gpa: std.mem.Allocator, io: std.Io, limit: i64) !Ground {
-        const name = try arithmetic.signingPair(draw());
-        const padlock = try arithmetic.sealingPair(draw());
-        const successor = try arithmetic.signingPair(draw());
-        const public_heir = try arithmetic.signingPair(draw());
-
-        var self: Ground = .{
-            .gpa = gpa,
+    fn stand(gpa: std.mem.Allocator, io: std.Io, limit: i64, self: *Ground) !void {
+        self.* = .{ .gpa = gpa, .io = io, .own = try notation.parse(gpa, warden.blueprint_text) };
+        self.door = try warden.Warden.open(gpa, .{
+            .seeds = .{ .name = draw(), .padlock = draw(), .heir = draw() },
+            .clock = clock,
+            .random = draw,
             .io = io,
-            .door = .{
-                .gpa = gpa,
-                .name = name.public,
-                .name_secret = name.secret,
-                .padlock = padlock.public,
-                .padlock_secret = padlock.secret,
-                .limit = @intCast(limit),
-            },
-            .heir_commitment = arithmetic.commitment(name.public, successor.public),
-            .own = try notation.parse(gpa, warden.blueprint_text),
-            .counter = try notation.parse(gpa, counter_text),
-        };
-        // The key that names the house and the key that names the being the
-        // house speaks as are one key.
-        try self.door.beings.append(gpa, .{
-            .pk = name.public,
-            .secret = name.secret,
-            .digest = warden.digest(),
-            .commitment = arithmetic.commitment(name.public, public_heir.public),
-            .text = warden.blueprint_text,
+            .limit = @intCast(limit),
+            .allowance = .{ .time = default_time, .hops = default_hops },
+            .observer = .{ .context = @ptrCast(self), .hush = hushed },
+            .delivery = .{ .context = @ptrCast(self), .send = carry, .later = true },
         });
-        return self;
     }
 
     fn deinit(self: *Ground) void {
         self.door.deinit();
-        self.held.deinit(self.gpa);
         self.own.deinit();
-        self.counter.deinit();
     }
 
-    /// Hold one being of the counter's class. The object is this host's; the
-    /// warden keeps only the pointer, the keys and the digest.
+    /// Hold the one being this ground shows. The object is this host's; the
+    /// warden keeps the pointer, the keys and the parsed class.
     fn hold(self: *Ground) !Key {
-        const pk = try arithmetic.signingPair(draw());
-        const heir = try arithmetic.signingPair(draw());
-        try self.door.beings.append(self.gpa, .{
-            .pk = pk.public,
-            .secret = pk.secret,
-            .digest = self.counter.digest(),
-            .commitment = arithmetic.commitment(self.door.name, heir.public),
-            .text = counter_text,
-        });
-        try self.held.append(self.gpa, .{ .pk = pk.public, .object = .{} });
-        return pk.public;
+        const handle = try quo.holding(
+            &self.door,
+            Counter,
+            &self.counter,
+            counter_text,
+            .{ .seed = draw(), .heir_seed = draw() },
+            self.gpa,
+        );
+        self.being = handle.being();
+        return self.being;
     }
 
-    fn object(self: *Ground, pk: Key) ?*Counter {
-        for (self.held.items) |*one| {
-            if (std.mem.eql(u8, &one.pk, &pk)) return &one.object;
-        }
-        return null;
-    }
-
-    /// Mint an invitation: one row in the inbound record, and the five things
-    /// its holder is handed. The invitation does not name the being, so a
-    /// stranger rotates and describes to find what it now reaches.
-    fn grant(self: *Ground, being: Key, hints: []const []const u8) !wire.Invitation {
-        const voice = try arithmetic.signingPair(draw());
-        const heir = try arithmetic.signingPair(draw());
-        var row: warden.Inbound = .{
-            .voice = voice.public,
-            .commitment = arithmetic.commitment(self.door.name, heir.public),
-            .minted_name = self.door.name,
-            .window = .{ .width = self.door.width },
-        };
-        try row.beings.append(self.gpa, being);
-        try self.door.inbound.append(self.gpa, row);
-        return .{
-            .warden = self.door.name,
-            .commitment = self.heir_commitment,
-            .padlock = self.door.padlock,
-            .heir = heir.public,
-            .heir_secret = heir.secret,
-            .hints = hints,
-        };
+    /// Why the door fell silent, told inward and never across the wire.
+    fn hushed(context: *anyopaque, reason: []const u8) void {
+        _ = context;
+        note(reason);
     }
 
     // ------------------------------------------------------------- asking
-    //
-    // The composing itself is the kit's — `warden.remember`, `ask` and
-    // `rotate`. What is this ground's and stays here is the policy around it:
-    // the lock, so a rotation's composing and its key movement cannot be seen
-    // apart; the roads this ground publishes; its leash defaults; and the
-    // randomness, because the kit takes every draw as an argument.
 
-    const Reach = struct {
-        being: ?Key = null,
-        method: ?envelope.Method = null,
-    };
-
-    fn reaching(self: *Ground, r: Reach) warden.Warden.Reach {
-        return .{
-            .being = r.being,
-            .method = r.method,
-            .allowance = .{ .time = default_time, .hops = default_hops },
-            .hints = self.hints,
+    /// Compose one utterance, put it on this ground's road, and open what
+    /// settles it. Silence is a door speaking and not an error, and it is
+    /// printed as its own step.
+    ///
+    /// **Nothing here waits on a socket.** The envelope goes to delivery; on
+    /// a road that answers in its response the answer comes straight back
+    /// through the one entry point, and on a line it arrives later as a frame
+    /// of its own and settles the ask the door is holding open.
+    fn utter(
+        self: *Ground,
+        a: std.mem.Allocator,
+        name: []const u8,
+        sealed: ?warden.Warden.Sealed,
+    ) !?Step {
+        const s = sealed orelse {
+            note("nothing to say");
+            return null;
         };
-    }
-
-    /// Keep an invitation as a relation. Everything this ground later says to
-    /// that house is composed out of this row.
-    fn remember(self: *Ground, inv: wire.Invitation) !usize {
-        self.lock.lockUncancelable(host);
-        defer self.lock.unlock(host);
-        return self.door.remember(inv);
-    }
-
-    /// Compose one utterance. The number it spends comes back with it,
-    /// because an answer is paired to this house by it and it never travels
-    /// outside a seal.
-    fn ask(self: *Ground, gpa: std.mem.Allocator, at: usize, r: Reach) !struct { []u8, i64 } {
-        self.lock.lockUncancelable(host);
-        defer self.lock.unlock(host);
-        return self.door.ask(gpa, at, draw(), self.reaching(r));
+        const seq = s.seq;
+        var heard = (self.door.sendSealed(a, s) catch null) orelse {
+            var l = try opened(a);
+            try l.text("step", name);
+            try l.number("seq", seq);
+            try l.truth("silence", true);
+            try l.send();
+            return null;
+        };
+        defer heard.deinit();
+        const answer = heard.payload.answer;
+        return .{
+            .name = name,
+            .seq = seq,
+            .from = answer.warden,
+            .data = try a.dupe(u8, answer.data orelse &.{}),
+        };
     }
 
     /// Whoever minted a voice has seen its keys, so the holder's first act is
-    /// a rotation to a key nobody else has ever seen.
-    fn rotate(self: *Ground, gpa: std.mem.Allocator, at: usize) !struct { []u8, i64 } {
-        self.lock.lockUncancelable(host);
-        defer self.lock.unlock(host);
-        return self.door.rotate(gpa, at, draw(), draw(), self.reaching(.{}));
-    }
-
-    /// Open an answer with this ground's own padlock, and believe it only
-    /// from the name it names.
-    fn hear(self: *Ground, gpa: std.mem.Allocator, reply: []const u8) !envelope.Opened {
-        self.lock.lockUncancelable(host);
-        defer self.lock.unlock(host);
-        return self.door.hear(gpa, reply);
-    }
-
-    // ------------------------------------------------------------ judging
-
-    /// The whole of what a door does with an arriving message: the warden
-    /// judges, and this ground carries out the routing it hands back. Silence
-    /// is the whole of every refusal and the reason never travels — it goes
-    /// to this host's own stderr and nowhere else.
-    fn judge(self: *Ground, gpa: std.mem.Allocator, message: []const u8) !?[]u8 {
-        self.lock.lockUncancelable(host);
-        defer self.lock.unlock(host);
-        var verdict = self.door.judge(message) catch {
-            note("refused");
+    /// a rotate-and-ask to a key nobody else has ever seen. It asks nothing,
+    /// and what comes back is what this voice now stands at.
+    fn rotated(self: *Ground, a: std.mem.Allocator, at: usize) !?Step {
+        self.door.take();
+        const roads = try self.door.roads(a);
+        const composed = self.door.rotate(a, at, draw(), draw(), .{
+            .allowance = .{ .time = default_time, .hops = default_hops },
+            .hints = roads,
+        }) catch {
+            self.door.give();
             return null;
         };
-        defer verdict.deinit();
-
-        var arena = std.heap.ArenaAllocator.init(gpa);
-        defer arena.deinit();
-        const a = arena.allocator();
-
-        const data = self.answerTo(a, verdict) catch {
-            note("refused");
-            return null;
-        };
-        return try self.door.answer(gpa, draw(), verdict.say, data);
+        const deadline = self.door.clock() + default_time;
+        self.door.give();
+        return self.utter(a, "describe", .{
+            .at = at,
+            .seq = composed[1],
+            .envelope = composed[0],
+            .deadline = deadline,
+        });
     }
 
-    fn answerTo(self: *Ground, a: std.mem.Allocator, verdict: warden.Verdict) !?[]const u8 {
-        const voice: ?Key = switch (verdict.placement) {
-            .stranger => null,
-            else => verdict.say.voice,
-        };
-        return switch (verdict.routing) {
-            .estate => try warden.encodeEstate(a, try self.door.estateFor(a, voice)),
-            .stranger => try warden.encodeEstate(a, try self.door.estateFor(a, null)),
-            .sketch => |pk| try self.door.sketchAnswer(a, voice, pk),
-            // The fields of the one blueprint every warden holds are the
-            // warden's own to answer, under both of the addresses its being
-            // answers to. Nothing about them is this ground's: not the
-            // decoding, not the scope, not the refusal.
-            .own => try self.door.own(a, verdict),
-            .invoke => |call| if (self.door.isPublic(call.being))
-                try self.door.own(a, verdict)
-            else
-                try self.invoke(a, call.being, call.method),
-        };
+    /// One ordinary ask down a relation.
+    fn asked(
+        self: *Ground,
+        a: std.mem.Allocator,
+        name: []const u8,
+        at: usize,
+        being: ?Key,
+        method: envelope.Method,
+    ) !?Step {
+        self.door.take();
+        const sealed = self.door.sealAsk(a, at, .{
+            .being = being,
+            .method = method,
+            .allowance = .{ .time = default_time, .hops = default_hops },
+        }) catch null;
+        self.door.give();
+        return self.utter(a, name, sealed);
     }
 
-    /// The being answers, and the warden never reads its arguments: bytes
-    /// left after the declared arguments are the being's to refuse.
-    fn invoke(self: *Ground, a: std.mem.Allocator, being: Key, m: envelope.Method) !?[]const u8 {
-        const thing = self.object(being) orelse return error.Refused;
-        const records = self.counter.records;
-        if (std.mem.eql(u8, m.name, "bump")) {
-            var decoded = try wire.decode(a, "int", records, m.args);
-            defer decoded.deinit();
-            const by = switch (decoded.value) {
-                .integer => |n| n,
-                else => return error.Refused,
-            };
-            thing.total = std.math.add(i64, thing.total, by) catch return error.Refused;
-        } else if (std.mem.eql(u8, m.name, "count")) {
-            if (m.args.len != 0) return error.Refused;
-        } else return error.Refused;
-        return try wire.encode(a, "int", records, .{ .integer = thing.total });
+    // ------------------------------------------------------------ delivery
+    //
+    // Delivery is beneath the warden and reads a hint; the warden hands it an
+    // envelope and the row's way back, and nothing else ever passes down
+    // here.
+
+    fn carry(
+        context: *anyopaque,
+        gpa: std.mem.Allocator,
+        row: warden.Row,
+        message: []const u8,
+    ) std.mem.Allocator.Error!warden.Carried {
+        const self: *Ground = @ptrCast(@alignCast(context));
+        switch (self.road) {
+            .none => return .silence,
+            .near => |far| {
+                // The third carriage, and it waives no step: the bytes handed
+                // across are the same sealed envelope, copied in and copied
+                // out, because two houses in one process are still two.
+                const back = try zero.call(
+                    gpa,
+                    .{ .context = @ptrCast(far), .knock = knock },
+                    message,
+                    1 << 20,
+                ) orelse return .silence;
+                return .{ .answered = @constCast(back) };
+            },
+            .held => |wire_held| {
+                // The answer comes back as a frame of its own, through the
+                // one entry point.
+                return if (wire_held.carry(message)) .later else .silence;
+            },
+            .door => {
+                for (row.hints) |hint| {
+                    if (!std.mem.startsWith(u8, hint, "http")) continue;
+                    const back = carriage.post(gpa, self.io, hint, message, 1 << 20) catch |e| {
+                        note(@errorName(e));
+                        continue;
+                    };
+                    return if (back) |bytes| .{ .answered = @constCast(bytes) } else .silence;
+                }
+                return .silence;
+            },
+        }
     }
 };
 
@@ -638,23 +637,21 @@ fn granted(classes: []const Class) !Key {
 
 // --------------------------------------------------------------- the roads
 
-/// A road: one composed message out, and whatever came back, or null for
-/// silence. Which road a ground speaks over is the whole of what `-line`
-/// changes.
+/// Which road a ground's own bytes leave by. It is the whole of what `-line`
+/// and `-zero` change.
 const Road = union(enum) {
+    /// A listening door that never asks out.
+    none,
     /// The common carriage: one POST, one reply, and silence arrives as an
     /// empty body because HTTP forces a response.
-    door: struct { io: std.Io, hints: []const []const u8 },
-    /// The framed carriage, where the hints are already spent: the road is
-    /// the connection this ground is holding.
+    door,
+    /// The framed carriage: the road is the connection this ground holds,
+    /// from whichever end it took it. The answer rides back as a frame of its
+    /// own, so nothing here waits for it.
     held: *Wire,
-    /// The same framed carriage, taken by the end that accepted the
-    /// connection rather than the end that dialled it. The road is the same;
-    /// only which half of it reads is different.
-    pushed: *Wire,
     /// Distance zero: the far house is in this very process, and the road is
     /// a call. It waives no step — the bytes handed across are the same
-    /// sealed envelope the other two roads carry, and the far ground runs
+    /// sealed envelope the other two roads carry, and the far ground spends
     /// the same eight steps over them.
     near: *Ground,
 };
@@ -671,142 +668,69 @@ const Wire = struct {
     /// publishing nothing.
     own_cap: i64 = line.default_cap,
     open: bool = true,
-    /// One connection has one reader, so an end that both serves a line and
-    /// asks down it cannot have the asking half read too. These three are how
-    /// the reader hands an answer to the half waiting on it, and they are
-    /// untouched on a line only one thread is on.
-    waiting: ?Waiting = null,
-    handed: ?[]u8 = null,
-    guard: std.Io.Mutex = .init,
-    arrived: std.Io.Condition = .init,
     /// One writer at a time: this end answers what arrives on the same
     /// connection its own asks go down.
     writing: std.Io.Mutex = .init,
+    /// Raised when the reading half has gone, for whoever is staying until
+    /// the line ends.
+    done: std.Io.Event = .unset,
 
-    const Waiting = struct { far: Key, seq: i64 };
-
-    /// Put one message down the line and read until the answer to `seq`
-    /// arrives. A frame that is not that answer is a message this ground owes
-    /// a judgment: the line is symmetric, so the far end may ask at any time.
-    fn carry(self: *Wire, gpa: std.mem.Allocator, message: []const u8, far: Key, seq: i64) !?[]u8 {
-        try line.writeFrame(self.writer, self.cap, message);
-        while (true) {
-            const frame = line.readFrame(gpa, self.reader, self.own_cap) catch {
-                self.open = false;
-                return null;
-            };
-            if (self.answers(gpa, frame, far, seq)) {
-                return frame;
-            }
-            defer gpa.free(frame);
-            try self.serve(gpa, frame);
-        }
-    }
-
-    /// Whether a frame is the answer this caller is waiting on. Only the seal
-    /// says so, and it says so without a byte of it travelling in the clear.
-    ///
-    /// This sorts frames and spends nothing, so it opens the envelope rather
-    /// than calling the warden's `hear`: judging an answer spends the awaiting
-    /// record the caller keeps for it, and a road that spent it while sorting
-    /// would leave nothing for the caller to judge.
-    fn answers(self: *Wire, gpa: std.mem.Allocator, frame: []const u8, far: Key, seq: i64) bool {
-        var heard = envelope.open(gpa, self.ground.door.padlock_secret, .answer, frame) catch return false;
-        defer heard.deinit();
-        const answer = heard.payload.answer;
-        return answer.seq == seq and std.mem.eql(u8, &answer.warden, &far);
-    }
-
-    /// Put one message down the line and wait for the reader to hand back the
-    /// answer to `seq`. This is the asking half of a line whose reading half
-    /// is another thread — the shape a ground that pushes has, and the only
-    /// difference between the two halves.
-    fn push(self: *Wire, message: []const u8, far: Key, seq: i64) !?[]u8 {
-        self.guard.lockUncancelable(host);
-        defer self.guard.unlock(host);
-        self.waiting = .{ .far = far, .seq = seq };
-        {
-            self.writing.lockUncancelable(host);
-            defer self.writing.unlock(host);
-            line.writeFrame(self.writer, self.cap, message) catch {
-                self.waiting = null;
-                return null;
-            };
-        }
-        // Silence has no wire form on a line, so nothing comes back at all:
-        // what ends this wait is the answer, or the line itself ending.
-        while (self.handed == null and self.open) {
-            self.arrived.waitUncancelable(host, &self.guard);
-        }
-        const back = self.handed;
-        self.handed = null;
-        self.waiting = null;
-        return back;
-    }
-
-    /// A frame that was not an answer is an ask, and this end is a door too.
-    fn serve(self: *Wire, gpa: std.mem.Allocator, frame: []const u8) !void {
-        const reply = try self.ground.judge(gpa, frame) orelse return;
-        defer gpa.free(reply);
+    /// Put one frame on the line. **Nothing waits here**: an answer to it, if
+    /// there is one, arrives as a frame of its own and the door settles the
+    /// ask it belongs to.
+    fn carry(self: *Wire, message: []const u8) bool {
+        if (!self.open) return false;
         self.writing.lockUncancelable(host);
         defer self.writing.unlock(host);
-        // Silence has no wire form on a line, so a refusal produces no frame
-        // at all; only an answer is written.
-        line.writeFrame(self.writer, self.cap, reply) catch {
+        line.writeFrame(self.writer, self.cap, message) catch {
             self.open = false;
+            return false;
         };
-    }
-
-    /// Whether this frame is the answer the pushing half is waiting on. If it
-    /// is, it is handed over rather than judged, and the pushing half owns it
-    /// from then on.
-    fn hand(self: *Wire, gpa: std.mem.Allocator, frame: []u8) bool {
-        self.guard.lockUncancelable(host);
-        const wanted = self.waiting;
-        self.guard.unlock(host);
-        const one = wanted orelse return false;
-        if (!self.answers(gpa, frame, one.far, one.seq)) return false;
-        self.guard.lockUncancelable(host);
-        self.handed = frame;
-        self.guard.unlock(host);
-        self.arrived.signal(host);
         return true;
     }
 
-    /// The line ending is news the pushing half is owed: it is waiting on an
-    /// answer that will never come now.
-    fn ended(self: *Wire) void {
-        self.guard.lockUncancelable(host);
+    /// Read frames and hand each one whole to the warden's one entry point.
+    ///
+    /// **This road never opens a seal.** It cannot tell an arriving ask from
+    /// an answer to one of its own and does not need to: the record byte is
+    /// inside the seal, only the door may read it, and what the door hands
+    /// back is bytes to write or nothing to write at all.
+    ///
+    /// Each frame is judged on a thread of its own, because judging one may
+    /// itself wait for an answer riding back down this same line — a reader
+    /// that judged would be waiting for a frame only it can read.
+    fn hold(self: *Wire, gpa: std.mem.Allocator) void {
+        while (self.open) {
+            const frame = line.readFrame(gpa, self.reader, self.own_cap) catch break;
+            const worker = std.Thread.spawn(.{}, judged, .{ self, gpa, frame }) catch {
+                gpa.free(frame);
+                break;
+            };
+            worker.detach();
+        }
         self.open = false;
-        self.guard.unlock(host);
-        self.arrived.signal(host);
+        self.done.set(host);
     }
 
-    /// Stay until the far end lets the line go, judging whatever arrives.
-    fn hold(self: *Wire, gpa: std.mem.Allocator) !void {
-        defer self.ended();
-        while (self.open) {
-            const frame = line.readFrame(gpa, self.reader, self.own_cap) catch {
-                return;
-            };
-            if (self.hand(gpa, frame)) continue;
-            defer gpa.free(frame);
-            try self.serve(gpa, frame);
-        }
+    /// Let the line go. **A socket a reader is still holding is never closed
+    /// under it** — that is a fault in this program, not weather — so the
+    /// reader is woken by a shutdown and the close waits until it has gone.
+    fn letGo(self: *Wire, io: std.Io, stream: net.Stream) void {
+        self.open = false;
+        stream.shutdown(io, .both) catch {};
+        self.done.waitUncancelable(host);
+        stream.close(io);
+    }
+
+    fn judged(self: *Wire, gpa: std.mem.Allocator, frame: []u8) void {
+        defer gpa.free(frame);
+        // Silence has no wire form on a line, so a refusal produces no frame
+        // at all; only an answer is written.
+        const reply = self.ground.door.arrive(gpa, frame, null) orelse return;
+        defer gpa.free(reply);
+        _ = self.carry(reply);
     }
 };
-
-fn send(gpa: std.mem.Allocator, road: Road, message: []const u8, far: Key, seq: i64) !?[]const u8 {
-    return switch (road) {
-        .door => |over| carriage.post(gpa, over.io, over.hints[0], message, 1 << 20) catch |e| {
-            note(@errorName(e));
-            return null;
-        },
-        .held => |held| try held.carry(gpa, message, far, seq),
-        .pushed => |held| try held.push(message, far, seq),
-        .near => |far_ground| try zero.call(gpa, .{ .context = far_ground, .knock = knock }, message, 1 << 20),
-    };
-}
 
 /// A hint is opaque to the protocol, and this is the one place this command
 /// looks inside one.
@@ -862,7 +786,8 @@ fn addressOf(io: std.Io, text: []const u8) !net.IpAddress {
 fn serve(gpa: std.mem.Allocator, io: std.Io, argv: []const []const u8) !void {
     const flags = flagsOf(argv) catch return fail("those flags are not this command's");
 
-    var ground = try Ground.stand(gpa, io, flags.limit);
+    var ground: Ground = undefined;
+    try Ground.stand(gpa, io, flags.limit, &ground);
     const being = try ground.hold();
 
     const address = addressOf(io, flags.listen) catch return fail("that is no address");
@@ -900,17 +825,15 @@ fn serve(gpa: std.mem.Allocator, io: std.Io, argv: []const []const u8) !void {
 }
 
 /// The common carriage's door: bytes in, bytes out, and it never learns
-/// anything the carriage saw.
+/// anything the carriage saw — not which record it carried, not which step
+/// refused, and not a byte of what was inside the seal.
 fn knock(context: *anyopaque, gpa: std.mem.Allocator, sealed: []const u8) std.mem.Allocator.Error!carriage.Answer {
     const ground: *Ground = @ptrCast(@alignCast(context));
-    return ground.judge(gpa, sealed) catch |e| switch (e) {
-        error.OutOfMemory => error.OutOfMemory,
-        else => null,
-    };
+    return ground.door.arrive(gpa, sealed, null);
 }
 
 /// The framed road, listening. One connection at a time is the whole of what
-/// this subject needs, and each frame is judged as it lands.
+/// this subject needs, and each frame goes straight to the one entry point.
 fn serveLine(gpa: std.mem.Allocator, io: std.Io, ground: *Ground, server: *net.Server) !void {
     while (true) {
         const stream = server.accept(io) catch continue;
@@ -926,7 +849,7 @@ fn serveLine(gpa: std.mem.Allocator, io: std.Io, ground: *Ground, server: *net.S
             .cap = line.default_cap,
             .own_cap = @intCast(ground.door.limit),
         };
-        held.hold(gpa) catch {};
+        held.hold(gpa);
     }
 }
 
@@ -977,11 +900,15 @@ const Pushing = struct {
             .heir_secret = keyOf(s.heirSecret) catch return fail("that is no heir secret"),
             .hints = &.{},
         };
-        const at = try self.ground.remember(inv);
-        const road: Road = .{ .pushed = self.held };
+        self.ground.door.take();
+        const at = try self.ground.door.remember(inv);
+        self.ground.door.give();
+        // The standing arrived on stdin and can only be spent down a line
+        // this ground already accepted: it is a standing at the ground that
+        // opened the connection, which publishes no road at all.
+        self.ground.road = .{ .held = self.held };
 
-        const rotated, const seq = try self.ground.rotate(a, at);
-        const described = try exchange(a, self.ground, road, "describe", rotated, inv.warden, seq) orelse return;
+        const described = (try self.ground.rotated(a, at)) orelse return;
         const classes = try readEstate(a, self.ground.own.records, described.data);
         try emitEstate(a, described, classes);
 
@@ -1001,11 +928,10 @@ const Pushing = struct {
             keyOf(self.flags.being) catch return fail("that is no being");
 
         const args = bytesOf(a, self.flags.args) catch return fail("those arguments are not hex");
-        const composed, const asked = try self.ground.ask(a, at, .{
-            .being = being,
-            .method = .{ .name = self.flags.method, .args = args },
-        });
-        if (try exchange(a, self.ground, road, "ask", composed, inv.warden, asked)) |step| {
+        if (try self.ground.asked(a, "ask", at, being, .{
+            .name = self.flags.method,
+            .args = args,
+        })) |step| {
             var out = try opened(a);
             try out.text("step", "ask");
             try out.number("seq", step.seq);
@@ -1041,14 +967,17 @@ fn serveLinePushing(
     var pushing: Pushing = .{ .gpa = gpa, .ground = ground, .held = &held, .flags = flags };
     const thread = try std.Thread.spawn(.{}, Pushing.told, .{&pushing});
     defer thread.detach();
-    held.hold(gpa) catch {};
+    held.hold(gpa);
 }
 
 /// Mint the invitation and print the facts line: everything a stranger needs
 /// to speak to this ground, over whichever road it was given.
 fn stranger(ground: *Ground, being: Key, hints: []const []const u8) !void {
-    ground.hints = hints;
-    const inv = try ground.grant(being, hints);
+    // A warden does not know where it stands until something stands it up, so
+    // the road is told to the door here and every mint after it carries it.
+    for (hints) |hint| try ground.door.publishRoad(hint);
+    const inv = try ground.door.grant(ground.gpa, being);
+    defer ground.gpa.free(inv.hints);
     try emitFacts(ground.gpa, inv);
 }
 
@@ -1091,11 +1020,14 @@ fn speak(gpa: std.mem.Allocator, io: std.Io, argv: []const []const u8) !void {
     // them for the whole exchange.
     var parsed: ?std.json.Parsed(Facts) = null;
     defer if (parsed) |p| p.deinit();
+    var near_invitation: ?wire.Invitation = null;
+    defer if (near_invitation) |one| gpa.free(one.hints);
     if (flags.zero) {
         if (flags.rest.len != 0) return fail("usage: subject speak -zero [flags]");
-        near = try Ground.stand(gpa, io, flags.limit);
+        try Ground.stand(gpa, io, flags.limit, &near);
         const being = try near.hold();
-        inv = try near.grant(being, &.{});
+        inv = try near.door.grant(gpa, being);
+        near_invitation = inv;
         // The same facts line a listening door prints, so what the far house
         // is can be read the same way on every road.
         try emitFacts(gpa, inv);
@@ -1124,17 +1056,17 @@ fn speak(gpa: std.mem.Allocator, io: std.Io, argv: []const []const u8) !void {
     // owns its teardown.
     defer if (flags.zero) near.deinit();
 
-    var ground = try Ground.stand(gpa, io, default_limit);
+    var ground: Ground = undefined;
+    try Ground.stand(gpa, io, default_limit, &ground);
     defer ground.deinit();
-    const at = try ground.remember(inv);
+    ground.door.take();
+    const at = try ground.door.remember(inv);
+    ground.door.give();
 
     // Which road this ground speaks over is the whole of what `-line` and
     // `-zero` change: the same warden, the same invitation, the same
     // messages, and at distance zero the same eight steps too.
-    var road: Road = if (flags.zero)
-        .{ .near = &near }
-    else
-        .{ .door = .{ .io = io, .hints = inv.hints } };
+    ground.road = if (flags.zero) .{ .near = &near } else .door;
     var in: [4096]u8 = undefined;
     var out: [4096]u8 = undefined;
     var held: Wire = undefined;
@@ -1146,9 +1078,9 @@ fn speak(gpa: std.mem.Allocator, io: std.Io, argv: []const []const u8) !void {
     if (flags.framed) {
         const hint = lineIn(inv.hints) orelse return fail("those facts carry no tcp:// road");
         const read = line.readHint(hint) catch return fail("that is no line");
-        // The road taken is the one the hint names. The hint's host was the
-        // one thing this command used to throw away, and throwing it away is
-        // only invisible while both ends are on the same machine.
+        // The road taken is the one the hint names, host and all. Only while
+        // both ends stand on one machine is the hint's host the same as this
+        // one's.
         const address = resolve(io, read.host, read.port) catch
             return fail("that line names no host this ground can reach");
         const dialled = try line.dial(io, &address);
@@ -1161,18 +1093,19 @@ fn speak(gpa: std.mem.Allocator, io: std.Io, argv: []const []const u8) !void {
             .writer = &writer.interface,
             .cap = read.cap(),
         };
-        road = .{ .held = &held };
+        ground.road = .{ .held = &held };
+        // The reading half runs on its own thread from the moment the line is
+        // held: every frame that lands on it goes to the one entry point, and
+        // an answer to this ground's own ask is one of them.
+        const reading = try std.Thread.spawn(.{}, Wire.hold, .{ &held, gpa });
+        reading.detach();
     }
 
     var arena = std.heap.ArenaAllocator.init(gpa);
     defer arena.deinit();
     const a = arena.allocator();
 
-    // Whoever minted a voice has seen its keys, so the holder's first act is
-    // a rotate-and-ask to a key nobody else has ever seen. It asks nothing,
-    // and what comes back is what this voice now stands at.
-    const rotated, const rotation_seq = try ground.rotate(a, at);
-    const described = try exchange(a, &ground, road, "describe", rotated, inv.warden, rotation_seq) orelse return;
+    const described = (try ground.rotated(a, at)) orelse return;
     const classes = try readEstate(a, ground.own.records, described.data);
     try emitEstate(a, described, classes);
 
@@ -1182,11 +1115,10 @@ fn speak(gpa: std.mem.Allocator, io: std.Io, argv: []const []const u8) !void {
             // `blueprint` is a field on the far door's public being, whose pk
             // is that warden's own name — reached by naming it, like every
             // other field on every other being.
-            const composed, const seq = try ground.ask(a, at, .{
-                .being = inv.warden,
-                .method = .{ .name = "blueprint", .args = args },
-            });
-            const step = try exchange(a, &ground, road, "blueprint", composed, inv.warden, seq) orelse continue;
+            const step = (try ground.asked(a, "blueprint", at, inv.warden, .{
+                .name = "blueprint",
+                .args = args,
+            })) orelse continue;
             const text = try readOptionalText(a, ground.own.records, step.data);
             var l = try opened(a);
             try l.text("step", "blueprint");
@@ -1210,11 +1142,7 @@ fn speak(gpa: std.mem.Allocator, io: std.Io, argv: []const []const u8) !void {
             keyOf(flags.being) catch return fail("that is no being");
 
         const args = bytesOf(a, flags.args) catch return fail("those arguments are not hex");
-        const composed, const seq = try ground.ask(a, at, .{
-            .being = being,
-            .method = .{ .name = flags.method, .args = args },
-        });
-        if (try exchange(a, &ground, road, "ask", composed, inv.warden, seq)) |step| {
+        if (try ground.asked(a, "ask", at, being, .{ .name = flags.method, .args = args })) |step| {
             var l = try opened(a);
             try l.text("step", "ask");
             try l.number("seq", step.seq);
@@ -1225,48 +1153,12 @@ fn speak(gpa: std.mem.Allocator, io: std.Io, argv: []const []const u8) !void {
     }
 
     if (!flags.holding) {
-        if (stream) |s| s.close(io);
+        if (stream) |s| held.letGo(io, s);
         return;
     }
-    if (road != .held) return fail("a standing granted back can only ride a line");
+    if (ground.road != .held) return fail("a standing granted back can only ride a line");
     try holding(gpa, a, &ground, &held, inv.warden);
-    if (stream) |s| s.close(io);
-}
-
-/// Put one composed message down the road the far door offered and open what
-/// came back. Null is silence, which is a door speaking and not an error.
-fn exchange(
-    a: std.mem.Allocator,
-    ground: *Ground,
-    road: Road,
-    name: []const u8,
-    message: []const u8,
-    far: Key,
-    seq: i64,
-) !?Step {
-    const reply = try send(a, road, message, far, seq) orelse {
-        var l = try opened(a);
-        try l.text("step", name);
-        try l.number("seq", seq);
-        try l.truth("silence", true);
-        try l.send();
-        return null;
-    };
-    const heard = ground.hear(a, reply) catch {
-        note("the answer did not open");
-        return null;
-    };
-    const answer = heard.payload.answer;
-    if (answer.seq != seq) {
-        note("the answer names another ask");
-        return null;
-    }
-    return .{
-        .name = name,
-        .seq = seq,
-        .from = answer.warden,
-        .data = answer.data orelse &.{},
-    };
+    if (stream) |s| held.letGo(io, s);
 }
 
 fn emitEstate(a: std.mem.Allocator, step: Step, classes: []const Class) !void {
@@ -1301,8 +1193,9 @@ fn emitEstate(a: std.mem.Allocator, step: Step, classes: []const Class) !void {
 /// far ground keeps the line, and says what its own object was left holding
 /// once the line is let go.
 fn holding(gpa: std.mem.Allocator, a: std.mem.Allocator, ground: *Ground, held: *Wire, far: Key) !void {
+    _ = gpa;
     const being = try ground.hold();
-    const inv = try ground.grant(being, &.{});
+    const inv = try ground.door.grant(a, being);
 
     var l = try opened(a);
     try l.text("step", "standing");
@@ -1316,13 +1209,13 @@ fn holding(gpa: std.mem.Allocator, a: std.mem.Allocator, ground: *Ground, held: 
 
     // The far end closes the line when it has finished asking, and a line is
     // dumb: there is no goodbye on it, only the fact of whether it is still
-    // carrying.
-    try held.hold(gpa);
+    // carrying. The reading half is already running, so this waits for it
+    // rather than reading itself.
+    held.done.waitUncancelable(host);
 
-    const object = ground.object(being).?;
     var last = try opened(a);
     try last.text("step", "held");
     try last.hex("being", &being);
-    try last.number("total", object.total);
+    try last.number("total", ground.counter.count());
     try last.send();
 }

@@ -7,6 +7,8 @@ import assert from 'node:assert/strict';
 import {
   Warden,
   commitment,
+  decode,
+  encode,
   depart,
   landed,
   news,
@@ -23,6 +25,10 @@ const utf8 = new TextEncoder();
 const still = () => 1_000;
 const RANDOM = fixed(200);
 
+const TEXT = { base: 'text' };
+const INT = { base: 'int' };
+const BOOL = { base: 'bool' };
+
 const LIST = `ToDo
   add(title text) bool
   count() int
@@ -37,12 +43,12 @@ const DOCK = `Dock
 function todo(lines = []) {
   return {
     lines: [...lines],
-    add(args) {
-      this.lines.push(Buffer.from(args).toString());
-      return Uint8Array.of(1);
+    add(title) {
+      this.lines.push(title);
+      return true;
     },
     count() {
-      return utf8.encode(String(this.lines.length));
+      return BigInt(this.lines.length);
     },
   };
 }
@@ -67,7 +73,7 @@ async function world() {
     hints: ['https://destination.example'],
   });
   const object = todo(['milk', 'bread']);
-  const being = await origin.hold(object, {
+  const { being } = await origin.hold(object, {
     seed: fixed(5),
     heirSeed: fixed(6),
     blueprint: LIST,
@@ -82,8 +88,8 @@ async function world() {
     heirSeed: fixed(72),
     hints: ['https://third.example'],
   });
-  const far = await third.hold(
-    { ping: () => Uint8Array.of(1) },
+  const { being: far } = await third.hold(
+    { ping: () => true },
     { seed: fixed(73), blueprint: DOCK },
   );
   const relation = origin.remember(
@@ -179,8 +185,8 @@ async function readAt(peer, warden, envelope, field) {
 // ordinary field spent by an ordinary standing, granted in advance the way
 // anything is, and judged by the same seven steps.
 async function armed(origin, destination, object) {
-  const dock = await destination.hold(
-    { ping: () => Uint8Array.of(1) },
+  const { being: dock } = await destination.hold(
+    { ping: () => true },
     {
       seed: fixed(50),
       heirSeed: fixed(51),
@@ -399,7 +405,7 @@ test('a peer that receives both news arrives at the new door and its standing wo
     askThere(one.peer, one.row, now.being, { name: 'count', args: new Uint8Array(0) }, 5n),
   );
   assert.ok(answer, 'the travelled standing answers at the new door');
-  assert.equal(Buffer.from(answer.data).toString(), '2');
+  assert.equal(decode(INT, answer.data), 2n);
   // Nothing was regranted: the destination never minted a voice for this peer.
   assert.equal(hex(destination.standing(one.row.voice.pk).voice), hex(one.row.voice.pk));
   assert.equal(hex(being).length, 64);
@@ -489,7 +495,7 @@ test('a peer that follows the first news early meets the weather', async () => {
       6n,
     ),
   );
-  assert.equal(Buffer.from(answer.data).toString(), '2');
+  assert.equal(decode(INT, answer.data), 2n);
 });
 
 test('a peer that missed the news asks the old door and is told, then asks the new', async () => {
@@ -565,7 +571,7 @@ test('a peer that missed the news asks the old door and is told, then asks the n
       random: RANDOM,
     }),
   );
-  assert.equal(Buffer.from(answer.data).toString(), '2');
+  assert.equal(decode(INT, answer.data), 2n);
 });
 
 test('the same news twice is refused, because the heir chain has moved on', async () => {
@@ -589,7 +595,7 @@ test('after the move every key the old warden held for the being is dead', async
     await readAt(
       one.peer,
       origin,
-      askThere(one.peer, one.row, being, { name: 'add', args: utf8.encode('eggs') }, 9n),
+      askThere(one.peer, one.row, being, { name: 'add', args: encode(TEXT, 'eggs') }, 9n),
       'moved',
     ),
     null,
@@ -655,7 +661,7 @@ test('the outbound record travels: a being that acts arrives able to act', async
     }),
   );
   assert.ok(answer, 'the inherited relation answers at a door that heard nothing');
-  assert.deepEqual([...answer.data], [1]);
+  assert.equal(decode(BOOL, answer.data), true);
 });
 
 test('the inherited standing can be rotated, because the heir moved with it', async () => {
@@ -687,7 +693,7 @@ test('the inherited standing can be rotated, because the heir moved with it', as
     }),
   );
   assert.ok(answer, 'the inherited standing rotates at the far door');
-  assert.deepEqual([...answer.data], [1]);
+  assert.equal(decode(BOOL, answer.data), true);
 
   // And the far door now stands at the heir, with the next commitment held.
   const standing = third.standing(row.heir.pk);

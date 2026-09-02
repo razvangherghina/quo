@@ -7,22 +7,22 @@ import { request } from 'node:http';
 import {
   Warden,
   commitment,
-  hangUp,
+  encode,
   news,
   post,
-  reach,
   readAnswer,
   readField,
   signingPair,
 } from '../src/index.js';
 import { serve } from '../src/door.js';
-import { listen } from '../src/line.js';
+import { host as stand } from '../src/host.js';
 
 const hex = (bytes) => Buffer.from(bytes).toString('hex');
 const fixed = (fill) => new Uint8Array(32).fill(fill);
 const utf8 = new TextEncoder();
 const still = () => 1_000;
 const RANDOM = fixed(200);
+const TEXT = { base: 'text' };
 
 const LIST = `ToDo
   add(title text) bool
@@ -32,12 +32,12 @@ const LIST = `ToDo
 function todo() {
   return {
     lines: [],
-    add(args) {
-      this.lines.push(Buffer.from(args).toString());
-      return Uint8Array.of(1);
+    add(title) {
+      this.lines.push(title);
+      return true;
     },
     count() {
-      return utf8.encode(String(this.lines.length));
+      return BigInt(this.lines.length);
     },
   };
 }
@@ -45,23 +45,35 @@ function todo() {
 // Two grounds, each with its own door on its own ephemeral loopback port. Two
 // wardens are strangers: same machine, same seals, same judgment.
 async function grounds() {
-  const host = await Warden.open({ nameSeed: fixed(1), padlockSeed: fixed(2), heirSeed: fixed(3) });
+  // The clock and the randomness are handed to the warden, never reached for:
+  // the door behind a road takes them from the warden it serves.
+  let grain = 100;
+  const random = () => fixed((grain += 1) % 251);
+  const host = await Warden.open({
+    nameSeed: fixed(1),
+    padlockSeed: fixed(2),
+    heirSeed: fixed(3),
+    clock: still,
+    random,
+  });
   const guest = await Warden.open({
     nameSeed: fixed(10),
     padlockSeed: fixed(11),
     heirSeed: fixed(12),
+    clock: still,
+    random,
   });
   const object = todo();
-  const being = await host.hold(object, { seed: fixed(5), heirSeed: fixed(6), blueprint: LIST });
+  const { being } = await host.hold(object, {
+    seed: fixed(5),
+    heirSeed: fixed(6),
+    blueprint: LIST,
+  });
 
-  // Every draw of randomness is taken as an argument, so the door is handed a
-  // supplier rather than reaching for entropy.
-  let grain = 100;
-  const random = () => fixed((grain += 1) % 251);
   // The door tells the warden where it ended up: neither address exists until
   // the socket is bound, and everything minted after this carries them.
-  const there = await serve(host, { clock: still, random });
-  const here = await serve(guest, { clock: still, random });
+  const there = await serve(host);
+  const here = await serve(guest);
   return {
     host,
     guest,
@@ -101,8 +113,8 @@ test('a grant, an ask and an answer cross the wire as bytes in and bytes out', a
   const estate = await readBack(
     guest,
     host,
-    await reach(
-      row.hints,
+    await post(
+      row.hints[0],
       await guest.ask(row, {
         seq: 1n,
         commitment: await commitment(host.name.pk, next.pk),
@@ -126,7 +138,7 @@ test('a grant, an ask and an answer cross the wire as bytes in and bytes out', a
       await guest.ask(row, {
         seq: 2n,
         being,
-        method: { name: 'add', args: utf8.encode('milk') },
+        method: { name: 'add', args: encode(TEXT, 'milk') },
         random: RANDOM,
       }),
     ),
@@ -142,7 +154,11 @@ test('news crosses the wire in the other direction, judged by the same steps', a
 
   // The guest holds a relation with the host's house, so the host's own name
   // is placed in the guest's outbound record: what arrives is news.
-  const being = await host.hold(todo(), { seed: fixed(7), heirSeed: fixed(8), blueprint: LIST });
+  const { being } = await host.hold(todo(), {
+    seed: fixed(7),
+    heirSeed: fixed(8),
+    blueprint: LIST,
+  });
   const invitation = await host.grant(being, { voiceSeed: fixed(30), heirSeed: fixed(31) });
   guest.remember(invitation);
 
@@ -258,130 +274,60 @@ test('a road that never carried the bytes is weather, not silence', async () => 
   const envelope = new Uint8Array(48);
   await assert.rejects(() => post('http://127.0.0.1:1/', envelope));
   await assert.rejects(() => post('http://a-door-that-is-not.invalid/', envelope));
-  // And a caller that tried every hint it held raises the last of them rather
-  // than handing back the nothing an answered door would have given.
-  await assert.rejects(() =>
-    reach(['http://127.0.0.1:1/', 'http://a-door-that-is-not.invalid/'], envelope),
-  );
 });
 
 test('a caller tries the hints it holds, because none is authoritative', async (t) => {
-  const world = await grounds();
-  t.after(world.close);
-  const stranger = await signingPair(fixed(50));
-  const envelope = await world.guest.carry({
-    recipient: world.host.name.pk,
-    padlock: world.host.padlock.pk,
-    voicePk: stranger.pk,
-    voiceSecret: stranger.secret,
-    seq: 1n,
-    allowance: { time: 5_000n, hops: 4n },
-    being: null,
-    method: null,
-    random: RANDOM,
+  // A hint is a guess about the weather, and delivery is what tries them: the
+  // dead road is tried and the live one carries. Nothing is proved by the
+  // arrival — everything is proved by the seal.
+  const alice = await stand({
+    seeds: { name: fixed(60), padlock: fixed(61), heir: fixed(62) },
+    clock: still,
+    random: () => crypto.getRandomValues(new Uint8Array(32)),
+    roads: ['http'],
   });
-  // A hint is a guess about the weather. The dead road is tried and the live
-  // one answers, and nothing is proved by the arrival — everything is proved
-  // by the seal.
-  const answer = await reach(['http://127.0.0.1:1', world.there.hint], envelope);
-  const estate = await readBack(world.guest, world.host, answer, 'describe');
-  assert.equal(estate.classes.length, 1);
-  assert.equal(hex(estate.classes[0].beings[0].being), hex(world.host.name.pk));
-});
-
-// Which roads a caller can speak is nothing it is told and nothing it is
-// passed. It finds out by trying to pick one up, and what it can pick up is
-// what the platform under it has. These three cases are the whole of that
-// claim: it takes the line where it has one, it walks past the line where it
-// has none, and walking past is neither silence nor weather.
-test('a caller takes the road it can speak, and is told nothing about which', async (t) => {
-  const world = await grounds();
-  t.after(world.close);
-  // The host stands on both roads at once. Nothing about the two is ranked and
-  // the warden does not know which a caller will take: it offers what it has.
-  const road = await listen(world.host, { clock: still, random: () => fixed(77) });
-  t.after(road.close);
-  assert.ok(world.host.hints.some((hint) => hint.startsWith('tcp://')));
-
-  const stranger = await signingPair(fixed(51));
-  const ask = (seq) =>
-    world.guest.carry({
-      recipient: world.host.name.pk,
-      padlock: world.host.padlock.pk,
-      voicePk: stranger.pk,
-      voiceSecret: stranger.secret,
-      seq,
-      allowance: { time: 5_000n, hops: 4n },
-      being: null,
-      method: null,
-      random: RANDOM,
-    });
-
-  // Handed the ground it is calling for, the caller loads the line, finds it,
-  // and takes the `tcp://` hint the host offered first. Not a flag, not an
-  // option: the file loaded, so the road is there.
-  const over = { warden: world.guest, clock: still, random: () => fixed(78) };
-  const line = await reach([road.hint, world.there.hint], await ask(1n), {
-    ...over,
-    far: world.host.name.pk,
-    seq: 1n,
+  const bob = await stand({
+    seeds: { name: fixed(63), padlock: fixed(64), heir: fixed(65) },
+    clock: still,
+    random: () => crypto.getRandomValues(new Uint8Array(32)),
   });
-  const overLine = await readBack(world.guest, world.host, line, 'describe');
-  assert.ok(overLine, 'the line carried it');
-  assert.equal(road.lines.size, 1, 'and it went down a connection, not a POST');
-  t.after(() => hangUp(world.guest));
+  t.after(() => Promise.all([alice.close(), bob.close()]));
 
-  // The same caller, the same hints, handed no ground: it has nowhere to hold a
-  // line, so the `tcp://` hint is a road it cannot speak and it posts instead.
-  // The answer is the same answer, because the road never was the point.
-  const posted = await reach([road.hint, world.there.hint], await ask(2n));
-  const overPost = await readBack(world.guest, world.host, posted, 'describe');
-  assert.ok(overPost, 'the carriage carried it');
-  assert.equal(road.lines.size, 1, 'and no second line was opened');
-  assert.equal(overLine.classes.length, overPost.classes.length);
-  assert.equal(
-    hex(overLine.classes[0].beings[0].being),
-    hex(overPost.classes[0].beings[0].being),
-    'one estate, two roads, and the seal is what proved it either way',
-  );
-});
-
-test('a road the caller cannot speak is not a road that failed', async () => {
-  // Nothing was sent down it, so no door spoke and no road broke: it is neither
-  // silence nor weather, and the caller walks past it exactly as it would past
-  // a hint it had never been offered. Here every hint is unspeakable — one
-  // because this caller holds no ground for a line, one because it is weather —
-  // and what comes back is the weather, never the skip.
-  const envelope = new Uint8Array(48);
-  await assert.rejects(
-    () => reach(['tcp://127.0.0.1:9', 'http://127.0.0.1:1/'], envelope),
-    /ECONNREFUSED|fetch failed/,
-    'the raised fault is the road that broke, not the road that was skipped',
-  );
-  // And a list of nothing but roads it cannot speak is no road tried at all,
-  // which is not weather either: there is nothing to report the fault of.
-  assert.equal(await reach(['tcp://127.0.0.1:9'], envelope), null);
+  const object = todo();
+  await alice.warden.hold(object, { blueprint: LIST });
+  const invitation = await object.quo.grant(object);
+  // A road that is nothing but weather, offered first.
+  invitation.hints.unshift('http://127.0.0.1:1/');
+  const [handle] = await bob.warden.accept(invitation, { label: 'todo' });
+  assert.equal(await handle.add('milk'), true);
+  assert.deepEqual(object.lines, ['milk']);
 });
 
 test('a door that learns its address at serve time mints invitations that reach it', async (t) => {
   // Opened knowing nothing about where it will stand: an ephemeral port has no
   // address until the socket is bound, so a warden that fixed its roads at
   // birth could only hand out hints that reach nobody.
+  let grain = 60;
   const house = await Warden.open({
     nameSeed: fixed(30),
     padlockSeed: fixed(31),
     heirSeed: fixed(32),
+    clock: still,
+    random: () => fixed((grain += 1) % 251),
   });
   assert.deepEqual(house.hints, []);
-  const being = await house.hold(todo(), { seed: fixed(33), heirSeed: fixed(34), blueprint: LIST });
+  const { being } = await house.hold(todo(), {
+    seed: fixed(33),
+    heirSeed: fixed(34),
+    blueprint: LIST,
+  });
   const caller = await Warden.open({
     nameSeed: fixed(40),
     padlockSeed: fixed(41),
     heirSeed: fixed(42),
   });
 
-  let grain = 60;
-  const door = await serve(house, { clock: still, random: () => fixed((grain += 1) % 251) });
+  const door = await serve(house);
   t.after(door.close);
   assert.deepEqual(house.hints, [door.hint]);
 
@@ -395,8 +341,8 @@ test('a door that learns its address at serve time mints invitations that reach 
   const estate = await readBack(
     caller,
     house,
-    await reach(
-      row.hints,
+    await post(
+      row.hints[0],
       await caller.ask(row, {
         seq: 1n,
         commitment: await commitment(house.name.pk, next.pk),
@@ -415,7 +361,7 @@ test('a door that learns its address at serve time mints invitations that reach 
 
   // And a road that stops carrying stops being minted: the second door is the
   // whole of a warden moving house, which is open the new road, close the old.
-  const moved = await serve(house, { clock: still, random: () => fixed(7) });
+  const moved = await serve(house);
   t.after(moved.close);
   assert.deepEqual(house.hints, [door.hint, 'https://house.example', moved.hint]);
   await moved.close();
@@ -445,22 +391,27 @@ test('the published limit and the enforced one are two separate acts, and nothin
   const published = 65_536n;
   const enforced = 4_096n;
 
+  let grain = 150;
   const house = await Warden.open({
     nameSeed: fixed(70),
     padlockSeed: fixed(71),
     heirSeed: fixed(72),
     limit: published,
+    clock: still,
+    random: () => fixed((grain += 1) % 251),
   });
-  const being = await house.hold(todo(), { seed: fixed(73), heirSeed: fixed(74), blueprint: LIST });
+  const { being } = await house.hold(todo(), {
+    seed: fixed(73),
+    heirSeed: fixed(74),
+    blueprint: LIST,
+  });
   const caller = await Warden.open({
     nameSeed: fixed(75),
     padlockSeed: fixed(76),
     heirSeed: fixed(77),
   });
 
-  let grain = 150;
-  const random = () => fixed((grain += 1) % 251);
-  const door = await serve(house, { clock: still, random, limit: enforced });
+  const door = await serve(house, { limit: enforced });
   t.after(door.close);
 
   const invitation = await house.grant(being, { voiceSeed: fixed(78), heirSeed: fixed(79) });
@@ -497,7 +448,7 @@ test('the published limit and the enforced one are two separate acts, and nothin
   // A caller that believes it and sends something comfortably inside it meets
   // silence, because the road in front of the door was held to a smaller
   // number and the road is what counts the bytes.
-  const big = utf8.encode('x'.repeat(Number(enforced)));
+  const big = encode(TEXT, 'x'.repeat(Number(enforced)));
   const over = await caller.ask(row, {
     seq: 3n,
     being,

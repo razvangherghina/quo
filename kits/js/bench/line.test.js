@@ -5,7 +5,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { connect } from 'node:net';
-import { Warden, commitment, readAnswer, readField, signingPair } from '../src/index.js';
+import { Warden, commitment, encode, readField, signingPair } from '../src/index.js';
 import { CAP, DEFAULT, dial, listen } from '../src/line.js';
 
 const hex = (bytes) => Buffer.from(bytes).toString('hex');
@@ -13,6 +13,8 @@ const fixed = (fill) => new Uint8Array(32).fill(fill);
 const utf8 = new TextEncoder();
 const still = () => 1_000;
 const RANDOM = fixed(200);
+
+const TEXT = { base: 'text' };
 
 const LIST = `ToDo
   add(title text) bool
@@ -22,12 +24,12 @@ const LIST = `ToDo
 function todo() {
   return {
     lines: [],
-    add(args) {
-      this.lines.push(Buffer.from(args).toString());
-      return Uint8Array.of(1);
+    add(title) {
+      this.lines.push(title);
+      return true;
     },
     count() {
-      return utf8.encode(String(this.lines.length));
+      return BigInt(this.lines.length);
     },
   };
 }
@@ -40,14 +42,26 @@ const grain = (start) => {
 // Two grounds: one listening on an ephemeral loopback port, one that only ever
 // dials out and publishes no road at all.
 async function grounds(options = {}) {
-  const host = await Warden.open({ nameSeed: fixed(1), padlockSeed: fixed(2), heirSeed: fixed(3) });
+  const host = await Warden.open({
+    nameSeed: fixed(1),
+    padlockSeed: fixed(2),
+    heirSeed: fixed(3),
+    clock: still,
+    random: grain(100),
+  });
   const guest = await Warden.open({
     nameSeed: fixed(10),
     padlockSeed: fixed(11),
     heirSeed: fixed(12),
+    clock: still,
+    random: grain(150),
   });
   const object = todo();
-  const being = await host.hold(object, { seed: fixed(5), heirSeed: fixed(6), blueprint: LIST });
+  const { being } = await host.hold(object, {
+    seed: fixed(5),
+    heirSeed: fixed(6),
+    blueprint: LIST,
+  });
   const accepted = [];
   const door = await listen(host, {
     clock: still,
@@ -58,15 +72,29 @@ async function grounds(options = {}) {
   return { host, guest, object, being, door, accepted, close: () => door.close() };
 }
 
-async function read(from, farWardenPk, envelope, field) {
+// An ask down a line, waited for the way the new shape waits: the line carries
+// and waits for nothing, the answer arrives as a frame of its own through the
+// warden's one door, and what settles the wait is the caller's own record.
+async function askOver(line, from, row, options, field) {
+  const envelope = await from.ask(row, { random: RANDOM, ...options });
   if (envelope === null) return null;
-  const answer = await readAnswer({
-    envelope,
-    padlockSecret: from.padlock.secret,
-    wardenPk: farWardenPk,
-  });
+  const waiting = from.pending(row, options.seq, 2_000n);
+  assert.equal(line.carry(envelope), true);
+  const answer = await waiting;
   if (!answer) return null;
   return field === undefined ? answer : readField(field, answer.data);
+}
+
+// Every frame this warden's door was handed, so a case can say that nothing
+// came back at all rather than only that nothing was answered.
+function frames(warden) {
+  const seen = [];
+  const arrive = warden.arrive.bind(warden);
+  warden.arrive = async (envelope, via) => {
+    seen.push(envelope);
+    return arrive(envelope, via);
+  };
+  return seen;
 }
 
 // The plain wire, for the cases that are about framing rather than about Quo.
@@ -113,17 +141,11 @@ test('an ask and its answer ride one line, and the listener publishes its road',
   t.after(() => line.close());
 
   const next = await signingPair(fixed(22));
-  const estate = await read(
+  const estate = await askOver(
+    line,
     guest,
-    host.name.pk,
-    await line.carry(
-      await guest.ask(row, {
-        seq: 1n,
-        commitment: await commitment(host.name.pk, next.pk),
-        random: RANDOM,
-      }),
-      { warden: host.name.pk, seq: 1n },
-    ),
+    row,
+    { seq: 1n, commitment: await commitment(host.name.pk, next.pk) },
     'describe',
   );
   row.voice = { pk: row.heir.pk, secret: row.heir.secret };
@@ -132,19 +154,11 @@ test('an ask and its answer ride one line, and the listener publishes its road',
   );
 
   // A second ask down the same connection: one socket, many messages.
-  const answer = await read(
-    guest,
-    host.name.pk,
-    await line.carry(
-      await guest.ask(row, {
-        seq: 2n,
-        being,
-        method: { name: 'add', args: utf8.encode('milk') },
-        random: RANDOM,
-      }),
-      { warden: host.name.pk, seq: 2n },
-    ),
-  );
+  const answer = await askOver(line, guest, row, {
+    seq: 2n,
+    being,
+    method: { name: 'add', args: encode(TEXT, 'milk') },
+  });
   assert.equal(answer.seq, 2n);
   assert.deepEqual(object.lines, ['milk']);
 });
@@ -157,7 +171,11 @@ test('a push rides back down a line the far end dialled out', async (t) => {
   // The dialling ground holds a being and publishes no road — it cannot be
   // called, and it does not pretend it can.
   const mine = todo();
-  const being = await guest.hold(mine, { seed: fixed(60), heirSeed: fixed(61), blueprint: LIST });
+  const { being } = await guest.hold(mine, {
+    seed: fixed(60),
+    heirSeed: fixed(61),
+    blueprint: LIST,
+  });
   assert.deepEqual(guest.hints, []);
 
   // The dialler grants the listener a standing at that being, and the
@@ -186,22 +204,14 @@ test('a push rides back down a line the far end dialled out', async (t) => {
   assert.equal(world.accepted.length, 1);
 
   // And now the listener asks down the connection it never opened.
-  const answer = await read(
-    host,
-    guest.name.pk,
-    await world.accepted[0].carry(
-      await host.ask(row, {
-        seq: 1n,
-        // The holder's first act is a rotation, on this carriage as on any
-        // other: what travelled was an heir, and it is spent by being used.
-        commitment: await commitment(guest.name.pk, (await signingPair(fixed(65))).pk),
-        being,
-        method: { name: 'add', args: utf8.encode('bread') },
-        random: RANDOM,
-      }),
-      { warden: guest.name.pk, seq: 1n },
-    ),
-  );
+  const answer = await askOver(world.accepted[0], host, row, {
+    seq: 1n,
+    // The holder's first act is a rotation, on this carriage as on any
+    // other: what travelled was an heir, and it is spent by being used.
+    commitment: await commitment(guest.name.pk, (await signingPair(fixed(65))).pk),
+    being,
+    method: { name: 'add', args: encode(TEXT, 'bread') },
+  });
   assert.equal(answer.seq, 1n);
   assert.deepEqual(mine.lines, ['bread']);
 });
@@ -213,10 +223,11 @@ test('a refused ask produces no frame at all, and the line lives on', async (t) 
 
   const line = await dial(guest, world.door.hint, { clock: still, random: grain(50) });
   t.after(() => line.close());
+  const back = frames(guest);
 
   // A voice in neither record, at a being it does not reach. On this carriage
-  // silence has no wire form, so nothing comes back and the caller's deadline
-  // is its own affair.
+  // silence has no wire form, so no frame comes back at all and the caller's
+  // deadline is its own affair.
   const stranger = await signingPair(fixed(50));
   const refused = await guest.carry({
     recipient: host.name.pk,
@@ -229,43 +240,29 @@ test('a refused ask produces no frame at all, and the line lives on', async (t) 
     method: { name: 'count', args: new Uint8Array(0) },
     random: RANDOM,
   });
-  const waited = await Promise.race([
-    line.carry(refused, { warden: host.name.pk, seq: 1n }),
-    new Promise((done) => setTimeout(() => done('nothing came back'), 60)),
-  ]);
-  assert.equal(waited, 'nothing came back');
+  assert.equal(line.carry(refused), true);
+  await new Promise((done) => setTimeout(done, 60));
+  assert.deepEqual(back, [], 'a refused ask produced a frame');
   assert.equal(line.open, true);
 
   // Bytes that are no box at all are the same ordinary silence, and the line
   // still stands after them.
-  const noise = await Promise.race([
-    line.carry(utf8.encode('not a box at all, but well framed'), {
-      warden: host.name.pk,
-      seq: 99n,
-    }),
-    new Promise((done) => setTimeout(() => done('nothing came back'), 60)),
-  ]);
-  assert.equal(noise, 'nothing came back');
+  assert.equal(line.carry(utf8.encode('not a box at all, but well framed')), true);
+  await new Promise((done) => setTimeout(done, 60));
+  assert.deepEqual(back, []);
   assert.equal(line.open, true);
 
   // And a later, legal ask on the same line still answers.
   const invitation = await host.grant(being, { voiceSeed: fixed(20), heirSeed: fixed(21) });
   const row = guest.remember(invitation);
-  const answer = await read(
-    guest,
-    host.name.pk,
-    await line.carry(
-      await guest.ask(row, {
-        seq: 7n,
-        commitment: await commitment(host.name.pk, (await signingPair(fixed(23))).pk),
-        being,
-        method: { name: 'count', args: new Uint8Array(0) },
-        random: RANDOM,
-      }),
-      { warden: host.name.pk, seq: 7n },
-    ),
-  );
+  const answer = await askOver(line, guest, row, {
+    seq: 7n,
+    commitment: await commitment(host.name.pk, (await signingPair(fixed(23))).pk),
+    being,
+    method: { name: 'count', args: new Uint8Array(0) },
+  });
   assert.equal(answer.seq, 7n);
+  assert.equal(back.length, 1);
 });
 
 test('a broken frame drops the connection without a word', async (t) => {
@@ -363,39 +360,25 @@ test('a dialler stays under the cap the far road declared', async (t) => {
   // Over what the road promised, the sender's own kit says no and no byte
   // flows: the alternative is a frame the far end must drop, which would kill
   // the line this end still wants.
-  assert.equal(await line.carry(new Uint8Array(5_000)), null);
+  assert.equal(line.carry(new Uint8Array(5_000)), false);
   assert.equal(line.open, true);
 
   // And the line is the ordinary line still.
   const next = await signingPair(fixed(22));
-  const estate = await read(
+  const estate = await askOver(
+    line,
     guest,
-    host.name.pk,
-    await line.carry(
-      await guest.ask(row, {
-        seq: 1n,
-        commitment: await commitment(host.name.pk, next.pk),
-        random: RANDOM,
-      }),
-      { warden: host.name.pk, seq: 1n },
-    ),
+    row,
+    { seq: 1n, commitment: await commitment(host.name.pk, next.pk) },
     'describe',
   );
   row.voice = { pk: row.heir.pk, secret: row.heir.secret };
   assert.ok(estate);
-  const answer = await read(
-    guest,
-    host.name.pk,
-    await line.carry(
-      await guest.ask(row, {
-        seq: 2n,
-        being,
-        method: { name: 'add', args: utf8.encode('milk') },
-        random: RANDOM,
-      }),
-      { warden: host.name.pk, seq: 2n },
-    ),
-  );
+  const answer = await askOver(line, guest, row, {
+    seq: 2n,
+    being,
+    method: { name: 'add', args: encode(TEXT, 'milk') },
+  });
   assert.equal(answer.seq, 2n);
   assert.deepEqual(object.lines, ['milk']);
 });
@@ -481,31 +464,30 @@ test('an envelope at the default rides a line whose warden published no limit', 
   assert.equal(await carried(world.door.hint, DEFAULT), 'the frame was carried');
 });
 
-test('a closed line resolves its pending asks to null', async (t) => {
+test('a closed line carries nothing more, and the caller is left the ordinary nothing', async (t) => {
   const world = await grounds();
   t.after(world.close);
   const { host, guest, being } = world;
 
   const line = await dial(guest, world.door.hint, { clock: still, random: grain(50) });
-  const stranger = await signingPair(fixed(50));
-  const refused = await guest.carry({
-    recipient: host.name.pk,
-    padlock: host.padlock.pk,
-    voicePk: stranger.pk,
-    voiceSecret: stranger.secret,
+  const invitation = await host.grant(being, { voiceSeed: fixed(20), heirSeed: fixed(21) });
+  const row = guest.remember(invitation);
+  const envelope = await guest.ask(row, {
     seq: 1n,
-    allowance: { time: 5_000n, hops: 4n },
+    commitment: await commitment(host.name.pk, (await signingPair(fixed(22))).pk),
     being,
     method: { name: 'count', args: new Uint8Array(0) },
     random: RANDOM,
   });
-  const waiting = line.carry(refused, { warden: host.name.pk, seq: 1n });
+  const waiting = guest.pending(row, 1n, 200n);
+  assert.equal(line.carry(envelope), true);
   // Closing is the same nothing a shut door gives, and re-dialling is the
-  // caller's affair.
+  // caller's affair. The line waits for nothing, so what the caller is left
+  // with is its own record and its own deadline.
   line.close();
-  assert.equal(await waiting, null);
   assert.equal(line.open, false);
-  assert.equal(await line.carry(refused, { warden: host.name.pk, seq: 2n }), null);
+  assert.equal(line.carry(envelope), false);
+  assert.equal(await waiting, null);
 });
 
 test('a listening line stops carrying when its road is retracted', async (t) => {
@@ -515,65 +497,22 @@ test('a listening line stops carrying when its road is retracted', async (t) => 
 
   const line = await dial(guest, world.door.hint, { clock: still, random: grain(50) });
   t.after(() => line.close());
-  const stranger = await signingPair(fixed(50));
-  const waiting = line.carry(
-    await guest.carry({
-      recipient: host.name.pk,
-      padlock: host.padlock.pk,
-      voicePk: stranger.pk,
-      voiceSecret: stranger.secret,
-      seq: 1n,
-      allowance: { time: 5_000n, hops: 4n },
-      being,
-      method: { name: 'count', args: new Uint8Array(0) },
-      random: RANDOM,
-    }),
-    { warden: host.name.pk, seq: 1n },
-  );
+  const invitation = await host.grant(being, { voiceSeed: fixed(20), heirSeed: fixed(21) });
+  const row = guest.remember(invitation);
+  const envelope = await guest.ask(row, {
+    seq: 1n,
+    commitment: await commitment(host.name.pk, (await signingPair(fixed(22))).pk),
+    being,
+    method: { name: 'count', args: new Uint8Array(0) },
+    random: RANDOM,
+  });
+  const waiting = guest.pending(row, 1n, 200n);
   await world.close();
-  // A road that has stopped carrying is not a road, and the dead line's
-  // pending ask resolves to the same nothing.
+  // A road that has stopped carrying is not a road, and the ask that rode it
+  // meets the same nothing.
   assert.deepEqual(host.hints, []);
+  line.carry(envelope);
   assert.equal(await waiting, null);
-});
-
-test('a second ask whose answer would be indistinguishable is not sent', async (t) => {
-  const world = await grounds();
-  t.after(world.close);
-  const { host, guest, being } = world;
-
-  const line = await dial(guest, world.door.hint, { clock: still, random: grain(50) });
-  t.after(() => line.close());
-
-  // A voice at nothing, so nothing ever answers and the first ask stays
-  // awaiting.
-  const stranger = await signingPair(fixed(50));
-  const ask = (seq) =>
-    guest.carry({
-      recipient: host.name.pk,
-      padlock: host.padlock.pk,
-      voicePk: stranger.pk,
-      voiceSecret: stranger.secret,
-      seq,
-      allowance: { time: 5_000n, hops: 4n },
-      being,
-      method: { name: 'count', args: new Uint8Array(0) },
-      random: RANDOM,
-    });
-
-  const first = line.carry(await ask(1n), { warden: host.name.pk, seq: 1n });
-  // One return padlock, one far warden, one number: the two answers would be
-  // indistinguishable, so the sender's own kit refuses to send the second
-  // while the first waits. It answers the same nothing everything else does.
-  assert.equal(await line.carry(await ask(1n), { warden: host.name.pk, seq: 1n }), null);
-  // A different number collides with nothing and rides.
-  const other = line.carry(await ask(2n), { warden: host.name.pk, seq: 2n });
-  const settled = await Promise.race([
-    Promise.any([first, other]),
-    new Promise((done) => setTimeout(() => done('both still waiting'), 60)),
-  ]);
-  assert.equal(settled, 'both still waiting');
-  assert.equal(line.open, true);
 });
 
 test('a hint that is not a line is not dialled', async () => {

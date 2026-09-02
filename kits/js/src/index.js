@@ -42,11 +42,12 @@ export {
   ANSWER_BLUEPRINT,
   WARDEN_BLUEPRINT,
   WARDEN_DIGEST,
-  accept,
   decodeAnswer,
   readAnswer,
   readField,
   writeArgument,
 } from './warden.js';
 export { pack, depart, landed, peers, news } from './migration.js';
-export { hangUp, post, reach } from './carriage.js';
+export { closure, remoteHandle, localHandle, within, current } from './quo.js';
+export { seeds, MemoryStore, memoryDelivery } from './delivery.js';
+export { post, reach } from './carriage.js';

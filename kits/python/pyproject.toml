@@ -1,6 +1,6 @@
 [project]
 name = "quo-systems"
-version = "0.2.0"
+version = "0.3.0"
 description = "Quo in Python: the protocol that answers by whose authority."
 requires-python = ">=3.11"
 dependencies = ["cryptography"]

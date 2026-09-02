@@ -377,62 +377,7 @@ fn article_iii_generosity_above_the_promised_cap_is_learned_not_negotiated() {
 }
 
 // **A warden offers as many roads as it has and a caller tries them.** Choosing
-// among them is the caller's whole job, and nothing at a call site says which
-// road was taken. It matters most in this kit: it speaks no TLS by ruling, so a
-// peer offering `https://` beside `tcp://` was offering it the one road it can
-// speak, and a caller that did not walk the hints would refuse a house standing
-// right there.
-#[test]
-fn article_iii_a_caller_takes_the_road_it_can_speak() {
-    let listener = Listener::bind("127.0.0.1:0", DEFAULT_CAP).expect("a listener");
-    let hint = listener.hint().expect("a hint");
-    let door = thread::spawn(move || {
-        let mut held = listener.accept().expect("a line");
-        let Arrival::Frame(arrived) = held.receive().expect("a frame") else {
-            panic!("the line closed before it carried");
-        };
-        held.send(&arrived).expect("the answer rode back");
-    });
-
-    // The house stands on both roads and ranks neither. The `https://` hint is
-    // one this kit refuses by its own ruling, so the caller walks past it and
-    // takes the line — never told to, and never handed an option.
-    let hints = vec!["https://ground.example/door".to_string(), hint];
-    let mut caller = line::Caller::new();
-    let back = caller
-        .send(&hints, b"hello")
-        .expect("a road carried")
-        .expect("bytes came back");
-    assert_eq!(back, b"hello");
-    door.join().expect("the door answered");
-    caller.hang_up();
-}
-
-// A road this caller cannot speak is not a road that failed. Nothing was sent
-// down it, so no door spoke and no road broke: it is neither silence nor
-// weather, and it is never the fault handed back at the end.
-#[test]
-fn article_iii_a_road_the_caller_cannot_speak_is_not_a_road_that_failed() {
-    let mut caller = line::Caller::new();
-
-    // Nothing but roads it cannot speak is no road tried at all, which is not
-    // weather either: there is no fault to report the road of.
-    assert_eq!(
-        caller
-            .send(&["https://ground.example/door".to_string()], b"hello")
-            .expect("skipping is not weather"),
-        None
-    );
-
-    // And where one road is weather, the weather is what comes back — never
-    // the skip.
-    assert!(caller
-        .send(
-            &[
-                "https://ground.example/door".to_string(),
-                "http://127.0.0.1:1/".to_string()
-            ],
-            b"hello"
-        )
-        .is_err());
-}
+// among them is delivery's whole job, and nothing at a call site says which
+// road was taken. It is asserted where delivery lives, in the host's own
+// suite, and not here: a road that walked a peer's hints would be a road
+// holding the relation, which is the layer above it.

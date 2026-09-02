@@ -52,7 +52,33 @@ fn source(crate_name: &str) -> Vec<(PathBuf, String)> {
         }
     }
     assert!(!found.is_empty(), "{crate_name} has source");
+    found.sort_by(|(one, _), (two, _)| one.cmp(two));
     found
+}
+
+/// **The kit whole reaches the host in one file.** `quo` names every crate
+/// under one dependency and adds the host: it stands the roads and is delivery
+/// beneath the warden, so it is the one place outside a road that opens a
+/// socket or reads a clock. That place is `host.rs` and no other file, because
+/// a seam spread over a crate is a seam nobody can audit.
+#[test]
+fn article_iii_the_kit_whole_reaches_the_host_in_one_file_and_no_other() {
+    let mut reaching = Vec::new();
+    for (path, text) in source("quo") {
+        if REACHES.iter().any(|reach| text.contains(reach)) {
+            reaching.push(
+                path.file_name()
+                    .expect("a file")
+                    .to_string_lossy()
+                    .to_string(),
+            );
+        }
+    }
+    assert_eq!(
+        reaching,
+        vec!["host.rs".to_string()],
+        "the kit whole reaches the host somewhere other than its host"
+    );
 }
 
 #[test]
@@ -162,7 +188,9 @@ fn every_dependency_is_approved_and_stands_only_where_it_may() {
         .map(|crate_name| (*crate_name, kit().join(crate_name).join("Cargo.toml")))
         .collect();
     manifests.push(("", kit().join("Cargo.toml")));
+    manifests.push(("quo", kit().join("quo").join("Cargo.toml")));
     manifests.push(("subject", kit().join("subject").join("Cargo.toml")));
+    manifests.push(("conformance", kit().join("conformance").join("Cargo.toml")));
 
     for (crate_name, manifest) in manifests {
         let allowed = allowed_in(crate_name);

@@ -456,15 +456,19 @@ fn readSource(gpa: std.mem.Allocator, name: []const u8) ![]u8 {
     return std.Io.Dir.cwd().readFileAlloc(threaded.io(), path, gpa, .limited(1 << 20));
 }
 
-test "the five below never reach a host: no core module imports std.Io.net or std.http" {
+test "nothing above the roads reaches a host: no core module imports std.Io.net or std.http" {
     const gpa = std.testing.allocator;
 
+    // The warden is road-agnostic and the being's own API is host-agnostic
+    // too, so the same assertion covers both: neither ever learns which road
+    // brought a message or which will carry the answer.
     const core = [_][]const u8{
         "notation.zig",
         "arithmetic.zig",
         "wire.zig",
         "envelope.zig",
         "warden.zig",
+        "quo.zig",
     };
     for (core) |name| {
         const text = try readSource(gpa, name);
@@ -474,16 +478,19 @@ test "the five below never reach a host: no core module imports std.Io.net or st
         try std.testing.expect(std.mem.indexOf(u8, text, "std.posix") == null);
     }
 
-    // And the two roads are where the reaching lives, so the assertion above
-    // is about a separation that exists rather than about absent code.
-    const roads = [_]struct { name: []const u8, needle: []const u8 }{
+    // And the roads and the host are where the reaching lives, so the
+    // assertion above is about a separation that exists rather than about
+    // absent code. **The host is the one module that knows every road by
+    // name**, which is why it is the only one that names all of them.
+    const reaching = [_]struct { name: []const u8, needle: []const u8 }{
         .{ .name = "line.zig", .needle = "Io.net" },
         .{ .name = "carriage.zig", .needle = "std.http" },
+        .{ .name = "host.zig", .needle = "Io.net" },
     };
-    for (roads) |road| {
-        const text = try readSource(gpa, road.name);
+    for (reaching) |one| {
+        const text = try readSource(gpa, one.name);
         defer gpa.free(text);
-        try std.testing.expect(std.mem.indexOf(u8, text, road.needle) != null);
+        try std.testing.expect(std.mem.indexOf(u8, text, one.needle) != null);
     }
 }
 

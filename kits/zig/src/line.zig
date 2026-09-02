@@ -236,7 +236,7 @@ const window = 4096;
 ///
 /// It is allocated rather than held by value because the reader and the writer
 /// point into the buffers beside them: a line that moved would leave both
-/// pointing where it used to be.
+/// pointing into the storage it left behind.
 pub const Held = struct {
     stream: net.Stream,
     io: std.Io,

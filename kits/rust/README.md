@@ -1,7 +1,14 @@
 # The Quo kit in Rust
 
-A Quo kit written from [the constitution](../../constitution.md) alone.
-Today it carries five parts of the core: **the notation** — a blueprint's
+Everything that crosses the wire here is written from
+[the constitution](../../constitution.md) and nothing else: the notation,
+the arithmetic, the encoding, the envelope and the judgment. What stands above
+the wire — the warden that holds beings, the closure a being reaches Quo
+through, and the host — is written from the settled shape of a Quo
+implementation, because the law leaves it to the ground and two kits that
+guessed differently there would still interoperate.
+
+It carries five parts of the core: **the notation** — a blueprint's
 canonical text, its digest, and everything Article IV refuses — **the
 arithmetic**, the four algorithms of Article VI, **the wire**, the one way
 each closed type is written, **the envelope**, the sealed letter and its two
@@ -11,12 +18,22 @@ carriage**, the common HTTPS road every warden answers, **the line**, framed
 envelopes over one persistent TCP connection, and **distance zero**, the call
 — two houses in one process handing envelope bytes as bytes. Above them
 stands **`subject`**, the executable a driver in another language spawns to
-speak to this kit.
+speak to this kit, and **`conformance`**, the executable the shared conformance
+scenarios drive it with.
 
 **A road is not the core.** `carriage` and `line` are the only crates here
 that reach a host; the five beneath them open no socket, read no clock and
 draw no key, and the suite asserts that separation rather than trusting it.
 `zero` is a road with no wire, so it reaches no host either.
+
+**Three layers, and what each never sees.** A being is a plain object of your
+own: it implements one trait, receives arguments already decoded by its
+blueprint, answers a plain value or silence, and never sees a key, a seal or
+a road. The warden sees bytes and keys: `Warden::arrive` is the one entry
+point for anything a road brings, and it unseals once, reads the record byte
+itself, and answers bytes or silence. A road sees sockets and is handed an
+opaque token beside the bytes. `quo::host` is the only part that knows every
+road by name; it stands them, and it is delivery beneath the warden.
 
 **Distance zero waives no step of the judgment**, and that is asserted rather
 than described: `zero/tests/judgment.rs` writes Article XII's steps once and
@@ -37,17 +54,18 @@ another is a red rather than an absence.
 | Path          | What it is                                                                                           |
 | ------------- | ---------------------------------------------------------------------------------------------------- |
 | `Cargo.toml`  | The workspace, and the one version the nine published crates share.                                  |
-| `quo/`        | The crate `quo`: the kit whole — no code of its own, the eight below under one dependency.           |
+| `quo/`        | The crate `quo`: the kit whole — the eight below under one dependency, and the host that stands them. |
 | `notation/`   | The crate `quo-notation`: the parser, the canonical text, the digest.                                |
 | `arithmetic/` | The crate `quo-arithmetic`: the four algorithms of Article VI.                                       |
 | `wire/`       | The crate `quo-wire`: the byte encoding of Article V.                                                |
 | `envelope/`   | The crate `quo-envelope`: the sealed letter of Article XI.                                           |
-| `warden/`     | The crate `quo-warden`: the door of Articles VII to XII.                                             |
+| `warden/`     | The crate `quo-warden`: the door of Articles VII to XII, and the warden that holds beings above it.   |
 | `carriage/`   | The crate `quo-carriage`: the common carriage of Article III.                                        |
 | `line/`       | The crate `quo-line`: the framed line of Article III.                                                |
 | `zero/`       | The crate `quo-zero`: the call at distance zero, and the judgment suite driven over all three roads. |
 | `subject/`    | The `subject` binary: a whole ground, on any of the three roads.                                     |
-| `support/`    | The JSON and hex readers the bench and the binary share.                                             |
+| `conformance/`| The `conformance` binary: this kit answering the shared subject contract.                            |
+| `support/`    | The JSON and hex readers the suites and the two binaries share.                                      |
 
 ## Dependencies
 
@@ -77,16 +95,171 @@ on. Building with them on is a straight win wherever envelopes are large:
 RUSTFLAGS="--cfg aes_armv8 -C target-feature=+aes,+neon,+sha2" cargo build --release
 ```
 
-Measured on one core of an Apple M1 Max, 2026-08-31: opening a 64 KB envelope
-falls from 648 µs to 307 µs, and a 1 MB envelope from 8.6 ms to 3.7 ms. Small
-asks are unaffected — they are dominated by X25519 and Ed25519, not by AES.
-Nothing in the kit's own code changes, and the bytes on the wire are identical
-either way; this is a property of how the dependency is compiled.
+On one core of an Apple M1 Max, opening a 64 KB envelope falls from 648 µs to
+307 µs, and a 1 MB envelope from 8.6 ms to 3.7 ms. Small asks are unaffected —
+they are dominated by X25519 and Ed25519, not by AES. Nothing in the kit's own
+code changes, and the bytes on the wire are identical either way; this is a
+property of how the dependency is compiled.
 
-The pinned corpus is read by a JSON reader that lives in the bench
-(`support/json.rs`), so no crate enters for the tests either. It sits beside
-the crates rather than inside one, and it is the one place to extend when a
-later corpus needs more of JSON than it reads today.
+The pinned corpus is read by a JSON reader in `support/json.rs`, so no crate
+enters for the tests either. `support/` sits beside the crates rather than
+inside one, because the suites and both binaries read it, and it is the one
+place to extend when a corpus needs more of JSON than it reads.
+
+## What the `quo` crate promises
+
+Take `quo` and you have the kit whole: `quo::notation`, `quo::arithmetic`,
+`quo::wire`, `quo::envelope`, `quo::warden`, `quo::carriage`, `quo::line` and
+`quo::zero` are the eight crates under one dependency, and `quo::host` is the
+one thing this crate owns. **It is the seam**: below it a being is written
+about its behaviour and knows no road, and above it an operator says where the
+ground answers.
+
+```rust
+use std::sync::{Arc, Mutex};
+
+use quo::host::{Host, Road, Standing};
+use quo::warden::{as_text, Being, Holding, Quo};
+use quo::wire::Value;
+
+const DOG: &str = "Dog\n  name() text\n  logWalk(minutes int) bool\n";
+
+struct Dog {
+    walks: Arc<Mutex<Vec<i64>>>,
+}
+
+impl Being for Dog {
+    fn invoke(&mut self, field: &str, args: &[Value], _quo: &Quo) -> Option<Value> {
+        match field {
+            "name" => Some(Value::Text("Rex".to_string())),
+            "logWalk" => {
+                let Some(Value::Int(minutes)) = args.first() else {
+                    return None;
+                };
+                self.walks.lock().expect("the walks").push(*minutes);
+                Some(Value::Bool(true))
+            }
+            _ => None,
+        }
+    }
+}
+
+// Alice's ground answers on the framed line; Bob's dials out and publishes
+// nothing at all. Neither being learns which.
+let alice = Host::stand(Standing::here(&[Road::tcp()])).expect("a ground stands");
+let bob = Host::stand(Standing::here(&[])).expect("a ground stands");
+
+let (rex, _) = alice.warden.hold(
+    Dog { walks: Arc::new(Mutex::new(Vec::new())) },
+    DOG,
+    Holding::default(),
+).expect("Rex");
+
+// A grant names the being it opens, and accepting does the double rotation.
+// A standing names beings, so accepting answers a handle per being it names.
+let invitation = alice.warden.grant(rex).expect("a grant");
+let handles = bob.warden.accept(&invitation);
+let handle = handles.first().expect("a handle at Rex");
+assert_eq!(as_text(handle.call("name", &[])), Some("Rex".to_string()));
+```
+
+**`Standing` is everything a host is stood on, and it is all handed in**: the
+seeds, the clock, the randomness, the store, the roads it listens on, any hint
+it publishes without standing, and the limit it holds the door to.
+`Standing::here` takes this machine's clock and randomness and draws fresh
+seeds; `.publishing(&[..])` adds a road nothing here can speak, such as a
+domain in front of a proxy; `.keeping(store)` hands in where the records live,
+and a ground stood on the same seeds and the same store again is the same
+ground, with its standings and its replay marks intact.
+
+**`Road` is the operator's word on where the ground answers.** `Road::http()`
+and `Road::tcp()` take a loopback port the machine picks; `Road::http_at` and
+`Road::tcp_at` take the address you name, and refuse rather than fall back if
+they cannot have it. `Road::Memory` is distance zero, where grounds in one
+process reach each other by hint and no socket is opened. A host stands as many
+as it is given, publishes each one's hint to the warden, and retracts them all
+on `close`.
+
+**The being closure is the whole of what a being may do**, and `Quo` is handed
+to every method the warden invokes:
+
+```rust
+impl Being for Dog {
+    fn invoke(&mut self, field: &str, _args: &[Value], quo: &Quo) -> Option<Value> {
+        match field {
+            // The caller, per call: a verified voice and the kind the judgment
+            // found. A fact for telling callers apart, never a judgment.
+            "who" => Some(Value::Bool(quo.caller().is_some())),
+            // Who holds a place at me, as voices only.
+            "watchers" => Some(Value::Int(quo.standings().len() as i64)),
+            // A handle at a being elsewhere, under a private label of my own.
+            // Every declared field is a call that answers a value or silence.
+            "vaccinated" => {
+                let record = quo.relation("clinic")?;
+                record.call("vaccinated", &[])
+            }
+            // The social acts, so inviting and kicking are ordinary fields the
+            // author chose to expose. `grant(quo.being())` opens me.
+            "invite" => Some(Value::Invitation(quo.grant(quo.being())?)),
+            _ => None,
+        }
+    }
+
+    // What of my state moves with me, and how I take it back. A being that
+    // writes neither moves with nothing but its name and its standings.
+    fn cells(&self) -> Vec<u8> { encode(&self.walks) }
+    fn take(&mut self, cells: &[u8]) { self.walks = decode(cells); }
+}
+```
+
+`quo.accept(&invitation)` turns an invitation received as an argument into
+handles, with the double rotation done and impossible to forget — **one handle
+per being the standing names**, each carrying the being it opens and that
+being's own class, so the holder can tell them apart. `quo.reread(&handle)`
+reads the standing again at the far door, so a being widened into it after the
+accept comes back as a handle: a widened standing is re-read rather than
+remembered, and nobody is told when one is widened. `quo.knock(&card)` turns a
+card into a handle at the far door's public being, held as a stranger — what
+that handle is shown is what that door shows a stranger and nothing else, and
+`warden.card()` is the address a ground hands out. `quo.label(name, &handle)`
+keeps a private label beside one handle, which `quo.relation(name)` resolves
+and nothing else does. `quo.amend(voice, add, remove)` narrows or widens a
+standing already granted, and a row amended to nothing is dropped, so the next
+call meets silence. `quo.hold(object, blueprint, holding)` mints a smaller
+being beside me and `quo.release(being)` drops it, taking every standing at it
+away. `quo.leash()` is what this call may still spend, to be handed on and
+never widened.
+
+**Every handle carries introspection beside its blueprint's fields**, each an
+ordinary ask answering a value or silence: `describe()` is the estate the far
+door shows this voice, which is what the row names and never the rest of that
+house; `sketch()` is this being's own; `blueprint(digest)` is a class's text;
+and `limit()` is the largest message that door accepts. A handle at a being
+under this same warden answers all four from the house itself, where there are
+no voices and nothing to withhold.
+
+**A handle is asynchronous in the one way that matters: it can fall silent.**
+`call` answers `Some(value)` or `None`, and `None` means refused, broken or
+absent with no way to tell which. After a write that met silence the safe act
+is to resend the identical envelope, never a fresh one, so a handle hands the
+composed ask back rather than only sending it:
+
+```rust
+// One number, spent once. The far door either already honoured it and answers
+// the resend with silence, or never saw it and honours it now.
+let sealed = handle.seal("logWalk", &[Value::Int(40)]).expect("an ask composed");
+assert_eq!(as_bool(handle.send(&sealed)), Some(true));
+assert_eq!(handle.send(&sealed), None);
+```
+
+**A same-warden call goes through the handle too.** Two beings under one host
+could call each other as plain objects; they do not, because a being that
+sometimes receives a synchronous call has two kinds of neighbour. The cost is
+named plainly: every call between beings is leashed and may be silent. It pays
+no seal and no judgment, because under one warden there are no strangers.
+
+**`cells()` and `take(bytes)` are the being's, not Quo's.** What moves with a
+being is what the being says moves, in whatever bytes it chooses.
 
 ## What the notation crate promises
 
@@ -260,11 +433,9 @@ the line lives on.
 
 **HTTPS is named by the law and this kit has no TLS crate.** `post` refuses an
 `https://` hint rather than quietly dialling it in the clear; put a TLS
-terminator in front of the road. `rustls` is approved for the carriage and is
-not taken yet: its own default crypto provider needs a C toolchain, which this
-kit refuses, and the pure-Rust provider is a further crate nobody has
-approved. Until that is settled the refusal stands, and the separation suite
-already refuses a TLS crate anywhere but `carriage/Cargo.toml`.
+terminator in front of the road. A TLS crate may stand in `carriage` and
+nowhere else, and the separation suite refuses one anywhere but
+`carriage/Cargo.toml`.
 
 ## Running it
 
@@ -289,6 +460,12 @@ the corpus does not carry.
 Article III and named for the clause it pins. The two wired roads are
 exercised over a real socket on an ephemeral loopback port, bound by the case
 and dropped when it ends — nothing is faked and nothing outlives the suite.
+
+**And the shape above the wire is asserted where it stands**, in `quo/tests`:
+what the warden provides, what a being receives played as Alice, Bob and the
+clinic, and what the host does — three whole grounds at distance zero, or the
+same being installed behind each of the three roads in turn and giving the same
+answers.
 
 **And Article XII is asserted once for all three.** `zero/tests/judgment.rs`
 builds one ground and one caller and drives the same judgments over the
@@ -337,5 +514,29 @@ already open. The crossing in
 [`../../demos/crossing`](../../demos/crossing) drives it against the JS and Go
 kits, on both roads and in both directions.
 
-**Every host thing lives here**: the clock, the sockets, and the one place
-this kit draws randomness. The crates beneath take all three as arguments.
+**A subject is not a host, and this one stands below the seam on purpose.** It
+proves the kit from outside, so it must compose what no application may: an ask
+naming neither being nor method, argument bytes handed in as raw hex and
+deliberately malformed, an ask at a being whose blueprint it does not hold, and
+the number it spent read straight back. `quo::host` refuses every one of those
+by design — a handle encodes through the blueprint, so it cannot produce the
+input a refusal is asserted with. So `subject` drives the door itself, the way
+a wire suite hand-writes bytes, and it stands its own roads because a ground is
+one thing and cannot be half a host. **The seam never grows a raw-ask surface
+to accommodate it**: that would ship every application a public way around the
+blueprint, permanently, for the harness's benefit.
+
+## What the conformance binary promises
+
+`conformance` is this kit answering the shared subject contract: seven verbs
+over JSON lines, driven by scenarios that are the same for every kit.
+
+```sh
+cargo build -p quo-conformance
+```
+
+It is not a host either, and for the same reason. A scenario hands it the keys
+to draw, the reading each judgment happens at, and rows written straight into
+the record with no grant behind them, then reads both records back — none of
+which the host's surface offers, and none of which it should. So this binary
+also reaches past the seam, and its head says which of those it takes and why.

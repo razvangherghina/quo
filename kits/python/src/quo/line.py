@@ -38,6 +38,7 @@ __all__ = [
     "frame",
     "Line",
     "dial",
+    "serve",
     "Listener",
 ]
 
@@ -257,6 +258,41 @@ def dial(hint: str, timeout: Optional[float] = None) -> Line:
     return Line(connection, cap=DEFAULT_CAP, far_cap=road.cap)
 
 
+def serve(line: Line, handle: Handler) -> None:
+    """Read frames off one line until it ends, handing each to the handler.
+
+    Both ends of a line do this, because either end may originate an ask: the
+    listening end runs it per line it accepts, and the dialling end runs it on
+    the line it opened, which is the only way a ground that publishes nothing
+    hears a push at all.
+
+    A well-formed frame that fails the judgment is ordinary silence and the
+    line lives on. **The handler answering nothing is not always silence**: it
+    is also a handler that took the frame away to be judged elsewhere and will
+    put the answer out itself. Which of the two it was is the handler's own
+    business, and this reader never waits to find out — a judgment may itself
+    wait for an answer arriving on this very line, and a reader blocked on it
+    would be a reader waiting for bytes only it can read.
+    """
+    while True:
+        try:
+            message = line.receive()
+        except FramingFault:
+            return
+        if message is None:
+            return
+        try:
+            answer = handle(line, message)
+        except Exception:
+            answer = None
+        if answer is None:
+            continue
+        try:
+            line.send(answer)
+        except LineError:
+            return
+
+
 class Listener:
     """The listening end: a bound socket, and one thread per line it accepts.
 
@@ -313,25 +349,7 @@ class Listener:
             threading.Thread(target=self.serve, args=(line,), daemon=True).start()
 
     def serve(self, line: Line) -> None:
-        """Read frames until the line ends. A well-formed frame that fails the
-        judgment is ordinary silence, and the line lives on."""
-        while True:
-            try:
-                message = line.receive()
-            except FramingFault:
-                return
-            if message is None:
-                return
-            try:
-                answer = self.handle(line, message)
-            except Exception:
-                answer = None
-            if answer is None:
-                continue
-            try:
-                line.send(answer)
-            except LineError:
-                return
+        serve(line, self.handle)
 
     def close(self) -> None:
         self.open = False

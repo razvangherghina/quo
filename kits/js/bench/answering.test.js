@@ -5,10 +5,9 @@
 // — so a call made without a socket got half a judgment.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { Warden, accept, commitment, readAnswer, seal, signingPair } from '../src/index.js';
+import { Warden, commitment, memoryDelivery, readAnswer, seal, signingPair } from '../src/index.js';
 
 const fixed = (fill) => new Uint8Array(32).fill(fill);
-const utf8 = new TextEncoder();
 const still = () => 1_000;
 const RANDOM = fixed(200);
 
@@ -17,17 +16,22 @@ const LIST = `ToDo
 `;
 
 function todo() {
-  return { add: () => utf8.encode('added') };
+  return { add: () => true };
 }
 
 // A door with one being, and a caller standing at it on that door's invitation.
 async function pair({ seed = 1 } = {}) {
+  const delivery = memoryDelivery();
   const house = await Warden.open({
     nameSeed: fixed(seed),
     padlockSeed: fixed(seed + 1),
     heirSeed: fixed(seed + 2),
+    clock: still,
+    random: () => RANDOM,
+    hints: [`mem://${seed}`],
   });
-  const being = await house.hold(todo(), {
+  delivery.attach(`mem://${seed}`, house);
+  const { being } = await house.hold(todo(), {
     seed: fixed(seed + 3),
     heirSeed: fixed(seed + 4),
     blueprint: LIST,
@@ -36,6 +40,9 @@ async function pair({ seed = 1 } = {}) {
     nameSeed: fixed(seed + 5),
     padlockSeed: fixed(seed + 6),
     heirSeed: fixed(seed + 7),
+    clock: still,
+    random: () => crypto.getRandomValues(new Uint8Array(32)),
+    delivery,
   });
   const invitation = await house.grant(being, {
     voiceSeed: fixed(seed + 8),
@@ -150,23 +157,18 @@ test('two asks whose answers could not be told apart: the kit refuses to send th
   );
 });
 
-test('accept leaves awaiting only the ask it hands an answer back for', async () => {
-  const { house, caller, invitation } = await pair({ seed: 110 });
+test('accepting leaves nothing awaiting: every answer it heard spent its record', async () => {
+  const { caller, invitation } = await pair({ seed: 110 });
 
-  let grain = 0;
-  const spent = await accept(caller, invitation, {
-    voiceSeed: fixed(120),
-    heirSeed: fixed(121),
-    allowance: { time: 5_000n, hops: 8n },
-    random: () => fixed((grain += 1) % 251),
-    send: (envelope) => house.judge(envelope, { clock: still, random: RANDOM }),
-  });
-  assert.ok(spent);
-  // Both rotations opened at one. The opening is handed back sealed for the
-  // caller to judge, so accept stopped awaiting it; the second is the caller's
-  // own call and is still out.
-  assert.equal(spent.row.awaiting.size, 1);
-  const answer = await caller.hear(spent.answer);
-  assert.equal(answer.seq, 1n);
-  assert.equal(spent.row.awaiting.size, 0);
+  // Two rotations and a blueprint ask, each answered through the caller's own
+  // door. Both rotations opened at one — the same padlock, the same warden and
+  // the same number — which is exactly the pair the record refuses to hold
+  // twice, so accepting works only because each answer spends its entry before
+  // the next ask is made.
+  const [handle] = await caller.accept(invitation, { label: 'todo' });
+  assert.ok(handle);
+  const row = caller.outbound[0];
+  assert.equal(row.awaiting.size, 0);
+  assert.equal(await handle.add('milk'), true);
+  assert.equal(row.awaiting.size, 0);
 });
