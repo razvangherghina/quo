@@ -1194,12 +1194,14 @@ export class Warden {
         if (timer) clearTimeout(timer);
         settle(answer);
       };
+      // The timer holds the process: a caller awaiting its deadline is owed
+      // the silence, and an unreferenced timer let a process with nothing
+      // else to do exit before it arrived.
       if (deadline !== null) {
         timer = setTimeout(() => {
           row.awaiting.delete(pending);
           done(null);
         }, Number(deadline));
-        timer.unref?.();
       }
       row.awaiting.set(pending, done);
     });
