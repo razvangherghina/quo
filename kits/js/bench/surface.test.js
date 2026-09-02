@@ -5,7 +5,7 @@
 // another path reached.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFile, readdir } from 'node:fs/promises';
+import { readFile, readdir, stat } from 'node:fs/promises';
 
 // Every module an entry can reach, by walking the relative specifiers out of
 // its text. Flat files, plain specifiers: no resolver is needed and none is
@@ -111,10 +111,25 @@ test('the law never names the company, and neither does any kit', async () => {
   // rather than about what it does, and the first thing a second implementer
   // would check. A sweep is the only honest form: it has to hold for every
   // article and every file, including the ones nobody thought about.
-  const roots = [
+  // The law sits in `law/` beside `kits/` in the tree this is built in, and at
+  // the root of the public repository it is emitted into; the sweep runs in
+  // both and must find it in either, because a sweep that skipped the law
+  // would be sweeping the one text the promise is about.
+  const law = [
     new URL('../../../law/', import.meta.url),
-    new URL('../../../kits/', import.meta.url),
+    new URL('../../../constitution.md', import.meta.url),
   ];
+  const found = [];
+  for (const one of law) {
+    try {
+      await stat(one);
+      found.push(one);
+    } catch {
+      // Not this layout.
+    }
+  }
+  assert.ok(found.length > 0, 'the law was not found beside the kits');
+  const roots = [...found, new URL('../../../kits/', import.meta.url)];
   // The company, never the author. Quo belongs to a private person and is
   // published under his name, so the licence, the notice and the repository URL
   // all carry it and must — what a standard may not carry is the name of the
@@ -122,7 +137,18 @@ test('the law never names the company, and neither does any kit', async () => {
   const names = ['nervur', 'bookarest', 'parma digital'];
 
   let swept = 0;
+  const sweep = async (here) => {
+    // This file is the one place under `kits/` that has to write the names
+    // down, because it is the thing looking for them.
+    if (here.href === import.meta.url) return;
+    swept += 1;
+    const text = (await readFile(here, 'utf8')).toLowerCase();
+    for (const name of names) {
+      assert.equal(text.includes(name), false, `${here.href} names ${name}`);
+    }
+  };
   const walk = async (at) => {
+    if ((await stat(at)).isFile()) return sweep(at);
     for (const entry of await readdir(at, { withFileTypes: true })) {
       // What a build put there is not what a kit says. These carry the
       // checkout's own absolute path, which is the repository's name and not
@@ -135,14 +161,7 @@ test('the law never names the company, and neither does any kit', async () => {
         continue;
       }
       if (!/\.(md|js|mjs|go|rs|zig|py|json|toml)$/.test(entry.name)) continue;
-      // This file is the one place under `kits/` that has to write the names
-      // down, because it is the thing looking for them.
-      if (here.href === import.meta.url) continue;
-      swept += 1;
-      const text = (await readFile(here, 'utf8')).toLowerCase();
-      for (const name of names) {
-        assert.equal(text.includes(name), false, `${here.href} names ${name}`);
-      }
+      await sweep(here);
     }
   };
   for (const root of roots) await walk(root);
