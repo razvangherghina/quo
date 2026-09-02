@@ -6,6 +6,15 @@
 // handle carries the door's own introspection, because describe is one of the
 // things that cross and a being that could not ask it would be composing
 // envelopes by hand.
+//
+// **Everything of the kit's own lives at `_quo`, and the plain namespace is
+// the blueprint's alone** — on a being and on a handle alike. Article IV's
+// identifier is a letter then letters and digits, so no blueprint in any
+// language can spell a name beginning with an underscore. That makes this a
+// namespace the grammar cannot reach into rather than a list of names to
+// guard, and a guarded list is what fails: it is written from the attributes a
+// kit has today, and the one this kit is replacing already ate `quo` on the
+// being side and threw on `being` at the handle.
 import { parse } from './notation.js';
 import { encodeAll, decode, recordsOf } from './wire.js';
 import { hex } from './bytes.js';
@@ -52,10 +61,18 @@ export function allowanceNow(warden) {
   return leash.onward();
 }
 
+// A being named by whichever of the three things a caller has to hand: its key,
+// the object itself, or a handle at it. The last two are read at one place,
+// because a held object and a handle both carry the kit's own there and neither
+// can be confused with a field the blueprint declares.
 export const pkOf = (target) => {
   if (target instanceof Uint8Array) return target;
+  if (target?._quo?.being instanceof Uint8Array) return target._quo.being;
+  // `hold` answers `{ being, handle }`, which carries no `_quo`, and callers
+  // hand it straight back to `grant`. The `instanceof` is why this is not the
+  // shadowing `_quo` exists to end: a declared field named `being` is a
+  // function, not a key, and falls through.
   if (target?.being instanceof Uint8Array) return target.being;
-  if (target?.quo?.being instanceof Uint8Array) return target.quo.being;
   return null;
 };
 
@@ -107,11 +124,24 @@ export function remoteHandle(warden, row, beingPk, text) {
     return { envelope, seq, name, deadline: allowance.time };
   };
 
+  // Weather — no road carried the bytes — is not the far door's silence, and
+  // the handle keeps the two apart where it can without changing its shape:
+  // the ask still answers `null`, the warden's observer is told the road's
+  // fault, and the handle does not go asking whether the being moved.
+  let weathered = false;
   const send = async (sealed) => {
     if (!sealed) return null;
+    weathered = false;
     warden.await(row, sealed.seq);
     const promise = warden.pending(row, sealed.seq, sealed.deadline);
-    const back = await warden.delivery.send(view(), sealed.envelope);
+    let back;
+    try {
+      back = await warden.delivery.send(view(), sealed.envelope);
+    } catch (thrown) {
+      warden.weather(row, sealed.seq, thrown);
+      weathered = true;
+      return null;
+    }
     // `null` is silence on a road that answers in its response; `false` is a
     // road that answers through the door later; bytes are the answer itself.
     if (back === null) warden.forgo(row, sealed.seq);
@@ -150,17 +180,20 @@ export function remoteHandle(warden, row, beingPk, text) {
   };
 
   const handle = {
-    get being() {
-      return at;
+    _quo: {
+      get being() {
+        return at;
+      },
+      text,
+      ...door,
+      seal,
+      send,
     },
-    ...door,
-    seal,
-    send,
   };
   for (const name of fields.keys()) {
     handle[name] = async (...args) => {
       const answer = await send(await seal(name, ...args));
-      if (answer === null) await follow();
+      if (answer === null && !weathered) await follow();
       return answer;
     };
   }
@@ -172,7 +205,7 @@ export function remoteHandle(warden, row, beingPk, text) {
 // value still rides through the codec, so a being cannot answer a neighbour
 // what it could not answer a stranger.
 export function localHandle(warden, being) {
-  const handle = { being: being.pk, ...warden.introspectLocal(being.pk) };
+  const handle = { _quo: { being: being.pk, ...warden.introspectLocal(being.pk) } };
   for (const [name, field] of being.fields) {
     handle[name] = async (...args) => {
       if (!warden.beings.has(hex(being.pk))) return null;
@@ -185,10 +218,18 @@ export function localHandle(warden, being) {
       );
       const arrived = warden.clock();
       const leash = warden.leash(allowance, arrived);
-      const data = await being.invoke(name, blob, {
-        caller: { voice: null, kind: 'local' },
-        leash,
-      });
+      // A being's own fault is silence here as it is at a door. **One shape**:
+      // a caller of a neighbour is told exactly what a caller across an ocean
+      // is told, and never a throw the far side would have swallowed.
+      let data;
+      try {
+        data = await being.invoke(name, blob, {
+          caller: { voice: null, kind: 'local' },
+          leash,
+        });
+      } catch {
+        return null;
+      }
       if (!field.answer) return undefined;
       return decode(field.answer, data, being.records);
     };
@@ -196,7 +237,8 @@ export function localHandle(warden, being) {
   return handle;
 }
 
-// The closure: facts and acts, never a judgment.
+// The closure: facts and acts, never a judgment. It is attached to the object
+// at `object._quo`, where nothing the blueprint declares can reach it.
 export function closure(warden, being) {
   return {
     being: being.pk,

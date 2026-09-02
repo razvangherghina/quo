@@ -1,0 +1,253 @@
+{
+  "scenario": "succession",
+  "law": "https://github.com/razvangherghina/quo/blob/main/constitution.md",
+  "encoding": "hex",
+  "about": "A door moving its own name, and the one holder that is behind the news. Everything here is one door on either side of a single act that puts nothing on the wire, which is why no vector can hold it: the two rotations are the same shape and the same size, and what takes one and refuses the other is which name each carried commitment was hashed under — a fact inside a hash, visible only in the record the door kept and in what it answers to afterwards.",
+  "stand": {
+    "warden": {
+      "nameSeed": "196982eee79e80efbc3131c93b99285a38c540c43e7e4fbb8399c260b1ce5103",
+      "padlockSeed": "7dbcdb3088339c02378f46525bff3fe2b84515973e28f5814301a99f386e20b1",
+      "heirSeed": "0303030303030303030303030303030303030303030303030303030303030303",
+      "heirCommitment": "83f960da653b61eb63f6b53b5d80adeb377e23e569f1c555395b9b119ad69603",
+      "limit": "1048576",
+      "hints": []
+    },
+    "beings": [
+      {
+        "seed": "0101010101010101010101010101010101010101010101010101010101010101",
+        "heirSeed": "0202020202020202020202020202020202020202020202020202020202020202",
+        "blueprint": "Counter\n  bump(by int) int\n  count() int\n",
+        "cells": ""
+      }
+    ],
+    "grants": [
+      {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "voiceSeed": "2ebd74bd564a8771fa628b28308c588588f5c0d0db17ae06b045b896d8218ad7",
+        "heirSeed": "7bae8096dc92d5f4e271742fd8db51abd563a8976c223dd734f1d2bdd553093c",
+        "padlock": null,
+        "hints": []
+      }
+    ],
+    "clock": [
+      "1000",
+      "1001",
+      "1002",
+      "1003",
+      "1004",
+      "1005",
+      "1006",
+      "1007",
+      "1008",
+      "1009",
+      "1010",
+      "1011",
+      "1012",
+      "1013",
+      "1014",
+      "1015",
+      "1016",
+      "1017",
+      "1018",
+      "1019",
+      "1020",
+      "1021",
+      "1022",
+      "1023",
+      "1024",
+      "1025",
+      "1026",
+      "1027",
+      "1028",
+      "1029",
+      "1030",
+      "1031",
+      "1032",
+      "1033",
+      "1034",
+      "1035",
+      "1036",
+      "1037",
+      "1038",
+      "1039"
+    ],
+    "random": [
+      "3232323232323232323232323232323232323232323232323232323232323232",
+      "3333333333333333333333333333333333333333333333333333333333333333",
+      "3434343434343434343434343434343434343434343434343434343434343434",
+      "3535353535353535353535353535353535353535353535353535353535353535",
+      "3636363636363636363636363636363636363636363636363636363636363636",
+      "3737373737373737373737373737373737373737373737373737373737373737",
+      "3838383838383838383838383838383838383838383838383838383838383838",
+      "3939393939393939393939393939393939393939393939393939393939393939",
+      "4040404040404040404040404040404040404040404040404040404040404040",
+      "4141414141414141414141414141414141414141414141414141414141414141",
+      "4242424242424242424242424242424242424242424242424242424242424242",
+      "4343434343434343434343434343434343434343434343434343434343434343"
+    ]
+  },
+  "unruled": [],
+  "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+  "opening": {
+    "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+    "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+    "cells": "",
+    "standings": [
+      {
+        "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+        "commitment": "290d6caefb277537554cc8f48597206e9b5ca2975dc81dc4c8f66662570b4d64",
+        "name": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+        "beings": ["8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c"],
+        "mark": "0",
+        "spent": [],
+        "padlock": null,
+        "hints": []
+      }
+    ],
+    "relations": []
+  },
+  "beingCommitment": "ed4d580bb287b98674376c30d750d9926617873de8787e518c58c320d1899cbd",
+  "exchanges": [
+    {
+      "name": "the door succeeds its own name, and its standings do not move",
+      "law": "The news",
+      "obligations": ["XIV-7"],
+      "derivation": "The heir this door committed to at founding spends, and from here on the house signs by that key and is addressed by it. **Not one byte crosses** — Article XIV sends news to tell the peers, and news is a separate act — so what this exchange claims is entirely in the record after it: **the standing is untouched, and it still carries the name it was minted under.** \"A name succession keeps the standings too. Every heir commitment was hashed under the name the door had then, so a door stores the name each was minted at — the `standing` record's `name`, travelling with the row — and keeps verifying it there.\" A kit that re-derived a row's name from the door's current one, or that restamped every row when the name moved, shows the successor here and is caught before any message is judged against it.",
+      "do": "succeed",
+      "nameSeed": "0303030303030303030303030303030303030303030303030303030303030303",
+      "heirSeed": "8686868686868686868686868686868686868686868686868686868686868686",
+      "heirCommitment": "9cfb132709ba8a87777997a0e9d078f12776054897bcab132630232b89ec154a",
+      "expect": "done",
+      "cargo": {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+        "cells": "",
+        "standings": [
+          {
+            "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+            "commitment": "290d6caefb277537554cc8f48597206e9b5ca2975dc81dc4c8f66662570b4d64",
+            "name": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+            "beings": ["8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c"],
+            "mark": "0",
+            "spent": [],
+            "padlock": null,
+            "hints": []
+          }
+        ],
+        "relations": []
+      }
+    },
+    {
+      "name": "a holder behind the news rotates under the retired name, and succeeds once",
+      "law": "The news",
+      "obligations": ["XIV-8", "XIV-7"],
+      "derivation": "The holder has not heard that the door moved, so it mints its next commitment under the name it still believes — the retired one — and rotates. Article XIV: \"**So a holder that rotates before hearing the news succeeds once, and must hear it before rotating again.** ... A rotation minted under the retired name is therefore judged and accepted — the standing it spends was filed under that name — while the commitment it carries is filed under the current one.\" **Both halves of that sentence are asserted here at once.** The rotation is taken, because the door hashed the arriving key against the row's stored name and matched; and the row afterwards carries the *successor* as its name, not the retired one, because a new commitment is filed under the name the door has now. The answer pins the second half from the other side: the estate names the warden class with the successor's key as its public being and the door's next commitment beside it, and the whole answer is signed by the successor. A door that succeeded its name and went on signing with the retired key fails on the bytes.",
+      "seq": "1",
+      "voice": "afa0ce0919a81bf57861ac7139d8945a1fc2ba9f00e53a4f26f494c23f78338c",
+      "expect": "59d9225473451efffe6b36dbcaefdbf7b1895de62084509a7f5b58bf01d064183d085268543eafb859e6a72ff4d048bea0b4f2eb772536a97c7873c7670bbb3df8a652e3c1fdc5aa70a7624ece29b926de511f4f09cbc1a64ecef462469a0fa6762abd1b178f8c304f9afb50ad850c3a19b73695575f041ff6dfd6886586fbb5d15306dc065899463987f3ae1df8254e9f348f6fec9ff46be5f32c8f6624ca803022d2289e2528e9d72f1d4d7c2b09485f9d2f08d4365c4879624a24e3c817256be3870664c7e4b338a0574f23b088805349556c0ea7f30624d23ff3558ddfe0db140d38dfdc93c462460d95d7b94f53c39fd581ce9dd758778971377c0055cb526d9ef49a5ffeb529040b5d8781accba3535e04741a61fdc1b099845aca4b463231ccde8ec30b6b20d8fea33634eea61e85da0a6aa56fd7b238fe9ad1ce8f280d8bf71c2be64e88284a487b44d6ccc7a848957b56b906d62b43d1b09f5332c03780599c8d9e18c045f95db7b8a7a2a836e24cbbb14d7316cb2f",
+      "give": "33202f87ce4ff20cbcd0f2e48c8c7f263d11a3609c673b8c7eae56653769c12f2d23ab4edd1b67e36037653f71bdd332fb1391aef753f7aa77bf83721d41012b611b2f7e47e05d572fa9c8a1c49334f9e62c476a1d81d4e96e3de706b5b25a7a4057d35e330a098dc173b627b7f9b7894daa9ef5e17958c453e18490f79a10614e73d9d61ca03011bff371052de8ac79ed76267339dbda03e15e35653a17401199236efdff9c447ff001b18a04315bb437339184e1e2c7c776145487230135af3cd64867caf3ff79d4b50bcd120a780c3fa60b5091e562a14cd9d778cd0481067dcb6396c86fefbe6c4570839e6273bce7ef3982eadc9f9701b93f655d032408278b1c6b3b41253287d522ea976dd290091440e7",
+      "cargo": {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+        "cells": "",
+        "standings": [
+          {
+            "voice": "afa0ce0919a81bf57861ac7139d8945a1fc2ba9f00e53a4f26f494c23f78338c",
+            "commitment": "ea894aa6d18a45c4607894d676a47a90b62fc754acd5fabbceff53d1eadacb70",
+            "name": "ed4928c628d1c2c6eae90338905995612959273a5c63f93636c14614ac8737d1",
+            "beings": ["8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c"],
+            "mark": "1",
+            "spent": [],
+            "padlock": "5a13b7a05e31ae998ad1307217981bb23bb17d277465829edd616e9169c8f46e",
+            "hints": []
+          }
+        ],
+        "relations": []
+      }
+    },
+    {
+      "name": "the padlock has not moved, and the door answers there",
+      "law": "The news",
+      "obligations": ["XIV-9"],
+      "derivation": "**This exchange exists so the two after it can fail.** A succession moves the name and nothing else: \"When the padlock is replaced, the news is signed by the warden's name, which has not moved\" — the two are separate announcements precisely because they are separate keys. So the same holder asks again, addressed to the padlock rather than to any name, and is answered with the same estate. **Without it, a door that had fallen over entirely, or one that answered nothing after a succession, would pass the retired-name case below by being dead rather than by being right.** A door that moved its padlock along with its name meets this ask with silence.",
+      "seq": "2",
+      "voice": "afa0ce0919a81bf57861ac7139d8945a1fc2ba9f00e53a4f26f494c23f78338c",
+      "expect": "7b0d47d93427f8311160781c7c733fd89f88970aef490d8aa0ee19a4cb8a1b141de3fef21fdc5f65ff4bf927ef736a5cc97b2ba5e76c06393febe27e7238811d000a77680e1d70c247fd00df036d1a5069424e12690e0aef2132be12f69b5631232bd97bcc4265ee6ccb5bf6904336b03543945a3a52e18c11b93e7dc3e183902beda45fdcdf6943efb6f3ca837b23cbf2e49aaa551a488c5b4bc93391d1c27eb9cd10fac694dbcf9118672fb99d1ac3585113a705cdef154b4f8b2159874ab4030e332f0b4cc385a2645d2739f191f60a0e5b99c21d4d878d9f4626b4a38245fd4a9c9ecee1ff03a0d0a9fd56ec75017281d72b85ec2a15591f41ada1905b9e6fcefdcc3d92b9a3535198a8b220edbb5dc72e1a0d07ec5ad2cc14b6cba19b31cc7aeeae6a9ddaca4a44bd20eeed3ae0570ceb475180043321f6907c308898f0394ac02327730238560dd457c10fd044fce32fc5e97b91fe2d5598d881c4e2f1c1e513fe097c53fe54e1b9902cf9874427c6c4758d4f5cdd193b",
+      "give": "ee27226ea2f73bb18f24754cd4481ef0c3fc30d3dd2ad93aa6291734ae0eb11cf13e49bfa7654f5ed4d355a177adf08299ca3ccd8b4905c6dd3a17a575b3a4e24087f13a4ba8b82bff995e3b6db6cbd233871083fa33ba02dedd987a2f27352d75a48a9027a1a8508cb63a95ff08951ecdc93cd4c5773d23070a139d31cf9dc53813df9eb5893b7aa55e8b59f4f5c2bec9c2ccaaa8cd84c53656406a76a859f98eaf10c15b632e5682760ef6733a2d8cacb08a8143667a30233954d6343b51fe2e0dfba41fc2fb6191dd0653ffdbe6bf018b4a243d789e0bdc7bd35b143e6285896fc1c29dcb327c6933a53b4e31e798a154bf87",
+      "cargo": {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+        "cells": "",
+        "standings": [
+          {
+            "voice": "afa0ce0919a81bf57861ac7139d8945a1fc2ba9f00e53a4f26f494c23f78338c",
+            "commitment": "ea894aa6d18a45c4607894d676a47a90b62fc754acd5fabbceff53d1eadacb70",
+            "name": "ed4928c628d1c2c6eae90338905995612959273a5c63f93636c14614ac8737d1",
+            "beings": ["8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c"],
+            "mark": "2",
+            "spent": ["1"],
+            "padlock": "5a13b7a05e31ae998ad1307217981bb23bb17d277465829edd616e9169c8f46e",
+            "hints": []
+          }
+        ],
+        "relations": []
+      }
+    },
+    {
+      "name": "the rotation after it does not match, and the holder is a stranger",
+      "law": "The news",
+      "obligations": ["XIV-8", "XIV-10"],
+      "derivation": "The same holder rotates a second time, still behind the news, still minting under the retired name. **This message is indistinguishable from the one two exchanges above** — signed by the key the row now commits to, carrying a fresh commitment, the same shape and the same length. Article XIV: \"the commitment it carries is filed under the current one, **and the rotation after it will not match.**\" The door hashes the arriving key against the name it filed, which is the successor, and the commitment it holds was hashed under the retired one. No match, no standing anywhere else, so Article XII step 7 gives it the stranger's case — \"the describe of whatever the warden's own public being exposes\" — and the answer is a house with one room in it. **That answer is what makes the case able to fail.** A door that filed the new commitment under the name the row already carried would take this rotation and answer with the holder's estate instead, two classes rather than one, and would show the standing changed hands. And Article XIV says what it costs the voice to be a stranger: \"It has no row, so no mark is kept for it and its numbers are not counted\" — the record after this is the record before it, mark and window untouched.",
+      "seq": "1",
+      "voice": "f5eacab77517c5b4b3b4373811c6f874fffb3dd4657da908b42fa2c7fe0ac0d8",
+      "expect": "ffc951aa6f2fa03096d1d1b579735b2f6f84019fe2f617aa65ff3d68705f2527aa387b59384cde58be14436560cf3f6fac22e9b3a336a3fdf663794be16d7f66ff1777d2a570e16468fd66486615f422b99ab165adf26b2542af44489d8ee6dd7ddf7826f722978c44cf0b38946bfa907ac80cfbe149e8408cf8725422d04dfb531a9c0f0aaf132196862f568e379eb0997a3148f0cc268c26f4b938380af1ab2c2716316611ce39632fa4f5f5d694522aaca2b5b695b94fb42d4bca268f2966192b2ba3d87c2988a13e1b7433a249041f54ebf65599a20d2e095ec1d8df5a22217ee9f88f27a4091b32524b88334c2bf44cc6e4525fff265d945e5d6719763d21cafb033994300bbc53f287cf49f9f35577",
+      "give": "8993b4ba35a28c7f8afc4b929516eef9a59d3600150b833d5ba20b5f03e4664c2614e9b320cad53814cc4234c02025479388269b381b1921e5a0ca9ef2ef701f4550032c9af2d43fd86a2f3f623b0faaa610eae8030bd6c799c09e46bdff3238d5c146b4b09a34fda4cb08dc3a8d7289d88f7e00ee2110cad26dd936819ac5d9fcfda4f8eb43d550ba5ee4719c59e8586f88174fcbfbe28bf0292655af4087d123c759bafa641a6bce44f39a51ca6fd8ad25e9adba58c9e1f9d2b1fe26a29c2d1607c9a03d827f2472b07abccbc7857711571f0b3565bd37cea7ffc097e7df21d6e7579086dd266362027cfa2ba528428cee6485ae4951ec5d60d56d70acf1c445390b0c159c490ef20647f24e5d13944140446e",
+      "cargo": {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+        "cells": "",
+        "standings": [
+          {
+            "voice": "afa0ce0919a81bf57861ac7139d8945a1fc2ba9f00e53a4f26f494c23f78338c",
+            "commitment": "ea894aa6d18a45c4607894d676a47a90b62fc754acd5fabbceff53d1eadacb70",
+            "name": "ed4928c628d1c2c6eae90338905995612959273a5c63f93636c14614ac8737d1",
+            "beings": ["8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c"],
+            "mark": "2",
+            "spent": ["1"],
+            "padlock": "5a13b7a05e31ae998ad1307217981bb23bb17d277465829edd616e9169c8f46e",
+            "hints": []
+          }
+        ],
+        "relations": []
+      }
+    },
+    {
+      "name": "the retired name reaches nothing",
+      "law": "The news",
+      "obligations": ["XIV-9"],
+      "derivation": "The holder asks once more, byte for byte the ask of two exchanges above but for its number and the name it is addressed to: the name this door wore before it succeeded. Article XIV: \"**A door keeps no retired name alive for a peer that has not caught up**, because a name a door must remember for whoever might still be behind is a name it can never stop remembering.\" So the message is presented at no door: silence, indistinguishable from every other refusal. **And the number is not spent** — the recipient is judged before the seq, so a message that reached the wrong door leaves nothing behind at the right one, and the mark stands where the last answered ask left it. The peer is not stranded by this: the holder learns by the news, and the exchange above shows the padlock still answers.",
+      "seq": "3",
+      "expect": "silence",
+      "voice": "afa0ce0919a81bf57861ac7139d8945a1fc2ba9f00e53a4f26f494c23f78338c",
+      "give": "0791f592e9fdf04d44d7e0e23500b6ccf035be69667647589967e6b612a13150af8d36629c18a1442188d8fd62054ed7a99ce519361b05822fdc2d341cd5b324524963c1badab5cab4ec87048dfe9463bacb8fcc6577b0e58d79b3ed1fab850f6d478b1643f1f5805e720306fcd29ac47a5921dce3d930b93e8ce5f2a776f197c555df841ae8391fae3730469ea5efad563dc20520f623f625840c3b9ce4ca13b8615c5853d66192b758fc5a16b45b823de5f013cf5794c15f1f27ba20cc628233b0b9c4cd5bd1ee9f0bc3e1b842ae32cc88fa7d58089d0ee15a352cc06d0995f5dda8fe63d075b61f1cbe2add194517faf48546",
+      "cargo": {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+        "cells": "",
+        "standings": [
+          {
+            "voice": "afa0ce0919a81bf57861ac7139d8945a1fc2ba9f00e53a4f26f494c23f78338c",
+            "commitment": "ea894aa6d18a45c4607894d676a47a90b62fc754acd5fabbceff53d1eadacb70",
+            "name": "ed4928c628d1c2c6eae90338905995612959273a5c63f93636c14614ac8737d1",
+            "beings": ["8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c"],
+            "mark": "2",
+            "spent": ["1"],
+            "padlock": "5a13b7a05e31ae998ad1307217981bb23bb17d277465829edd616e9169c8f46e",
+            "hints": []
+          }
+        ],
+        "relations": []
+      }
+    }
+  ]
+}

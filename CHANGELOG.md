@@ -11,6 +11,40 @@ Entries before 0.2.0 covered the JavaScript kit alone.
 Nothing here carries a compatibility promise before 1.0.0. The wire may move,
 and a version is the only safe thing to depend on.
 
+## 0.4.0
+
+**Breaking, in JavaScript and Python: the kit's own names move behind `_quo`.**
+A blueprint's identifier is a letter then letters and digits (Article IV), so
+no blueprint in any language can spell a leading underscore. That is where the
+kit's own names now live, and the plain namespace belongs to the blueprint
+alone on both sides of the seam.
+
+**What to change.** `object.quo` becomes `object._quo`, and on a handle
+`handle.being`, `handle.seal`, `handle.send`, `handle.describe`, `handle.sketch`,
+`handle.blueprint`, `handle.limit`, `handle.moved`, `handle.text`,
+`handle.digest` and `handle.declares` become `handle._quo.<name>`. Everything a
+handle exposes directly is now exactly the fields the blueprint declares.
+
+**Why it could not stay a guarded list.** Both kits kept one, and both were
+written from the attributes that kit happened to have: JavaScript guarded seven
+names and missed `being`, Python guarded four and missed seven. A list also
+rots — the next fact a kit gains silently eats a field somebody already
+declared. Three failures were watched before the fix: a class declaring `quo()`
+had its own method overwritten and answered **silence**, which no caller can
+tell from a refusal; a class declaring `being()` killed the whole handle at
+`accept`; and Python's seven failed as `'str' object is not callable`, naming
+nothing.
+
+**Zig moves too, on the being side only** — the cell is `_quo`, so a class
+declaring `quo()` compiles. **Go and Rust are unchanged**: both reach a declared
+field by string and keep the handle's own facts as methods, so the two
+namespaces never touched.
+
+**No wire behaviour changes.** Not a byte of the envelope, the judgment or the
+records moves; conformance drives all five kits to the same bytes as before.
+This is the shape a kit offers its own language, which the law leaves to each
+kit — and which four kits had got wrong in four different ways.
+
 ## 0.3.1
 
 **A peer that missed a migration's news is no longer stranded.** A handle

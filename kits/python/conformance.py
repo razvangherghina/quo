@@ -282,7 +282,7 @@ def stand(order: dict) -> dict:
                 un(one["seed"]),
                 un(one["heirSeed"]),
             )
-        ).being
+        )._quo.being
         w.beings[pk].cells = un(one.get("cells") or "")
         beings.append(hx(pk))
 

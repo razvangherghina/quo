@@ -240,7 +240,13 @@ no voices and nothing to withhold.
 
 **A handle is asynchronous in the one way that matters: it can fall silent.**
 `call` answers `Some(value)` or `None`, and `None` means refused, broken or
-absent with no way to tell which. After a write that met silence the safe act
+absent with no way to tell which. **Weather is kept apart from silence**: a
+road that never carried the bytes is not the far door's refusal, so the call
+still answers `None` while the warden's `observe` callback is told the road's
+fault — `weather:` with the roads tried, or `no road:` when no hint offered was
+one this ground can speak. Nothing crosses the wire for it.
+
+After a write that met silence the safe act
 is to resend the identical envelope, never a fresh one, so a handle hands the
 composed ask back rather than only sending it:
 

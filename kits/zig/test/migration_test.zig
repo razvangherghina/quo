@@ -27,7 +27,7 @@ const LAMP = "Lamp\n  lit() int\n";
 /// The lamp itself, so the house that took it in can answer for it rather
 /// than the bench standing in for a being.
 const Lamp = struct {
-    quo: quo.Cell = .{},
+    _quo: quo.Cell = .{},
     times: i64 = 0,
 
     pub fn lit(self: *Lamp) i64 {
@@ -490,7 +490,7 @@ fn moveAway(w: *World, lamp: *Lamp) !Away {
         .seed = seed(World.minted_being),
         .heir_seed = seed(World.minted_heir),
     });
-    lamp.quo = .{ .door = &w.destination, .being = arrived_as };
+    lamp._quo = .{ .door = &w.destination, .being = arrived_as };
 
     const landing = try w.destination.landed(a, &.{});
     const departed = try w.origin.depart(a, w.traveller, .{

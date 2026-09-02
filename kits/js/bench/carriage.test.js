@@ -295,7 +295,7 @@ test('a caller tries the hints it holds, because none is authoritative', async (
 
   const object = todo();
   await alice.warden.hold(object, { blueprint: LIST });
-  const invitation = await object.quo.grant(object);
+  const invitation = await object._quo.grant(object);
   // A road that is nothing but weather, offered first.
   invitation.hints.unshift('http://127.0.0.1:1/');
   const [handle] = await bob.warden.accept(invitation, { label: 'todo' });

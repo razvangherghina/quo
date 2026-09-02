@@ -277,6 +277,23 @@ pub fn build(b: *std.Build) void {
         }),
     });
 
+    // The caller's half of Article VIII's trap, and Article III's weather:
+    // two houses in one process over a road the bench can drop an answer on
+    // and take down.
+    const road_tests = b.addTest(.{
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("test/road_test.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{
+                .{ .name = "arithmetic", .module = arithmetic },
+                .{ .name = "wire", .module = wire },
+                .{ .name = "warden", .module = warden },
+                .{ .name = "quo", .module = quo },
+            },
+        }),
+    });
+
     const carriage_tests = b.addTest(.{
         .root_module = b.createModule(.{
             .root_source_file = b.path("test/carriage_test.zig"),
@@ -368,8 +385,23 @@ pub fn build(b: *std.Build) void {
         }),
     });
 
+    // The kit's own names, which the notation cannot express: a being whose
+    // class declares every one of them, held and reached across a door.
+    const namespace_tests = b.addTest(.{
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("test/namespace_test.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{
+                .{ .name = "warden", .module = warden },
+                .{ .name = "quo", .module = quo },
+                .{ .name = "host", .module = host },
+            },
+        }),
+    });
+
     const test_step = b.step("test", "Run the kit's suite against the pinned corpus");
-    for ([_]*std.Build.Step.Compile{ tests, arithmetic_tests, wire_tests, envelope_tests, warden_tests, migration_tests, carriage_tests, line_tests, judgment_tests, truth_warden_tests, truth_being_tests, truth_host_tests }) |suite| {
+    for ([_]*std.Build.Step.Compile{ tests, arithmetic_tests, wire_tests, envelope_tests, warden_tests, migration_tests, road_tests, carriage_tests, line_tests, judgment_tests, truth_warden_tests, truth_being_tests, truth_host_tests, namespace_tests }) |suite| {
         const run = b.addRunArtifact(suite);
         run.has_side_effects = true;
         test_step.dependOn(&run.step);

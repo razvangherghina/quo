@@ -333,7 +333,7 @@ fn opened(gpa: std.mem.Allocator) !Line {
 /// dispatch from the type itself. **It never sees a byte and never touches a
 /// key** — what reaches it is an `i64`, and what it answers is an `i64`.
 const Counter = struct {
-    quo: quo.Cell = .{},
+    _quo: quo.Cell = .{},
     total: i64 = 0,
 
     pub fn bump(self: *Counter, by: i64) !i64 {

@@ -1,0 +1,168 @@
+{
+  "scenario": "leash",
+  "law": "https://github.com/razvangherghina/quo/blob/main/constitution.md",
+  "encoding": "hex",
+  "about": "The half of Article VIII's leash a door decides on its own: what it does with the allowance that arrived, before any question of what it might hand onward. The two exchanges are one hop count apart, so the boundary between the last legal leash and the first illegal one is the only thing that can decide them — and a corpus vector cannot hold either, because both are well-formed messages whose difference is a number the door judges rather than a byte it decodes.",
+  "stand": {
+    "warden": {
+      "nameSeed": "196982eee79e80efbc3131c93b99285a38c540c43e7e4fbb8399c260b1ce5103",
+      "padlockSeed": "7dbcdb3088339c02378f46525bff3fe2b84515973e28f5814301a99f386e20b1",
+      "heirSeed": "0303030303030303030303030303030303030303030303030303030303030303",
+      "heirCommitment": "83f960da653b61eb63f6b53b5d80adeb377e23e569f1c555395b9b119ad69603",
+      "limit": "1048576",
+      "hints": []
+    },
+    "beings": [
+      {
+        "seed": "0101010101010101010101010101010101010101010101010101010101010101",
+        "heirSeed": "0202020202020202020202020202020202020202020202020202020202020202",
+        "blueprint": "Counter\n  bump(by int) int\n  count() int\n",
+        "cells": ""
+      }
+    ],
+    "grants": [
+      {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "voiceSeed": "2ebd74bd564a8771fa628b28308c588588f5c0d0db17ae06b045b896d8218ad7",
+        "heirSeed": "7bae8096dc92d5f4e271742fd8db51abd563a8976c223dd734f1d2bdd553093c",
+        "padlock": null,
+        "hints": []
+      }
+    ],
+    "clock": [
+      "1000",
+      "1001",
+      "1002",
+      "1003",
+      "1004",
+      "1005",
+      "1006",
+      "1007",
+      "1008",
+      "1009",
+      "1010",
+      "1011",
+      "1012",
+      "1013",
+      "1014",
+      "1015",
+      "1016",
+      "1017",
+      "1018",
+      "1019",
+      "1020",
+      "1021",
+      "1022",
+      "1023",
+      "1024",
+      "1025",
+      "1026",
+      "1027",
+      "1028",
+      "1029",
+      "1030",
+      "1031",
+      "1032",
+      "1033",
+      "1034",
+      "1035",
+      "1036",
+      "1037",
+      "1038",
+      "1039"
+    ],
+    "random": [
+      "3232323232323232323232323232323232323232323232323232323232323232",
+      "3333333333333333333333333333333333333333333333333333333333333333",
+      "3434343434343434343434343434343434343434343434343434343434343434",
+      "3535353535353535353535353535353535353535353535353535353535353535",
+      "3636363636363636363636363636363636363636363636363636363636363636",
+      "3737373737373737373737373737373737373737373737373737373737373737",
+      "3838383838383838383838383838383838383838383838383838383838383838",
+      "3939393939393939393939393939393939393939393939393939393939393939",
+      "4040404040404040404040404040404040404040404040404040404040404040",
+      "4141414141414141414141414141414141414141414141414141414141414141",
+      "4242424242424242424242424242424242424242424242424242424242424242",
+      "4343434343434343434343434343434343434343434343434343434343434343"
+    ]
+  },
+  "unruled": [],
+  "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+  "opening": {
+    "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+    "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+    "cells": "",
+    "standings": [
+      {
+        "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+        "commitment": "290d6caefb277537554cc8f48597206e9b5ca2975dc81dc4c8f66662570b4d64",
+        "name": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+        "beings": ["8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c"],
+        "mark": "0",
+        "spent": [],
+        "padlock": null,
+        "hints": []
+      }
+    ],
+    "relations": []
+  },
+  "beingCommitment": "ed4d580bb287b98674376c30d750d9926617873de8787e518c58c320d1899cbd",
+  "exchanges": [
+    {
+      "name": "a hop count of zero is a legal leash and is answered",
+      "law": "The seq and the leash",
+      "obligations": ["VIII-10"],
+      "derivation": "An ask carrying a real time budget and a hop count of zero. Article VIII: \"**A hop count of zero is a legal leash for a call that goes no further** — what it forbids is onward.\" So the call is answered like any other, and the estate comes back. A door that read zero as exhausted would meet it with silence, which is the mistake this case exists for: zero is the last legal value and not the first illegal one, and the article says so in the same breath as the rule that refuses what is below it.",
+      "seq": "1",
+      "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+      "expect": "59d9225473451efffe6b36dbcaefdbf7b1895de62084509a7f5b58bf01d064183d0e9f38364e65372817fc540a351551a7cad5c13b5594def61c92d544afecd572a652e3c1fdc5aa70a7624ece29b926de511f4f09cbc1a64ecef462469a0fa6762abd1b178f8c304f9afb50ad850c3a19b73695575f041ff6dfd6886586fbb5d15306dc065899463987f3ae1df8254e9f348f6fec9ff46be5f32c8f6624ca803022d2289e2528e9d72f1d4d7c2b09485f9d2f08d4365c4879624a24e3c817256be3870664c7e4b338a0574f23b088805349556c0ea7f30624d23ff3558ddfe0db140d38dfdc93c462460b5887db3f994cee24dab5633205988e0f10564c256925e7fa15887c5ae2c18e145ff47cc04a483f4a8b5681d5ad14aa898c7c67b50b5c77d3b536f91851a39138adb61f411ee3a2d826dc49651b2e9aee9b80c3341bf47ba1a3d355d603f7180b5c60b52cf7eab58f70df26e986204b9dc456b0e04a104934854c6af7b5fef0973530aa58fec8b9bcf346288f0ce0c7",
+      "give": "5590e18b13045370235f1719ab8448c3c0a39a269bfc86ded297b1fa1bf4ac3054d8a5b10f2b431d7e67449325bb7ff335b8afa2d0da0909be59682b186f09d19a2c013788c1f52bc7365ebfd1f3966756b9edf2012a7cf5c78db0cbfec6bfd43271c1d804dd70e3e150ac60bd900d2a3e246a6c5a9f882ea252a8716308da84f66b19d0cf9eab0597e925cc6c48de7891801daa033139fa66765c4a9f29fe843539a4a8df24ad5c39030507d7fbc421f9e11be2725085f8531e0088dc79231a61cce09e4a141756af41d2324036bc3d3a6899b38fee26bf618d6fd79a75404767699f866b918804da670c3699dda6180fa4bd48bc4db3149f9f8533f3a92f0c914825e54a071acde3b8afb4",
+      "cargo": {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+        "cells": "",
+        "standings": [
+          {
+            "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+            "commitment": "290d6caefb277537554cc8f48597206e9b5ca2975dc81dc4c8f66662570b4d64",
+            "name": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+            "beings": ["8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c"],
+            "mark": "1",
+            "spent": [],
+            "padlock": "5a13b7a05e31ae998ad1307217981bb23bb17d277465829edd616e9169c8f46e",
+            "hints": []
+          }
+        ],
+        "relations": []
+      }
+    },
+    {
+      "name": "a hop count below zero is silence, and the number is still spent",
+      "law": "The seq and the leash",
+      "obligations": ["VIII-9", "VIII-3"],
+      "derivation": "The same ask with the hop count one lower. Article VIII: \"**The leash is judged on what arrived**: a time budget at or below zero, or a hop count below zero, is silence.\" So this is refused where the exchange above was answered, and the two differ in one field — a door that refused both, or answered both, fails one of them. The number is spent all the same: \"Honoured means the number is consumed, and nothing later gives it back — a message refused at routing or for its leash has still spent it.\" So the mark stands at 2 behind a silence, which is the whole of what separates a leash refusal from a message that never arrived.",
+      "seq": "2",
+      "expect": "silence",
+      "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+      "give": "ef38b4abd14b0a919cbe6839f6185b97d32607bee359c6c53c12cc7597867d59555b11f91cf00e8c0b90c666592531bcbd6fee2471f50849e8a95f1d0ff3daa3a3ddf774a78dc21a9d76e250c1094c94f54bbd79896537f2fb9fe166f8f72337e00b2313ae8f1c3f3038e9a56df6bfb87c2628c618bdbf0b2e6d49f16c920826731f25518f055faf72b37174e25485119b539b6c1aae1244f5827aebadbadcfca51808e73c97b8c8e43bc38ba1862a55993bded3130c338efdb98adc5a60e8216345e499b35d5f9c4f30614f5779488790bad6af31496d98912ea8d51908abebf6a9e890b1ef4649fb57cae3d375db90de356ee195eb81858735465e3114fde44a5d19f646543ea548f6e637",
+      "cargo": {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+        "cells": "",
+        "standings": [
+          {
+            "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+            "commitment": "290d6caefb277537554cc8f48597206e9b5ca2975dc81dc4c8f66662570b4d64",
+            "name": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+            "beings": ["8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c"],
+            "mark": "2",
+            "spent": ["1"],
+            "padlock": "5a13b7a05e31ae998ad1307217981bb23bb17d277465829edd616e9169c8f46e",
+            "hints": []
+          }
+        ],
+        "relations": []
+      }
+    }
+  ]
+}

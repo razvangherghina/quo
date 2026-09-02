@@ -1,0 +1,196 @@
+{
+  "scenario": "opening-number",
+  "law": "https://github.com/razvangherghina/quo/blob/main/constitution.md",
+  "encoding": "hex",
+  "about": "Two things a door must not refuse and one it must, over one standing that changes hands twice. Nothing here can be seen in bytes: the opening number is an ordinary field, the repeated commitment is thirty-two ordinary bytes, and the replay is byte-identical to a call except for what the door already knows. What separates every pair is the door's own record afterwards.",
+  "stand": {
+    "warden": {
+      "nameSeed": "196982eee79e80efbc3131c93b99285a38c540c43e7e4fbb8399c260b1ce5103",
+      "padlockSeed": "7dbcdb3088339c02378f46525bff3fe2b84515973e28f5814301a99f386e20b1",
+      "heirSeed": "0303030303030303030303030303030303030303030303030303030303030303",
+      "heirCommitment": "83f960da653b61eb63f6b53b5d80adeb377e23e569f1c555395b9b119ad69603",
+      "limit": "1048576",
+      "hints": []
+    },
+    "beings": [
+      {
+        "seed": "0101010101010101010101010101010101010101010101010101010101010101",
+        "heirSeed": "0202020202020202020202020202020202020202020202020202020202020202",
+        "blueprint": "Counter\n  bump(by int) int\n  count() int\n",
+        "cells": ""
+      }
+    ],
+    "grants": [
+      {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "voiceSeed": "a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0",
+        "heirSeed": "a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+        "padlock": null,
+        "hints": []
+      }
+    ],
+    "clock": [
+      "1000",
+      "1001",
+      "1002",
+      "1003",
+      "1004",
+      "1005",
+      "1006",
+      "1007",
+      "1008",
+      "1009",
+      "1010",
+      "1011",
+      "1012",
+      "1013",
+      "1014",
+      "1015",
+      "1016",
+      "1017",
+      "1018",
+      "1019",
+      "1020",
+      "1021",
+      "1022",
+      "1023",
+      "1024",
+      "1025",
+      "1026",
+      "1027",
+      "1028",
+      "1029",
+      "1030",
+      "1031",
+      "1032",
+      "1033",
+      "1034",
+      "1035",
+      "1036",
+      "1037",
+      "1038",
+      "1039"
+    ],
+    "random": [
+      "3232323232323232323232323232323232323232323232323232323232323232",
+      "3333333333333333333333333333333333333333333333333333333333333333",
+      "3434343434343434343434343434343434343434343434343434343434343434",
+      "3535353535353535353535353535353535353535353535353535353535353535",
+      "3636363636363636363636363636363636363636363636363636363636363636",
+      "3737373737373737373737373737373737373737373737373737373737373737",
+      "3838383838383838383838383838383838383838383838383838383838383838",
+      "3939393939393939393939393939393939393939393939393939393939393939",
+      "4040404040404040404040404040404040404040404040404040404040404040",
+      "4141414141414141414141414141414141414141414141414141414141414141",
+      "4242424242424242424242424242424242424242424242424242424242424242",
+      "4343434343434343434343434343434343434343434343434343434343434343"
+    ]
+  },
+  "unruled": [],
+  "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+  "opening": {
+    "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+    "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+    "cells": "",
+    "standings": [
+      {
+        "voice": "b533d8ad9fcfbdde0b481c1b334ddc3c53412fd614564e7e5afd020368d382c3",
+        "commitment": "17dc08a217a4f67211c5adc3625ee23107d8c9fe70503ea8e680deb529ea7dd0",
+        "name": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+        "beings": ["8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c"],
+        "mark": "0",
+        "spent": [],
+        "padlock": null,
+        "hints": []
+      }
+    ],
+    "relations": []
+  },
+  "beingCommitment": "ed4d580bb287b98674376c30d750d9926617873de8787e518c58c320d1899cbd",
+  "exchanges": [
+    {
+      "name": "a holder opens on a number far above one, and it is honoured",
+      "law": "The seq and the leash",
+      "obligations": ["VIII-15", "VIII-1", "XII-5"],
+      "derivation": "The holder's very first act, which Article VII says is \"a rotate-and-ask carrying a fresh commitment to a key nobody else has seen\" — and it carries nine thousand. Article XII step 5: \"A rotation starts the mark fresh\", and Article VIII on what a fresh mark admits: \"**Which number a caller opens with, above one, is the caller's own.** A fresh mark is empty, so every number at or above one stands above it: the door honours what arrives and the mark moves there. **No door requires a first message to carry exactly one.**\" So the ask is answered and the mark is nine thousand. **This is the exchange a door reading VIII-1 alone fails**, and it fails invisibly: the refusal is silence, which tells the stranger nothing to fix, and the takeover has already landed at step 4 by the time it comes back. Nothing in the bytes distinguishes this from a rotation carrying one — only the number does, and only a door that added a rule the law does not have would tell them apart.",
+      "seq": "9000",
+      "expect": "answered",
+      "voice": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+      "give": "96e23e91941b5a6628d4b69b0a77936f0173cb24afc537db22f2ce011041ae6dc50225e6d33312e06da6c4d9397a2ad2fe37814708417ae15a15064f5bd5408b928a69dd3af8df5562388d2f5243cfbcfe4ee24706f9d9a1c3692033e36afb974444480f44b7caa3c9a5469a7bd2b01a40d20b1769e0b6663d462c2468bcd94d902a1a8c9d0bc8ce3e614c424d9d52858015908ab571c4b41a91d44a02074487fb86146ff4e77e5e226588606cff0ee1cc40cfc9204691f1af2c032eef90f9f5f8f2717d0a6075ac7924805de14a05412b8e52624a0ffdfea7151e6729b75c76c8ea01c42e6128bebbf30895a0bada6f67f2d3c8fa7586b068f9f676a01665957a3899da27dc7429d6c23360137b28b92478324e31e6d610a88397556a49319f3e08b420ce878c227a919bd51f2d175156",
+      "cargo": {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+        "cells": "",
+        "standings": [
+          {
+            "voice": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+            "commitment": "044c688fc5fb78c57b07ec161e89d2723129e64559e08cc281ff0cf1de511b65",
+            "name": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+            "beings": ["8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c"],
+            "mark": "9000",
+            "spent": [],
+            "padlock": "5a13b7a05e31ae998ad1307217981bb23bb17d277465829edd616e9169c8f46e",
+            "hints": ["tcp://first.example:1"]
+          }
+        ],
+        "relations": []
+      }
+    },
+    {
+      "name": "a rotation committing again to the key it spends is honoured",
+      "law": "Keys, records and standings",
+      "obligations": ["VII-16", "VII-3"],
+      "derivation": "The new holder rotates again, and the commitment it carries is byte-for-byte the one the door already holds — the same key committed twice, which is the one shape of stale commitment a door could actually catch. Article VII: \"**Freshness is the holder's duty and the door never checks it**: a door comparing the arriving commitment against the one it holds catches only the case of committing twice to the same key, and never the case of committing to an older one, which no door can see without keeping every commitment ever filed.\" So it is honoured like any other rotation: the standing changes hands to the signer, the carried commitment becomes the new heir, and the mark starts fresh. **A door that made the check the sentence forbids meets this with silence**, and it would be a door telling its implementer it had closed a hole it had not — which is the reason the ruling went the way it did. The harm the freshness rule names still falls where Article VII puts it, on the holder, and this door's records say nothing about whether the holder was careless.",
+      "seq": "1",
+      "expect": "answered",
+      "voice": "65e8f9b0bc6eae124169f0576f97362d295a8cf5f770b45e14357ce647d33eec",
+      "give": "214710727d2453f979603598982ad6c845085adba2b59fc3b30ecf7d8e8f3f6da1104415db44842cade718529eb0acf7592932a0c196342fac3af24027a0f0f0662d0cadf06fc07760cc53e75b24d52efd7d8795526e4003892b6115e8751379f25a45d4f80f97d63256302d5da4f852a727a3c2d6db47d59885623f9f1ee86f970f34c73455e5e4d64714e8df25648a837679e47d73f445ecb5afb4aaa0fab13a644acbb729b403b4408487ef26b538108a8073f4e95144e3ebfb94cfbc224f0e6862c7d0d37cdcaaed9c8fc01cda75b74d9eebeb2a0479236a0872305a714951430cec4ab531ef098e633897f06d3b542db879a25f20acfe134e445cb423744b49578d283610e44980c17eaf75e4bbc7d46d0acb92e76850d476b862914f207ae03d8819e849ca9a95b0c594f94a1049",
+      "cargo": {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+        "cells": "",
+        "standings": [
+          {
+            "voice": "65e8f9b0bc6eae124169f0576f97362d295a8cf5f770b45e14357ce647d33eec",
+            "commitment": "044c688fc5fb78c57b07ec161e89d2723129e64559e08cc281ff0cf1de511b65",
+            "name": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+            "beings": ["8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c"],
+            "mark": "1",
+            "spent": [],
+            "padlock": "5a13b7a05e31ae998ad1307217981bb23bb17d277465829edd616e9169c8f46e",
+            "hints": ["tcp://first.example:1"]
+          }
+        ],
+        "relations": []
+      }
+    },
+    {
+      "name": "a number already honoured is silence, and refreshes no way back",
+      "law": "The judgment",
+      "obligations": ["XII-14", "VIII-2", "VII-4"],
+      "derivation": "**The other edge of where the refresh sits, and the pair to the leash refusal in the step-order scenario.** The same holder sends the same number it just spent, carrying a different road. Article VIII refuses it — \"inside the window is honoured once and never again\" — and Article XII step 5 says where the way back is refreshed and why not earlier: \"**The way back is refreshed here**, between the seq and the leash: the padlock and hints the payload carried replace what the row held. Not earlier, because a replayed message would otherwise rewrite a live way back with a retired one, and the seq is what tells a replay from a call.\" So the row still holds the first road and not the second. **The two exchanges together are the obligation and neither is it alone**: a door that refreshed before the seq passes this scenario's neighbour and fails here, and a door that refreshed only after routing fails the neighbour and passes here. Only a door that refreshes between the two passes both, and no byte on the wire says which a door did.",
+      "seq": "1",
+      "expect": "silence",
+      "voice": "65e8f9b0bc6eae124169f0576f97362d295a8cf5f770b45e14357ce647d33eec",
+      "give": "80e1a53d3eee82b62b3048578cf38c980ddd1131243a1047fe48482942d6b648fe88fa98d8cdb6f7d2d7a22e6244a8283c25f36bab621df07822919cf77e78d364035f7239519fcd0d3605f6618d9277776e7e4c34db5744b11cf91f2878c428b0f6095b4773abb758988922b31057feac42af14605e8cfecb6a9ef28b6f713de6d278ec31271fa10ad8c48a0941acd6a43f0837ae5dd73215d4da5805968ed4e7a90526872006d95677a02c7d8bed3ab7b461465e10316527c58b5d95140253a11bccfb10c28ccd8b8777ac70ce53141b05cef94efa193b10e87186c97707b9bc805863b4b3b908645a7a9dfe3e6f07416701eb36cde7def8a3abac7aaca8d2a48d319f0e90bb32d4f5c6b0782349ced785",
+      "cargo": {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+        "cells": "",
+        "standings": [
+          {
+            "voice": "65e8f9b0bc6eae124169f0576f97362d295a8cf5f770b45e14357ce647d33eec",
+            "commitment": "044c688fc5fb78c57b07ec161e89d2723129e64559e08cc281ff0cf1de511b65",
+            "name": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+            "beings": ["8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c"],
+            "mark": "1",
+            "spent": [],
+            "padlock": "5a13b7a05e31ae998ad1307217981bb23bb17d277465829edd616e9169c8f46e",
+            "hints": ["tcp://first.example:1"]
+          }
+        ],
+        "relations": []
+      }
+    }
+  ]
+}

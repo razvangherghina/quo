@@ -25,7 +25,8 @@ __all__ = [
     "Call",
     "within",
     "current",
-    "LOOKS",
+    "Silence",
+    "Own",
     "Handle",
     "RemoteHandle",
     "LocalHandle",
@@ -33,6 +34,15 @@ __all__ = [
     "CARRIED",
     "resolve",
 ]
+
+
+class Silence(Exception):
+    """Every failure the door has. It never says which step it was.
+
+    It lives here rather than with the warden because a handle under this same
+    warden must swallow one: a being's own fault reaches a neighbour as the
+    silence it would reach a stranger as, and never as an exception.
+    """
 
 
 class _Carried:
@@ -110,10 +120,69 @@ def _fields_of(text: str) -> tuple[dict, dict]:
     )
 
 
-#: The four the paper puts on every handle beside its fields. They are the
-#: Warden blueprint's own, never the being's, which is why a handle answers
-#: them without the being having declared anything.
-LOOKS = ("describe", "sketch", "blueprint", "limit")
+class Own:
+    """Everything of the kit's own on a handle, reached at ``handle._quo``.
+
+    **The notation's identifier is a letter then letters and digits** (Article
+    IV), so no blueprint in any language can declare a name beginning with an
+    underscore. That is what makes this a namespace the grammar cannot reach
+    into rather than a list of names to guard: a handle's plain namespace is
+    the blueprint's alone, and the kit can gain a fact tomorrow without eating
+    a field somebody already declared.
+    """
+
+    def __init__(self, handle: "Handle") -> None:
+        self._handle = handle
+
+    @property
+    def being(self) -> bytes:
+        """The pk this handle reaches, by the name it wears now."""
+        return self._handle._at
+
+    @property
+    def text(self) -> str:
+        """The class this handle calls through."""
+        return self._handle._text
+
+    @property
+    def digest(self) -> bytes:
+        """That class's identity."""
+        return self._handle._digest
+
+    def declares(self) -> tuple[str, ...]:
+        """The names this handle's blueprint declares."""
+        return tuple(self._handle._fields)
+
+    # -- introspection, which is describe and is one of the five things that cross
+
+    async def describe(self) -> Any:
+        """The estate the far door shows this voice."""
+        return await self._handle._look("describe")
+
+    async def sketch(self, being: Any = None) -> Any:
+        """One being's sketch — this handle's own unless another is named."""
+        at = self.being if being is None else _pk_of(being, None)
+        return await self._handle._look("sketch", at)
+
+    async def blueprint(self, digest: bytes) -> Any:
+        """The text of a class this voice reaches something of."""
+        return await self._handle._look("blueprint", bytes(digest))
+
+    async def limit(self) -> Any:
+        """The largest whole envelope the far door accepts."""
+        return await self._handle._look("limit")
+
+    async def seal(self, name: str, *args: Any) -> Any:
+        """The envelope alone, spent against the row but not yet handed to a road.
+
+        A handle under this same warden answers silence: there are no strangers
+        there and nothing is sealed, so there is nothing to resend.
+        """
+        return await self._handle._seal(name, *args)
+
+    async def send(self, sealed: Any) -> Any:
+        """Hand a sealed envelope to delivery and answer with what comes back."""
+        return await self._handle._send(sealed)
 
 
 class Handle:
@@ -123,23 +192,17 @@ class Handle:
     which is Python's way of saying what the JS kit says with an absent
     property: a field the peer never declared does not exist for the caller.
 
-    Beside the fields sit the four introspections, each an ordinary ask at the
-    far door's own being, answering a value or silence like any other.
+    **Nothing public lives on this class.** Everything of the kit's own is at
+    ``_quo``, so ``__getattr__`` answers for every name a blueprint may
+    declare and no field is ever shadowed by something the kit needed.
     """
 
     def __init__(self, being: bytes, fields: Mapping[str, notation.Field]) -> None:
-        self.being = being
+        self._at = being
         self._fields = dict(fields)
-        # A blueprint that declares one of the four names means its own field.
-        # Bound on the instance, it shadows the method: the four sit beside the
-        # fields and never over them, or a being could declare a field its
-        # holder can never reach.
-        for name in LOOKS:
-            if name in self._fields:
-                self.__dict__[name] = self._field(name)
-
-    def declares(self) -> tuple[str, ...]:
-        return tuple(self._fields)
+        self._text = ""
+        self._digest = b""
+        self._quo = Own(self)
 
     def _field(self, name: str) -> Any:
         async def call(*args: Any) -> Any:
@@ -154,24 +217,11 @@ class Handle:
             raise AttributeError(f"a field this blueprint does not declare: {name!r}")
         return self._field(name)
 
-    # -- introspection, which is describe and is one of the five things that cross
+    async def _seal(self, name: str, *args: Any) -> Any:
+        return None
 
-    async def describe(self) -> Any:
-        """The estate the far door shows this voice."""
-        return await self._look("describe")
-
-    async def sketch(self, being: Any = None) -> Any:
-        """One being's sketch — this handle's own unless another is named."""
-        at = self.being if being is None else _pk_of(being, None)
-        return await self._look("sketch", at)
-
-    async def blueprint(self, digest: bytes) -> Any:
-        """The text of a class this voice reaches something of."""
-        return await self._look("blueprint", bytes(digest))
-
-    async def limit(self) -> Any:
-        """The largest whole envelope the far door accepts."""
-        return await self._look("limit")
+    async def _send(self, sealed: Any) -> Any:
+        return None
 
     async def _spend(self, name: str, *args: Any) -> Any:  # pragma: no cover - abstract
         raise NotImplementedError
@@ -184,9 +234,9 @@ class RemoteHandle(Handle):
     """A being under another warden.
 
     Each call is sealed by the row the handle spends, handed to delivery, and
-    settled by whatever arrives back through the warden's one door. :meth:`seal`
-    and :meth:`send` are the two halves apart, so a caller that met silence can
-    resend the identical envelope rather than a fresh one.
+    settled by whatever arrives back through the warden's one door.
+    ``_quo.seal`` and ``_quo.send`` are the two halves apart, so a caller that
+    met silence can resend the identical envelope rather than a fresh one.
     """
 
     def __init__(self, warden: Any, row: Any, being: bytes, text: str) -> None:
@@ -195,8 +245,8 @@ class RemoteHandle(Handle):
         self._warden = warden
         self._row = row
         self._records = records
-        self.text = text
-        self.digest = notation.digest(text)
+        self._text = text
+        self._digest = notation.digest(text)
         #: True while this handle is asking the door where the being went, so
         #: that ask's own silence never asks again.
         self._pointing = False
@@ -244,7 +294,7 @@ class RemoteHandle(Handle):
             "deadline": allowance["time"],
         }
 
-    async def seal(self, name: str, *args: Any) -> Optional[dict]:
+    async def _seal(self, name: str, *args: Any) -> Optional[dict]:
         """The envelope alone, spent against the row but not yet handed to a road."""
         field = self._fields.get(name)
         if field is None:
@@ -255,9 +305,9 @@ class RemoteHandle(Handle):
             )
         except wire.WireError:
             return None
-        return await self._seal_at(self.being, name, blob, field.answers, self._records)
+        return await self._seal_at(self._at, name, blob, field.answers, self._records)
 
-    async def send(self, sealed: Optional[Mapping[str, Any]]) -> Any:
+    async def _send(self, sealed: Optional[Mapping[str, Any]]) -> Any:
         """Hand a sealed envelope to delivery and answer with what comes back."""
         return self._read(sealed, await self._settle(sealed))
 
@@ -295,7 +345,7 @@ class RemoteHandle(Handle):
             return None
 
     async def _spend(self, name: str, *args: Any) -> Any:
-        sealed = await self.seal(name, *args)
+        sealed = await self._seal(name, *args)
         answer = await self._settle(sealed)
         if sealed is not None and answer is None:
             await self._point()
@@ -319,7 +369,7 @@ class RemoteHandle(Handle):
             return
         self._pointing = True
         try:
-            own = self._warden.own("moved", self.being)
+            own = self._warden.own("moved", self._at)
             if own is None:
                 return
             sealed = await self._seal_at(
@@ -333,7 +383,7 @@ class RemoteHandle(Handle):
                 # The row reaches the being by its new name, so this handle
                 # must ask by it: a name a door has moved on from is a name no
                 # door answers for again.
-                self.being = successor
+                self._at = successor
         finally:
             self._pointing = False
 
@@ -344,7 +394,7 @@ class RemoteHandle(Handle):
         sealed = await self._seal_at(
             None, name, own["args"], own["answers"], own["records"]
         )
-        return await self.send(sealed)
+        return await self._send(sealed)
 
 
 class LocalHandle(Handle):
@@ -360,7 +410,10 @@ class LocalHandle(Handle):
         super().__init__(held.pk, held.fields)
         self._warden = warden
         self._held = held
-        self.digest = bytes(held.digest)
+        self._digest = bytes(held.digest)
+        # A handle keeps one shape wherever the being is, so a local one names
+        # its class the same way a remote one does.
+        self._text = warden.blueprints.get(bytes(held.digest), "")
 
     async def _look(self, name: str, arg: Any = None) -> Any:
         """The same four, answered by this warden about this being.
@@ -369,10 +422,10 @@ class LocalHandle(Handle):
         are answered here by the same estate, reach and blueprint the door
         answers a stranger with — not by reading the object.
         """
-        return self._warden.look(self.being, name, arg)
+        return self._warden.look(self._at, name, arg)
 
     async def _spend(self, name: str, *args: Any) -> Any:
-        held = self._warden.beings.get(bytes(self.being))
+        held = self._warden.beings.get(bytes(self._at))
         if held is None:
             return None
         allowance = _allowance_now(self._warden)
@@ -386,9 +439,15 @@ class LocalHandle(Handle):
         except wire.WireError:
             return None
         leash = self._warden.leash(allowance)
-        data = await held.serve(
-            name, blob, Call(caller=Caller(voice=None, kind="local"), leash=leash)
-        )
+        # A being's own fault is silence here as it is at a door. **One shape**:
+        # a caller of a neighbour is told exactly what a caller across an ocean
+        # is told, and never an exception the far side would have swallowed.
+        try:
+            data = await held.serve(
+                name, blob, Call(caller=Caller(voice=None, kind="local"), leash=leash)
+            )
+        except Silence:
+            return None
         if field.answers is None or data is None:
             return None
         try:
@@ -400,8 +459,10 @@ class LocalHandle(Handle):
 class Quo:
     """The closure: facts and acts, never a judgment.
 
-    It is attached to the object at ``obj.quo`` when the warden holds it, and
-    it is the whole of what a being has of Quo.
+    It is attached to the object at ``obj._quo`` when the warden holds it, and
+    it is the whole of what a being has of Quo. The underscore is what the
+    notation cannot spell, so a blueprint may declare any name at all and none
+    of them can reach this.
     """
 
     def __init__(self, warden: Any, held: Any) -> None:
@@ -480,17 +541,19 @@ class Quo:
 
 def _pk_of(target: Any, fallback: Optional[bytes]) -> Optional[bytes]:
     """A being named by whichever of the three things a caller has to hand: its
-    key, the object itself, or a handle at it."""
+    key, the object itself, or a handle at it.
+
+    The last two are read at ``_quo``, which is one place rather than two: a
+    held object and a handle both carry the kit's own there, and neither can be
+    confused with a field the blueprint declares.
+    """
     if target is None:
         return fallback
     if isinstance(target, (bytes, bytearray)):
         return bytes(target)
-    being = getattr(target, "being", None)
-    if isinstance(being, (bytes, bytearray)):
-        return bytes(being)
-    quo = getattr(target, "quo", None)
-    if quo is not None and isinstance(getattr(quo, "being", None), (bytes, bytearray)):
-        return bytes(quo.being)
+    own = getattr(target, "_quo", None)
+    if own is not None and isinstance(getattr(own, "being", None), (bytes, bytearray)):
+        return bytes(own.being)
     return None
 
 

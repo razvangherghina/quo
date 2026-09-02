@@ -144,9 +144,9 @@ test('holding an object mints its keys and records its blueprint digest', async 
   // The object gains one thing and one only: the closure, which is the whole
   // of its API to Quo. Nothing else of the object is touched, and nothing in
   // the closure is a key or a road.
-  assert.deepEqual(Object.keys(object).sort(), [...before, 'quo'].sort());
-  assert.equal(typeof object.quo.grant, 'function');
-  for (const name of Object.keys(object.quo)) assert.ok(!/secret|padlock|seed/i.test(name), name);
+  assert.deepEqual(Object.keys(object).sort(), [...before, '_quo'].sort());
+  assert.equal(typeof object._quo.grant, 'function');
+  for (const name of Object.keys(object._quo)) assert.ok(!/secret|padlock|seed/i.test(name), name);
   // The warden keeps the pointer, the being's keys, and the blueprint digest.
   const held = warden.beings.get(hex(being));
   assert.equal(held.object, object);
@@ -1704,6 +1704,120 @@ test('a rotation refused for its number has taken the standing over anyway, and 
     );
   assert.equal(await retry(1n), null);
   assert.equal(await retry(2n), null, 'and no number it picks brings the retired key back');
+});
+
+// Two grounds joined by the memory road, for the caller's side of the trap:
+// what `accept` does when the far door's answer never comes back.
+async function acrossTheRoad() {
+  const delivery = memoryDelivery();
+  const random = () => crypto.getRandomValues(new Uint8Array(32));
+  const open = (allowance) =>
+    Warden.open({
+      seeds: { name: random(), padlock: random(), heir: random() },
+      clock: still,
+      random,
+      delivery,
+      allowance,
+    });
+  const alice = await open({ time: 5_000n, hops: 4n });
+  // A short leash, so a lost answer is given up on inside the test's patience.
+  const bob = await open({ time: 50n, hops: 4n });
+  delivery.attach('mem://alice', alice);
+  delivery.attach('mem://bob', bob);
+  alice.publish('mem://alice');
+  bob.publish('mem://bob');
+  const object = todo();
+  const being = await holding(alice, object, { seed: fixed(5), blueprint: LIST });
+  const invitation = await alice.grant(being, { voiceSeed: fixed(6), heirSeed: fixed(7) });
+  return { delivery, alice, bob, object, being, invitation };
+}
+
+test('accept recovers a rotation whose answer was lost: it asks again on the new voice', async () => {
+  // The caller's half of the trap above. The first rotation reaches the door
+  // and lands at step 4; the answer rides a line that drops. To the caller
+  // that is silence, and the one reading that loses the standing is "nothing
+  // landed, rotate again" — signed with the key the door just retired. The
+  // kit reads it the other way: ask again on the new voice, above the number
+  // the rotation may have spent, and take the describe as the proof.
+  const { delivery, alice, bob, object, invitation } = await acrossTheRoad();
+  const send = delivery.send.bind(delivery);
+  let dropped = 0;
+  delivery.send = async (row, envelope) => {
+    const back = await send(row, envelope);
+    if (dropped > 0) return back;
+    dropped += 1;
+    // The door judged it — and the answer never rode back.
+    return false;
+  };
+
+  const [handle] = await bob.accept(invitation, { label: 'todo' });
+  assert.equal(dropped, 1);
+  assert.equal(await handle.add('milk'), true);
+  assert.deepEqual(object.calls, ['milk']);
+
+  // Both rotations landed: the granter's own heir key is dead at its door, and
+  // the standing stands on keys nobody but the holder has seen.
+  assert.equal(alice.standing(invitation.heirPublic), null, 'the invitation key died at step 4');
+  const [row] = bob.outbound;
+  assert.notEqual(hex(row.voice.pk), hex(invitation.heirPublic));
+  assert.notEqual(alice.standing(row.voice.pk), null, 'the door holds the voice the kit minted');
+  assert.equal(
+    hex(alice.standing(row.voice.pk).commitment),
+    hex(await commitment(alice.name.pk, row.heir.pk)),
+    'and the heir the kit committed, whose secret it kept',
+  );
+});
+
+test('accept whose rotation met weather leaves the invitation whole, so the same one is accepted next', async () => {
+  // Weather is not silence: no road carried the bytes, so the door never
+  // heard and the invitation's key is as live as when it was minted. The kit
+  // reports the road and keeps nothing; the retry is the invitation itself.
+  const { delivery, alice, bob, invitation } = await acrossTheRoad();
+  const reasons = [];
+  bob.observe((why) => reasons.push(why));
+  delivery.detach('mem://alice');
+  assert.equal(await bob.accept(invitation, { label: 'todo' }), null);
+  assert.deepEqual(
+    reasons.map((why) => why.reason),
+    ['weather'],
+  );
+  assert.deepEqual(reasons[0].tried, ['mem://alice']);
+  assert.equal(bob.outbound.length, 0, 'nothing is kept for a standing never taken');
+  const granter = await signingPair(fixed(6));
+  assert.notEqual(alice.standing(granter.pk), null, 'the granter still holds, heir committed');
+  assert.equal(
+    hex(alice.standing(granter.pk).commitment),
+    hex(await commitment(alice.name.pk, invitation.heirPublic)),
+  );
+
+  delivery.attach('mem://alice', alice);
+  const [handle] = await bob.accept(invitation, { label: 'todo' });
+  assert.equal(await handle.add('milk'), true);
+});
+
+test('a handle that meets weather answers silence, tells the observer the road, and throws nothing', async () => {
+  // The handle keeps its shape — a value or `null` — because a being's code
+  // pushing into a subscriber that closed its tab is not in error. What
+  // changes is inward: the ground's own observer is told it was the road and
+  // not the door, and the handle does not go asking whether the being moved.
+  const { delivery, alice, bob, invitation } = await acrossTheRoad();
+  const [handle] = await bob.accept(invitation, { label: 'todo' });
+  const reasons = [];
+  bob.observe((why) => reasons.push(why.reason));
+  let tried = 0;
+  const send = delivery.send.bind(delivery);
+  delivery.send = (row, envelope) => {
+    tried += 1;
+    return send(row, envelope);
+  };
+  delivery.detach('mem://alice');
+
+  assert.equal(await handle.add('milk'), null);
+  assert.deepEqual(reasons, ['weather']);
+  assert.equal(tried, 1, 'no `moved` was asked on a road that just failed');
+  // The number is spent on this side alone, and the next ask rises past it.
+  delivery.attach('mem://alice', alice);
+  assert.equal(await handle.add('eggs'), true);
 });
 
 test('a fresh mark honours any number at or above one, so no door may require exactly one', async () => {

@@ -1,0 +1,212 @@
+{
+  "scenario": "inbound-untouched",
+  "law": "https://github.com/razvangherghina/quo/blob/main/constitution.md",
+  "encoding": "hex",
+  "about": "One door, two records, and a piece of news that may move exactly one of them. Nothing a vector holds could show it: the news is an ordinary believed succession whose bytes say nothing about the inbound record at all, and what is being asserted is that a door which heard it left a row alone.",
+  "stand": {
+    "warden": {
+      "nameSeed": "196982eee79e80efbc3131c93b99285a38c540c43e7e4fbb8399c260b1ce5103",
+      "padlockSeed": "7dbcdb3088339c02378f46525bff3fe2b84515973e28f5814301a99f386e20b1",
+      "heirSeed": "0303030303030303030303030303030303030303030303030303030303030303",
+      "heirCommitment": "83f960da653b61eb63f6b53b5d80adeb377e23e569f1c555395b9b119ad69603",
+      "limit": "1048576",
+      "hints": []
+    },
+    "beings": [
+      {
+        "seed": "0101010101010101010101010101010101010101010101010101010101010101",
+        "heirSeed": "0202020202020202020202020202020202020202020202020202020202020202",
+        "blueprint": "Counter\n  bump(by int) int\n  count() int\n",
+        "cells": ""
+      }
+    ],
+    "grants": [
+      {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "voiceSeed": "2ebd74bd564a8771fa628b28308c588588f5c0d0db17ae06b045b896d8218ad7",
+        "heirSeed": "7bae8096dc92d5f4e271742fd8db51abd563a8976c223dd734f1d2bdd553093c",
+        "padlock": null,
+        "hints": []
+      }
+    ],
+    "clock": [
+      "1000",
+      "1001",
+      "1002",
+      "1003",
+      "1004",
+      "1005",
+      "1006",
+      "1007",
+      "1008",
+      "1009",
+      "1010",
+      "1011",
+      "1012",
+      "1013",
+      "1014",
+      "1015",
+      "1016",
+      "1017",
+      "1018",
+      "1019",
+      "1020",
+      "1021",
+      "1022",
+      "1023",
+      "1024",
+      "1025",
+      "1026",
+      "1027",
+      "1028",
+      "1029",
+      "1030",
+      "1031",
+      "1032",
+      "1033",
+      "1034",
+      "1035",
+      "1036",
+      "1037",
+      "1038",
+      "1039"
+    ],
+    "random": [
+      "3232323232323232323232323232323232323232323232323232323232323232",
+      "3333333333333333333333333333333333333333333333333333333333333333",
+      "3434343434343434343434343434343434343434343434343434343434343434",
+      "3535353535353535353535353535353535353535353535353535353535353535",
+      "3636363636363636363636363636363636363636363636363636363636363636",
+      "3737373737373737373737373737373737373737373737373737373737373737",
+      "3838383838383838383838383838383838383838383838383838383838383838",
+      "3939393939393939393939393939393939393939393939393939393939393939",
+      "4040404040404040404040404040404040404040404040404040404040404040",
+      "4141414141414141414141414141414141414141414141414141414141414141",
+      "4242424242424242424242424242424242424242424242424242424242424242",
+      "4343434343434343434343434343434343434343434343434343434343434343"
+    ],
+    "relations": [
+      {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "warden": "4a72e4035bb435d0aa42d43b8873d9f07cb9bf476fe2ade0aba49983eebd425e",
+        "commitment": "4b2a2ad2b2f39fbcaee26cdbbd9259499f04af6eef7caac1991c3fd79244db94",
+        "padlock": "bb0109e1147cb2b716f9407f947b0c47a8c3c18ce00339dc02df47c54fd1e202",
+        "voiceSeed": "7777777777777777777777777777777777777777777777777777777777777777",
+        "heirSeed": "7878787878787878787878787878787878787878787878787878787878787878",
+        "hints": []
+      }
+    ]
+  },
+  "unruled": [],
+  "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+  "opening": {
+    "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+    "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+    "cells": "",
+    "standings": [
+      {
+        "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+        "commitment": "290d6caefb277537554cc8f48597206e9b5ca2975dc81dc4c8f66662570b4d64",
+        "name": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+        "beings": ["8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c"],
+        "mark": "0",
+        "spent": [],
+        "padlock": null,
+        "hints": []
+      }
+    ],
+    "relations": [
+      {
+        "warden": "4a72e4035bb435d0aa42d43b8873d9f07cb9bf476fe2ade0aba49983eebd425e",
+        "commitment": "4b2a2ad2b2f39fbcaee26cdbbd9259499f04af6eef7caac1991c3fd79244db94",
+        "padlock": "bb0109e1147cb2b716f9407f947b0c47a8c3c18ce00339dc02df47c54fd1e202",
+        "voice": "c853ad0f0cd2b619aea92ceec4fd56a24d6499d584ce79257e45cfd8139b60a7",
+        "heir": "ee31f83c88a71219a6fcf9bee0da9bc22620588f5a15a6145553504df9649e5c",
+        "seq": "0",
+        "news": "0",
+        "hints": []
+      }
+    ]
+  },
+  "beingCommitment": "ed4d580bb287b98674376c30d750d9926617873de8787e518c58c320d1899cbd",
+  "exchanges": [
+    {
+      "name": "a far house succeeds its name and the inbound record does not follow",
+      "law": "The news",
+      "obligations": ["XIV-15", "XIV-11", "XIV-5"],
+      "derivation": "The house this door holds a relation with succeeds its name, signed by the key it committed to, and the news is believed on the road Article XIV names: \"the successor signs and the peer hashes, and matching, the news is true.\" So \"**believed news rewrites the outbound row entire** — name, padlock, heir commitment, hints, one for one off the word's own fields\", and the assertion here is the other half of that sentence: \"**Nothing inbound follows**: an inbound row is keyed by a voice, and no voice's pk changes when a house succeeds its name — nor does the name a standing was minted under, which records this door's name at that moment and not the peer's.\" **The two records move in one exchange and only one of them moves.** A door that keyed anything inbound off a far house's name, or that re-derived a standing's `name` when it heard one change, shows it here — the relation is rewritten in the same breath, so a kit cannot pass this by ignoring the news.",
+      "seq": "1",
+      "voice": "af06a3e3291714e4f356c19c9b15cd1951ec6e6662aa77be07547f289383341d",
+      "expect": "59d9225473451efffe6b36dbcaefdbf7b1895de62084509a7f5b58bf01d064183d0e9f38364e65372817fc540a351551a7cad5c13b5594def61c92d544afecd572a652e3c1fdc5aa70a6d85e40ed3dac0cfeee74a3dacec65911862ee9e060cf581fdb4870147a2dc54d75476f7b4ef626f0076d48500beb026a4b0a2614267c40d6fd892c2e3fefd21ff71f8d6c0b3fe16e00d36762c93e838e",
+      "give": "3a96b114b664bfd77eab01d90c15446c3bf6538107e25295d309fd8fdf18445a73f4ed33ad43aac099cb6253169df9095cfa851c9b0c2c51d1d51c2ed655ce1fca6fdfdeb70ac37a1055921c485d3f731bab4277fff51e41d20ca82dce66fb4fee0dd38913863a52716f06e10be94aadf544c959c9e5bb3f24154383f8a564400ded5303f94440d197f5d1afa56ff0ef5a5020e2af9ee9672afc9e67d8ceec7d9da45ca2b772b1cf612c8a4e764b7db4f4cc060b4dbe6c5ab1ff3532c53a7c764a61f2326e0d2c640c5a9d4153d425ddfc6aa491787613a933c7c88bd870e6811247f64e235281a27e48ff07059bbadd0254051a9083edebb4f502ae1c57e331be9fde5c73b7690df98a9db815e89451e80305c4e69056edd6ad3c4d31f34563c3ea94ed989e8bde048382820b3f05110f1e4378f8005ca7717cf30e574de57dd27771421ea06ae2bb18e10b431c4e94e7ded22c3fb7e4d59371c2f3f35bc81f67caf916e1cc63d183823872d8a11bbddc22e21868822494fd2aad4fc60269e8007266e35fb42fe7f11c763bc349ded909c351021d2d109e5d30ad289e075f190246d6857a6d1ba0f83ccd00be918d363ce80f66e4",
+      "cargo": {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+        "cells": "",
+        "standings": [
+          {
+            "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+            "commitment": "290d6caefb277537554cc8f48597206e9b5ca2975dc81dc4c8f66662570b4d64",
+            "name": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+            "beings": ["8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c"],
+            "mark": "0",
+            "spent": [],
+            "padlock": null,
+            "hints": []
+          }
+        ],
+        "relations": [
+          {
+            "warden": "af06a3e3291714e4f356c19c9b15cd1951ec6e6662aa77be07547f289383341d",
+            "commitment": "6ff1ed2b0d7f6e446c479e019dfa7c15ecc807c251acf883c0700dd99baf67d1",
+            "padlock": "5a13b7a05e31ae998ad1307217981bb23bb17d277465829edd616e9169c8f46e",
+            "voice": "c853ad0f0cd2b619aea92ceec4fd56a24d6499d584ce79257e45cfd8139b60a7",
+            "heir": "ee31f83c88a71219a6fcf9bee0da9bc22620588f5a15a6145553504df9649e5c",
+            "seq": "0",
+            "news": "1",
+            "hints": ["tcp://moved.example:9000"]
+          }
+        ]
+      }
+    },
+    {
+      "name": "the holder still rotates afterwards, at the name its commitment was minted under",
+      "law": "The news",
+      "obligations": ["XIV-15", "XIV-7", "VII-6"],
+      "derivation": "**The consequence of the negative above, asked as a message rather than read off a record.** The standing was granted before the far house moved, and its heir commitment was hashed under this door's name — Article XIV: \"a door stores the name each was minted at — the `standing` record's `name`, travelling with the row — and keeps verifying it there.\" Nothing about the far house's succession touched that, so the rotation is judged exactly as it would have been before the news arrived: the heir's pk hashes with this door's name to the commitment the row holds, the standing changes hands, and the ask it carries is answered. **A door that had let the news reach inbound would refuse this**, and refuse it in silence, which is the shape of failure that leaves a holder with a standing it cannot use and nothing to read. The relation is asserted again underneath, unmoved by an ordinary ask, because the pair only means something while both records are being watched at once.",
+      "seq": "1",
+      "expect": "answered",
+      "voice": "afa0ce0919a81bf57861ac7139d8945a1fc2ba9f00e53a4f26f494c23f78338c",
+      "give": "0c72f81c6889393c84d560f14ffc5478dc74cc4067fb11c72624323217c058738dcb2713a0f9457e354788d5dd1aa0726ce72d237a8ced84823a16053675df4396c6006f8e79a48d43d067421d1d6c311364235af2d5b90feb28866c676409e960cd35294e489bfff7bb529f02224940392e7ccef26cd7e0af2a3dfe238077359cb3d1c8eb770fa6e5982f7045f395177aecd9932eb0b121b9fb18da71b574658e267bef60c3871f71030c378f621bad6563e59cdb5308535880b3f8c30a13fe9582c51f4b3598d323f14f62ab25280fc4b5e4c87ee3cc6f4704d3e405faaa2ab6b4e327592560e379032d8e57c5cc2685673b9ca94a27716ef50c755aadc73cd4bd7b65076b0233f640e22e184034157bf394bb",
+      "cargo": {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+        "cells": "",
+        "standings": [
+          {
+            "voice": "afa0ce0919a81bf57861ac7139d8945a1fc2ba9f00e53a4f26f494c23f78338c",
+            "commitment": "db264a809a1bd49a758fefaf59daa530e0235049dd311fd745f9ecd32674ff79",
+            "name": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+            "beings": ["8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c"],
+            "mark": "1",
+            "spent": [],
+            "padlock": "5a13b7a05e31ae998ad1307217981bb23bb17d277465829edd616e9169c8f46e",
+            "hints": []
+          }
+        ],
+        "relations": [
+          {
+            "warden": "af06a3e3291714e4f356c19c9b15cd1951ec6e6662aa77be07547f289383341d",
+            "commitment": "6ff1ed2b0d7f6e446c479e019dfa7c15ecc807c251acf883c0700dd99baf67d1",
+            "padlock": "5a13b7a05e31ae998ad1307217981bb23bb17d277465829edd616e9169c8f46e",
+            "voice": "c853ad0f0cd2b619aea92ceec4fd56a24d6499d584ce79257e45cfd8139b60a7",
+            "heir": "ee31f83c88a71219a6fcf9bee0da9bc22620588f5a15a6145553504df9649e5c",
+            "seq": "0",
+            "news": "1",
+            "hints": ["tcp://moved.example:9000"]
+          }
+        ]
+      }
+    }
+  ]
+}

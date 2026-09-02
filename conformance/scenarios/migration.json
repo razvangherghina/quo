@@ -1,0 +1,279 @@
+{
+  "scenario": "migration",
+  "law": "https://github.com/razvangherghina/quo/blob/main/constitution.md",
+  "encoding": "hex",
+  "about": "A being arriving at a house that was told to expect it, and the peer whose standing came with it. The cargo is written from Article IX rather than taken from any kit, so a destination that agrees with it agrees with the law rather than with our own packer. What the corpus cannot hold is the whole of it: the two calls after the arrival are the same bytes but for their number, and only a window that travelled tells them apart.",
+  "stand": {
+    "warden": {
+      "nameSeed": "196982eee79e80efbc3131c93b99285a38c540c43e7e4fbb8399c260b1ce5103",
+      "padlockSeed": "7dbcdb3088339c02378f46525bff3fe2b84515973e28f5814301a99f386e20b1",
+      "heirSeed": "0303030303030303030303030303030303030303030303030303030303030303",
+      "heirCommitment": "83f960da653b61eb63f6b53b5d80adeb377e23e569f1c555395b9b119ad69603",
+      "limit": "1048576",
+      "hints": ["tcp://here.example:9000"]
+    },
+    "beings": [
+      {
+        "seed": "0101010101010101010101010101010101010101010101010101010101010101",
+        "heirSeed": "0202020202020202020202020202020202020202020202020202020202020202",
+        "blueprint": "Counter\n  bump(by int) int\n  count() int\n",
+        "cells": ""
+      }
+    ],
+    "grants": [
+      {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "voiceSeed": "2ebd74bd564a8771fa628b28308c588588f5c0d0db17ae06b045b896d8218ad7",
+        "heirSeed": "7bae8096dc92d5f4e271742fd8db51abd563a8976c223dd734f1d2bdd553093c",
+        "padlock": null,
+        "hints": []
+      }
+    ],
+    "expecting": {
+      "seed": "7070707070707070707070707070707070707070707070707070707070707070",
+      "heirSeed": "7171717171717171717171717171717171717171717171717171717171717171",
+      "blueprint": "Counter\n  bump(by int) int\n  count() int\n",
+      "cells": ""
+    },
+    "clock": [
+      "1000",
+      "1001",
+      "1002",
+      "1003",
+      "1004",
+      "1005",
+      "1006",
+      "1007",
+      "1008",
+      "1009",
+      "1010",
+      "1011",
+      "1012",
+      "1013",
+      "1014",
+      "1015",
+      "1016",
+      "1017",
+      "1018",
+      "1019",
+      "1020",
+      "1021",
+      "1022",
+      "1023",
+      "1024",
+      "1025",
+      "1026",
+      "1027",
+      "1028",
+      "1029",
+      "1030",
+      "1031",
+      "1032",
+      "1033",
+      "1034",
+      "1035",
+      "1036",
+      "1037",
+      "1038",
+      "1039"
+    ],
+    "random": [
+      "3232323232323232323232323232323232323232323232323232323232323232",
+      "3333333333333333333333333333333333333333333333333333333333333333",
+      "3434343434343434343434343434343434343434343434343434343434343434",
+      "3535353535353535353535353535353535353535353535353535353535353535",
+      "3636363636363636363636363636363636363636363636363636363636363636",
+      "3737373737373737373737373737373737373737373737373737373737373737",
+      "3838383838383838383838383838383838383838383838383838383838383838",
+      "3939393939393939393939393939393939393939393939393939393939393939",
+      "4040404040404040404040404040404040404040404040404040404040404040",
+      "4141414141414141414141414141414141414141414141414141414141414141",
+      "4242424242424242424242424242424242424242424242424242424242424242",
+      "4343434343434343434343434343434343434343434343434343434343434343"
+    ]
+  },
+  "unruled": [],
+  "being": "19204c8c3ba85ba059cd18ac9017bd02a18da5d10c68fb779a34be43ef067791",
+  "opening": null,
+  "beingCommitment": "ed4d580bb287b98674376c30d750d9926617873de8787e518c58c320d1899cbd",
+  "exchanges": [
+    {
+      "name": "a cargo arrives, and the answer commits to the name the destination minted",
+      "law": "Rotation",
+      "obligations": [
+        "XIII-3",
+        "XIII-5",
+        "XIII-6",
+        "XIII-7",
+        "IX-6",
+        "XIV-7",
+        "IX-2",
+        "IX-8",
+        "XIII-9"
+      ],
+      "derivation": "A `receive` carrying one `cargo`, spent by an ordinary standing this door granted in advance — Article IX: \"an ordinary field spent by an ordinary standing granted in advance.\" The cargo names a class by digest and never carries its text: \"`receive` carries a digest, never the blueprint's text, and the digest identifies rather than delivers.\" This door already runs that class, so it may take the being in. **The answer is pinned, and it is the second rotation**: Article XIII calls migration \"a double rotation: to the committed heir, then immediately to a key the destination warden generated and the origin never saw\", and Article IX says which of the two keys a destination mints the commitment is of — \"the one the being is named by and that one's heir — and the commitment is of the first\", hashed under the destination's own name. So the answer is that hash and nothing else. What arrived is asserted whole: the replay record with the mark and the numbers already spent beneath it, the outbound row with both of its counters and both of the voice's keys — \"the voice's keys means both of them\" — and the standing's `name`, still the origin's, because \"every heir commitment was hashed under the name the door had then\" and a row that forgot it could never verify an older commitment again. **That field is IX-2 and this is the only place in the suite it can fail**: at every other door the name a commitment was minted under is that door's own name, so keeping it and re-deriving it are the same answer and no case could separate them. Here the arriving row's name is the origin house's and the door reading it is the destination — two different keys — so a door that stamped its own name on what arrived, which is the tidier-looking thing to do, would show its name here and be caught.",
+      "seq": "1",
+      "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+      "expect": "59d9225473451efffe6b36dbcaefdbf7b1895de62084509a7f5b58bf01d064183d0e9f38364e65372817fc540a351551a7cad5c13b5594def61c92d544afecd572a652e3c1fdc5aa70a7624ece29b926dea95fc25231387d80dc254db4975d3e9f2a07f53ba236e93e934b43fd0dc1d26cd237f926faa5937ecfa0ce60a6e6a0c867c5e7b0f7d81315c1632fc8750974dc80b79bb6c4018c4bba147cdfdb6cbbf5d0bb575ec2cfea3913ec184faff3c0380d263ab763449ccbcb5f93ac1260cfc0a4",
+      "give": "9177b23278cbf0f3d17c36f2acc9b55e9c85f87b220a5386ec370d663e20e337d10151e3820e8d3946b0fe887fa828030b0937d85c8c87e5a87cce1bb32802be4419717b62f70c9436ebbe26547f4a00bfb49a522dcfcd0907d544e3cfdd49afd379b1d29e76dc2ca29369fc3bb36412ef76d7174f2e13030e2cf49195e547462afbda11573e858db8a541dbd9d6a085b07f30c78a2315b2b1d97ce12b5d33e6d0bc12a59fbe63b5a876253ffd3e91fc005419ba8eeebdd52b3c48ae1e0aa4e0bfa28f88b5a9d1bb0e4b1d1b1886e120e9798ab87cbc564be8c0633a3df80db0bda564a109f300723d349ea8cb3574c36c99ce6f9a9b30a55cfc508ba36ccb7db911998f840bc0446387248c8c0b47ff4ed2de0a02a856ea2b84186ff767679e7b2e8be27c9ae5899276606bab6f9534374ac0cef123ed0e327edf6caf126576eb5b5c610745e1c56d24f424732bc7de72943050f771ac645c279a6d06f558e728108e5f281ace17a94d71d1ea59690173918b9aaee9e9a9cec1b7bc49aed054441110ab0909166187b728c2a04becb7bdf4861c85fc3a7c00f730b776a1e346e72ec0e4304de5aff6b552dc67d445c98531196e004713974f42dd802852d6f52449810fbb211caee325597f0a07b8cfeb758804249958884271a7cd4f79093a97e23f4de441c70e287ffd09713ca70218171629941a09cdb30beeef828a40ec425621193f021d33b214787f5ff487d3273c11da5fda289d8493c456ad4d80e1b238c791231768c680d1d0d8910d30463cb12bba5d3aec8b6598ac3f8ae4fb68f3ae466b8b5da5e9eaca044e3c0031d21ed9d15bf782cd88e63a7db8e79af826e77b27753d342b422e63f35689f42c745e399cfb543b1f9263ba8e90cb46b6c9582a46ccff9933830037bb2d84297636bafbd6af2dd1bec0ee6d728199bdfe808d96278711ee65d70380fcf81c82fe056eeaebb19cfa07b999ca875a2990c339542792efb8558a981e42fee8612640545395373c8427f4c2f2fc8e69dc63413f4703fabd12f7a6786eb82d6768bf0271454729d907ee07f1279459463f4f6336723c7553d6bfebe78afda73d348c99ee23b2d461496ec046089fd27fad3210b0c297407c70113f5f604292e1db0c329ea62c3c7a70fd8ce0c716fdf4255768d0e1db39db6f6d5d33b528",
+      "cargo": {
+        "being": "19204c8c3ba85ba059cd18ac9017bd02a18da5d10c68fb779a34be43ef067791",
+        "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+        "cells": "",
+        "standings": [
+          {
+            "voice": "fec1428673f6afe89264b3807344ae8b269d125a503855202687db5a7128579f",
+            "commitment": "64b63cedf607ed31a15415874032c67d6c91ba76d771581ae22689e5c8633a98",
+            "name": "2c9b9a42d57adffd50e6eb1da543de93ad97d36d976d2a2b9735e7142f3fb859",
+            "beings": ["19204c8c3ba85ba059cd18ac9017bd02a18da5d10c68fb779a34be43ef067791"],
+            "mark": "9",
+            "spent": ["7", "8"],
+            "padlock": "5a13b7a05e31ae998ad1307217981bb23bb17d277465829edd616e9169c8f46e",
+            "hints": []
+          }
+        ],
+        "relations": [
+          {
+            "warden": "b5f90095318f3f044cd8e40b584253d86777be62bf07221334e5fd2199cfa7f7",
+            "commitment": "ef478e0fc5e09847cf07b8e96dbe077b0f0291c3c053d14a91e6a99ff152e8e9",
+            "padlock": "bb0109e1147cb2b716f9407f947b0c47a8c3c18ce00339dc02df47c54fd1e202",
+            "voice": "c853ad0f0cd2b619aea92ceec4fd56a24d6499d584ce79257e45cfd8139b60a7",
+            "heir": "ee31f83c88a71219a6fcf9bee0da9bc22620588f5a15a6145553504df9649e5c",
+            "seq": "4",
+            "news": "2",
+            "hints": ["tcp://far.example:9000"]
+          }
+        ]
+      }
+    },
+    {
+      "name": "a number spent at the house it left is silence here",
+      "law": "Rotation",
+      "obligations": ["XIII-5"],
+      "derivation": "The peer whose standing travelled with the being calls the new door, on a number it already spent at the old one. Article XIII: the replay record travels whole, \"the mark and the spent numbers beneath it, the cargo's `spent [int]`, or a caller's late-arriving in-window numbers would be judged at the new door by a window it cannot see.\" Eight is beneath the mark of nine that arrived and is in the list of numbers already honoured, so Article VIII refuses it: \"inside the window is honoured once and never again.\" A destination that took the standing but dropped the window would honour this and answer, which is the whole harm the sentence names. It carries no being and no method, so the route is a describe and the answer would be an ordinary one — what separates the two outcomes is the window and nothing else.",
+      "seq": "8",
+      "expect": "silence",
+      "voice": "fec1428673f6afe89264b3807344ae8b269d125a503855202687db5a7128579f",
+      "give": "51c76caf97b8a36e21513eab8b23a1a90126ddf9823deee64c8ffb2954fd497531fb9b49c005ac9f11cd765993947dce5046c58cae425702aee2f1215e3bd02fbbdb7c8609197bbe8e87e7b11a226e62a70baf694e07ab1f9e40747980c6128beed72f3f9d5196b4859eeade8c794c7bd77b59e6d093cdecd179113083d16971a44ee5dd03aa1345758d48390002840c8c5a06123f57b42050d4a76e800b3eaf8ee39aff72378343cd24bcfbef3093557bd9e54ca2d46505c3dd08b33c48ab085d5bc37f2faacd68bcacf9c67a7e554ae67f6793a257acbb76aaace5899f5177b1831c0375d2be396a9dd3973e49a248a2fbaa58",
+      "cargo": {
+        "being": "19204c8c3ba85ba059cd18ac9017bd02a18da5d10c68fb779a34be43ef067791",
+        "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+        "cells": "",
+        "standings": [
+          {
+            "voice": "fec1428673f6afe89264b3807344ae8b269d125a503855202687db5a7128579f",
+            "commitment": "64b63cedf607ed31a15415874032c67d6c91ba76d771581ae22689e5c8633a98",
+            "name": "2c9b9a42d57adffd50e6eb1da543de93ad97d36d976d2a2b9735e7142f3fb859",
+            "beings": ["19204c8c3ba85ba059cd18ac9017bd02a18da5d10c68fb779a34be43ef067791"],
+            "mark": "9",
+            "spent": ["7", "8"],
+            "padlock": "5a13b7a05e31ae998ad1307217981bb23bb17d277465829edd616e9169c8f46e",
+            "hints": []
+          }
+        ],
+        "relations": [
+          {
+            "warden": "b5f90095318f3f044cd8e40b584253d86777be62bf07221334e5fd2199cfa7f7",
+            "commitment": "ef478e0fc5e09847cf07b8e96dbe077b0f0291c3c053d14a91e6a99ff152e8e9",
+            "padlock": "bb0109e1147cb2b716f9407f947b0c47a8c3c18ce00339dc02df47c54fd1e202",
+            "voice": "c853ad0f0cd2b619aea92ceec4fd56a24d6499d584ce79257e45cfd8139b60a7",
+            "heir": "ee31f83c88a71219a6fcf9bee0da9bc22620588f5a15a6145553504df9649e5c",
+            "seq": "4",
+            "news": "2",
+            "hints": ["tcp://far.example:9000"]
+          }
+        ]
+      }
+    },
+    {
+      "name": "a number above the mark it arrived with is honoured",
+      "law": "Rotation",
+      "obligations": ["XIII-5", "VIII-2"],
+      "derivation": "The same peer, on a number above the mark that travelled. Ten stands above the nine the cargo carried, so Article VIII honours it — \"above the mark is honoured and moves the mark\" — and the standing that arrived is a standing that works. This is the other half of the exchange above and is why the pair is written rather than the refusal alone: a door that refused everything from this peer would pass the refusal case and fail here, and a door that honoured everything would pass here and fail there. Neither outcome is reachable by accident.",
+      "seq": "10",
+      "expect": "answered",
+      "voice": "fec1428673f6afe89264b3807344ae8b269d125a503855202687db5a7128579f",
+      "give": "2fdfe0bc09a91e01f740bef7e6622bf4d8837a0a8fc862469491bd80a1e6c35a51b61b0afe27f6360125393496cf52ae63dd1bdf744a9301b3af96df17765c0fbd3715e73ed915f0a60f4143623a005c7e88ae6249b370522eb16d478ee0e80d63f9ff9edf6f975fd1a29fe05ed971c829bc0a377e00d2ba51a3cd786e8a7ff348d3b821e79943b9fbf65a3d7ba22e660e138e46044ea6a655576398fa857b79e5e3aa26be5a58e94b115c422f5bb1b963af94dd0b13300a8c9a518b566ea07255793865dd143842256686af483d9358a4ce6905839793fdcdfa5b1fd392a77315865981d04ec3fe03e5140b28bca342e6479107",
+      "cargo": {
+        "being": "19204c8c3ba85ba059cd18ac9017bd02a18da5d10c68fb779a34be43ef067791",
+        "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+        "cells": "",
+        "standings": [
+          {
+            "voice": "fec1428673f6afe89264b3807344ae8b269d125a503855202687db5a7128579f",
+            "commitment": "64b63cedf607ed31a15415874032c67d6c91ba76d771581ae22689e5c8633a98",
+            "name": "2c9b9a42d57adffd50e6eb1da543de93ad97d36d976d2a2b9735e7142f3fb859",
+            "beings": ["19204c8c3ba85ba059cd18ac9017bd02a18da5d10c68fb779a34be43ef067791"],
+            "mark": "10",
+            "spent": ["7", "8", "9"],
+            "padlock": "5a13b7a05e31ae998ad1307217981bb23bb17d277465829edd616e9169c8f46e",
+            "hints": []
+          }
+        ],
+        "relations": [
+          {
+            "warden": "b5f90095318f3f044cd8e40b584253d86777be62bf07221334e5fd2199cfa7f7",
+            "commitment": "ef478e0fc5e09847cf07b8e96dbe077b0f0291c3c053d14a91e6a99ff152e8e9",
+            "padlock": "bb0109e1147cb2b716f9407f947b0c47a8c3c18ce00339dc02df47c54fd1e202",
+            "voice": "c853ad0f0cd2b619aea92ceec4fd56a24d6499d584ce79257e45cfd8139b60a7",
+            "heir": "ee31f83c88a71219a6fcf9bee0da9bc22620588f5a15a6145553504df9649e5c",
+            "seq": "4",
+            "news": "2",
+            "hints": ["tcp://far.example:9000"]
+          }
+        ]
+      }
+    },
+    {
+      "name": "the new house sends the second of the two news",
+      "law": "The news",
+      "obligations": ["XIV-13", "XIV-11", "XIV-12"],
+      "derivation": "Article XIV: \"Migration is that message sent twice. First the origin's committed heir ... **Then the key the destination generated, sent by the new house itself.**\" **This is the second, and the departure scenario drives the first**; neither cites XIV-13 alone, because a case showing one message while citing an article about two would be claiming twice what it had shown once. Nothing crosses inward: the door composes what it owes the peer that arrived with the standings. **The word is a succession of the being to the key this door minted** — which is the key the peer can believe it from, because the commitment the first news carried was the hash of exactly this key, and Article XIV gives no other road: \"the successor signs and the peer hashes, and matching, the news is true.\" The being it names is the name the being wore at the house it left, because that is the name the peer still knows it by. **It carries the name, padlock and hints of this house** — Article XIV: \"Either may carry the new name and hints when where-it-answers has changed\", and for a migration it always has — so the peer rewrites its outbound row entire off the word's own fields. **The hints are this door's own roads and are not empty**, which is what makes XIV-12 assertable here: an empty list would have meant the road did not change, and for a being that has moved house that is the one thing that cannot be true. A door that sent the second news signed by its own name rather than the being's new key composes bytes no peer can believe, and misses this pin.",
+      "do": "landed",
+      "hints": ["tcp://here.example:9000"],
+      "news": [
+        {
+          "ephemeral": "8c8c8c8c8c8c8c8c8c8c8c8c8c8c8c8c8c8c8c8c8c8c8c8c8c8c8c8c8c8c8c8c",
+          "seq": "1",
+          "allowance": {
+            "time": "5000",
+            "hops": "4"
+          }
+        }
+      ],
+      "expect": "done",
+      "told": [
+        "93fe99923d25cd9024db4f5c76919ce125a05a56f2456f364945b61f5d8d4b61d153c0cb15f1db9846a2567477711720746cfab9f5a94b4b989e33eab43994952df6410617c81f3ffb63c0bfc10d1ed1b3d8b758622afa94b6dbc0246c59c3abb1796d6b41c1d02c1068557b4ac16f3a26ccab62f4906b7f5288d3d9a5dd7e2bd8f62d9e702b81c67addb4fb55562ef5480908c05eb51962d25212f969f53014f02710ea8aa780825e2f68fe5dfd34c1aadbb3a6a7c2b18f562ecdaf3aa7657196bef14d043204c5c8f5f73e94a9a84692ff468f975a693ba1c370297d7c0a07491d5fade37d3e3f0b70fd64c73e4b13549f8f5d89026c8e3f12a3351ad174ea31713e47c7116041dd1ac0d3ff0ca34a461c7fcef651572e1617f6c833c9fe0818282ad6cd107a03ba8c831779466989dcec72c107a391d937c879bd740e71a711f922dcf21ac8af58527fd493edbc40aef92b0fac52416da87726985c40e3ea5f0c9ca930153d783e4fe26d10ccba188a238f034b31f7ae2dfc21b1e1fa3736dd6ee7e5454284e05c826038184339d05c6e6bbd573900b100c5aca229fb1b63b44f09480cc1a3247875c71b8d464f6a65e337a8a05c41258118af647fc0b77aeda957988e3c68f303d9dcd36286894dda9072a24966deaebfad59ac58385dfd80b6dd9aae4ac0618495ee2fa530ea182804d0"
+      ],
+      "cargo": {
+        "being": "19204c8c3ba85ba059cd18ac9017bd02a18da5d10c68fb779a34be43ef067791",
+        "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+        "cells": "",
+        "standings": [
+          {
+            "voice": "fec1428673f6afe89264b3807344ae8b269d125a503855202687db5a7128579f",
+            "commitment": "64b63cedf607ed31a15415874032c67d6c91ba76d771581ae22689e5c8633a98",
+            "name": "2c9b9a42d57adffd50e6eb1da543de93ad97d36d976d2a2b9735e7142f3fb859",
+            "beings": ["19204c8c3ba85ba059cd18ac9017bd02a18da5d10c68fb779a34be43ef067791"],
+            "mark": "10",
+            "spent": ["7", "8", "9"],
+            "padlock": "5a13b7a05e31ae998ad1307217981bb23bb17d277465829edd616e9169c8f46e",
+            "hints": []
+          }
+        ],
+        "relations": [
+          {
+            "warden": "b5f90095318f3f044cd8e40b584253d86777be62bf07221334e5fd2199cfa7f7",
+            "commitment": "ef478e0fc5e09847cf07b8e96dbe077b0f0291c3c053d14a91e6a99ff152e8e9",
+            "padlock": "bb0109e1147cb2b716f9407f947b0c47a8c3c18ce00339dc02df47c54fd1e202",
+            "voice": "c853ad0f0cd2b619aea92ceec4fd56a24d6499d584ce79257e45cfd8139b60a7",
+            "heir": "ee31f83c88a71219a6fcf9bee0da9bc22620588f5a15a6145553504df9649e5c",
+            "seq": "4",
+            "news": "2",
+            "hints": ["tcp://far.example:9000"]
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -8,8 +8,10 @@
 // Delivery has three rules and no more. A row with hints: the first road this
 // ground can speak that carried. A row without hints, or none it can speak:
 // the line that padlock's last ask arrived on, if still held. Neither:
-// weather, and the number was spent.
+// weather if a road was tried and broke, no road if none could be, both
+// thrown apart, and the number was spent on this side alone.
 import { Warden } from './warden.js';
+import { NoRoad, Weather } from './refusal.js';
 import { hex } from './bytes.js';
 import { post } from './carriage.js';
 import { serve } from './door.js';
@@ -63,29 +65,42 @@ export async function host({
       if (via?.onClose) keep(via, hex(padlock), byPadlock);
     },
     async send(row, envelope) {
+      // A hint of a scheme this host cannot speak is walked past and never
+      // counted: nothing was sent down it, so it is not a road that failed.
+      const tried = [];
+      let last;
       for (const hint of row.hints) {
         try {
           if (hint.startsWith('mem://')) {
+            tried.push(hint);
             const far = memory.get(hint);
             if (!far) continue;
             return await far.arrive(envelope);
           }
           if (hint.startsWith('http://') || hint.startsWith('https://')) {
+            tried.push(hint);
             return await post(hint, envelope);
           }
           if (hint.startsWith('tcp://') || hint.startsWith('wss://')) {
+            tried.push(hint);
             const line = await dial(hint);
             if (!line) continue;
-            // The answer arrives as a frame of its own, through the door.
-            return line.carry(envelope) ? false : null;
+            // The answer arrives as a frame of its own, through the door. A
+            // line that would not take the frame carried nothing.
+            if (line.carry(envelope)) return false;
           }
-        } catch {
+        } catch (error) {
           // Weather on this road; the next may carry.
+          last = error;
         }
       }
       const back = byPadlock.get(hex(row.padlock));
-      if (back?.open) return back.carry(envelope) ? false : null;
-      return null;
+      if (back?.open) {
+        tried.push('the line this padlock last asked on');
+        if (back.carry(envelope)) return false;
+      }
+      if (tried.length === 0) throw new NoRoad(row.hints);
+      throw new Weather(tried, last);
     },
   };
 

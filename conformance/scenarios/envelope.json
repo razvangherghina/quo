@@ -1,0 +1,308 @@
+{
+  "scenario": "envelope",
+  "law": "https://github.com/razvangherghina/quo/blob/main/constitution.md",
+  "encoding": "hex",
+  "about": "Article XI, which is the article a pinned corpus comes closest to covering and still cannot. The corpus holds what a well-formed envelope looks like; this article is mostly about what a door does with one that is not — a record under the wrong byte, a byte that names no record, a field carried where it does not belong — and a refusal has no bytes to pin. Every message here is one no conforming kit would ever send, which is why the scenario builds its bytes by hand rather than asking a kit to compose them.",
+  "stand": {
+    "warden": {
+      "nameSeed": "196982eee79e80efbc3131c93b99285a38c540c43e7e4fbb8399c260b1ce5103",
+      "padlockSeed": "7dbcdb3088339c02378f46525bff3fe2b84515973e28f5814301a99f386e20b1",
+      "heirSeed": "0303030303030303030303030303030303030303030303030303030303030303",
+      "heirCommitment": "83f960da653b61eb63f6b53b5d80adeb377e23e569f1c555395b9b119ad69603",
+      "limit": "1048576",
+      "hints": []
+    },
+    "beings": [
+      {
+        "seed": "0101010101010101010101010101010101010101010101010101010101010101",
+        "heirSeed": "0202020202020202020202020202020202020202020202020202020202020202",
+        "blueprint": "Counter\n  bump(by int) int\n  count() int\n",
+        "cells": ""
+      }
+    ],
+    "grants": [
+      {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "voiceSeed": "2ebd74bd564a8771fa628b28308c588588f5c0d0db17ae06b045b896d8218ad7",
+        "heirSeed": "7bae8096dc92d5f4e271742fd8db51abd563a8976c223dd734f1d2bdd553093c",
+        "padlock": null,
+        "hints": []
+      }
+    ],
+    "clock": [
+      "1000",
+      "1001",
+      "1002",
+      "1003",
+      "1004",
+      "1005",
+      "1006",
+      "1007",
+      "1008",
+      "1009",
+      "1010",
+      "1011",
+      "1012",
+      "1013",
+      "1014",
+      "1015",
+      "1016",
+      "1017",
+      "1018",
+      "1019",
+      "1020",
+      "1021",
+      "1022",
+      "1023",
+      "1024",
+      "1025",
+      "1026",
+      "1027",
+      "1028",
+      "1029",
+      "1030",
+      "1031",
+      "1032",
+      "1033",
+      "1034",
+      "1035",
+      "1036",
+      "1037",
+      "1038",
+      "1039"
+    ],
+    "random": [
+      "3232323232323232323232323232323232323232323232323232323232323232",
+      "3333333333333333333333333333333333333333333333333333333333333333",
+      "3434343434343434343434343434343434343434343434343434343434343434",
+      "3535353535353535353535353535353535353535353535353535353535353535",
+      "3636363636363636363636363636363636363636363636363636363636363636",
+      "3737373737373737373737373737373737373737373737373737373737373737",
+      "3838383838383838383838383838383838383838383838383838383838383838",
+      "3939393939393939393939393939393939393939393939393939393939393939",
+      "4040404040404040404040404040404040404040404040404040404040404040",
+      "4141414141414141414141414141414141414141414141414141414141414141",
+      "4242424242424242424242424242424242424242424242424242424242424242",
+      "4343434343434343434343434343434343434343434343434343434343434343"
+    ]
+  },
+  "unruled": [],
+  "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+  "opening": {
+    "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+    "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+    "cells": "",
+    "standings": [
+      {
+        "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+        "commitment": "290d6caefb277537554cc8f48597206e9b5ca2975dc81dc4c8f66662570b4d64",
+        "name": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+        "beings": ["8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c"],
+        "mark": "0",
+        "spent": [],
+        "padlock": null,
+        "hints": []
+      }
+    ],
+    "relations": []
+  },
+  "beingCommitment": "ed4d580bb287b98674376c30d750d9926617873de8787e518c58c320d1899cbd",
+  "exchanges": [
+    {
+      "name": "a first answer, and the key it was sealed with",
+      "law": "The envelope",
+      "obligations": ["XI-3"],
+      "derivation": "An ordinary describe, answered. The pinned bytes carry the ephemeral key this door drew to seal with, and Article XI fixes what that key must be: \"an ephemeral public key and then one ciphertext ... fresh on every message, belonging to no one, **never reused**, naming neither the sender nor the sender's house.\" **This exchange and the next are one case.** A single sealed answer can show nothing about reuse — reuse is a relation between two messages — so the claim is carried by the pair, and it is the second one that can fail.",
+      "seq": "1",
+      "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+      "expect": "59d9225473451efffe6b36dbcaefdbf7b1895de62084509a7f5b58bf01d064183d0e9f38364e65372817fc540a351551a7cad5c13b5594def61c92d544afecd572a652e3c1fdc5aa70a7624ece29b926de511f4f09cbc1a64ecef462469a0fa6762abd1b178f8c304f9afb50ad850c3a19b73695575f041ff6dfd6886586fbb5d15306dc065899463987f3ae1df8254e9f348f6fec9ff46be5f32c8f6624ca803022d2289e2528e9d72f1d4d7c2b09485f9d2f08d4365c4879624a24e3c817256be3870664c7e4b338a0574f23b088805349556c0ea7f30624d23ff3558ddfe0db140d38dfdc93c462460b5887db3f994cee24dab5633205988e0f10564c256925e7fa15887c5ae2c18e145ff47cc04a483f4a8b5681d5ad14aa898c7c67b50b5c77d3b536f91851a39138adb61f411ee3a2d826dc49651b2e9aee9b80c3341bf47ba1a3d355d603f7180b5c60b52cf7eab58f70df26e986204b9dc456b0e04a104934854c6af7b5fef0973530aa58fec8b9bcf346288f0ce0c7",
+      "give": "94e9c71ccacddd2c6fbf529e263f0d39baf0fed469de0d227d24ad81a4394b70c4f8b7343c368354d3c48d81c0d4cc2cb39289ab14f43611a02bfad9bb689245fdfdaaf239dc043908788a8350d2d12ef184fa4fe8b53eb842310a8e62ccb679103529e6936c9252caaca919cb37c18c29c9a5c2b60f7e9fe16f6b9312a373aaffa8708774ea4dc5c1462ef8e59a6bbe6d51bea5cc5a112fbbdc588c49e8f170377125cc6cdb694c1ea22afc3348b76cfde3f421fd5abd9e0028c3e62136451c25f7e15817b68120ead78ead7ce03fb0afe7100c2e108d7f38503f49d6e1e2032508c6621a09a5d2d5c0dc8f2db1dd5c1fc2e30e",
+      "cargo": {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+        "cells": "",
+        "standings": [
+          {
+            "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+            "commitment": "290d6caefb277537554cc8f48597206e9b5ca2975dc81dc4c8f66662570b4d64",
+            "name": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+            "beings": ["8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c"],
+            "mark": "1",
+            "spent": [],
+            "padlock": "5a13b7a05e31ae998ad1307217981bb23bb17d277465829edd616e9169c8f46e",
+            "hints": []
+          }
+        ],
+        "relations": []
+      }
+    },
+    {
+      "name": "a second answer is sealed with a key the first did not use",
+      "law": "The envelope",
+      "obligations": ["XI-3", "II-5"],
+      "derivation": "The same ask a number later, answered with the same estate. **The two answers differ in their seq and in the key they are sealed with, and nothing else** — so a door that kept its first ephemeral key and sealed again with it would produce a different ciphertext from the one pinned here and fail on the wire. That is the whole of what \"never reused\" can be held to from outside: which key a door draws is its own affair, and Article XI constrains only that it is not the last one. The scenario hands the randomness in as a queue, which Article II allows — \"the clock and the randomness are handed in\" — so what is pinned is a door drawing the next value rather than a door inventing one.",
+      "seq": "2",
+      "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+      "expect": "7b0d47d93427f8311160781c7c733fd89f88970aef490d8aa0ee19a4cb8a1b141de533a27dac95ea8ebaa25c119637b3ce050c8fab1ca44eb58f036c519cd6f58a0a77680e1d70c247fd00df036d1a5069424e12690e0aef2132be12f69b5631232bd97bcc4265ee6ccb5bf6904336b03543945a3a52e18c11b93e7dc3e183902beda45fdcdf6943efb6f3ca837b23cbf2e49aaa551a488c5b4bc93391d1c27eb9cd10fac694dbcf9118672fb99d1ac3585113a705cdef154b4f8b2159874ab4030e332f0b4cc385a2645d2739f191f60a0e5b99c21d4d878d9f4626b4a38245fd4a9c9ecee1ff03a0d0af30068e05cbfdf02670fe12cf48b6183f8a8bdc2b3c1844992d2fb11df4bbdb87aac1dd813ab6ab3a952f9c580a07d604beed0c657ca23cf1c5d2a7c9f0c90d72fe5069f8035515d8acb5de546610a216661beafc4afd665cee67a055a7f3efba41b71b8687bd3b1f3574aa0b9b32cfea45a20a9e610f147faf8efe8e04faeb6774b16862de4b20a6ea8ade5c89534d",
+      "give": "38ab664bd86f77d7e66bdd9ae0792913a94fd8b33a1260027e4b46c1f4884c678b2aec99aec4c2c64ea7db5ba1dae9186ee485e7b42de803f9b6a85b24184cefccd6104c1a5142b79fd6eb09f3a787c1b540c47c6a6900641775e4af14475e18a73c6e95b1d2cf43c042ff35c4d66933704a4a0b704a00aa9654c3fa76d3d30a6ede9a9876d567f5c8bee9e227da6ac17c2dd1505f52b943a912b67eba986fce69195b23eeb17ee9be1acff99f69d8ba120b7274142a5fd52d78b6edc3f0720da33d88c60b8e1c4b77fc8727ce4afda80a80a8721820e01d794b38473318c3ffde60cd75176267f4c525eab6f77dc95f978b106e",
+      "cargo": {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+        "cells": "",
+        "standings": [
+          {
+            "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+            "commitment": "290d6caefb277537554cc8f48597206e9b5ca2975dc81dc4c8f66662570b4d64",
+            "name": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+            "beings": ["8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c"],
+            "mark": "2",
+            "spent": ["1"],
+            "padlock": "5a13b7a05e31ae998ad1307217981bb23bb17d277465829edd616e9169c8f46e",
+            "hints": []
+          }
+        ],
+        "relations": []
+      }
+    },
+    {
+      "name": "a first byte that names no record is silence, and touches nothing",
+      "law": "The envelope",
+      "obligations": ["XI-2"],
+      "derivation": "The identical `say` of the exchange above, correctly signed and correctly sealed to this door, put under a first byte of two. Article XI names the two bytes it knows — \"zero for a `say`, one for an `answer`\" — and then rules on every other: \"**Any other first byte is silence**, and a record presented under the wrong byte is silence too.\" Article XII puts the byte in step 1, where \"the leading byte ... at a door must say `say`\", which is before the signature is verified and long before the voice is placed. **So nothing is spent**: the mark stands where the last exchange left it, and a door that decoded first and judged the byte afterwards would have moved it to 3.",
+      "seq": "3",
+      "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+      "expect": "silence",
+      "give": "dccf9fc001b345c77474e76e1021bde04f7ea0ed8ee61f7f6f1a4e47a5af2f549832a9c5a28612fd69da974bd5e695077cd72f45e548728df68a0b9e3eb9e08b890fe6869ef25311c91bd8509c0673dbdd389073a1900c1dbe49ec0a20de4537ec5f9f134961adf8823e5b52fdaa93f357435c548234a7f297925eb189ac64a13c31cf3d94fdc090dd20f761790769628cd907cf42a1a079fc6eaff589de69783caf382886022a701cc52c21d6d49b44c4e62c340e7c9da355b485570756b87f5db3615f6c2de13cc15d351aa1f7f989b8a8764d24719df251343bc4f2c2ccb2782fd6e0460c26f85a4b9ec8f7aaa2bdbd2755b3",
+      "cargo": {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+        "cells": "",
+        "standings": [
+          {
+            "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+            "commitment": "290d6caefb277537554cc8f48597206e9b5ca2975dc81dc4c8f66662570b4d64",
+            "name": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+            "beings": ["8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c"],
+            "mark": "2",
+            "spent": ["1"],
+            "padlock": "5a13b7a05e31ae998ad1307217981bb23bb17d277465829edd616e9169c8f46e",
+            "hints": []
+          }
+        ],
+        "relations": []
+      }
+    },
+    {
+      "name": "bytes the decoder cannot read become silence, never a throw",
+      "law": "The world",
+      "obligations": ["I-2"],
+      "derivation": "The `say` byte, and behind it three bytes that are not a `say` and cannot be made into one — the record opens with a `voice b32` and there are not thirty-two bytes here to read. The seal is correct and the signature is correct, so the failure is the decoder and nothing else. Article I: \"**The warden is the global try/catch and it never throws.**\" A decoder handed bytes it cannot read raises something in every language this protocol has been written in, and what the article requires is that the raising stops at the warden and leaves as the ordinary silence. **This case is passed by answering nothing and failed by two different behaviours**: a door that narrated the decode failure puts bytes on the wire, and a door that let the throw out kills the subject process, which the runner sees as the run dying rather than as a red field. Article XII places the decode in step 1 — \"decoding is part of unsealing rather than a step of its own\" — so nothing is spent here either.",
+      "seq": "3",
+      "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+      "expect": "silence",
+      "give": "7d904be3bcab1a910c65ac4b0a2cdd16a846ad8a0ac72db31cc3e47671d30e02f0b23a1ab705ea0e2248e57f9068387e762a28fd7ac375b6e890937488873fccb1bc072595734c9821d62ef2d0353a1f70705f56530fb8d4680bf537eb26f9eea17b6112919013ac753112272fb9da4034098dfd",
+      "cargo": {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+        "cells": "",
+        "standings": [
+          {
+            "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+            "commitment": "290d6caefb277537554cc8f48597206e9b5ca2975dc81dc4c8f66662570b4d64",
+            "name": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+            "beings": ["8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c"],
+            "mark": "2",
+            "spent": ["1"],
+            "padlock": "5a13b7a05e31ae998ad1307217981bb23bb17d277465829edd616e9169c8f46e",
+            "hints": []
+          }
+        ],
+        "relations": []
+      }
+    },
+    {
+      "name": "a well-formed answer offered to a door is silence",
+      "law": "The envelope",
+      "obligations": ["XI-1", "XI-2"],
+      "derivation": "An `answer` record — Article XI's own, with this warden's name, a seq and absent data — under the `answer` byte, signed by the voice that holds a standing here and sealed to this door's padlock. Everything about it is well-formed. Article XI: \"**The byte is checked against what the receiver expects, never merely read: a door takes only the `say` byte**, and a caller reading an answer only the `answer` byte. There is no generic open.\" So this is silence at a door, and the sentence explains what the case is protecting: \"a payload crafted to decode as both records decides nothing, because neither end ever offers it the choice.\" A kit that read the byte to *find out* which record it had, rather than to check it against the one it expects, would take this and answer something. Nothing is spent, for the same reason as the exchange above.",
+      "seq": "3",
+      "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+      "expect": "silence",
+      "give": "4c851fc5046a9493c0698d9ab7da0376bbb9deb6dbfcedc4dc887b5ffa279a6bfb32754d75d38354a4e334f6d0846e5df7ca7c7d0b8e3a6c7e1a164a2a33e7ff433dd91403ad360d0a072e1bc050527e90a32702893a62b6bed61d57f64bdf84003137392b9b722a0c311f87193b3e07587c4ae82ca80cbd5838bd0a5f6a03ed62190d37c3597d0f5c38f5dea85bbd45db567766f5157295191a",
+      "cargo": {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+        "cells": "",
+        "standings": [
+          {
+            "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+            "commitment": "290d6caefb277537554cc8f48597206e9b5ca2975dc81dc4c8f66662570b4d64",
+            "name": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+            "beings": ["8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c"],
+            "mark": "2",
+            "spent": ["1"],
+            "padlock": "5a13b7a05e31ae998ad1307217981bb23bb17d277465829edd616e9169c8f46e",
+            "hints": []
+          }
+        ],
+        "relations": []
+      }
+    },
+    {
+      "name": "a holder that carries a commitment cannot claim to be rotating",
+      "law": "The envelope",
+      "obligations": ["XI-9", "XI-5"],
+      "derivation": "The current holder of the standing sends an ordinary ask and puts a commitment in it — the very commitment this door already holds as that standing's heir. Article XI: \"The commitment is present only when the message spends an heir, and is present whenever one is spent. **A plain ask carrying one is refused**.\" And the reason it cannot instead be read as a rotation is the sentence this case is named for: \"**Nothing in the message marks it as an ask or a rotation. The kind is read off the voice, never declared.** A caller cannot claim to be rotating.\" Article XII step 4 places this voice as a **current holder in the inbound record**, which makes it an ask, and step 4 runs before step 5 — so the refusal is there and **the number is not spent**. A door that carried this to step 5 would leave the mark at 3.",
+      "seq": "3",
+      "expect": "silence",
+      "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+      "give": "1889bfc482d64c91ac9b3910a30c5dba1ac348fe1f4073904515cbea0b486067ac9621792897f260ee84ad00220032754e9e73e003b198e47eb5eddeec63c39165edae8ccd04b4813d7846c34c907fe3d0ea250105274bd736c54fc78e2cd3cf707a9953fe8102fa22fa7e05cbcd8c9382b755b0ed8f66d5b64c1ed1b9d7fa60469dcabc130886cc8b40d53a9e20850b186289f1b04a93b466a5545c7befa14cb6463e16565c3a18685f3e957fe0eb2a7b946b0b38a6b3614cfb14dc7b707345f5747f23fb718ee4585b2f203c70e0535c2f385eb6aecdee75009f99def2c712323b1a497d7a69edd2b99d6562a1e5c44d7b152bdc550602c56e5058ef372b81653f082339dd7c105d53ac1456db2ad47b46aee8",
+      "cargo": {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+        "cells": "",
+        "standings": [
+          {
+            "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+            "commitment": "290d6caefb277537554cc8f48597206e9b5ca2975dc81dc4c8f66662570b4d64",
+            "name": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+            "beings": ["8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c"],
+            "mark": "2",
+            "spent": ["1"],
+            "padlock": "5a13b7a05e31ae998ad1307217981bb23bb17d277465829edd616e9169c8f46e",
+            "hints": []
+          }
+        ],
+        "relations": []
+      }
+    },
+    {
+      "name": "the same commitment from a voice this door has never met is ignored",
+      "law": "The envelope",
+      "obligations": ["XI-9", "XI-12"],
+      "derivation": "The identical message from a voice in neither record. **This is the other half of the same sentence and the reason the pair is worth writing**: the commitment field is byte-for-byte what the exchange above carried, and here it changes nothing. Article XII step 4: \"**A commitment the message carries changes none of this**: the kind is read off the voice and never declared, so a voice found nowhere is a stranger whether or not it carried one, and the field is ignored rather than refused.\" So this falls to the stranger's case and is answered — step 7's \"no standing anywhere ... the describe of whatever the warden's own public being exposes.\" **One field, two voices, opposite outcomes, and the field decided neither.** A door that refused every carried commitment would meet this with silence and fail here; a door that took every carried commitment as a rotation would fail the exchange above. Nothing is spent, a stranger having no standing to keep a window for.",
+      "seq": "3",
+      "expect": "answered",
+      "voice": "100ba90b553ccb23ff13d508c1fa2b33c82b2bd68589a04039fa052f1a702e6b",
+      "give": "b0d08f35b4683381489afb32825e59152d47d19bc9e050d6d5a954984c9d1e2c9d935804ab77c1361dc192739cfb426f9a43760c89555265e846e1d132dd0f83bf711e48324c6e04eaa3c0db67a1ee8c82ae90c79e9e4296509c725727ddee21de1b03310ca0675b5615e59cc8be2e966d9a2b09f3b7f63349995cdd9e85c63d522ecaeaea267a5d63c0f46c1eaf28e9db3ebccd4c376ccf3e155fe28bc65242cfff8e41e108f1461bf2e187b2e4fa51a43f90ea61534c515999fe9c3e14ea5efeeebbf1a370dc0228c10f2fb1a32b9fdfcddf72d7eb0e39e323b10f15f86c4510390f99211448fbeeab39fb60358fe2c1a18f11294a1631e1b997a4953cb099b5989674d9d16339e1b6e8cde144e1337de9af74",
+      "cargo": {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+        "cells": "",
+        "standings": [
+          {
+            "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+            "commitment": "290d6caefb277537554cc8f48597206e9b5ca2975dc81dc4c8f66662570b4d64",
+            "name": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+            "beings": ["8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c"],
+            "mark": "2",
+            "spent": ["1"],
+            "padlock": "5a13b7a05e31ae998ad1307217981bb23bb17d277465829edd616e9169c8f46e",
+            "hints": []
+          }
+        ],
+        "relations": []
+      }
+    }
+  ]
+}

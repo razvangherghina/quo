@@ -16,7 +16,7 @@ in front of a warden.
   them: it unseals once, reads the record byte itself, and answers bytes or
   nothing.
 - **`quo.being`** — the whole of what a being has of Quo: the closure at
-  `obj.quo`, and the handle every declared field is an awaitable on.
+  `obj._quo`, and the handle every declared field is an awaitable on.
 - **`quo.delivery`** — the seeds, the memory store and the delivery at
   distance zero that a host may hand a warden instead of writing its own.
 
@@ -109,26 +109,29 @@ bob = await host(seeds(), roads=["http"])
 
 dog = Dog("Rex")
 await alice.warden.hold(dog, "Dog\n  name() text\n")
-invitation = dog.quo.grant()          # what a holder is handed, out of band
+invitation = dog._quo.grant()         # what a holder is handed, out of band
 [rex] = await bob.warden.accept(invitation, label="rex")
 await rex.name()                      # -> "Rex", or None for silence
 ```
 
-A being is a plain class of yours. Holding it attaches `obj.quo`, and that
-closure is the whole of what a being has of Quo:
+A being is a plain class of yours. Holding it attaches `obj._quo`, and that
+closure is the whole of what a being has of Quo. **The underscore is the whole
+point**: the notation's identifier is a letter then letters and digits, so no
+blueprint can spell a name beginning with one, and your class may declare any
+field at all without the kit eating it.
 
 ```python
-obj.quo.caller             # during a call: the voice and the kind judged
-obj.quo.leash              # during a call: what arrived
-obj.quo.standings()        # who holds a place at me, as voices only
-obj.quo.relation(label)    # one handle, under a private label of my own
-await obj.quo.relations(label)   # a handle per being that label's row names
-obj.quo.grant(target)      # -> an invitation to a being here
-obj.quo.amend(voice, add=[...], remove=[...])
-obj.quo.release(target)
-await obj.quo.accept(invitation, label=...)  # -> a handle per being it names
-await obj.quo.knock(card, label=...)         # -> a handle, as a stranger
-await obj.quo.hold(object, blueprint, label=...)
+obj._quo.caller             # during a call: the voice and the kind judged
+obj._quo.leash              # during a call: what arrived
+obj._quo.standings()        # who holds a place at me, as voices only
+obj._quo.relation(label)    # one handle, under a private label of my own
+await obj._quo.relations(label)   # a handle per being that label's row names
+obj._quo.grant(target)      # -> an invitation to a being here
+obj._quo.amend(voice, add=[...], remove=[...])
+obj._quo.release(target)
+await obj._quo.accept(invitation, label=...)  # -> a handle per being it names
+await obj._quo.knock(card, label=...)         # -> a handle, as a stranger
+await obj._quo.hold(object, blueprint, label=...)
 ```
 
 Accepting answers a handle for each being the standing names, and each carries
@@ -138,14 +141,23 @@ remembered. A card grants nothing: knocking with one answers a handle at that
 door's public being, held as a stranger, and what that door shows a stranger is
 all it answers.
 
-Beside its blueprint's fields, every handle carries the four introspections,
-each an ordinary ask at the far door and each answering a value or `None`:
+A handle's plain namespace is the blueprint's alone, and everything of the
+kit's own is at `_quo` — the being it reaches, its class, the two halves of a
+seal, and the four introspections. Each introspection is an ordinary ask at the
+far door, answering a value or `None`:
 
 ```python
-await rex.describe()          # the estate that door shows this voice
-await rex.sketch()            # this being's sketch; sketch(other) for another
-await rex.blueprint(digest)   # the text of a class this voice reaches
-await rex.limit()             # the largest envelope that door accepts
+rex._quo.being                # the pk this handle reaches
+rex._quo.text                 # the class it calls through
+rex._quo.digest               # that class's identity
+rex._quo.declares()           # the names its blueprint declares
+await rex._quo.describe()     # the estate that door shows this voice
+await rex._quo.sketch()       # this being's sketch; sketch(other) for another
+await rex._quo.blueprint(d)   # the text of a class this voice reaches
+await rex._quo.limit()        # the largest envelope that door accepts
+
+sealed = await rex._quo.seal("name")   # the envelope, not yet on a road
+await rex._quo.send(sealed)            # after silence, resend the identical one
 ```
 
 A being never sees a byte, a key or a road, and every declared field of a

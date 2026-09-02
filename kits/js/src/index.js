@@ -1,4 +1,4 @@
-export { Refusal } from './refusal.js';
+export { Refusal, Weather, NoRoad } from './refusal.js';
 export { SCALARS, parse, print, printType, baseOf, canonicalBytes, digest } from './notation.js';
 export { encode, decode, encodeAll, decodeAll, recordsOf } from './wire.js';
 export {

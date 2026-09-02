@@ -262,7 +262,9 @@ struct Watched(Arc<Mutex<Vec<Way>>>);
 impl Delivery for Watched {
     fn send(&self, way: &Way, _envelope: &[u8]) -> Carried {
         self.0.lock().expect("the bench").push(way.clone());
-        Carried::Silence
+        Carried::Weather {
+            tried: way.hints.clone(),
+        }
     }
 }
 

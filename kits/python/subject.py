@@ -298,7 +298,7 @@ def serve(argv: list) -> int:
     host, _, port = flags.listen.rpartition(":")
 
     ground = Ground(flags.limit)
-    at = ground.run(ground.warden.hold(Counter(), COUNTER, draw(), draw())).being
+    at = ground.run(ground.warden.hold(Counter(), COUNTER, draw(), draw()))._quo.being
 
     if flags.framed:
         # A ground that pushes keeps every line it accepts, because the
@@ -480,7 +480,7 @@ def held(ground: Ground, far: bytes, road) -> int:
     once the line is let go.
     """
     own = Counter()
-    at = ground.run(ground.warden.hold(own, COUNTER, draw(), draw())).being
+    at = ground.run(ground.warden.hold(own, COUNTER, draw(), draw()))._quo.being
     invitation = ground.call(ground.warden.invite, at, draw(), draw(), hints=())
     emit(
         {
@@ -520,7 +520,7 @@ def at_distance_zero() -> tuple:
     two houses really are two.
     """
     far = Ground(LIMIT)
-    at = far.run(far.warden.hold(Counter(), COUNTER, draw(), draw())).being
+    at = far.run(far.warden.hold(Counter(), COUNTER, draw(), draw()))._quo.being
     door = call.Door(far.arrive, limit=far.warden.limit).start()
     invitation = far.call(far.warden.invite, at, draw(), draw(), hints=())
     emit(

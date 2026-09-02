@@ -1,0 +1,364 @@
+{
+  "scenario": "seq-window",
+  "law": "https://github.com/razvangherghina/quo/blob/main/constitution.md",
+  "encoding": "hex",
+  "about": "Article VIII's window, driven as one sequence against one door. Every exchange but the last two is refused for its leash, which spends the number without ever reaching an answer — so the whole window is asserted without pinning a single answer's bytes. What the corpus cannot express here is everything: a replayed number and a fresh one are the same bytes on the wire, and only the mark beneath tells them apart.",
+  "stand": {
+    "warden": {
+      "nameSeed": "196982eee79e80efbc3131c93b99285a38c540c43e7e4fbb8399c260b1ce5103",
+      "padlockSeed": "7dbcdb3088339c02378f46525bff3fe2b84515973e28f5814301a99f386e20b1",
+      "heirSeed": "0303030303030303030303030303030303030303030303030303030303030303",
+      "heirCommitment": "83f960da653b61eb63f6b53b5d80adeb377e23e569f1c555395b9b119ad69603",
+      "limit": "1048576",
+      "hints": []
+    },
+    "beings": [
+      {
+        "seed": "0101010101010101010101010101010101010101010101010101010101010101",
+        "heirSeed": "0202020202020202020202020202020202020202020202020202020202020202",
+        "blueprint": "Counter\n  bump(by int) int\n  count() int\n",
+        "cells": ""
+      }
+    ],
+    "grants": [
+      {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "voiceSeed": "2ebd74bd564a8771fa628b28308c588588f5c0d0db17ae06b045b896d8218ad7",
+        "heirSeed": "7bae8096dc92d5f4e271742fd8db51abd563a8976c223dd734f1d2bdd553093c",
+        "padlock": null,
+        "hints": []
+      }
+    ],
+    "clock": [
+      "1000",
+      "1001",
+      "1002",
+      "1003",
+      "1004",
+      "1005",
+      "1006",
+      "1007",
+      "1008",
+      "1009",
+      "1010",
+      "1011",
+      "1012",
+      "1013",
+      "1014",
+      "1015",
+      "1016",
+      "1017",
+      "1018",
+      "1019",
+      "1020",
+      "1021",
+      "1022",
+      "1023",
+      "1024",
+      "1025",
+      "1026",
+      "1027",
+      "1028",
+      "1029",
+      "1030",
+      "1031",
+      "1032",
+      "1033",
+      "1034",
+      "1035",
+      "1036",
+      "1037",
+      "1038",
+      "1039"
+    ],
+    "random": [
+      "3232323232323232323232323232323232323232323232323232323232323232",
+      "3333333333333333333333333333333333333333333333333333333333333333",
+      "3434343434343434343434343434343434343434343434343434343434343434",
+      "3535353535353535353535353535353535353535353535353535353535353535",
+      "3636363636363636363636363636363636363636363636363636363636363636",
+      "3737373737373737373737373737373737373737373737373737373737373737",
+      "3838383838383838383838383838383838383838383838383838383838383838",
+      "3939393939393939393939393939393939393939393939393939393939393939",
+      "4040404040404040404040404040404040404040404040404040404040404040",
+      "4141414141414141414141414141414141414141414141414141414141414141",
+      "4242424242424242424242424242424242424242424242424242424242424242",
+      "4343434343434343434343434343434343434343434343434343434343434343"
+    ]
+  },
+  "unruled": [],
+  "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+  "opening": {
+    "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+    "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+    "cells": "",
+    "standings": [
+      {
+        "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+        "commitment": "290d6caefb277537554cc8f48597206e9b5ca2975dc81dc4c8f66662570b4d64",
+        "name": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+        "beings": ["8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c"],
+        "mark": "0",
+        "spent": [],
+        "padlock": null,
+        "hints": []
+      }
+    ],
+    "relations": []
+  },
+  "beingCommitment": "ed4d580bb287b98674376c30d750d9926617873de8787e518c58c320d1899cbd",
+  "exchanges": [
+    {
+      "name": "zero is not a legal number",
+      "law": "The seq and the leash",
+      "obligations": ["VIII-1"],
+      "derivation": "Article VIII: \"The first legal number is one.\" A seq of zero is refused at step 5, so the mark does not move — and the way back is not learned either, because Article XII refreshes it \"between the seq and the leash. Not earlier, because a replayed message would otherwise rewrite a live way back with a retired one, and the seq is what tells a replay from a call.\" A door that learned this padlock has refreshed too early.",
+      "seq": "0",
+      "expect": "silence",
+      "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+      "give": "97c3b10b4d6c133a78ea5dcc1cf6421d3f81ae37b1f628ce14ca6fce7730f3338c688c574d095577d04536422b2d714a845675b2d5a9905ef38c393bbf7f3e0154bb82fb0055e19bc1106b96f3a040f54d6a6ddfbf46985639e1d5d7551e34357591941deba6bb551f2f18241e0567858aa52d770ccc2e6e9a30b405b70fe55c02da21143a5fa9bd02a3d6fa39ac4625250f6a47769edf8d9a96f23316551771d7fc11c6a41c186e86ae8d4e005f9cfc88285d361c974ec7e7a935d4319bb1ee6a1d787c87e5d5cce67edbed8b2ad5d0352abc47d8085b79202fed362292dca5f55d59918e566abdb4836f7f0e3e9b809df30f2cebf08a79a87bcd38f33700591b1da355e34eeb490eb13e8a8808f68aa1f8ca08",
+      "cargo": {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+        "cells": "",
+        "standings": [
+          {
+            "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+            "commitment": "290d6caefb277537554cc8f48597206e9b5ca2975dc81dc4c8f66662570b4d64",
+            "name": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+            "beings": ["8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c"],
+            "mark": "0",
+            "spent": [],
+            "padlock": null,
+            "hints": []
+          }
+        ],
+        "relations": []
+      }
+    },
+    {
+      "name": "a fresh mark honours any number at or above one",
+      "law": "The seq and the leash",
+      "obligations": ["VIII-1", "VIII-2", "VII-4", "III-16"],
+      "derivation": "Article VIII: \"Which number a caller opens with, above one, is the caller's own. A fresh mark is empty, so every number at or above one stands above it: the door honours what arrives and the mark moves there. No door requires a first message to carry exactly one.\" So seq 7 is honoured against an empty mark and the mark becomes 7, with nothing beneath it spent. The way back is learned here, the seq having been spent. **And this door has already refused a message and is still standing, which is Article III's rule for the line read at distance zero**: \"**A well-formed frame whose envelope fails the judgment is ordinary silence, and the line lives on.**\" The exchange before this one was refused at step 5 and answered with nothing. A door that treated a failed judgment as a fatal condition — closing, resetting its records, or refusing everything after — would meet this ask with silence too, and the whole of the rest of this scenario with it. **Eight more exchanges follow, five of them after further refusals**, so the claim is asserted nine times over rather than once, and no single exchange in the suite could have carried it.",
+      "seq": "7",
+      "expect": "answered",
+      "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+      "give": "b307ae8660efaed4d6a65f6640896892ea4a1f0075555c489d1312a2e1677c28a0b5e4a11fd5f64603a4f99b6d7710f2870796d865c441b0532aa3a610027ed21b4a2e5e9308f182844a6c926eea3ef99eccb176f375336ea34ea2073c7403b8f5a5d13869600dd20df53c6f3c7178480b3da8fe88d08781cd2928e8095b4de0d831bd30f0c68289a2a36456e1e0db0999da97d311c2186eb9497a0fc2930acaf52ca96a0e4873777fc9ebbcbc836977e1b5bca7721c6deb6bd6d85d5f18fbedda2cfe678249a8f00c8df39225ae74344942fc9f63b9c0bcf7341167bdb768cabf7c8264a18e9b6dc89d6021a8eb7443708ad1a2877e1e8bb277846b3b985ffe6342fd2f699c95ca7e532ea008f168246d662b4c",
+      "cargo": {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+        "cells": "",
+        "standings": [
+          {
+            "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+            "commitment": "290d6caefb277537554cc8f48597206e9b5ca2975dc81dc4c8f66662570b4d64",
+            "name": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+            "beings": ["8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c"],
+            "mark": "7",
+            "spent": [],
+            "padlock": "5a13b7a05e31ae998ad1307217981bb23bb17d277465829edd616e9169c8f46e",
+            "hints": []
+          }
+        ],
+        "relations": []
+      }
+    },
+    {
+      "name": "above the mark is honoured and moves the mark",
+      "law": "The seq and the leash",
+      "obligations": ["VIII-2"],
+      "derivation": "Article VIII: \"Above the mark is honoured and moves the mark.\" Seq 9 arrives above a mark of 7, so the mark becomes 9 and 7 — now below it and already honoured — is what the window beneath the mark holds. Nothing is skipped by jumping from 7 to 9: the law says the number only rises, never that it rises by one, and 8 is still unspent and still honourable, which the next exchange but one relies on.",
+      "seq": "9",
+      "expect": "answered",
+      "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+      "give": "5855784cb3c8c796d84ac93e8f4a53dab0bb31e80960042cfa87f03a4293b30816d418be9d9013760397cb6469a996901312f43a94bcc728623504097871ed0489f38557959425088cd3bff66858f9ff7d517c376e842339c6e2b1ea287614fa46ee1824afe5844bff18e6f63fd742ee56bc4d56415efe8833799a72f4c91dc70de23e686146f9d238fe1719e0c67432eef80099b45548b4de263b05db1563b00a909461f69061d96f1fa3ace11700075a3364bd8c67a5c6660e60a5b4e9422e9b767d56b07787bd209d3c2f8b5e948a6139c79a76d054b96d61c1bf4c92fda1cc29129ddcb46ebb156e13f720eb04ef1bda741533e60aedd6a2a52c651929c4440a25873fd91c79c7e5978523d6e52aadb6ca23",
+      "cargo": {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+        "cells": "",
+        "standings": [
+          {
+            "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+            "commitment": "290d6caefb277537554cc8f48597206e9b5ca2975dc81dc4c8f66662570b4d64",
+            "name": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+            "beings": ["8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c"],
+            "mark": "9",
+            "spent": ["7"],
+            "padlock": "5a13b7a05e31ae998ad1307217981bb23bb17d277465829edd616e9169c8f46e",
+            "hints": []
+          }
+        ],
+        "relations": []
+      }
+    },
+    {
+      "name": "the mark itself is spent",
+      "law": "The seq and the leash",
+      "obligations": ["VIII-2"],
+      "derivation": "The mark is the highest number honoured, so it is honoured already. Article VIII: \"Above the mark is honoured and moves the mark; inside the window is honoured once and never again.\" Nine is neither above the mark nor unspent beneath it, so seq 9 a second time is silence and nothing moves — not the mark, not the window under it, and not the way back, the refresh coming after a seq that refused. This envelope carries a different return padlock from the rest, so a door that wrongly honoured it would say so twice over: once by answering, and once by rewriting the way back.",
+      "seq": "9",
+      "expect": "silence",
+      "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+      "give": "7e81e916e3afcdb31ef74d8db923f2ba15b82a1aa6594ea228dcdf27d7b54f6c7e438415845333cb430f38279203154956ce09831923b0c4c4240913d3a18960c8ac71a00adfbdfa0d2272457fbfed8116b6a84beecd90bda42616a67719cd758b3084c810b583a5c9bf91fa45a927d757fcea493b1f2530e871587449c78c92560572e0f07b114680cd587232138d2eb4e76aa7d3b2f1c06b759a1092700bc96c8373d9a29bb6bd2f5e7a1630a1ccf02bf10565148af9576d03d679b86b97cd99019ef987c407f088cccb795af92d97b222b2708b4e0a21e0e2055c61289634a106a108bdaaa0783fd58aef22aa7d559089c6b17988b9dc3d854ca60c75eb571809ade79e83f04e2e2bf76e9cd3ee6b3df5caaa",
+      "cargo": {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+        "cells": "",
+        "standings": [
+          {
+            "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+            "commitment": "290d6caefb277537554cc8f48597206e9b5ca2975dc81dc4c8f66662570b4d64",
+            "name": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+            "beings": ["8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c"],
+            "mark": "9",
+            "spent": ["7"],
+            "padlock": "5a13b7a05e31ae998ad1307217981bb23bb17d277465829edd616e9169c8f46e",
+            "hints": []
+          }
+        ],
+        "relations": []
+      }
+    },
+    {
+      "name": "a number inside the window is honoured once",
+      "law": "The seq and the leash",
+      "obligations": ["VIII-2"],
+      "derivation": "Seq 8 is below the mark of 9 and has not been spent, so it is honoured — \"inside the window is honoured once and never again\" — and it does not move the mark. The window beneath the mark now holds 7 and 8. Nothing here asserts how wide the window is, which Article II leaves to each warden: 8 is one below the mark and inside any window at all.",
+      "seq": "8",
+      "expect": "answered",
+      "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+      "give": "781faab908430150daccdd6f9d6c5086e34f73a93ebbaa271765e5036edfc5190fa131cba861e64b7ab4d4a5aedfeb5055e4fa149bb567aecbbb54d33b0a49198fa899f17a5c3ce86eae7be65076cbfc382520b47e579a5f4af0436fb1d3913fc28aa1a538ee1e8fcfbca56b57492b3646351cca4b3d2fa54cf77fdf8211ddab3e382577b2090f793c6ae80e9e4549b8b88141abcd7502f31c0082a9d2ac207979e3fad557ca2fe068c4cebed7d1dc2214fe2350747ae3201953cd2aee7a8af67ab5e3610f35a8fe12f26d9c8730f6428ef12b444fc4f90b82a80d1391d3c9c78beee880e98f525f0470758a74770fe789a1329a32a5eb1079520abfe01e39f97c4aef504152dd691aef5776708004f253bf0e6e",
+      "cargo": {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+        "cells": "",
+        "standings": [
+          {
+            "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+            "commitment": "290d6caefb277537554cc8f48597206e9b5ca2975dc81dc4c8f66662570b4d64",
+            "name": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+            "beings": ["8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c"],
+            "mark": "9",
+            "spent": ["7", "8"],
+            "padlock": "5a13b7a05e31ae998ad1307217981bb23bb17d277465829edd616e9169c8f46e",
+            "hints": []
+          }
+        ],
+        "relations": []
+      }
+    },
+    {
+      "name": "and never again, and a replay never rewrites the way back",
+      "law": "The seq and the leash",
+      "obligations": ["VIII-2", "VII-4", "VII-14"],
+      "derivation": "Seq 8 a second time is silence. This envelope carries a different return padlock from every other in this scenario, which is what makes the refresh rule observable: Article XII refreshes the way back between the seq and the leash, \"not earlier, because a replayed message would otherwise rewrite a live way back with a retired one.\" The row must still hold the padlock it learned, not the one this replay carried. This is also Article VII's \"one voice is used from one place\": two machines sharing a voice keep two counters, and the second to spend a number is silently refused — which is exactly this exchange, the two senders being indistinguishable at the door by design.",
+      "seq": "8",
+      "expect": "silence",
+      "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+      "give": "7b4e909bbe7ffe44c465a220037d608ee35897d31ef972f07f74892cb0f73f13109eae6076d2b506cd0aa60952e80a47ab8d41062aaefc65e046ae0af27b48aa9350ef56a3f37b1aa4ff6db8c254c7c77f9e33e540118d20c2a7bcba00fbbaf28a690ed63ea58255c1a2ebe50000c215569c9beb76c7f1eb01752d94e5a05b6abf4d8ce94248be6ee74e44aca822ad4d57bd9d10d1b396b39ce1f3c2dc70f74334ec042c9b1e4789e5a5ffa9790cb9524f9c7d76fa74e633310bc3f3e510e3834aede6848a5994c25d2cb180ad1fd30f4da226e0b395f0b5c65865354c0e511fb2100f12c09c7608baa982c6c8c976af740c7f926e043296ee85ec348512a39ad7bfe5c640cd924089be59117cc4cbc3ec35660b",
+      "cargo": {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+        "cells": "",
+        "standings": [
+          {
+            "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+            "commitment": "290d6caefb277537554cc8f48597206e9b5ca2975dc81dc4c8f66662570b4d64",
+            "name": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+            "beings": ["8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c"],
+            "mark": "9",
+            "spent": ["7", "8"],
+            "padlock": "5a13b7a05e31ae998ad1307217981bb23bb17d277465829edd616e9169c8f46e",
+            "hints": []
+          }
+        ],
+        "relations": []
+      }
+    },
+    {
+      "name": "a rotation starts the mark fresh",
+      "law": "The judgment",
+      "obligations": ["XII-5", "VIII-1"],
+      "derivation": "Article XII step 5: \"A rotation starts the mark fresh.\" The heir spends, the standing changes hands at step 4, and seq 1 is then judged against an empty mark rather than against the 9 the old holder had reached. So the mark is 1 and the window beneath it is empty — the numbers the previous holder spent are gone with the previous holder. A door that judged this 1 against the old mark would meet it with silence instead.",
+      "seq": "1",
+      "expect": "answered",
+      "voice": "afa0ce0919a81bf57861ac7139d8945a1fc2ba9f00e53a4f26f494c23f78338c",
+      "give": "052a50773ac8d91773f2dc9662e12f0defe915e415b8a1c8e20a5a3d6ab2b843952a0a305004a46e1752e4f1d7613a9e178c47a34a19209673399c5b49b282f2bfd419a8b0c5545e5c6cd3ebb42d84b601be1fd0b2f92fdba4710f39be4fe33fbccc88d2ffa26378d65f1ffd8a058e5e5dc8e46c90b7ba41d089098d4e94ba42cd2d0a62c477516814bfeadd5e41db2d3ffe56a62c0639f1edf650b46e1f1d699f4bd2c7df88734009ab9a78ed983be81a984b2f470368b0862e5020cb459eb39b0e666d407ce59b54bb4a337c2959c66600870d072fc069a2c35a80c7d345a286d9ef2bacb7bb9a6305fa8c35d2e26a053680b63c9a3ca615e8cafdc1f34500fa8c4d53f5649562527c7d5e2b7aa5d76450f8d14c0e7d6f0f6e943efc474e398f9ee20e2eb572feedc42caad021e7f232b19908",
+      "cargo": {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+        "cells": "",
+        "standings": [
+          {
+            "voice": "afa0ce0919a81bf57861ac7139d8945a1fc2ba9f00e53a4f26f494c23f78338c",
+            "commitment": "db264a809a1bd49a758fefaf59daa530e0235049dd311fd745f9ecd32674ff79",
+            "name": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+            "beings": ["8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c"],
+            "mark": "1",
+            "spent": [],
+            "padlock": "5a13b7a05e31ae998ad1307217981bb23bb17d277465829edd616e9169c8f46e",
+            "hints": []
+          }
+        ],
+        "relations": []
+      }
+    },
+    {
+      "name": "a stranger spends nothing",
+      "law": "The news",
+      "obligations": ["XIV-10", "X-4"],
+      "derivation": "A voice with no row anywhere: not a holder, not an heir any standing committed to, not a warden this door holds a relation with. Article XII routes it to the stranger's case, and Article XIV: \"A stranger spends nothing. It has no row, so no mark is kept for it and its numbers are not counted.\" Its allowance is a real one, so it is answered rather than refused — and the assertion is that it is answered, twice, on the same number. A door keeping a mark for strangers would refuse the second. It names no being, which Article XII calls \"the shortcut for a stranger who holds a card and has described nothing yet\": a stranger that named a being it cannot reach would meet silence for that reason instead, and prove nothing about marks.",
+      "seq": "1",
+      "expect": "answered",
+      "voice": "efc15f8742c6c2755887d9e83884dd30b69d25548ef299cdd296053be9c0df99",
+      "give": "197fc2c567dc03ee2aadf0ed86681dac24daa76e83ca555875dd3be7376e530603629d26ebfb401ae3b434fb9fdea150fdbb7c486ba337b153bcc0be1962111ab907cca9c53e3e818273c60287fe4165f78d9eec50374a3ad4ac020e5ab97968d1bac7483f883fa67a597cf7adba5d96d2744e6f839fba6c16d2218c163b7c972e2981136d4a700dba26075f0648089a7facc6a65178b70bb54b4c77e3c469f1c09495107c5441fd73e6acbdb9c59c04d8ed21a6ff8671b1fbfffbd26e4eb502429f20b8056b2cda3edfeb9e0fba97c340e334ac279e191110180fb86fdcdc676b775484b7215a34cd74b4d3311bc93ab5234bb7",
+      "cargo": {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+        "cells": "",
+        "standings": [
+          {
+            "voice": "afa0ce0919a81bf57861ac7139d8945a1fc2ba9f00e53a4f26f494c23f78338c",
+            "commitment": "db264a809a1bd49a758fefaf59daa530e0235049dd311fd745f9ecd32674ff79",
+            "name": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+            "beings": ["8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c"],
+            "mark": "1",
+            "spent": [],
+            "padlock": "5a13b7a05e31ae998ad1307217981bb23bb17d277465829edd616e9169c8f46e",
+            "hints": []
+          }
+        ],
+        "relations": []
+      }
+    },
+    {
+      "name": "and spends nothing the second time either",
+      "law": "The news",
+      "obligations": ["XIV-10"],
+      "derivation": "The same stranger on the same number. No mark was kept, so nothing refuses it: it is answered again. This is the exchange that makes \"a stranger spends nothing\" observable, because a door that had counted the first would meet the second with silence.",
+      "seq": "1",
+      "expect": "answered",
+      "voice": "efc15f8742c6c2755887d9e83884dd30b69d25548ef299cdd296053be9c0df99",
+      "give": "18a6f8c1a7fddf22bd410138f79f7298cd38d1d0a542d4266d556be8609d88629a0d66be0f432d7757617076fcac5e2a2fc75abfa58d61ab55f8a6eda011db690d9cecbb396708967eebfe25b462f657bfa4e6417bde5f35765fe959b0d06e3bb0c287d5fde8028611fbd0905424909848e8176f3a254c7edca3e587ded7990b7bf652875fde3e8362d6ccb2dcf2f37392986c12b0e684d9edbebc454ef94df7294e2f71c3ee02ce81cc8226fe58407c95039ac872f14d838fe59f4106f3c87832dd987e1e9cdef4086ed4be5b91f452d38b8d774a31d3b39681b79763950fe058450d813a5bdc6ecf654be07089c5b164770008",
+      "cargo": {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+        "cells": "",
+        "standings": [
+          {
+            "voice": "afa0ce0919a81bf57861ac7139d8945a1fc2ba9f00e53a4f26f494c23f78338c",
+            "commitment": "db264a809a1bd49a758fefaf59daa530e0235049dd311fd745f9ecd32674ff79",
+            "name": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+            "beings": ["8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c"],
+            "mark": "1",
+            "spent": [],
+            "padlock": "5a13b7a05e31ae998ad1307217981bb23bb17d277465829edd616e9169c8f46e",
+            "hints": []
+          }
+        ],
+        "relations": []
+      }
+    }
+  ]
+}

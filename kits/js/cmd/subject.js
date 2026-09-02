@@ -33,7 +33,7 @@
 // `serve -relay <facts>` makes this ground the middle of a chain: it holds a
 // `Brief` of its own whose one field is answered by reaching a third house,
 // under the leash it was handed rather than under one of its own. That is
-// Article III's "each hop acts as itself", and it needs a being that does its
+// Article VII's "each hop acts as itself", and it needs a being that does its
 // work by asking somebody else.
 //
 // Nothing here is a stand-in. It is the kit itself standing a warden, a being

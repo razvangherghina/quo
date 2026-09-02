@@ -13,7 +13,9 @@
 //! **Delivery has three rules and no more.** A row with hints: the first road
 //! this ground can speak that carried. A row without hints, or none it can
 //! speak: the line that padlock's last ask arrived on, if still held.
-//! Neither: weather, and the number was spent.
+//! Neither: weather where a road was tried and broke, no road where none
+//! could be tried, kept apart because only one of them means a door heard
+//! nothing.
 //!
 //! This is the only file in the kit that knows every road by name.
 
@@ -243,9 +245,12 @@ impl Delivery for Beneath {
 impl Roads {
     fn send(self: &Arc<Self>, way: &Way, envelope: &[u8]) -> Carried {
         // A row with hints: the first road this ground can speak that carried.
+        // What was tried and broke is kept, because weather is reported with
+        // the roads it happened on.
+        let mut tried: Vec<String> = Vec::new();
         for hint in &way.hints {
-            if let Some(rest) = hint.strip_prefix("mem://") {
-                let _ = rest;
+            if hint.starts_with("mem://") {
+                tried.push(hint.clone());
                 let far = neighbours().lock().expect("the grounds").get(hint).cloned();
                 let Some(far) = far else { continue };
                 return match far.arrive(envelope, None) {
@@ -254,6 +259,7 @@ impl Roads {
                 };
             }
             if hint.starts_with("http://") {
+                tried.push(hint.clone());
                 match carriage::post(hint, envelope) {
                     Ok(bytes) => return Carried::Answer(bytes),
                     // Weather on this road; the next may carry.
@@ -261,6 +267,7 @@ impl Roads {
                 }
             }
             if hint.starts_with("tcp://") {
+                tried.push(hint.clone());
                 let Some(wire) = self.dial(hint) else {
                     continue;
                 };
@@ -283,12 +290,19 @@ impl Roads {
             .get(&way.padlock)
             .cloned();
         if let Some(wire) = back {
+            tried.push("the line this padlock last asked on".to_string());
             if wire.carry(envelope) {
                 return Carried::Later;
             }
         }
-        // Neither: weather, and the number was spent.
-        Carried::Silence
+        // Neither. A road was tried and broke: weather. Nothing could be
+        // tried at all: no road, which is neither silence nor weather.
+        if tried.is_empty() {
+            return Carried::NoRoad {
+                hints: way.hints.clone(),
+            };
+        }
+        Carried::Weather { tried }
     }
 
     fn arrived(self: &Arc<Self>, padlock: &[u8; KEY], via: Via) {

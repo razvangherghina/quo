@@ -49,7 +49,7 @@ const WALKER = `Walker
 
 class Walker {
   async subscribe(invitation) {
-    this.listener = (await this.quo.accept(invitation, { label: 'inbox' }))?.[0] ?? null;
+    this.listener = (await this._quo.accept(invitation, { label: 'inbox' }))?.[0] ?? null;
     return this.listener !== null;
   }
   async walk(minutes) {
@@ -72,12 +72,12 @@ for (const roads of [['http'], ['tcp'], ['wss'], ['memory']]) {
     try {
       const rex = new Dog();
       await alice.warden.hold(rex, { blueprint: DOG });
-      const [handle] = await bob.warden.accept(await rex.quo.grant(rex), { label: 'rex' });
+      const [handle] = await bob.warden.accept(await rex._quo.grant(rex), { label: 'rex' });
       assert.equal(await handle.name(), 'Rex');
       assert.equal(await handle.logWalk(12n), true);
       assert.deepEqual(rex.walks, [12n]);
       // The being never learned the road: nothing on it names one.
-      assert.equal(rex.quo.road, undefined);
+      assert.equal(rex._quo.road, undefined);
     } finally {
       await alice.close();
       await bob.close();
@@ -92,7 +92,7 @@ test('a hint the caller cannot speak is walked past, and the road it can speak c
   try {
     const rex = new Dog();
     await alice.warden.hold(rex, { blueprint: DOG });
-    const invitation = await rex.quo.grant(rex);
+    const invitation = await rex._quo.grant(rex);
     assert.deepEqual(invitation.hints.length, 2);
     assert.equal(invitation.hints[0], 'pigeon://loft');
     const [handle] = await bob.warden.accept(invitation, { label: 'rex' });
@@ -114,8 +114,8 @@ test('a tab publishes nothing: its pushes ride back down the line it holds', asy
     await tab.warden.hold(inbox, { blueprint: INBOX });
     assert.deepEqual(tab.warden.hints, []);
 
-    const [bob] = await inbox.quo.accept(await walker.quo.grant(walker), { label: 'walker' });
-    assert.equal(await bob.subscribe(await inbox.quo.grant(inbox)), true);
+    const [bob] = await inbox._quo.accept(await walker._quo.grant(walker), { label: 'walker' });
+    assert.equal(await bob.subscribe(await inbox._quo.grant(inbox)), true);
     await bob.walk(9n);
     await bob.walk(11n);
     assert.deepEqual(inbox.heard, [9n, 11n]);
@@ -132,8 +132,8 @@ test('a closed tab is weather: the push meets silence, the number is spent, noth
   const inbox = new Inbox();
   await laptop.warden.hold(walker, { blueprint: WALKER });
   await tab.warden.hold(inbox, { blueprint: INBOX });
-  const [bob] = await inbox.quo.accept(await walker.quo.grant(walker), { label: 'walker' });
-  await bob.subscribe(await inbox.quo.grant(inbox));
+  const [bob] = await inbox._quo.accept(await walker._quo.grant(walker), { label: 'walker' });
+  await bob.subscribe(await inbox._quo.grant(inbox));
   await bob.walk(1n);
   await tab.close();
   // Walker's own answer to itself is unaffected; only the push found nobody.
@@ -165,7 +165,7 @@ test('a tab that closes and opens again is answered on its first ask', async () 
   };
 
   const first = await open();
-  const [bob] = await first.inbox.quo.accept(await walker.quo.grant(walker), { label: 'walker' });
+  const [bob] = await first.inbox._quo.accept(await walker._quo.grant(walker), { label: 'walker' });
   // Two asks after the last act that owed a write, so the number is two ahead
   // of what the store would otherwise have held.
   assert.equal(await bob.walk(1n), true);
@@ -196,7 +196,7 @@ test('a road never holds a secret: what the host is handed is seeds, and what it
   delivery.attach('mem://two', other);
   other.publish('mem://two');
   warden.publish('mem://one');
-  const [handle] = await other.accept(await rex.quo.grant(rex), { label: 'rex' });
+  const [handle] = await other.accept(await rex._quo.grant(rex), { label: 'rex' });
   await handle.name();
   assert.ok(rows.length > 0);
   for (const row of rows) {

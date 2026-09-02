@@ -1,0 +1,369 @@
+{
+  "scenario": "caller-half",
+  "law": "https://github.com/razvangherghina/quo/blob/main/constitution.md",
+  "encoding": "hex",
+  "about": "The kit under test as the end that asks. A third of what the constitution puts on a kit is the caller's and none of it is a door's: what an ask says about the house that sent it, when a kit must refuse to send at all, and the four checks an answer meets at the end that asked for it. None of it is reachable from a corpus vector, and none of it was reachable from a scenario until the subject grew the two caller verbs.",
+  "stand": {
+    "warden": {
+      "nameSeed": "0808080808080808080808080808080808080808080808080808080808080808",
+      "padlockSeed": "7dbcdb3088339c02378f46525bff3fe2b84515973e28f5814301a99f386e20b1",
+      "heirSeed": "0303030303030303030303030303030303030303030303030303030303030303",
+      "heirCommitment": "de386cd12052681c3fab115ae44b1554ec2543d6a925ecd430cf2ccc8db5fc6a",
+      "limit": "1048576",
+      "hints": []
+    },
+    "beings": [
+      {
+        "seed": "0101010101010101010101010101010101010101010101010101010101010101",
+        "heirSeed": "0202020202020202020202020202020202020202020202020202020202020202",
+        "blueprint": "Counter\n  bump(by int) int\n  count() int\n",
+        "cells": ""
+      }
+    ],
+    "grants": [],
+    "relations": [
+      {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "warden": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+        "commitment": "23094711779588b0aced9d327714251901a101b8f2a5765d91fecc983d1fd636",
+        "padlock": "5a13b7a05e31ae998ad1307217981bb23bb17d277465829edd616e9169c8f46e",
+        "voiceSeed": "2ebd74bd564a8771fa628b28308c588588f5c0d0db17ae06b045b896d8218ad7",
+        "heirSeed": "7bae8096dc92d5f4e271742fd8db51abd563a8976c223dd734f1d2bdd553093c",
+        "hints": []
+      }
+    ],
+    "clock": [
+      "1000",
+      "1001",
+      "1002",
+      "1003",
+      "1004",
+      "1005",
+      "1006",
+      "1007",
+      "1008",
+      "1009",
+      "1010",
+      "1011",
+      "1012",
+      "1013",
+      "1014",
+      "1015",
+      "1016",
+      "1017",
+      "1018",
+      "1019",
+      "1020",
+      "1021",
+      "1022",
+      "1023",
+      "1024",
+      "1025",
+      "1026",
+      "1027",
+      "1028",
+      "1029",
+      "1030",
+      "1031",
+      "1032",
+      "1033",
+      "1034",
+      "1035",
+      "1036",
+      "1037",
+      "1038",
+      "1039"
+    ],
+    "random": [
+      "3232323232323232323232323232323232323232323232323232323232323232",
+      "3333333333333333333333333333333333333333333333333333333333333333",
+      "3434343434343434343434343434343434343434343434343434343434343434",
+      "3535353535353535353535353535353535353535353535353535353535353535",
+      "3636363636363636363636363636363636363636363636363636363636363636",
+      "3737373737373737373737373737373737373737373737373737373737373737",
+      "3838383838383838383838383838383838383838383838383838383838383838",
+      "3939393939393939393939393939393939393939393939393939393939393939",
+      "4040404040404040404040404040404040404040404040404040404040404040",
+      "4141414141414141414141414141414141414141414141414141414141414141",
+      "4242424242424242424242424242424242424242424242424242424242424242",
+      "4343434343434343434343434343434343434343434343434343434343434343"
+    ]
+  },
+  "unruled": [],
+  "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+  "opening": {
+    "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+    "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+    "cells": "",
+    "standings": [],
+    "relations": [
+      {
+        "warden": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+        "commitment": "23094711779588b0aced9d327714251901a101b8f2a5765d91fecc983d1fd636",
+        "padlock": "5a13b7a05e31ae998ad1307217981bb23bb17d277465829edd616e9169c8f46e",
+        "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+        "heir": "afa0ce0919a81bf57861ac7139d8945a1fc2ba9f00e53a4f26f494c23f78338c",
+        "seq": "0",
+        "news": "0",
+        "hints": []
+      }
+    ]
+  },
+  "beingCommitment": "ed4d580bb287b98674376c30d750d9926617873de8787e518c58c320d1899cbd",
+  "exchanges": [
+    {
+      "name": "an ask says nothing about the house that sent it",
+      "law": "The envelope",
+      "obligations": ["XI-8", "VII-2"],
+      "derivation": "One ask down the outbound row. Article XI fixes the record and the order of its fields, and fixes what is *not* in it: \"The caller's warden is not named. The payload carries a padlock and hints and nothing else about the caller's house.\" So the expected bytes carry the voice that holds the standing, the far door as recipient, the caller's own padlock as the way back, and no name of the caller's house anywhere — sealed to the far door's padlock with a fresh ephemeral key, one signature over the payload inside the seal. A kit that named its warden would produce a longer record and these bytes would not match. **And the seal itself is Article VII's claim**: \"A caller locks with the far warden's padlock and needs no key of its own.\" The lock on these bytes is the far door's padlock and a fresh ephemeral key, and **the caller's own padlock appears inside the payload as the way back rather than as anything the seal used**. A kit that required a caller to own a sealing pair — the shape almost every messaging protocol has — would either produce different bytes here or be unable to compose this ask at all, the scenario having handed it no such key. **It opens at seven, and that is deliberate.** Article VIII: \"Which number a caller opens with, above one, is the caller's own.\" The caller here is the scenario, which names the number; a kit that computes its own would send one against a fresh row and agree with an expectation pinned at one by coincidence. Seven agrees with nothing by accident.",
+      "seq": "7",
+      "do": "send",
+      "ask": {
+        "at": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+        "being": null,
+        "commitment": null,
+        "allowance": {
+          "time": "5000",
+          "hops": "4"
+        },
+        "seq": "7",
+        "method": {
+          "name": "describe",
+          "args": ""
+        }
+      },
+      "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+      "expect": "59d9225473451efffe6b36dbcaefdbf7b1895de62084509a7f5b58bf01d064183c5b7d559a780f2603e6c67a64d2d6c8a2518fcdf89499fdfed586fbf8491ecccb4dd69b65a5dee7c6bdd036085cbd5cb8de61427fe70028f29ec8df9fd21096f975ee653bb3f9e033145cf2686b042e7be17e95df551913112a7e4ba40a1bb6e88e8e8ba240a29e2a100efcc6d519f4c2464508e520e9ffe460dffbee257e8f5f7a3f64c62e9a6e6ea96972747ead7bf4662b7a530bb4300733c67c6c51f0cdf396570576da1300c7bd67ad18a3801143675176bd04ec52ecbfad2760238c94caf5b06a5807ddb4335205268f77c59494373d33c5e51d01dee8336e506239625725d8e5cb71dfbd8624995a",
+      "cargo": {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+        "cells": "",
+        "standings": [],
+        "relations": [
+          {
+            "warden": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+            "commitment": "23094711779588b0aced9d327714251901a101b8f2a5765d91fecc983d1fd636",
+            "padlock": "5a13b7a05e31ae998ad1307217981bb23bb17d277465829edd616e9169c8f46e",
+            "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+            "heir": "afa0ce0919a81bf57861ac7139d8945a1fc2ba9f00e53a4f26f494c23f78338c",
+            "seq": "7",
+            "news": "0",
+            "hints": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "a second ask is sealed with a key the first did not use",
+      "law": "The arithmetic",
+      "obligations": ["VI-1", "II-5"],
+      "derivation": "A second ask down the same row, at the next number, while the first is still awaiting — which Article III allows, because the two carry different numbers and their answers could never be confused. **The two asks are the same record but for the seq, and the pinned bytes differ far more than one field**, because each is sealed under its own ephemeral key. Article VI: \"**Every draw of randomness is taken as an argument, never reached for**, and a fresh sealing key is minted on every seal.\" Both halves are here: the key is drawn from the queue the scenario handed in rather than reached for, which is Article II's \"the clock and the randomness, which are handed in rather than reached for\"; and the second seal takes a key the first did not. **Freshness is a relation between two seals and no vector can hold it** — the corpus pins one seal under one fixed draw and cannot see the second. A caller that minted one key and kept it would match the first pin and miss this one.",
+      "seq": "8",
+      "do": "send",
+      "ask": {
+        "at": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+        "being": null,
+        "commitment": null,
+        "allowance": {
+          "time": "5000",
+          "hops": "4"
+        },
+        "seq": "8",
+        "method": {
+          "name": "describe",
+          "args": ""
+        }
+      },
+      "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+      "expect": "7b0d47d93427f8311160781c7c733fd89f88970aef490d8aa0ee19a4cb8a1b141cb0d1cfd19afffba54b98727f71f42acb9e568368dda96dbd461742ed7a24ec33e1f310aa456b8ff2e7b2a7c5181e2a0fcd301f1f22cb619d6282af2fd34901ac748a05e07e103e104afc5455ad3ea45715dc5ab258fc80f64c96be026d639312302c0878c7529bfc210e9858561f71af9650cd5ca555185ad83a4719d07671d695fdb69e9f6948289e1310b1c8bef0f3aa17d582f0076d351e07791e1a75a63a8aec66f4546de398fa252814b314e63ac34f629a2910203002423941a81a2beb389e1869d2285b1e5c94e645202e8c4c4078b05bf4efc9c3f656ff41a34587212af5ac5294b688b276ebd4",
+      "cargo": {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+        "cells": "",
+        "standings": [],
+        "relations": [
+          {
+            "warden": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+            "commitment": "23094711779588b0aced9d327714251901a101b8f2a5765d91fecc983d1fd636",
+            "padlock": "5a13b7a05e31ae998ad1307217981bb23bb17d277465829edd616e9169c8f46e",
+            "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+            "heir": "afa0ce0919a81bf57861ac7139d8945a1fc2ba9f00e53a4f26f494c23f78338c",
+            "seq": "8",
+            "news": "0",
+            "hints": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "a second ask on a number the first is still waiting on is not sent",
+      "law": "The carriage",
+      "obligations": ["III-14"],
+      "derivation": "The same far warden, the same return padlock, the same number, while the first ask is still unanswered. Article III: \"where two voices, one return padlock, one far warden and one number would make two answers indistinguishable, the sender's kit refuses to send the second ask while the first waits.\" The two answers would be one record with one warden and one seq, sealed to one padlock, and nothing in either would say which ask it belonged to — which is why the refusal is the sender's and happens before the road. So no bytes at all, and the number is not spent a second time.",
+      "seq": "7",
+      "do": "send",
+      "ask": {
+        "at": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+        "being": null,
+        "commitment": null,
+        "allowance": {
+          "time": "5000",
+          "hops": "4"
+        },
+        "seq": "7",
+        "method": {
+          "name": "describe",
+          "args": ""
+        }
+      },
+      "expect": "refused",
+      "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+      "cargo": {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+        "cells": "",
+        "standings": [],
+        "relations": [
+          {
+            "warden": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+            "commitment": "23094711779588b0aced9d327714251901a101b8f2a5765d91fecc983d1fd636",
+            "padlock": "5a13b7a05e31ae998ad1307217981bb23bb17d277465829edd616e9169c8f46e",
+            "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+            "heir": "afa0ce0919a81bf57861ac7139d8945a1fc2ba9f00e53a4f26f494c23f78338c",
+            "seq": "8",
+            "news": "0",
+            "hints": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "the second ask is answered first, and the caller takes it",
+      "law": "The carriage",
+      "obligations": ["III-12"],
+      "derivation": "**Two asks are awaiting — seven and eight — and the answer to eight arrives first.** Article III: \"answers return in whatever order the work finishes\", which is the rule a caller must not read a road as a queue. The far door was asked seven first and eight second; nothing obliges it to finish in that order, and here it has not. The caller takes this record because all four of Article XII's checks hold for it — the padlock, the byte, the warden, and an ask awaiting under that padlock, that warden and **that seq** — and the seq is what makes the fourth check order-free. **A caller that matched an arriving answer against its oldest outstanding ask** — the obvious implementation if you picture a connection as a pipe — would compare this answer against seven, find the numbers disagree, and meet it with silence. Seven is still awaiting afterwards, which the exchange below then settles.",
+      "seq": "8",
+      "do": "read",
+      "at": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+      "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+      "expect": {
+        "warden": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+        "seq": "8",
+        "data": null
+      },
+      "give": "0faa684ed28867b97f4a6a2dee5df8ce974e76b7018e3f22a1c4cf2678570f200bd2b5ecaeb3c94c1c18bc5abea87861173221844b5691b29251c36dd20345a20eaf9f946bd64031f31a7f453ee76a8bace0b8e900a6c6abb10f82b8a73df3939a3bb4afdfe099b7eb86f719efec7feebe7038d16b171431785422954ec19d2e37aebd72b3e89314ede08a8f6e14d2bbaf15b575d4932807f59a",
+      "cargo": {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+        "cells": "",
+        "standings": [],
+        "relations": [
+          {
+            "warden": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+            "commitment": "23094711779588b0aced9d327714251901a101b8f2a5765d91fecc983d1fd636",
+            "padlock": "5a13b7a05e31ae998ad1307217981bb23bb17d277465829edd616e9169c8f46e",
+            "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+            "heir": "afa0ce0919a81bf57861ac7139d8945a1fc2ba9f00e53a4f26f494c23f78338c",
+            "seq": "8",
+            "news": "0",
+            "hints": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "an answer from the door the ask was sent to is taken",
+      "law": "The judgment",
+      "obligations": ["XII-10", "XII-11", "XI-10", "III-13"],
+      "derivation": "The far door answers the ask above. Article XII gives it four checks at the caller: \"Unseal with the padlock the ask named; the leading byte must say `answer`; verify the signature with the `warden` the record carries, which must be the warden the ask was sent to; and an ask must be awaiting under that padlock, that warden and that seq.\" All four hold here, so the record is taken. Article XII also: \"An answer spends nothing — its number is the ask's own, already spent at the far door\", so the relation's own count is still 1 afterwards and no window has moved.",
+      "seq": "7",
+      "do": "read",
+      "at": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+      "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+      "expect": {
+        "warden": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+        "seq": "7",
+        "data": null
+      },
+      "give": "06453fcd9cef5a1f53acc4f942104c0c8e9e27d5c7b37f5507cdcd1628105963529e0290b537db18a7f100e266628997069104aed36b09f3077ab6c35aa6533aae379bb609ee04584e7bfb6327603620bc896dcd43cb342bd2de7e71341b7e0e204d8ff51b58dd2f56fae793bb2466fcc733b8e17adebebe3eda3cf9a09acf646156fc9d797a46a550bd838441570924859b9c5b66e05003aefd",
+      "cargo": {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+        "cells": "",
+        "standings": [],
+        "relations": [
+          {
+            "warden": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+            "commitment": "23094711779588b0aced9d327714251901a101b8f2a5765d91fecc983d1fd636",
+            "padlock": "5a13b7a05e31ae998ad1307217981bb23bb17d277465829edd616e9169c8f46e",
+            "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+            "heir": "afa0ce0919a81bf57861ac7139d8945a1fc2ba9f00e53a4f26f494c23f78338c",
+            "seq": "8",
+            "news": "0",
+            "hints": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "an answer signed by a warden the ask never went to is silence",
+      "law": "The envelope",
+      "obligations": ["XI-10", "XII-10"],
+      "derivation": "A well-formed answer, sealed to the right padlock, carrying a different warden and signed correctly by that warden's own key. The first check passes: Article XI says \"the signature is verified against the `warden` the record itself carries\", and it does verify. The second is the one that refuses it — \"that this warden is the one the ask was sent to is the caller's separate judgment\" — and a kit that only ran the first would take this record, which is why the two are named apart. Silence, and nothing kept.",
+      "seq": "7",
+      "do": "read",
+      "expect": "silence",
+      "at": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+      "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+      "give": "7d34a4815fa6b982535e60af3bd9b49556816080f1641ff81d2b7c8ae8268a4476a3b30b438328901f1f3e79a61cdb4fcbab19ec66da905e75b9d8acbdfe8dd498ed481ec4636834ef31498817a13b7e59fe39ca34e2fbc953f4724576751bedaf9b7685204ca8be1a5584bb83badc2cf337db4411c583c93fd81401b7fcff737ac1660e9204e09bce9b1f78b17b18b5ac386725c0867809afaf",
+      "cargo": {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+        "cells": "",
+        "standings": [],
+        "relations": [
+          {
+            "warden": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+            "commitment": "23094711779588b0aced9d327714251901a101b8f2a5765d91fecc983d1fd636",
+            "padlock": "5a13b7a05e31ae998ad1307217981bb23bb17d277465829edd616e9169c8f46e",
+            "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+            "heir": "afa0ce0919a81bf57861ac7139d8945a1fc2ba9f00e53a4f26f494c23f78338c",
+            "seq": "8",
+            "news": "0",
+            "hints": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "the same answer a second time is silence, the ask having been settled",
+      "law": "The judgment",
+      "obligations": ["XII-12"],
+      "derivation": "The identical bytes of the answer already taken. Article XII: \"an answer nothing awaits is the same silence as every other failure, retried never.\" The ask was settled by the first copy, so nothing awaits under that padlock, that warden and that seq any more, and the fourth check is the one that refuses it. A caller that took this would let a replayed answer arrive twice, and a being that acts on what it is told would act twice on one reply.",
+      "seq": "7",
+      "do": "read",
+      "expect": "silence",
+      "at": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+      "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+      "give": "06453fcd9cef5a1f53acc4f942104c0c8e9e27d5c7b37f5507cdcd1628105963529e0290b537db18a7f100e266628997069104aed36b09f3077ab6c35aa6533aae379bb609ee04584e7bfb6327603620bc896dcd43cb342bd2de7e71341b7e0e204d8ff51b58dd2f56fae793bb2466fcc733b8e17adebebe3eda3cf9a09acf646156fc9d797a46a550bd838441570924859b9c5b66e05003aefd",
+      "cargo": {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+        "cells": "",
+        "standings": [],
+        "relations": [
+          {
+            "warden": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+            "commitment": "23094711779588b0aced9d327714251901a101b8f2a5765d91fecc983d1fd636",
+            "padlock": "5a13b7a05e31ae998ad1307217981bb23bb17d277465829edd616e9169c8f46e",
+            "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+            "heir": "afa0ce0919a81bf57861ac7139d8945a1fc2ba9f00e53a4f26f494c23f78338c",
+            "seq": "8",
+            "news": "0",
+            "hints": []
+          }
+        ]
+      }
+    }
+  ]
+}

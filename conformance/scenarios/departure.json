@@ -1,0 +1,192 @@
+{
+  "scenario": "departure",
+  "law": "https://github.com/razvangherghina/quo/blob/main/constitution.md",
+  "encoding": "hex",
+  "about": "The origin half of a migration, which is the only half one door can be. The cargo has landed somewhere else; what this door does is publish the succession of the being's committed heir and stop acting for it. Nothing arrives, so there is nothing on the wire to judge — what the case asserts is the envelope this door composed for the one peer standing at the being, and no vector could hold it, because the bytes of news and the bytes of an ask are the same shape and what separates them is where the receiving door finds the voice.",
+  "stand": {
+    "warden": {
+      "nameSeed": "196982eee79e80efbc3131c93b99285a38c540c43e7e4fbb8399c260b1ce5103",
+      "padlockSeed": "7dbcdb3088339c02378f46525bff3fe2b84515973e28f5814301a99f386e20b1",
+      "heirSeed": "0303030303030303030303030303030303030303030303030303030303030303",
+      "heirCommitment": "83f960da653b61eb63f6b53b5d80adeb377e23e569f1c555395b9b119ad69603",
+      "limit": "1048576",
+      "hints": []
+    },
+    "beings": [
+      {
+        "seed": "0101010101010101010101010101010101010101010101010101010101010101",
+        "heirSeed": "0202020202020202020202020202020202020202020202020202020202020202",
+        "blueprint": "Counter\n  bump(by int) int\n  count() int\n",
+        "cells": ""
+      }
+    ],
+    "grants": [
+      {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "voiceSeed": "2ebd74bd564a8771fa628b28308c588588f5c0d0db17ae06b045b896d8218ad7",
+        "heirSeed": "7bae8096dc92d5f4e271742fd8db51abd563a8976c223dd734f1d2bdd553093c",
+        "padlock": null,
+        "hints": []
+      }
+    ],
+    "clock": [
+      "1000",
+      "1001",
+      "1002",
+      "1003",
+      "1004",
+      "1005",
+      "1006",
+      "1007",
+      "1008",
+      "1009",
+      "1010",
+      "1011",
+      "1012",
+      "1013",
+      "1014",
+      "1015",
+      "1016",
+      "1017",
+      "1018",
+      "1019",
+      "1020",
+      "1021",
+      "1022",
+      "1023",
+      "1024",
+      "1025",
+      "1026",
+      "1027",
+      "1028",
+      "1029",
+      "1030",
+      "1031",
+      "1032",
+      "1033",
+      "1034",
+      "1035",
+      "1036",
+      "1037",
+      "1038",
+      "1039"
+    ],
+    "random": [
+      "3232323232323232323232323232323232323232323232323232323232323232",
+      "3333333333333333333333333333333333333333333333333333333333333333",
+      "3434343434343434343434343434343434343434343434343434343434343434",
+      "3535353535353535353535353535353535353535353535353535353535353535",
+      "3636363636363636363636363636363636363636363636363636363636363636",
+      "3737373737373737373737373737373737373737373737373737373737373737",
+      "3838383838383838383838383838383838383838383838383838383838383838",
+      "3939393939393939393939393939393939393939393939393939393939393939",
+      "4040404040404040404040404040404040404040404040404040404040404040",
+      "4141414141414141414141414141414141414141414141414141414141414141",
+      "4242424242424242424242424242424242424242424242424242424242424242",
+      "4343434343434343434343434343434343434343434343434343434343434343"
+    ]
+  },
+  "unruled": [],
+  "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+  "opening": {
+    "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+    "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+    "cells": "",
+    "standings": [
+      {
+        "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+        "commitment": "290d6caefb277537554cc8f48597206e9b5ca2975dc81dc4c8f66662570b4d64",
+        "name": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+        "beings": ["8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c"],
+        "mark": "0",
+        "spent": [],
+        "padlock": null,
+        "hints": []
+      }
+    ],
+    "relations": []
+  },
+  "beingCommitment": "ed4d580bb287b98674376c30d750d9926617873de8787e518c58c320d1899cbd",
+  "exchanges": [
+    {
+      "name": "the peer speaks, and leaves the way back the news will take",
+      "law": "Keys, records and standings",
+      "obligations": ["VII-7", "XI-2"],
+      "derivation": "An ordinary describe by the voice that holds a standing at the being. **It is here for the record it leaves, not for its answer**: Article VII has the inbound row keep \"the padlock it named and the hints it gave\", and at grant time the voice had said nothing, so the row opens with no way back at all. A door cannot send news to a peer that has never spoken — it has nowhere to send it — and the exchange after this one would compose nothing. **So the way back is a precondition of a departure and the scenario establishes it rather than assuming it**: the standing carries a padlock afterwards where it carried null before, and that is the whole difference this exchange makes.",
+      "seq": "1",
+      "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+      "expect": "59d9225473451efffe6b36dbcaefdbf7b1895de62084509a7f5b58bf01d064183d0e9f38364e65372817fc540a351551a7cad5c13b5594def61c92d544afecd572a652e3c1fdc5aa70a7624ece29b926de511f4f09cbc1a64ecef462469a0fa6762abd1b178f8c304f9afb50ad850c3a19b73695575f041ff6dfd6886586fbb5d15306dc065899463987f3ae1df8254e9f348f6fec9ff46be5f32c8f6624ca803022d2289e2528e9d72f1d4d7c2b09485f9d2f08d4365c4879624a24e3c817256be3870664c7e4b338a0574f23b088805349556c0ea7f30624d23ff3558ddfe0db140d38dfdc93c462460b5887db3f994cee24dab5633205988e0f10564c256925e7fa15887c5ae2c18e145ff47cc04a483f4a8b5681d5ad14aa898c7c67b50b5c77d3b536f91851a39138adb61f411ee3a2d826dc49651b2e9aee9b80c3341bf47ba1a3d355d603f7180b5c60b52cf7eab58f70df26e986204b9dc456b0e04a104934854c6af7b5fef0973530aa58fec8b9bcf346288f0ce0c7",
+      "give": "79fcf7f4c04d3277b425449f0d32209342908b4bc3772dfabe315f82034f6e643bc9f21a36453a51dd344bed9327bf9dae259adad512681c2225cbc27e06a2e2de84e37ccaa7c1e0deff3e7eace8ac7dab980d7b7b7a6ba7f16214da27a8e9ee4a214c783f323fefb7ba6e9f8293aaabeb299eb9a37d3213b8a3dfed9566f952e954183591bfbef4fbf8c67732310fd120abd00a9a44f61fc66010d17b85e3ecdd364735c0e104cf96bd8e04e75f529a3c2f5496bf74f19f9c9e5478963ab337e2fb8a6869464b40aaee98f1c3d068542df25d1b3554ec93dd2c82d8ba8be9a36c605bc243d4100b2e0a781ba00e8d00ce80878e",
+      "cargo": {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+        "cells": "",
+        "standings": [
+          {
+            "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+            "commitment": "290d6caefb277537554cc8f48597206e9b5ca2975dc81dc4c8f66662570b4d64",
+            "name": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+            "beings": ["8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c"],
+            "mark": "1",
+            "spent": [],
+            "padlock": "5a13b7a05e31ae998ad1307217981bb23bb17d277465829edd616e9169c8f46e",
+            "hints": []
+          }
+        ],
+        "relations": []
+      }
+    },
+    {
+      "name": "the being departs, and the origin composes the first of the two news",
+      "law": "The news",
+      "obligations": ["XIV-13", "XIV-2", "XIV-5", "XIII-2"],
+      "derivation": "Article XIV: \"**Migration is that message sent twice.** First the origin's committed heir, carrying as its next commitment the one `receive` answered, and naming the new door, its padlock and its hints.\" **This exchange is the first of the two and the migration scenario drives the second**; neither cites XIV-13 alone, because a case that showed one message while citing an article about two would be claiming twice what it had shown once. **Nothing crosses inward** — a departure is the house acting on itself, like an amend — so what is asserted is the bytes it composed for its peer. The word is a succession of a being, so it carries the being and its successor: Article XIV reads the case off which fields are present, and \"**fields that mean nothing in a case are absent, not filled**\". The successor is the key the being committed to at `stand`, which is what makes the news believable — Article XIV gives exactly two roads to belief and this is the first: \"the successor signs and the peer hashes, and matching, the news is true.\" **The commitment it carries is the one `receive` answered**, the single fact the origin could not have invented, and the peer will hash the second news against it. The envelope is an ordinary say sealed to the padlock the peer left one exchange ago, carrying this door's own padlock and roads inside as any message does. **A door that composed the word from its own name rather than the destination's, or signed with its own key rather than the being's heir, misses these bytes** — and each is a thing a plausible kit does if it reads a departure as the house announcing itself rather than the being.",
+      "do": "depart",
+      "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+      "heirSeed": "0202020202020202020202020202020202020202020202020202020202020202",
+      "commitment": "fe1402ccd2257731350f9553bef234d47f9aadf9aed5fe2a8642abc69bc8637d",
+      "gone": {
+        "name": "a11dbe28d6b2c2d80c4f6cb2b0bca67baa2f8c9ceb81c0c94ac47e3cf0697035",
+        "padlock": "bb0109e1147cb2b716f9407f947b0c47a8c3c18ce00339dc02df47c54fd1e202",
+        "hints": ["tcp://new.example:9000"]
+      },
+      "news": [
+        {
+          "ephemeral": "8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b",
+          "seq": "1",
+          "allowance": {
+            "time": "5000",
+            "hops": "4"
+          }
+        }
+      ],
+      "expect": "done",
+      "told": [
+        "1fcfee56de7feeba903179f84bad27df6e47036ec0904db5099af8fc07870923b44d48ce539096857c504e163377672f950f7e27bff9ea22ac1ca537424401dd1f55929e00732b0efbeda8a125086ad41f93157e767d8c869874dd216c0f40d6713dbccead6fe31e6ac273c7b2c0d35d098e54056fc733db69b5931c54b346c663fea7a1460e66995980f42b8d27f098302fc50d34b26c5d3b3fa27808de30df5181d146b9045bf3397a64f404932f12960ebe4df6b2cc50140c09b01f4eb48fa3fd1cda9071ab1c591c2c766e7283384854d809ff05774ed98673d885377c1dda4abd7bcf41ac4606c67a9dc60b89a370d5682df320f79a9261e9617a9918436ae5e93176a6c9dff2c067cdb1da7b97d474a0d10af38a49bf2b178e738635ddcbc5d1f7ca57840b8176b3dbb9b95903a29941938229d74eb8dde83013014de1b0cc0d87cbc62adf5446e9acbf66204edfbaf7e00a4466e0ed4569cb67e814144e548918583aa104f4f5b76341a616c7d935098fef304326b0cc4083f6cb61efcd31c801b9fe43f54fec9a08789530635b82a1c865db78a33bbab2bcd1d9897006f6db4889fc183fa71f75ad7d7d95ac21793b68964262563aff0671f6b20e8933db02f0b70a51608b9125ed6bd90664c7b278"
+      ],
+      "cargo": null
+    },
+    {
+      "name": "the old door points, for the name the being wore, with the word it published",
+      "law": "Rotation",
+      "obligations": ["XIII-4"],
+      "derivation": "**The gap this exchange closes: until it, no scenario ever asked `moved` at the door a being departed from.** The rotation scenario asks it at a door that was *stood up* already pointing, and the migration scenario asks it at the destination — so a kit whose `depart` published nothing an ask could reach went green for weeks. Article XIII: \"It keeps the succession it published and answers `moved` with it.\" The two halves of that sentence are one obligation and this is the first: **the word the exchange above put on the wire as news is the word this ask gets back**, the same being, the same successor, the same commitment `receive` answered, the same door and the same roads. The emitter builds both from one `word` object, so the only difference in the bytes is the presence byte `moved`'s `word?` carries and `tell`'s plain `word` does not — Article IX: \"`tell` is news; `moved` is the old door's pointer, which is why the two carry one shape.\" **The peer is the one that held the standing, and it still does**: a departure stops the door acting for the being, not judging for it, or the pointer would be unreachable by the only voice entitled to it. The number is the next one after the describe that opened this scenario.",
+      "seq": "2",
+      "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+      "expect": "7b0d47d93427f8311160781c7c733fd89f88970aef490d8aa0ee19a4cb8a1b141de533a27dac95ea8ebaa25c119637b3ce050c8fab1ca44eb58f036c519cd6f58a0a77680e1d70c247fd00df036d1a5069564f13e386e9325539536ee58942f3cbced7772a1919810dd6554eaf38a2d951ada5fff3a6518cf4a3436a9cb720c44d2f62a9f3c990c08f97e0affa0be97ef419997ec8a4ab0c4b9ce8626ee1437e43c24345aa4b16d28567bdcd2b874bd12a05ee78e18d06cc28a02faf28654331d0df4779e0a7b503a982c16db111cbf20407cb9315a45b597b18b3580e5be3d40078dce15a9af344081285389e29640cb2987a07c905584ecc7e68f486aa07fc96f8cb0d7b86153210e374698e288a64a06e3c1bfbca75e6cf070af0fed9aff1fe5f909cb2d132861c3d3aebd11cf733c4cd92d3c90b1c1754422194d8794b8556fbe3a31186adebcbae2571cd2f0a940e5dd71a7bf2e6b5ba22601e0295891074c952235ee7aca9e31928dfa382",
+      "give": "d2ca53ca4103b5ec28e2e291cdc1ec2bfad45e56986acc4574dcc6223e233c015a7b4cbce6623624dc9eb6249b36f75393fecb2eef864907de3b3a681c8ddae6c839c6de69f068ea6f90a9ef39e8b1a89b3e8611576acb42e52a750aaadde1cb8e9d2e43107fed45f17ca51203f424c97d5ed9c4445806085f21a837674853ede35546f6e320c8900aff8b6bc7672647155ff3b47f7aca0b845143ed83ac17aed923f2a3e603050594fec513a4d26bebbd97b23d329718f14322920ed0903a7abc7e32ea8561a18df4584cbfb334766ba958cb831828a48641a17f9d1955715eb6d6d6d1ef4f9065b7edb02fbf96bc3a2d7cc0b5c7d983bd605f455b04a9d74b82821dd372278ed5654683fad70ad003768caa46e7d8b9fca96d3aa9b94bc8daaae70238b61c8b85fd",
+      "cargo": null
+    },
+    {
+      "name": "and every other ask at the departed being meets silence",
+      "law": "Rotation",
+      "obligations": ["XIII-4"],
+      "derivation": "The other half of the same sentence, and it has to be driven at a door that really departed a being rather than one told at `stand` that it had. Article XIII: \"Every other ask meets silence: an answer's data is the field's declared answer type by the notation's rules, and a succession is not that type, so the old door cannot put one where the caller asked for something else. ... The old door never forwards a call and never acts on the being's behalf again.\" So the same voice, holding the same standing, asking the being itself for the ordinary thing it asked before, gets nothing — **not the succession under a field that declared an int, and not a forward to the house that holds the being now**. A kit that merely stopped announcing the being while its door went on answering for it passes the exchange above and fails this one, which is why the two are written together and neither stands alone.",
+      "seq": "3",
+      "expect": "silence",
+      "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+      "give": "726ffda9ad119a1b28d57aeb7143313b493b3234b15835ba13327b5f96c0bc7421d1d3a9ef99c2bedc6d7b15f472ec77b8366a01fb8941f27b253cd6419bc3a1731d8aa3270e15d9eb6b8354de741925af572b24235156bf979a13458ffb165ee83b98c47f62ac31e87fc6da481c06239ec8db5feefc0fa1b02557541cddd8020c948fd32f0861fc918a077c947a86958eb44c42f159f7d0abe9d9e03187dd1f9e5b954d3c767820e689f51635fa42066f3ab0ac0117b219898467bff9fa8a70d4be9896c1556a0c9cd1941f7f8801860642507db6cfe71e7db7584814f905011402246887be8df3daabd86ef8d53da0c1e993f967eeb2935e5753d870f82295b479e31c93644e47d389bf479f56ab01934c9cbca2d1fafceead84d17e486d9eccc81c7f3aca24f1c8",
+      "cargo": null
+    }
+  ]
+}

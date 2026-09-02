@@ -65,7 +65,7 @@ class WhatTheWardenProvides(unittest.IsolatedAsyncioTestCase):
         alice, bob, _ = await pair()
         counter = Counter()
         await alice.hold(counter, COUNTER)
-        [handle] = await bob.accept(counter.quo.grant(), label="counter")
+        [handle] = await bob.accept(counter._quo.grant(), label="counter")
         # An ask arriving is judged and answered.
         self.assertEqual(await handle.bump(), 1)
         # Garbage arriving is silence, and the door says nothing about why.
@@ -78,12 +78,12 @@ class WhatTheWardenProvides(unittest.IsolatedAsyncioTestCase):
 
         class Watching(Counter):
             def bump(self) -> int:
-                seen.append((self.quo.caller.voice, self.quo.caller.kind))
+                seen.append((self._quo.caller.voice, self._quo.caller.kind))
                 return super().bump()
 
         counter = Watching()
         await alice.hold(counter, COUNTER)
-        [handle] = await bob.accept(counter.quo.grant(), label="counter")
+        [handle] = await bob.accept(counter._quo.grant(), label="counter")
         # Accepting is two rotations; the first call after it is a plain ask.
         await handle.bump()
         await handle.bump()
@@ -98,9 +98,9 @@ class WhatTheWardenProvides(unittest.IsolatedAsyncioTestCase):
         alice, bob, _ = await pair()
         counter = Counter()
         await alice.hold(counter, COUNTER)
-        self.assertEqual(counter.quo.standings(), [])
-        await bob.accept(counter.quo.grant(), label="counter")
-        held = counter.quo.standings()
+        self.assertEqual(counter._quo.standings(), [])
+        await bob.accept(counter._quo.grant(), label="counter")
+        held = counter._quo.standings()
         self.assertEqual(len(held), 1)
         self.assertEqual(list(held[0]), ["voice"])
 
@@ -110,24 +110,24 @@ class WhatTheWardenProvides(unittest.IsolatedAsyncioTestCase):
         other = Counter()
         await alice.hold(counter, COUNTER)
         await alice.hold(other, COUNTER)
-        [handle] = await bob.accept(counter.quo.grant(other), label="other")
+        [handle] = await bob.accept(counter._quo.grant(other), label="other")
         self.assertEqual(await handle.bump(), 1)
         # Bob reaches `other` and not `counter`.
-        self.assertEqual(len(other.quo.standings()), 1)
-        self.assertEqual(len(counter.quo.standings()), 0)
+        self.assertEqual(len(other._quo.standings()), 1)
+        self.assertEqual(len(counter._quo.standings()), 0)
         # Released: Bob's next call meets silence, and nothing tells it apart.
-        counter.quo.release(other)
+        counter._quo.release(other)
         self.assertIsNone(await handle.bump())
 
     async def test_hold_mints_a_smaller_being_beside_me_reached_by_a_handle(self):
         alice, _, _ = await pair()
         counter = Counter()
         await alice.hold(counter, COUNTER)
-        handle = await counter.quo.hold(Counter(), COUNTER, label="small")
+        handle = await counter._quo.hold(Counter(), COUNTER, label="small")
         # Same warden, same shape: asynchronous, a value or silence.
         self.assertEqual(await handle.bump(), 1)
-        self.assertEqual(await counter.quo.relation("small").read(), 1)
-        counter.quo.release(counter.quo.relation("small"))
+        self.assertEqual(await counter._quo.relation("small").read(), 1)
+        counter._quo.release(counter._quo.relation("small"))
         self.assertIsNone(await handle.read())
 
     async def test_why_it_fell_silent_is_told_inward_and_nothing_crosses_the_wire(self):
@@ -143,7 +143,7 @@ class WhatTheWardenProvides(unittest.IsolatedAsyncioTestCase):
         counter = Counter()
         await alice.hold(counter, COUNTER)
         alice.publish("anything at all, even this")
-        invitation = counter.quo.grant()
+        invitation = counter._quo.grant()
         self.assertIn("anything at all, even this", invitation.hints)
         # Delivery walks past what it cannot speak; the door still answers on
         # the road it can.
@@ -168,10 +168,10 @@ class WhatTheWardenProvides(unittest.IsolatedAsyncioTestCase):
         counter = Counter()
         being_secret = random()
         await alice.hold(counter, COUNTER, secret=being_secret)
-        [handle] = await bob.accept(counter.quo.grant(), label="counter")
+        [handle] = await bob.accept(counter._quo.grant(), label="counter")
         self.assertEqual(await handle.bump(), 1)
-        spent = await handle.seal("bump")
-        self.assertEqual(await handle.send(spent), 2)
+        spent = await handle._quo.seal("bump")
+        self.assertEqual(await handle._quo.send(spent), 2)
 
         # The process dies. A new warden opens on the same seeds and the same
         # store, holds the same object again, and Bob's standing is still there.
@@ -181,11 +181,11 @@ class WhatTheWardenProvides(unittest.IsolatedAsyncioTestCase):
         delivery.attach("mem://alice", alice)
         again = Counter()
         await alice.hold(again, COUNTER, secret=being_secret)
-        self.assertEqual(len(again.quo.standings()), 1)
+        self.assertEqual(len(again._quo.standings()), 1)
         self.assertEqual(await handle.bump(), 1)
         # The marks survived too: the envelope spent before the restart is
         # silence at the door that opened again.
-        self.assertIsNone(await handle.send(spent))
+        self.assertIsNone(await handle._quo.send(spent))
 
 
 if __name__ == "__main__":

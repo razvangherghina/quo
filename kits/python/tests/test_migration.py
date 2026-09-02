@@ -70,7 +70,7 @@ class AMigrationEndToEnd(unittest.TestCase):
         # The traveller, and a peer standing at it.
         self.traveller = asyncio.run(
             self.origin.hold(Lamp(), LAMP, secret=seed(30), heir_secret=seed(31))
-        ).being
+        )._quo.being
         self.origin.beings[self.traveller].cells = b"a lamp's own memory"
         invitation = self.origin.invite(
             self.traveller, seed(32), seed(33), hints=("https://origin.example",)
@@ -297,8 +297,8 @@ class APeerThatMissedTheNews(unittest.IsolatedAsyncioTestCase):
             door.publish(hint)
 
         self.lamp = Lamp()
-        self.traveller = (await self.origin.hold(self.lamp, LAMP)).being
-        [self.handle] = await self.peer.accept(self.lamp.quo.grant())
+        self.traveller = (await self.origin.hold(self.lamp, LAMP))._quo.being
+        [self.handle] = await self.peer.accept(self.lamp._quo.grant())
         # The standing is real before anything moves, and so is the way back.
         self.assertIs(await self.handle.lit(), True)
         self.row = self.peer.relation(self.origin.name)
@@ -352,10 +352,10 @@ class APeerThatMissedTheNews(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(self.row.warden, self.destination.name)
         self.assertEqual(self.row.padlock, self.destination.padlock)
         self.assertEqual(self.row.hints, ("mem://destination",))
-        self.assertEqual(self.handle.being, self.first_word["successor"])
+        self.assertEqual(self.handle._quo.being, self.first_word["successor"])
 
         self.assertIsNone(await self.handle.lit())
-        self.assertEqual(self.handle.being, self.arrived_as)
+        self.assertEqual(self.handle._quo.being, self.arrived_as)
         self.assertEqual(
             self.row.beings, {self.arrived_as: self.second_word["commitment"]}
         )

@@ -51,13 +51,13 @@ class Dog:
         return True
 
     async def vaccinated(self):
-        record = self.quo.relation("clinic")
+        record = self._quo.relation("clinic")
         if record is None:
             return None
         return await record.vaccinated()
 
     def invite(self):
-        return self.quo.grant()
+        return self._quo.grant()
 
     def cells(self) -> bytes:
         return wire.encode(INT_LIST, self.walks)
@@ -98,11 +98,11 @@ class Walker:
         self.listener = None
 
     async def subscribe(self, invitation) -> bool:
-        [self.listener] = await self.quo.accept(invitation, label="inbox")
+        [self.listener] = await self._quo.accept(invitation, label="inbox")
         return self.listener is not None
 
     async def walk(self, minutes: int) -> bool:
-        rex = self.quo.relation("rex")
+        rex = self._quo.relation("rex")
         if rex is None:
             return False
         if await rex.logWalk(minutes) is None:
@@ -161,64 +161,64 @@ async def world() -> World:
 class AliceBobAndTheClinic(unittest.IsolatedAsyncioTestCase):
     async def test_1_alice_lets_bob_walk_rex_and_walker_holds_a_handle(self):
         at = await world()
-        await at.walker.quo.accept(at.rex.invite(), label="rex")
-        self.assertEqual(await at.walker.quo.relation("rex").name(), "Rex")
+        await at.walker._quo.accept(at.rex.invite(), label="rex")
+        self.assertEqual(await at.walker._quo.relation("rex").name(), "Rex")
         self.assertIs(await at.walker.walk(30), True)
         self.assertEqual(at.rex.walks, [30])
 
     async def test_2_bob_narrows_what_alice_sees_profile_is_granted_walker_never(self):
         at = await world()
-        [handle] = await at.rex.quo.accept(at.profile.quo.grant(), label="bob")
+        [handle] = await at.rex._quo.accept(at.profile._quo.grant(), label="bob")
         self.assertEqual(await handle.name(), "Bob")
         self.assertEqual(await handle.rate(), 20)
         # Alice's estate at Bob's door holds Profile and the public being and
         # nothing of Walker. Walker's fields do not exist for her.
         with self.assertRaises(AttributeError):
             handle.secret
-        self.assertEqual(len(at.walker.quo.standings()), 0)
+        self.assertEqual(len(at.walker._quo.standings()), 0)
 
     async def test_3_the_chain_the_clinic_sees_rexs_voice_and_never_bobs(self):
         at = await world()
         callers = []
 
         def vaccinated() -> bool:
-            callers.append(at.record.quo.caller.voice)
+            callers.append(at.record._quo.caller.voice)
             return True
 
         at.record.vaccinated = vaccinated
-        await at.rex.quo.accept(at.record.quo.grant(), label="clinic")
-        await at.walker.quo.accept(at.rex.invite(), label="rex")
-        self.assertIs(await at.walker.quo.relation("rex").vaccinated(), True)
+        await at.rex._quo.accept(at.record._quo.grant(), label="clinic")
+        await at.walker._quo.accept(at.rex.invite(), label="rex")
+        self.assertIs(await at.walker._quo.relation("rex").vaccinated(), True)
         self.assertEqual(len(callers), 1)
-        self.assertEqual(callers[0], at.record.quo.standings()[0]["voice"])
+        self.assertEqual(callers[0], at.record._quo.standings()[0]["voice"])
 
     async def test_3b_the_leash_shrinks_by_one_hop_and_a_being_never_widens_it(self):
         at = await world()
         leashes = []
 
         async def vaccinated_at_rex():
-            leashes.append(at.rex.quo.leash["hops"])
-            return await at.rex.quo.relation("clinic").vaccinated()
+            leashes.append(at.rex._quo.leash["hops"])
+            return await at.rex._quo.relation("clinic").vaccinated()
 
         def vaccinated_at_record() -> bool:
-            leashes.append(at.record.quo.leash["hops"])
+            leashes.append(at.record._quo.leash["hops"])
             return True
 
         at.rex.vaccinated = vaccinated_at_rex
         at.record.vaccinated = vaccinated_at_record
-        await at.rex.quo.accept(at.record.quo.grant(), label="clinic")
-        await at.walker.quo.accept(at.rex.invite(), label="rex")
-        await at.walker.quo.relation("rex").vaccinated()
+        await at.rex._quo.accept(at.record._quo.grant(), label="clinic")
+        await at.walker._quo.accept(at.rex.invite(), label="rex")
+        await at.walker._quo.relation("rex").vaccinated()
         self.assertEqual(len(leashes), 2)
         self.assertEqual(leashes[1], leashes[0] - 1)
 
     async def test_4_subscription_is_a_grant_backwards_and_a_push_is_an_ask(self):
         at = await world()
-        await at.walker.quo.accept(at.rex.invite(), label="rex")
+        await at.walker._quo.accept(at.rex.invite(), label="rex")
         # Alice hands Bob's Walker an invitation to Inbox, through a field
         # Walker declares. There is no subscribe verb anywhere beneath this.
-        [bob] = await at.rex.quo.accept(at.walker.quo.grant(), label="walker")
-        self.assertIs(await bob.subscribe(at.inbox.quo.grant()), True)
+        [bob] = await at.rex._quo.accept(at.walker._quo.grant(), label="walker")
+        self.assertIs(await bob.subscribe(at.inbox._quo.grant()), True)
         await bob.walk(15)
         await bob.walk(25)
         self.assertEqual(at.inbox.heard, [15, 25])
@@ -226,11 +226,11 @@ class AliceBobAndTheClinic(unittest.IsolatedAsyncioTestCase):
 
     async def test_4b_unsubscribing_needs_no_verb_and_the_push_meets_silence(self):
         at = await world()
-        await at.walker.quo.accept(at.rex.invite(), label="rex")
-        [bob] = await at.rex.quo.accept(at.walker.quo.grant(), label="walker")
-        await bob.subscribe(at.inbox.quo.grant())
+        await at.walker._quo.accept(at.rex.invite(), label="rex")
+        [bob] = await at.rex._quo.accept(at.walker._quo.grant(), label="walker")
+        await bob.subscribe(at.inbox._quo.grant())
         await bob.walk(10)
-        at.inbox.quo.release()
+        at.inbox._quo.release()
         # The walk is still logged; only the push finds nobody.
         self.assertIs(await bob.walk(20), True)
         self.assertEqual(at.inbox.heard, [10])
@@ -238,33 +238,33 @@ class AliceBobAndTheClinic(unittest.IsolatedAsyncioTestCase):
 
     async def test_5_alice_fires_bob_amend_and_the_next_call_is_silence(self):
         at = await world()
-        await at.walker.quo.accept(at.rex.invite(), label="rex")
-        handle = at.walker.quo.relation("rex")
+        await at.walker._quo.accept(at.rex.invite(), label="rex")
+        handle = at.walker._quo.relation("rex")
         self.assertIs(await handle.logWalk(5), True)
-        [bob] = at.rex.quo.standings()
-        at.rex.quo.amend(bob["voice"], remove=[at.rex])
+        [bob] = at.rex._quo.standings()
+        at.rex._quo.amend(bob["voice"], remove=[at.rex])
         self.assertIsNone(await handle.logWalk(5))
         self.assertIsNone(await handle.name())
         self.assertEqual(at.rex.walks, [5])
 
     async def test_silence_after_a_write_is_honoured_at_most_once_on_a_resend(self):
         at = await world()
-        await at.walker.quo.accept(at.rex.invite(), label="rex")
-        handle = at.walker.quo.relation("rex")
+        await at.walker._quo.accept(at.rex.invite(), label="rex")
+        handle = at.walker._quo.relation("rex")
         # The handle hands back the envelope it sealed, so a caller that met
         # silence resends the same bytes and never a fresh number.
-        sealed = await handle.seal("logWalk", 40)
-        self.assertIs(await handle.send(sealed), True)
-        self.assertIsNone(await handle.send(sealed))
+        sealed = await handle._quo.seal("logWalk", 40)
+        self.assertIs(await handle._quo.send(sealed), True)
+        self.assertIsNone(await handle._quo.send(sealed))
         self.assertEqual(at.rex.walks, [40])
 
     async def test_a_same_warden_call_goes_through_the_handle_and_pays_no_seal(self):
         at = await world()
         reasons = []
         at.phone.observe(reasons.append)
-        handle = await at.rex.quo.hold(Dog("Pup"), DOG, label="pup")
+        handle = await at.rex._quo.hold(Dog("Pup"), DOG, label="pup")
         self.assertEqual(await handle.name(), "Pup")
-        self.assertIs(await at.rex.quo.relation("pup").logWalk(3), True)
+        self.assertIs(await at.rex._quo.relation("pup").logWalk(3), True)
         # Nothing was judged: the door was never asked and never fell silent.
         self.assertEqual(reasons, [])
 
@@ -283,16 +283,18 @@ class AliceBobAndTheClinic(unittest.IsolatedAsyncioTestCase):
         # and this is why none needs to.
         at = await world()
         landing = Inbox()
-        handle = await at.rex.quo.hold(landing, INBOX, label="landing")
-        await at.walker.quo.accept(at.phone.grant_at(handle.being), label="landing")
+        handle = await at.rex._quo.hold(landing, INBOX, label="landing")
+        await at.walker._quo.accept(
+            at.phone.grant_at(handle._quo.being), label="landing"
+        )
 
-        cargo = at.phone.pack(at.rex.quo.being, at.rex.cells())
+        cargo = at.phone.pack(at.rex._quo.being, at.rex.cells())
         carried = [one for row in cargo["standings"] for one in row["beings"]]
-        self.assertNotIn(handle.being, carried)
+        self.assertNotIn(handle._quo.being, carried)
 
-        before = len(at.phone.standings_at(handle.being))
+        before = len(at.phone.standings_at(handle._quo.being))
         at.phone.depart(
-            at.rex.quo.being,
+            at.rex._quo.being,
             commitment=bytes(32),
             name=at.laptop.name,
             padlock=at.laptop.padlock,
@@ -301,10 +303,10 @@ class AliceBobAndTheClinic(unittest.IsolatedAsyncioTestCase):
 
         # Rex is gone from the old door; Landing stands where it was minted,
         # with the standing at it what it was before the move.
-        self.assertNotIn(at.rex.quo.being, at.phone.beings)
-        self.assertIn(handle.being, at.phone.beings)
-        self.assertEqual(len(at.phone.standings_at(handle.being)), before)
-        await at.walker.quo.relation("landing").walked(11)
+        self.assertNotIn(at.rex._quo.being, at.phone.beings)
+        self.assertIn(handle._quo.being, at.phone.beings)
+        self.assertEqual(len(at.phone.standings_at(handle._quo.being)), before)
+        await at.walker._quo.relation("landing").walked(11)
         self.assertEqual(landing.heard, [11])
 
     async def test_accepting_answers_one_handle_per_being_the_standing_names(self):
@@ -312,18 +314,18 @@ class AliceBobAndTheClinic(unittest.IsolatedAsyncioTestCase):
         # accepts. What comes back is a handle at each, and the caller tells
         # them apart by the being each is at and by what each declares.
         at = await world()
-        invitation = at.rex.quo.grant()
-        [bob] = at.rex.quo.standings()
-        self.assertIs(at.rex.quo.amend(bob["voice"], add=[at.inbox]), True)
-        handles = await at.walker.quo.accept(invitation, label="alice")
+        invitation = at.rex._quo.grant()
+        [bob] = at.rex._quo.standings()
+        self.assertIs(at.rex._quo.amend(bob["voice"], add=[at.inbox]), True)
+        handles = await at.walker._quo.accept(invitation, label="alice")
         self.assertEqual(len(handles), 2)
         self.assertEqual(
-            {handle.being for handle in handles},
-            {at.rex.quo.being, at.inbox.quo.being},
+            {handle._quo.being for handle in handles},
+            {at.rex._quo.being, at.inbox._quo.being},
         )
-        at_rex = next(one for one in handles if one.being == at.rex.quo.being)
-        at_inbox = next(one for one in handles if one.being == at.inbox.quo.being)
-        self.assertEqual(at_inbox.declares(), ("walked",))
+        at_rex = next(one for one in handles if one._quo.being == at.rex._quo.being)
+        at_inbox = next(one for one in handles if one._quo.being == at.inbox._quo.being)
+        self.assertEqual(at_inbox._quo.declares(), ("walked",))
         self.assertEqual(await at_rex.name(), "Rex")
         await at_inbox.walked(4)
         self.assertEqual(at.inbox.heard, [4])
@@ -333,36 +335,38 @@ class AliceBobAndTheClinic(unittest.IsolatedAsyncioTestCase):
         # A third being at Alice's door that no standing of Bob's names.
         pup = Dog("Pup")
         await at.phone.hold(pup, DOG)
-        [handle] = await at.walker.quo.accept(at.rex.invite(), label="rex")
+        [handle] = await at.walker._quo.accept(at.rex.invite(), label="rex")
 
-        estate = await handle.describe()
+        estate = await handle._quo.describe()
         shown = {
             bytes(held["being"])
             for klass in estate["classes"]
             for held in klass["beings"]
         }
-        self.assertEqual(shown, {at.phone.name, at.rex.quo.being})
-        self.assertNotIn(pup.quo.being, shown)
+        self.assertEqual(shown, {at.phone.name, at.rex._quo.being})
+        self.assertNotIn(pup._quo.being, shown)
 
         # The sketch of what it holds, and silence for what it does not.
-        sketch = await handle.sketch()
-        self.assertEqual(bytes(sketch["being"]), at.rex.quo.being)
-        self.assertEqual(bytes(sketch["digest"]), handle.digest)
-        self.assertIsNone(await handle.sketch(pup))
+        sketch = await handle._quo.sketch()
+        self.assertEqual(bytes(sketch["being"]), at.rex._quo.being)
+        self.assertEqual(bytes(sketch["digest"]), handle._quo.digest)
+        self.assertIsNone(await handle._quo.sketch(pup))
 
         # The blueprint of the class it reaches, and silence for any other.
-        self.assertEqual(await handle.blueprint(handle.digest), handle.text)
-        self.assertIsNone(await handle.blueprint(notation.digest(INBOX)))
-        self.assertEqual(await handle.limit(), at.phone.limit)
+        self.assertEqual(
+            await handle._quo.blueprint(handle._quo.digest), handle._quo.text
+        )
+        self.assertIsNone(await handle._quo.blueprint(notation.digest(INBOX)))
+        self.assertEqual(await handle._quo.limit(), at.phone.limit)
 
     async def test_a_stranger_knocks_and_is_shown_the_public_being_and_nothing(self):
         # Rex holds a card for Bob's door and no standing there at all.
         at = await world()
-        handle = await at.rex.quo.knock(at.laptop.card(), label="bobs door")
+        handle = await at.rex._quo.knock(at.laptop.card(), label="bobs door")
         self.assertIsNotNone(handle)
-        self.assertEqual(handle.being, at.laptop.name)
+        self.assertEqual(handle._quo.being, at.laptop.name)
 
-        estate = await handle.describe()
+        estate = await handle._quo.describe()
         shown = {
             bytes(held["being"])
             for klass in estate["classes"]
@@ -371,60 +375,61 @@ class AliceBobAndTheClinic(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(shown, {at.laptop.name})
 
         # Bob's own beings are not reached, sketched or read by a stranger.
-        self.assertIsNone(await handle.sketch(at.profile))
-        self.assertIsNone(await handle.blueprint(notation.digest(PROFILE)))
+        self.assertIsNone(await handle._quo.sketch(at.profile))
+        self.assertIsNone(await handle._quo.blueprint(notation.digest(PROFILE)))
         with self.assertRaises(AttributeError):
             handle.secret
-        self.assertEqual(await handle.limit(), at.laptop.limit)
-        self.assertEqual(len(at.profile.quo.standings()), 0)
+        self.assertEqual(await handle._quo.limit(), at.laptop.limit)
+        self.assertEqual(len(at.profile._quo.standings()), 0)
 
     async def test_a_standing_widened_later_is_re_read_and_never_remembered(self):
         at = await world()
-        [handle] = await at.walker.quo.accept(at.rex.invite(), label="alice")
-        first = await at.walker.quo.relations("alice")
-        self.assertEqual([one.being for one in first], [handle.being])
+        [handle] = await at.walker._quo.accept(at.rex.invite(), label="alice")
+        first = await at.walker._quo.relations("alice")
+        self.assertEqual([one._quo.being for one in first], [handle._quo.being])
 
-        [bob] = at.rex.quo.standings()
-        self.assertIs(at.rex.quo.amend(bob["voice"], add=[at.inbox]), True)
+        [bob] = at.rex._quo.standings()
+        self.assertIs(at.rex._quo.amend(bob["voice"], add=[at.inbox]), True)
         # The handle held before still names the being it was built at: what
         # was added is learned by asking the far door, not by remembering.
-        self.assertEqual(handle.being, at.rex.quo.being)
-        widened = await at.walker.quo.relations("alice")
+        self.assertEqual(handle._quo.being, at.rex._quo.being)
+        widened = await at.walker._quo.relations("alice")
         self.assertEqual(
-            {one.being for one in widened},
-            {at.rex.quo.being, at.inbox.quo.being},
+            {one._quo.being for one in widened},
+            {at.rex._quo.being, at.inbox._quo.being},
         )
-        added = next(one for one in widened if one.being == at.inbox.quo.being)
+        added = next(one for one in widened if one._quo.being == at.inbox._quo.being)
         await added.walked(6)
         self.assertEqual(at.inbox.heard, [6])
 
     async def test_the_same_warden_path_answers_the_same_introspection(self):
         at = await world()
         pup = Dog("Pup")
-        handle = await at.rex.quo.hold(pup, DOG, label="pup")
+        handle = await at.rex._quo.hold(pup, DOG, label="pup")
 
-        estate = await handle.describe()
+        estate = await handle._quo.describe()
         shown = {
             bytes(held["being"])
             for klass in estate["classes"]
             for held in klass["beings"]
         }
-        self.assertEqual(shown, {at.phone.name, pup.quo.being})
-        sketch = await handle.sketch()
-        self.assertEqual(bytes(sketch["being"]), pup.quo.being)
-        self.assertEqual(bytes(sketch["digest"]), handle.digest)
+        self.assertEqual(shown, {at.phone.name, pup._quo.being})
+        sketch = await handle._quo.sketch()
+        self.assertEqual(bytes(sketch["being"]), pup._quo.being)
+        self.assertEqual(bytes(sketch["digest"]), handle._quo.digest)
         self.assertEqual(
-            await handle.blueprint(handle.digest), notation.render(notation.parse(DOG))
+            await handle._quo.blueprint(handle._quo.digest),
+            notation.render(notation.parse(DOG)),
         )
-        self.assertEqual(await handle.limit(), at.phone.limit)
+        self.assertEqual(await handle._quo.limit(), at.phone.limit)
         # A neighbour is no more reached than a stranger is: this handle is at
         # one being, and the sketch of another under the same warden is silence.
-        self.assertIsNone(await handle.sketch(at.rex))
-        self.assertIsNone(await handle.blueprint(notation.digest(INBOX)))
+        self.assertIsNone(await handle._quo.sketch(at.rex))
+        self.assertIsNone(await handle._quo.blueprint(notation.digest(INBOX)))
 
     async def test_a_being_reaches_its_warden_only_through_the_closure(self):
         at = await world()
-        for name in dir(at.rex.quo):
+        for name in dir(at.rex._quo):
             if name.startswith("_"):
                 continue
             self.assertNotRegex(name.lower(), "secret|padlock|seed|key")

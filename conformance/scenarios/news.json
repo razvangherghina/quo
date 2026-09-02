@@ -1,0 +1,283 @@
+{
+  "scenario": "news",
+  "law": "https://github.com/razvangherghina/quo/blob/main/constitution.md",
+  "encoding": "hex",
+  "about": "The warden speaking first, heard from the other end. News is not a second kind of message — it is the same eight steps over the same envelope, and only where the voice is found decides that it is news at all. Nothing a vector holds could show that: the bytes of a news message and the bytes of an ask are the same shape, and what separates them is which of two records the receiving door finds the signer in.",
+  "stand": {
+    "warden": {
+      "nameSeed": "196982eee79e80efbc3131c93b99285a38c540c43e7e4fbb8399c260b1ce5103",
+      "padlockSeed": "7dbcdb3088339c02378f46525bff3fe2b84515973e28f5814301a99f386e20b1",
+      "heirSeed": "0303030303030303030303030303030303030303030303030303030303030303",
+      "heirCommitment": "83f960da653b61eb63f6b53b5d80adeb377e23e569f1c555395b9b119ad69603",
+      "limit": "1048576",
+      "hints": []
+    },
+    "beings": [
+      {
+        "seed": "0101010101010101010101010101010101010101010101010101010101010101",
+        "heirSeed": "0202020202020202020202020202020202020202020202020202020202020202",
+        "blueprint": "Counter\n  bump(by int) int\n  count() int\n",
+        "cells": ""
+      }
+    ],
+    "grants": [],
+    "relations": [
+      {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "warden": "4a72e4035bb435d0aa42d43b8873d9f07cb9bf476fe2ade0aba49983eebd425e",
+        "commitment": "4b2a2ad2b2f39fbcaee26cdbbd9259499f04af6eef7caac1991c3fd79244db94",
+        "padlock": "bb0109e1147cb2b716f9407f947b0c47a8c3c18ce00339dc02df47c54fd1e202",
+        "voiceSeed": "2ebd74bd564a8771fa628b28308c588588f5c0d0db17ae06b045b896d8218ad7",
+        "heirSeed": "7bae8096dc92d5f4e271742fd8db51abd563a8976c223dd734f1d2bdd553093c",
+        "hints": []
+      }
+    ],
+    "clock": [
+      "1000",
+      "1001",
+      "1002",
+      "1003",
+      "1004",
+      "1005",
+      "1006",
+      "1007",
+      "1008",
+      "1009",
+      "1010",
+      "1011",
+      "1012",
+      "1013",
+      "1014",
+      "1015",
+      "1016",
+      "1017",
+      "1018",
+      "1019",
+      "1020",
+      "1021",
+      "1022",
+      "1023",
+      "1024",
+      "1025",
+      "1026",
+      "1027",
+      "1028",
+      "1029",
+      "1030",
+      "1031",
+      "1032",
+      "1033",
+      "1034",
+      "1035",
+      "1036",
+      "1037",
+      "1038",
+      "1039"
+    ],
+    "random": [
+      "3232323232323232323232323232323232323232323232323232323232323232",
+      "3333333333333333333333333333333333333333333333333333333333333333",
+      "3434343434343434343434343434343434343434343434343434343434343434",
+      "3535353535353535353535353535353535353535353535353535353535353535",
+      "3636363636363636363636363636363636363636363636363636363636363636",
+      "3737373737373737373737373737373737373737373737373737373737373737",
+      "3838383838383838383838383838383838383838383838383838383838383838",
+      "3939393939393939393939393939393939393939393939393939393939393939",
+      "4040404040404040404040404040404040404040404040404040404040404040",
+      "4141414141414141414141414141414141414141414141414141414141414141",
+      "4242424242424242424242424242424242424242424242424242424242424242",
+      "4343434343434343434343434343434343434343434343434343434343434343"
+    ]
+  },
+  "unruled": [],
+  "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+  "opening": {
+    "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+    "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+    "cells": "",
+    "standings": [],
+    "relations": [
+      {
+        "warden": "4a72e4035bb435d0aa42d43b8873d9f07cb9bf476fe2ade0aba49983eebd425e",
+        "commitment": "4b2a2ad2b2f39fbcaee26cdbbd9259499f04af6eef7caac1991c3fd79244db94",
+        "padlock": "bb0109e1147cb2b716f9407f947b0c47a8c3c18ce00339dc02df47c54fd1e202",
+        "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+        "heir": "afa0ce0919a81bf57861ac7139d8945a1fc2ba9f00e53a4f26f494c23f78338c",
+        "seq": "0",
+        "news": "0",
+        "hints": []
+      }
+    ]
+  },
+  "beingCommitment": "ed4d580bb287b98674376c30d750d9926617873de8787e518c58c320d1899cbd",
+  "exchanges": [
+    {
+      "name": "a name succession is believed by the key the peer already holds",
+      "law": "The news",
+      "obligations": ["XIV-1", "XIV-2", "XIV-5", "XIV-6", "XIV-11"],
+      "derivation": "An ordinary envelope carrying `tell` and one `word`, signed by the key the far house committed to. Article XIV: \"What makes it news is only where its voice is found: in the **outbound** record rather than the inbound one.\" The word has `being` absent, which is how the warden's own name succession is said, and carries the successor and the next commitment — the two fields Article XIV names for a succession, with the rest absent because \"fields that mean nothing in a case are absent, not filled.\" Belief runs the first of the two roads: \"the peer holds the hash of the heir: the successor signs and the peer hashes, and matching, the news is true\" — and hashing this door's held commitment against the signing voice matches. So it is believed, and \"believed news rewrites the outbound row entire — name, padlock, heir commitment, hints, one for one off the word's own fields.\" The mark it spends is the news mark and not the seq: \"one field cannot be two counters\", and this door has sent nothing.",
+      "seq": "1",
+      "voice": "af06a3e3291714e4f356c19c9b15cd1951ec6e6662aa77be07547f289383341d",
+      "expect": "59d9225473451efffe6b36dbcaefdbf7b1895de62084509a7f5b58bf01d064183d0e9f38364e65372817fc540a351551a7cad5c13b5594def61c92d544afecd572a652e3c1fdc5aa70a6d85e40ed3dac0cfeee74a3dacec65911862ee9e060cf581fdb4870147a2dc54d75476f7b4ef626f0076d48500beb026a4b0a2614267c40d6fd892c2e3fefd21ff71f8d6c0b3fe16e00d36762c93e838e",
+      "give": "132c442be010fbd57e72603328aa76e71fccc1503aae219327d14d9c9993f472016fe314a3ea4a273ad1911dfa0d058380d7911ce2cde65b02875d5f64384ab0feb28364a3cff092ffa33d39cebc155513ed7584c4fa2523214a8084fb3774233f65153414d0376bd32adc543032592e721c951cb7e116395eeed447dc5f650ca229285651967a4fc633ddf431ae59fb1c80e46e76cb6d1f11db9d484064f2491fbadbb27e8bdd8d81b2615c11a01e3e49fe62e59820a74678734f1bcc95813cf5105b3c04c0087c4785405c2af760bc39e2524fdfc224717d83a170c30ea8f681aa2dc82109d08311206368519dde8d3313dcb529b71ef2c069902609655a2e7c8788584e2ac278a071d3223f968c1d37151543f90e115b8b15f53fcd39e82af989399aa4e3bb1407733723ab45992dbe0bbc78f808976975ad9b0d2114d003b5dc9a968f73ffcc01d40c4721ff81503c0e45d45f30df52db75ca5a4a488094c4d66bed9c80fdc937ab1de0ce6e5bbbfb47a424248834b7349e2eca3c38718495fbd9f2978681b16b9c5040db327f7cfaa2d9d687de1cf8d7a2adb94a3b03a93a7f77d52cac8be9828be9ba3b4c573c64b65c6962",
+      "cargo": {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+        "cells": "",
+        "standings": [],
+        "relations": [
+          {
+            "warden": "af06a3e3291714e4f356c19c9b15cd1951ec6e6662aa77be07547f289383341d",
+            "commitment": "6ff1ed2b0d7f6e446c479e019dfa7c15ecc807c251acf883c0700dd99baf67d1",
+            "padlock": "5a13b7a05e31ae998ad1307217981bb23bb17d277465829edd616e9169c8f46e",
+            "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+            "heir": "afa0ce0919a81bf57861ac7139d8945a1fc2ba9f00e53a4f26f494c23f78338c",
+            "seq": "0",
+            "news": "1",
+            "hints": ["tcp://moved.example:9000"]
+          }
+        ]
+      }
+    },
+    {
+      "name": "a padlock replacement carries only the lock, and an empty hints list changes no road",
+      "law": "The news",
+      "obligations": ["XIV-4", "XIV-12"],
+      "derivation": "The house that just succeeded replaces its padlock. Article XIV: \"A padlock replacement carries only the new padlock: a lock has no heir, so successor and commitment are absent.\" Its second road of belief applies: \"when the padlock is replaced, the news is signed by the warden's name, which has not moved\" — which is now the successor, the name having moved once already. It carries an empty hints list, and \"an empty hints list means the road did not change, never an erasure\", so the road this row learned in the exchange above must still be there afterwards. A door that erased on empty would leave itself unable to speak first to a peer that publishes nothing.",
+      "seq": "2",
+      "voice": "af06a3e3291714e4f356c19c9b15cd1951ec6e6662aa77be07547f289383341d",
+      "expect": "7b0d47d93427f8311160781c7c733fd89f88970aef490d8aa0ee19a4cb8a1b141de533a27dac95ea8ebaa25c119637b3ce050c8fab1ca44eb58f036c519cd6f58a0a77680e1d70c247fc7e70c0bb6516c1f6d489bd63847746505eb85512ec9e6df1aa81883ac56c7f9e84e173aee336ba56cf20775e4133c1f6861426a39e5292f109085f09a40f5f265bd1f96c53c5794bf2cef66f92f284cd",
+      "give": "cdefd8783a91b446640e2e1f95599db35e484a0071bd2182b3b60d0812c10c702771e678a7e63a7e0e397c516714af49527f7e526a7bd2a77bcb9ce87d63c02fa3c25f4bed335692a7360a7984436264cb6970afecede65122fde28d9093a70b62dd2b349d71892cd6fb7f645838fcea11ca15c7dc2e56acfc7991a58e5d29911d5137830d8aed5f9466ac39965a1e213354fbc70a85243e056437e1d92bae9d3b0a18696d959a59d6ee725fc21800d7bb19b0eb74e3fdb3387a75ee9d09f2ca3262347b7ce3970c3d3557001bf7d4a24259f0331b426dc437a5d0615f05e42bb1cd8d221b70c5d7f5ab8dfdffaaefe5ae4f8f4d88e86d2e66b3053f412e9827d0d09d74686c17572e5d029c16ff19f975ba8a449794107219754b4c0af7c216e5e856742cbcb7185d58d52c9d94408f3d08c2f4ab",
+      "cargo": {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+        "cells": "",
+        "standings": [],
+        "relations": [
+          {
+            "warden": "af06a3e3291714e4f356c19c9b15cd1951ec6e6662aa77be07547f289383341d",
+            "commitment": "6ff1ed2b0d7f6e446c479e019dfa7c15ecc807c251acf883c0700dd99baf67d1",
+            "padlock": "bb0109e1147cb2b716f9407f947b0c47a8c3c18ce00339dc02df47c54fd1e202",
+            "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+            "heir": "afa0ce0919a81bf57861ac7139d8945a1fc2ba9f00e53a4f26f494c23f78338c",
+            "seq": "0",
+            "news": "2",
+            "hints": ["tcp://moved.example:9000"]
+          }
+        ]
+      }
+    },
+    {
+      "name": "a word naming the far house's own pk as a being is refused",
+      "law": "The news",
+      "obligations": ["XIV-3"],
+      "derivation": "A succession whose word names the far warden's own pk in `being`. Article XIV: \"A word naming the warden's own pk in `being` is refused: the name and the public being are one key, so that word would be a second spelling of the name's own succession.\" A value with two spellings is two identities, which Article V exists to prevent. So: silence — and the row is untouched, still standing at the name and lock the two exchanges above left it. **The news mark still moves**, because the number was spent at step 5 and belief is not judged until step 7; a message disbelieved still arrived.",
+      "seq": "3",
+      "expect": "silence",
+      "voice": "af06a3e3291714e4f356c19c9b15cd1951ec6e6662aa77be07547f289383341d",
+      "give": "ff2ee45601ec1b67310c7790404585ae697331eee1c1f8cf2419731c1fff3e6b3cd08caa3ae3b05d429ef69c5066682bafa3fecb14d240aa37c396771b3a696705fe484d1db4ca5f2a9fd40b102e5aabc31b277a103d32a997111ca5ad2fa09b690016e01234f569c03419779ed4b0fa3486d6837c2b39f6722d76b2b1e5750b88e063599339a1632a356fcbe248414be2308f50da6da2260b702c981b799ab4a1fc7a8d56752eb4cbc5e34ebdc79056866fb4b51b45aa90b7f00147aa889b91153cc47e341b4f77943d4aa778c1a9a686c484c28775a0c3f7a9e7778819cb4c20bf08296b991e09f89c85fef306297fcad22f307557f38696c85d0059b898ebb13969422e1ef325ad2c3a808f48f404645e99fdc29c83ce133c19b35c199907071006b78a5d420e9e5cb4ab0665b6d817cd37491551b244687388d7eefe68f857af5e532febd74f8390db17dfbe07ab7ffcc203be06816ded48b819df7c1134105c2dab5bdf87418d8fd216148e96f6129ee08e4a",
+      "cargo": {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+        "cells": "",
+        "standings": [],
+        "relations": [
+          {
+            "warden": "af06a3e3291714e4f356c19c9b15cd1951ec6e6662aa77be07547f289383341d",
+            "commitment": "6ff1ed2b0d7f6e446c479e019dfa7c15ecc807c251acf883c0700dd99baf67d1",
+            "padlock": "bb0109e1147cb2b716f9407f947b0c47a8c3c18ce00339dc02df47c54fd1e202",
+            "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+            "heir": "afa0ce0919a81bf57861ac7139d8945a1fc2ba9f00e53a4f26f494c23f78338c",
+            "seq": "0",
+            "news": "3",
+            "hints": ["tcp://moved.example:9000"]
+          }
+        ]
+      }
+    },
+    {
+      "name": "a padlock replacement signed by the committed heir is silence",
+      "law": "The news",
+      "obligations": ["XIV-5"],
+      "derivation": "The key this row now commits to signs a padlock replacement. It is placed as news — its hash against the row matches, which is what puts a voice in the outbound record at all — so this is not a stranger and not an ask. But Article XIV allows a replacement exactly one signer: \"when the padlock is replaced, the news is signed by the warden's name, which has not moved.\" This is the heir, not the name. \"Anything else is silence.\" The two roads are named apart because a kit that accepted any key it could place would let a house's heir replace its lock before it ever succeeded.",
+      "seq": "4",
+      "expect": "silence",
+      "voice": "2df04125f0015afb47ce853aef8772094ff9498c14cb1b9e12973c2927da0fa6",
+      "give": "3286894cd2845a6db6a28fbf0677605f80e5a62385bf4e10a790ae5fde36736bb54bd8d58e0a49139ecc3d4a1d68bcb52bc4e200d955ceec3b702cdaeacfe373d878f7b8d28c3d79f9780edb5478e6fbb10a2a520909b31c161146de7d5339f69de2932e726d15cca476c5467876682a9e6755a62ca959b47526b4d687f2725d924964fcbcfe4787fc15100f685d791b92789d31c99fdd83918cbe478e5e6bbf7314a383a20247990244ac6cdc8ba40a06958004a50617c56a90d66f38c8bfa7831352b3f8956790bc6f545c905e3110d7138c6f69cb331ea869981a349b98544f46d05e496c033f6492483833b16a4c07a720abfff7273a3c325c45ec92d9899dfd2515303207b3536c9fa8f6ba7017f578fb83156e6779ba64e83893f68d51be2b38c8ff40d49d381b50e7bac480740aaceddd52",
+      "cargo": {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+        "cells": "",
+        "standings": [],
+        "relations": [
+          {
+            "warden": "af06a3e3291714e4f356c19c9b15cd1951ec6e6662aa77be07547f289383341d",
+            "commitment": "6ff1ed2b0d7f6e446c479e019dfa7c15ecc807c251acf883c0700dd99baf67d1",
+            "padlock": "bb0109e1147cb2b716f9407f947b0c47a8c3c18ce00339dc02df47c54fd1e202",
+            "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+            "heir": "afa0ce0919a81bf57861ac7139d8945a1fc2ba9f00e53a4f26f494c23f78338c",
+            "seq": "0",
+            "news": "4",
+            "hints": ["tcp://moved.example:9000"]
+          }
+        ]
+      }
+    },
+    {
+      "name": "a succession signed by the house that is succeeding is silence",
+      "law": "Rotation",
+      "obligations": ["XIII-2", "XIII-8"],
+      "derivation": "**The far house announces its own succession, signed by the key it currently answers as.** Article XIII: \"A succession must reveal a preimage, so no successor can be named after the fact\", and the consequence the article draws from it — \"**A thief who steals a current voice holds no preimage and can never succeed.**\" This row commits to a key hashed with the far house's name, and the signer here is that name rather than the key it committed to, so the hash does not match and there is nothing to believe. **The positive half of the same rule is the first exchange of this scenario**, where a succession signed by the committed heir is believed and the row moves entire. So the pair is the obligation: one succession accepted for revealing the preimage, one refused for not having it, and **nothing byte-level separates them** — both are well-formed `tell`s carrying a successor and a next commitment, from a voice this door holds in its outbound record. Only which key signed decides it. **A door that believed news from any voice it could place** — the reading that treats the outbound record as a list of trusted houses rather than as a list of committed keys — takes this and moves its row to a successor the thief chose. The number is spent all the same, because Article XII counts news at step 5 and this fails at the belief.",
+      "seq": "5",
+      "expect": "silence",
+      "voice": "af06a3e3291714e4f356c19c9b15cd1951ec6e6662aa77be07547f289383341d",
+      "give": "a28a7c44ede257d664fbf156affa7da8abb3ae74b9fee8d7a2078543504e1a75efdd3dbc4e4f58829062c721aaf7cf91df72064161ab11748550ddf7a453e06bcecc2f4cccdf9b2fa550e11ab99815c061e6c092aa5931acb5be8839103c028777e127d0951f53c922acff7eb45569f53b4e155e9e419975f86241799f923e526d5bfe5a88c9afa48f2997f05129565111ee29c7ae3c2a8f007cec6b51e15ac3a6a42425732ed3104fdfbf9b95214e7bb7939cec4f2f992975a1f7354bb24e851472b50ee9851521660598666bd779767f0ae46a118a0091fcc528d40de8fdd4207032b410df04c4dada6c6e4b8e5672068345ab65a7fb0fe723c51ad6b2fac7ac9e38b04582d14c0efce615f06b123ddacfa4061d522920ca3bc8e84e05d8ce0b0d3aa972114c99fc81a65eabb1aa9446218800ebfafc6a0c49b5e2b8ce6987094e84f9121704a8df946ec63e4887e72cf248169d",
+      "cargo": {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+        "cells": "",
+        "standings": [],
+        "relations": [
+          {
+            "warden": "af06a3e3291714e4f356c19c9b15cd1951ec6e6662aa77be07547f289383341d",
+            "commitment": "6ff1ed2b0d7f6e446c479e019dfa7c15ecc807c251acf883c0700dd99baf67d1",
+            "padlock": "bb0109e1147cb2b716f9407f947b0c47a8c3c18ce00339dc02df47c54fd1e202",
+            "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+            "heir": "afa0ce0919a81bf57861ac7139d8945a1fc2ba9f00e53a4f26f494c23f78338c",
+            "seq": "0",
+            "news": "5",
+            "hints": ["tcp://moved.example:9000"]
+          }
+        ]
+      }
+    },
+    {
+      "name": "news carrying a commitment in the envelope is heard, the field ignored",
+      "law": "The envelope",
+      "obligations": ["XI-6", "XI-12"],
+      "derivation": "The far house replaces its padlock again, correctly and by the key this row knows, and puts a commitment in the envelope where news has no use for one. Article XI: \"**News is not a rotation and does not use this field**; a succession announced as news carries its next commitment in the `word`. **Those two are the only refusals, and everywhere else a carried commitment is ignored rather than refused** — by news, and by a voice this door has never met.\" So the message is heard as ordinary news: the lock is replaced, the number is counted, and the field is dropped. **The commitment carried here is the one the row already holds**, so a door that read it as a rotation would find a match and take the row over — which is exactly the harm the ruling refuses. This was S-18, found by running: two shipped kits met the same bytes with an answer and with silence.",
+      "seq": "6",
+      "expect": "answered",
+      "voice": "af06a3e3291714e4f356c19c9b15cd1951ec6e6662aa77be07547f289383341d",
+      "give": "603fe5551330bf6d2c174a2736fa2996bf8311a259b38a9ed749425a83562909f080820e34ad9f7be9fbc879891a116abb3e091d0d605a59a89f832a7a16c2ddbf7cb741fc978838c9b1f3a44d714b018d0448ad6bac718cfb50b4a7b30fa13bf27a5851caf7f43750e6acc1c984dadc5e082ee410ee12589023ae907551fe4b7dee3ae5ca797abb04e0064eca298f9d6d6ecf92681becdee998e18722f7ca57ab7e869c7eb330e213eff2abf19bc6d2dddc1bb94bc254b05fc65742f8df035cbee3c9272d2cfc719f76d037eb9ba9716263a52cada1f582e106d96d4def19177efa3a76a0e753aeb7e142c79405e45a94ddf8f09af8f162527f7ac2a0854fc300446865bda515aaeb4644d5af9fcda8122899ef41e9795c0d623cfab1ee396f4ba300f68e1aedeee1aa9708cd85962c97e941e386d6fbc9c258954ac1a2e3f076a729befa11c880f6576be7451ce638a76c15a1df",
+      "cargo": {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+        "cells": "",
+        "standings": [],
+        "relations": [
+          {
+            "warden": "af06a3e3291714e4f356c19c9b15cd1951ec6e6662aa77be07547f289383341d",
+            "commitment": "6ff1ed2b0d7f6e446c479e019dfa7c15ecc807c251acf883c0700dd99baf67d1",
+            "padlock": "5a13b7a05e31ae998ad1307217981bb23bb17d277465829edd616e9169c8f46e",
+            "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+            "heir": "afa0ce0919a81bf57861ac7139d8945a1fc2ba9f00e53a4f26f494c23f78338c",
+            "seq": "0",
+            "news": "6",
+            "hints": ["tcp://moved.example:9000"]
+          }
+        ]
+      }
+    }
+  ]
+}

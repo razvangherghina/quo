@@ -1,0 +1,308 @@
+{
+  "scenario": "pointing",
+  "law": "https://github.com/razvangherghina/quo/blob/main/constitution.md",
+  "encoding": "hex",
+  "about": "The destination half of a migration, after the being is in. Two doors point at a moved being and neither vouches for the other, so this scenario asks the new door exactly what the rotation scenario asks the old one — and gets a different word, composed here. No vector could hold any of it: the answer turns on a record the door wrote when a cargo arrived, and the silences beside it are the same absence of bytes as every other.",
+  "stand": {
+    "warden": {
+      "nameSeed": "196982eee79e80efbc3131c93b99285a38c540c43e7e4fbb8399c260b1ce5103",
+      "padlockSeed": "7dbcdb3088339c02378f46525bff3fe2b84515973e28f5814301a99f386e20b1",
+      "heirSeed": "0303030303030303030303030303030303030303030303030303030303030303",
+      "heirCommitment": "83f960da653b61eb63f6b53b5d80adeb377e23e569f1c555395b9b119ad69603",
+      "limit": "1048576",
+      "hints": ["tcp://here.example:9000"]
+    },
+    "beings": [
+      {
+        "seed": "0101010101010101010101010101010101010101010101010101010101010101",
+        "heirSeed": "0202020202020202020202020202020202020202020202020202020202020202",
+        "blueprint": "Counter\n  bump(by int) int\n  count() int\n",
+        "cells": ""
+      }
+    ],
+    "grants": [
+      {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "voiceSeed": "2ebd74bd564a8771fa628b28308c588588f5c0d0db17ae06b045b896d8218ad7",
+        "heirSeed": "7bae8096dc92d5f4e271742fd8db51abd563a8976c223dd734f1d2bdd553093c",
+        "padlock": null,
+        "hints": []
+      }
+    ],
+    "expecting": {
+      "seed": "7070707070707070707070707070707070707070707070707070707070707070",
+      "heirSeed": "7171717171717171717171717171717171717171717171717171717171717171",
+      "blueprint": "Counter\n  bump(by int) int\n  count() int\n",
+      "cells": ""
+    },
+    "clock": [
+      "1000",
+      "1001",
+      "1002",
+      "1003",
+      "1004",
+      "1005",
+      "1006",
+      "1007",
+      "1008",
+      "1009",
+      "1010",
+      "1011",
+      "1012",
+      "1013",
+      "1014",
+      "1015",
+      "1016",
+      "1017",
+      "1018",
+      "1019",
+      "1020",
+      "1021",
+      "1022",
+      "1023",
+      "1024",
+      "1025",
+      "1026",
+      "1027",
+      "1028",
+      "1029",
+      "1030",
+      "1031",
+      "1032",
+      "1033",
+      "1034",
+      "1035",
+      "1036",
+      "1037",
+      "1038",
+      "1039"
+    ],
+    "random": [
+      "3232323232323232323232323232323232323232323232323232323232323232",
+      "3333333333333333333333333333333333333333333333333333333333333333",
+      "3434343434343434343434343434343434343434343434343434343434343434",
+      "3535353535353535353535353535353535353535353535353535353535353535",
+      "3636363636363636363636363636363636363636363636363636363636363636",
+      "3737373737373737373737373737373737373737373737373737373737373737",
+      "3838383838383838383838383838383838383838383838383838383838383838",
+      "3939393939393939393939393939393939393939393939393939393939393939",
+      "4040404040404040404040404040404040404040404040404040404040404040",
+      "4141414141414141414141414141414141414141414141414141414141414141",
+      "4242424242424242424242424242424242424242424242424242424242424242",
+      "4343434343434343434343434343434343434343434343434343434343434343"
+    ]
+  },
+  "unruled": [],
+  "being": "19204c8c3ba85ba059cd18ac9017bd02a18da5d10c68fb779a34be43ef067791",
+  "opening": null,
+  "beingCommitment": "ed4d580bb287b98674376c30d750d9926617873de8787e518c58c320d1899cbd",
+  "exchanges": [
+    {
+      "name": "the being arrives",
+      "law": "Rotation",
+      "obligations": ["XIII-3", "IX-6"],
+      "derivation": "The same arrival the migration scenario drives, standing this scenario up rather than claiming anything the other one has not. It is here because **the three exchanges after it are only reachable at a door that has actually taken a being in**: Article XIII gives the duty to \"a destination that has taken a being in\", and a door handed a succession to publish would be answering with a word this harness composed rather than one its own arrival did. So the cargo is pushed in first, by an ordinary standing granted in advance, and everything below is asked of the door that answered it.",
+      "seq": "1",
+      "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+      "expect": "59d9225473451efffe6b36dbcaefdbf7b1895de62084509a7f5b58bf01d064183d0e9f38364e65372817fc540a351551a7cad5c13b5594def61c92d544afecd572a652e3c1fdc5aa70a7624ece29b926dea95fc25231387d80dc254db4975d3e9f2a07f53ba236e93e934b43fd0dc1d26cd237f926faa5937ecfa0ce60a6e6a0c867c5e7b0f7d81315c1632fc8750974dc80b79bb6c4018c4bba147cdfdb6cbbf5d0bb575ec2cfea3913ec184faff3c0380d263ab763449ccbcb5f93ac1260cfc0a4",
+      "give": "1984e5f45500244a4d4b07a3db3e181e5afcb828c0bdb147239666e16906833a4a60c6947ba43cda48f1616d1a8bf77141a9e70b755c09cfa0e910d0212b7a15f9c5de517d6af3223226fdd4095f81de5af0407b1841ef7fc8c0427deb41b52f78a03bed817a5a41d3b85b57ab781bb169ae7f8e915ee426da8fab3e2ffe86289cf9a34a32ff6e508c1c36cb73a4192d12c9d2e9f4239aff04581f45d8f610e5411db441aa3c556ee6624caa30991bcd860d8a63319a147ad9ef96b245a11a04e13f6bd10cab211aa4ee45fb887c3e45ffbbe6d406e57934103ca71d000d5717e970bf427044e6e56921109ea55e3cbebb2e7bf027dafa1125337a8821e919772a0e87cfac86cebf2dedbdea110c669548684ac27821871c5f9ef1b8f9c257aa79a235eb5469eda543be3cce882b0b0f9b2ba3511d3c579065a4734fd5ec87a1cd787da8ceb70acd13d291c809305f0e960b62f076273a879f33a1308bfc798c935641b6b624cc6d4c0a5882cf6f76ed402dc18039409f9cee0254df2cbc1ec83be8c1166ee33e5c406a2b21eca6c8ac9cc5b08eecbdf1027830f6ffa39fcf3888e31ac7b389eb767cc81d9ba5927eee1613530623607abb358bf07a5f1f538a9e8ac74acec1965b67a277ec0e0850ec40c729184d165cde19372fbc65ea2f4c9f6c614beb7290bb5c2f79e1e54b790fa7fdde93f0f0f904316c5a67551165679acfc6eb35066bbf148cdc91efdc5a6a85d46d902034a238bd0f31497d0ecedeaf09b6c97d5bfc018488c2f0775e161cbda6ad820ad164491200f598e6df9ab77927ada3c00c0cd6652d58a75a62e2a55d71a9f9ad8668e3bc68d98a36c52a711e4e92f7c4d8f3239ac6ea8bd8764defc36e6c6a85b3bf9b3af916b749987b7b6c3e9f174eafe74bd34093ba837b976cc77610d8f86b32d17d02e55d59c858da8edd581c4895aa7dd69b156e54e1019550279e44d54ca38b6cad5520abc52845a67e3c6e2f678af1796ed04053baaa355f3f9254934c807f0a7ec8a990a68915b6444e70ee67120a530f033d53d91c51d93cf7f38b28c5a6247b420d5e3bf5e057025c0bb74295247fad139e2bec213f46dd68dc8e2b554d4d437bdf18d85fb92551c58cd2e5ceca5705f346a8e31c83490841a6c5ca6f54a77e85c6665b1fd515c7fd21df2910aa6c2d",
+      "cargo": {
+        "being": "19204c8c3ba85ba059cd18ac9017bd02a18da5d10c68fb779a34be43ef067791",
+        "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+        "cells": "",
+        "standings": [
+          {
+            "voice": "fec1428673f6afe89264b3807344ae8b269d125a503855202687db5a7128579f",
+            "commitment": "64b63cedf607ed31a15415874032c67d6c91ba76d771581ae22689e5c8633a98",
+            "name": "2c9b9a42d57adffd50e6eb1da543de93ad97d36d976d2a2b9735e7142f3fb859",
+            "beings": ["19204c8c3ba85ba059cd18ac9017bd02a18da5d10c68fb779a34be43ef067791"],
+            "mark": "9",
+            "spent": ["7", "8"],
+            "padlock": "5a13b7a05e31ae998ad1307217981bb23bb17d277465829edd616e9169c8f46e",
+            "hints": []
+          }
+        ],
+        "relations": [
+          {
+            "warden": "b5f90095318f3f044cd8e40b584253d86777be62bf07221334e5fd2199cfa7f7",
+            "commitment": "ef478e0fc5e09847cf07b8e96dbe077b0f0291c3c053d14a91e6a99ff152e8e9",
+            "padlock": "bb0109e1147cb2b716f9407f947b0c47a8c3c18ce00339dc02df47c54fd1e202",
+            "voice": "c853ad0f0cd2b619aea92ceec4fd56a24d6499d584ce79257e45cfd8139b60a7",
+            "heir": "ee31f83c88a71219a6fcf9bee0da9bc22620588f5a15a6145553504df9649e5c",
+            "seq": "4",
+            "news": "2",
+            "hints": ["tcp://far.example:9000"]
+          }
+        ]
+      }
+    },
+    {
+      "name": "the new house announces the arrival",
+      "law": "The news",
+      "obligations": ["XIV-13"],
+      "derivation": "The second of the two news a migration sends, driven here for the same reason the arrival above is: **it is what tells this door its own roads.** Where a warden's published hints live is Article II's — \"the two records name the facts a warden must keep, never how it keeps them\" — and a kit whose roads are named per act by its host conforms exactly as one that stores them does. So the word this door points with is complete only once the arrival has been announced, and a scenario that asked `moved` before it would be asserting one kit's storage rather than the law. **The migration scenario drives this same news and this one repeats it**, because the exchanges after it are unreachable without it and an exchange that asserted nothing would be a hole in the middle of a scenario.",
+      "do": "landed",
+      "hints": ["tcp://here.example:9000"],
+      "news": [
+        {
+          "ephemeral": "c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0",
+          "seq": "1",
+          "allowance": {
+            "time": "5000",
+            "hops": "4"
+          }
+        }
+      ],
+      "expect": "done",
+      "told": [
+        "1c78fc71ef01855f670c555c82226397f0e73b0aaf443a491d4110dc22f2823686f03b66385e3868428dfbc775060b20c579d6eda3efb515b851f1ef75a5a780c8e75bb6f273c845578dc6bb2ac66d8b7ecf8fa31e3704b0291502bffb40cde264f67227dd681492285be25da910fc170e86bff94b90383dc893ee3577edacf0944f50c43c77fa3753df6e2f86fd7642f11177133b85e878c0b15bd4c866c8e3b484d0be636e50884be0da051fc5439c779f361fb0304c50a7e327400040c6cc8149543fe1ba32dade9544e506b1280fdbdeeab446dab744e439a35e54a6c1ba20f2e62403ace07bf15f5aa3f2a6e2daf70ec3308d9179056c5c247622c4f5cb610995a7a86eaa2fd8f329fa215acd34070f50b62fd31c56b1a248676555be0350504528a56d12beb913fdf3e96ecf9fba71f60d584eeda643f22cda51a2b89287d20ce173e8c787fe45a7cf64f97d2c4a3d465b09c319b46b077f02a0998d98eec1050a556e0b613c88d8befdced8943fe565f676c35080d34af87480a1bbe9e6943f6af95b5d838b50bcb6ed7a19efacb35b3358947b9a0d5bde34723a1288b7076da2704c52ee0f758bd541c52ab3e864345a740660e2a3dddeed3b4f8cd218a03f185e08e98e4677489ee8aadceb32db1619391fcd55f543cbec99248b95352dd115eccd10d46ff139e39c14d45a56530a"
+      ],
+      "cargo": {
+        "being": "19204c8c3ba85ba059cd18ac9017bd02a18da5d10c68fb779a34be43ef067791",
+        "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+        "cells": "",
+        "standings": [
+          {
+            "voice": "fec1428673f6afe89264b3807344ae8b269d125a503855202687db5a7128579f",
+            "commitment": "64b63cedf607ed31a15415874032c67d6c91ba76d771581ae22689e5c8633a98",
+            "name": "2c9b9a42d57adffd50e6eb1da543de93ad97d36d976d2a2b9735e7142f3fb859",
+            "beings": ["19204c8c3ba85ba059cd18ac9017bd02a18da5d10c68fb779a34be43ef067791"],
+            "mark": "9",
+            "spent": ["7", "8"],
+            "padlock": "5a13b7a05e31ae998ad1307217981bb23bb17d277465829edd616e9169c8f46e",
+            "hints": []
+          }
+        ],
+        "relations": [
+          {
+            "warden": "b5f90095318f3f044cd8e40b584253d86777be62bf07221334e5fd2199cfa7f7",
+            "commitment": "ef478e0fc5e09847cf07b8e96dbe077b0f0291c3c053d14a91e6a99ff152e8e9",
+            "padlock": "bb0109e1147cb2b716f9407f947b0c47a8c3c18ce00339dc02df47c54fd1e202",
+            "voice": "c853ad0f0cd2b619aea92ceec4fd56a24d6499d584ce79257e45cfd8139b60a7",
+            "heir": "ee31f83c88a71219a6fcf9bee0da9bc22620588f5a15a6145553504df9649e5c",
+            "seq": "4",
+            "news": "2",
+            "hints": ["tcp://far.example:9000"]
+          }
+        ]
+      }
+    },
+    {
+      "name": "the new door answers moved for the name the being wore before",
+      "law": "Rotation",
+      "obligations": ["XIII-10", "IX-7"],
+      "derivation": "The peer whose standing travelled with the being asks `moved` for the name it still knows the being by — the name it wore at the house it left. Article XIII: \"**The new door points as well.** A destination that has taken a being in answers `moved`, for the name that being wore before, with the word its own arrival composed.\" **The word is pinned and every field of it is this door's own**: the being is the old name, the successor is the key this house minted, the commitment is that key's heir hashed under this house's name, and the name, padlock and hints are this door's. It is the same record the second news carries, which is Article IX's reason for one shape — \"`tell` is news; `moved` is the old door's pointer, which is why the two carry one shape.\" **Both doors point and neither vouches for the other**: this word was composed here, and the origin's was composed there. The reason the law wants both is the one the article gives — the old door is what keeps a peer that missed the news from being stranded, \"and a migration is the one moment at which the old door may not be there at all.\" **A destination that kept no record of the arrival answers absence here**, which is a legal answer to a legal ask and the wrong one, and that is precisely the divergence S-20 recorded between two shipped kits.",
+      "seq": "10",
+      "voice": "fec1428673f6afe89264b3807344ae8b269d125a503855202687db5a7128579f",
+      "expect": "7b0d47d93427f8311160781c7c733fd89f88970aef490d8aa0ee19a4cb8a1b141de533a27dac95ea8ebaa25c119637b3ce050c8fab1ca44eb58f036c519cd6f58a0a77680e1d70c24ffd00df036d1a5069574f13326a8326e6cdaf34488fc7a2e13c0ceaa0370efe7c3d5c476c0d53a664b599fdf33e48b77630962663b84e88877c396a3da390efcf2f66632fcc2bcfec7956bacda4421abcee6ab4bee9904813935bb5d66939ca01885874a65acf2ef4a29d59768a0686b166a32181ea2c262dcb33bc587ba8fef8032baaf15fbeeae02dc06bac0b35597b18b3580e5be3d40078dce15a9af344081285389e29640cb2987a07c905584ecc7e68f486aa07fc96f8cb0d7b86153310e374698e288c64a5257706e2c668fac65809f9fed93ca0c2497b6e360f0350b279e0c1ea6d06fef0b1555feb3e33025e3a5ed7cbf68dc72f1162a0a56f3be8ad2c5dfe0d4c981ab79b1831f42d4ec6ce284a5ff5b292ca438006c692311506fd78acd0e390f9",
+      "give": "472a870bb4b0106f9ae3d0b4b0dcbd55b1cf48214083882e78dba2680ea9325033daad39549878ea163aedc2307ce3279ccd4a3d6939e197ecab4b0db92f0aacac2db3132f17760f5bac62e0ccf50ca01f35f926d4a91debf3b85eb15336698574d4f3ff35fb37faa2df85a4cd5afc98a3e5873ceba0175dd36799f49780ce08d2ee53d8070ba729ddc88e6f62a46e38bc1cbcb7f9fd8433bab897886aa47058012c169507c9a884f482b837065dfcda30e81e844dca15479ad267aa33f05544272e45c12de4ecb5dacf1b4e813748914a6a975823071c7044e0619a038f1a4a4db5f1e5a3b0d50cfa47314fc1c957f041ed64a380263712785fbdd89a6cdeb49987ffb3d9e6a33ed5e00da0d6aaa8ce6ad7bc05a031ff610deb451bdf1e172c155d0ea4db9adeec02c0a9b39b32c780d50f25bf3387b8660f336e5f63f01ca274d57a0c2f31ed1015",
+      "cargo": {
+        "being": "19204c8c3ba85ba059cd18ac9017bd02a18da5d10c68fb779a34be43ef067791",
+        "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+        "cells": "",
+        "standings": [
+          {
+            "voice": "fec1428673f6afe89264b3807344ae8b269d125a503855202687db5a7128579f",
+            "commitment": "64b63cedf607ed31a15415874032c67d6c91ba76d771581ae22689e5c8633a98",
+            "name": "2c9b9a42d57adffd50e6eb1da543de93ad97d36d976d2a2b9735e7142f3fb859",
+            "beings": ["19204c8c3ba85ba059cd18ac9017bd02a18da5d10c68fb779a34be43ef067791"],
+            "mark": "10",
+            "spent": ["7", "8", "9"],
+            "padlock": "5a13b7a05e31ae998ad1307217981bb23bb17d277465829edd616e9169c8f46e",
+            "hints": []
+          }
+        ],
+        "relations": [
+          {
+            "warden": "b5f90095318f3f044cd8e40b584253d86777be62bf07221334e5fd2199cfa7f7",
+            "commitment": "ef478e0fc5e09847cf07b8e96dbe077b0f0291c3c053d14a91e6a99ff152e8e9",
+            "padlock": "bb0109e1147cb2b716f9407f947b0c47a8c3c18ce00339dc02df47c54fd1e202",
+            "voice": "c853ad0f0cd2b619aea92ceec4fd56a24d6499d584ce79257e45cfd8139b60a7",
+            "heir": "ee31f83c88a71219a6fcf9bee0da9bc22620588f5a15a6145553504df9649e5c",
+            "seq": "4",
+            "news": "2",
+            "hints": ["tcp://far.example:9000"]
+          }
+        ]
+      }
+    },
+    {
+      "name": "a voice that never reached the being meets silence at the same ask",
+      "law": "The describe",
+      "obligations": ["XIII-10", "X-6"],
+      "derivation": "The other holder at this door — it stands at a being of this house and never reached the one that arrived — asks the identical question. Article XIII: the destination \"meets a stranger asking it with the silence any unheld name meets\", and Article X says why it cannot answer absence instead: \"**Silence and absence are two different answers.** Silence is for what a voice may not reach ... A door that answered 'absent' about a being you do not reach would be a door confirming that being exists.\" **So the same bytes but for the voice produce the word above and nothing here**, and that pair is the obligation: a door that pointed for anyone who asked would have made the arrival of a being public, and a door that pointed for nobody would strand the peer. The number is spent against this voice's own standing, which is a row this scenario does not read, so the being's record is unmoved.",
+      "seq": "2",
+      "expect": "silence",
+      "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+      "give": "6715863a068136bdfe05ec1252cca633e3ca07c888f0b6372f88aa4b6b9239012d7199d6a44358238f64c0b3ba1a35c1b2f50d7ffd651836e9181e290e1b89352b01b6d07dfbd393a0a415b0559a0df62c234df1eca99ab228bdf1ef9ae8ec6f10173d74fa8c99a8d7b27336945beffec0806afe1cd0c6bb45bad22f3f4db29288ba8689b71188a88bff9f79ffe136c736b8159ff2416a6308d599abab4a3ee2fdcc1efcc62f6faead6112434f24f79b1ff20938a7fbcecef44fac4ac8ebd8948d63f4e7c103ec796f429c5a0d84b0b9d72dee3a56983a4c70e0349019d64602b20e5b27ef188d83f83a2e1555287e88c6b409230ffa47b5391325604586f940f08167fb89afe356537a1cb3423b626c4dafaf5170624f89bc7bb9cac9fd9ba0845e27f5654641ca4c07f71e5cbc0e081f08a844018c23c194a2d5b641f6b8bfbb6bce8eccede8cede",
+      "cargo": {
+        "being": "19204c8c3ba85ba059cd18ac9017bd02a18da5d10c68fb779a34be43ef067791",
+        "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+        "cells": "",
+        "standings": [
+          {
+            "voice": "fec1428673f6afe89264b3807344ae8b269d125a503855202687db5a7128579f",
+            "commitment": "64b63cedf607ed31a15415874032c67d6c91ba76d771581ae22689e5c8633a98",
+            "name": "2c9b9a42d57adffd50e6eb1da543de93ad97d36d976d2a2b9735e7142f3fb859",
+            "beings": ["19204c8c3ba85ba059cd18ac9017bd02a18da5d10c68fb779a34be43ef067791"],
+            "mark": "10",
+            "spent": ["7", "8", "9"],
+            "padlock": "5a13b7a05e31ae998ad1307217981bb23bb17d277465829edd616e9169c8f46e",
+            "hints": []
+          }
+        ],
+        "relations": [
+          {
+            "warden": "b5f90095318f3f044cd8e40b584253d86777be62bf07221334e5fd2199cfa7f7",
+            "commitment": "ef478e0fc5e09847cf07b8e96dbe077b0f0291c3c053d14a91e6a99ff152e8e9",
+            "padlock": "bb0109e1147cb2b716f9407f947b0c47a8c3c18ce00339dc02df47c54fd1e202",
+            "voice": "c853ad0f0cd2b619aea92ceec4fd56a24d6499d584ce79257e45cfd8139b60a7",
+            "heir": "ee31f83c88a71219a6fcf9bee0da9bc22620588f5a15a6145553504df9649e5c",
+            "seq": "4",
+            "news": "2",
+            "hints": ["tcp://far.example:9000"]
+          }
+        ]
+      }
+    },
+    {
+      "name": "the name the being wore before reaches nothing here",
+      "law": "Rotation",
+      "obligations": ["XIII-9"],
+      "derivation": "The peer addresses the being by the old name and asks it to do something. Article XIII: \"an arriving inbound row reaches the being by the name the destination minted and by that name alone, never also by the name the being wore before: a name a door must remember for whoever might still be behind is a name it can never stop remembering.\" So the old name names nothing that answers here — **it points and it does not route**, which is the whole distinction between this exchange and the one two above it. The peer is not stranded by that, because the word it just received tells it the name to use. **A door that kept the old name alive beside the new one answers this**, and it is the reading the JS kit held before S-17 was ruled. The number is spent all the same: a message refused at routing has still arrived.",
+      "seq": "11",
+      "expect": "silence",
+      "voice": "fec1428673f6afe89264b3807344ae8b269d125a503855202687db5a7128579f",
+      "give": "8853e33302f6735a35b9edbd798be3cc1f72f3d16f60f7db95dbe0b5649f7e04358ec2744c3d42375b02c50235b2c83761e9d0af22f00db5259741e70edf53a9024fc4c21f328059cbb3e32a834a302fbb1a75963500a662d47ba06955360c03df4830e7513f9424e05b4d00697b0c7b0fd57556111578ad924358455cd5b6c809f07357352c6163d1e27f5d343020287550c33080111edfc9c0eb46abc94a7fd784fb9a0013eae99103af442f669efa7c953c63e49a100d6054521ef10288f08b1b32f7f9b59735b268a20f30eb687a9c8e687ca0e7293383e178fb284f20c97d634d829f5f26b2e1f970d342c041d63ee5cffb8fa68a5d13e22070ef2cc0550ebf8ed8482aebd365bfcbb9dcd88d9de79dbd74bd474e15d0bd1f9b9230bb86f308723ab1eaa1b6f2",
+      "cargo": {
+        "being": "19204c8c3ba85ba059cd18ac9017bd02a18da5d10c68fb779a34be43ef067791",
+        "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+        "cells": "",
+        "standings": [
+          {
+            "voice": "fec1428673f6afe89264b3807344ae8b269d125a503855202687db5a7128579f",
+            "commitment": "64b63cedf607ed31a15415874032c67d6c91ba76d771581ae22689e5c8633a98",
+            "name": "2c9b9a42d57adffd50e6eb1da543de93ad97d36d976d2a2b9735e7142f3fb859",
+            "beings": ["19204c8c3ba85ba059cd18ac9017bd02a18da5d10c68fb779a34be43ef067791"],
+            "mark": "11",
+            "spent": ["7", "8", "9", "10"],
+            "padlock": "5a13b7a05e31ae998ad1307217981bb23bb17d277465829edd616e9169c8f46e",
+            "hints": []
+          }
+        ],
+        "relations": [
+          {
+            "warden": "b5f90095318f3f044cd8e40b584253d86777be62bf07221334e5fd2199cfa7f7",
+            "commitment": "ef478e0fc5e09847cf07b8e96dbe077b0f0291c3c053d14a91e6a99ff152e8e9",
+            "padlock": "bb0109e1147cb2b716f9407f947b0c47a8c3c18ce00339dc02df47c54fd1e202",
+            "voice": "c853ad0f0cd2b619aea92ceec4fd56a24d6499d584ce79257e45cfd8139b60a7",
+            "heir": "ee31f83c88a71219a6fcf9bee0da9bc22620588f5a15a6145553504df9649e5c",
+            "seq": "4",
+            "news": "2",
+            "hints": ["tcp://far.example:9000"]
+          }
+        ]
+      }
+    }
+  ]
+}

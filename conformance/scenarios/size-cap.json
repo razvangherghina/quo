@@ -1,0 +1,168 @@
+{
+  "scenario": "size-cap",
+  "law": "https://github.com/razvangherghina/quo/blob/main/constitution.md",
+  "encoding": "hex",
+  "about": "The one number Article IX makes a warden publish about itself, held to at the one road this contract has. The two envelopes differ by a single byte, so nothing but the bound itself can decide them — and the corpus cannot express either, because what is being asserted is a door's own published fact about bytes it has not opened yet.",
+  "stand": {
+    "warden": {
+      "nameSeed": "196982eee79e80efbc3131c93b99285a38c540c43e7e4fbb8399c260b1ce5103",
+      "padlockSeed": "7dbcdb3088339c02378f46525bff3fe2b84515973e28f5814301a99f386e20b1",
+      "heirSeed": "0303030303030303030303030303030303030303030303030303030303030303",
+      "heirCommitment": "83f960da653b61eb63f6b53b5d80adeb377e23e569f1c555395b9b119ad69603",
+      "limit": "277",
+      "hints": []
+    },
+    "beings": [
+      {
+        "seed": "0101010101010101010101010101010101010101010101010101010101010101",
+        "heirSeed": "0202020202020202020202020202020202020202020202020202020202020202",
+        "blueprint": "Counter\n  bump(by int) int\n  count() int\n",
+        "cells": ""
+      }
+    ],
+    "grants": [
+      {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "voiceSeed": "2ebd74bd564a8771fa628b28308c588588f5c0d0db17ae06b045b896d8218ad7",
+        "heirSeed": "7bae8096dc92d5f4e271742fd8db51abd563a8976c223dd734f1d2bdd553093c",
+        "padlock": null,
+        "hints": []
+      }
+    ],
+    "clock": [
+      "1000",
+      "1001",
+      "1002",
+      "1003",
+      "1004",
+      "1005",
+      "1006",
+      "1007",
+      "1008",
+      "1009",
+      "1010",
+      "1011",
+      "1012",
+      "1013",
+      "1014",
+      "1015",
+      "1016",
+      "1017",
+      "1018",
+      "1019",
+      "1020",
+      "1021",
+      "1022",
+      "1023",
+      "1024",
+      "1025",
+      "1026",
+      "1027",
+      "1028",
+      "1029",
+      "1030",
+      "1031",
+      "1032",
+      "1033",
+      "1034",
+      "1035",
+      "1036",
+      "1037",
+      "1038",
+      "1039"
+    ],
+    "random": [
+      "3232323232323232323232323232323232323232323232323232323232323232",
+      "3333333333333333333333333333333333333333333333333333333333333333",
+      "3434343434343434343434343434343434343434343434343434343434343434",
+      "3535353535353535353535353535353535353535353535353535353535353535",
+      "3636363636363636363636363636363636363636363636363636363636363636",
+      "3737373737373737373737373737373737373737373737373737373737373737",
+      "3838383838383838383838383838383838383838383838383838383838383838",
+      "3939393939393939393939393939393939393939393939393939393939393939",
+      "4040404040404040404040404040404040404040404040404040404040404040",
+      "4141414141414141414141414141414141414141414141414141414141414141",
+      "4242424242424242424242424242424242424242424242424242424242424242",
+      "4343434343434343434343434343434343434343434343434343434343434343"
+    ]
+  },
+  "unruled": [],
+  "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+  "opening": {
+    "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+    "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+    "cells": "",
+    "standings": [
+      {
+        "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+        "commitment": "290d6caefb277537554cc8f48597206e9b5ca2975dc81dc4c8f66662570b4d64",
+        "name": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+        "beings": ["8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c"],
+        "mark": "0",
+        "spent": [],
+        "padlock": null,
+        "hints": []
+      }
+    ],
+    "relations": []
+  },
+  "beingCommitment": "ed4d580bb287b98674376c30d750d9926617873de8787e518c58c320d1899cbd",
+  "exchanges": [
+    {
+      "name": "an envelope of exactly the published limit is judged",
+      "law": "The carriage",
+      "obligations": ["III-6", "IX-5"],
+      "derivation": "An ordinary ask whose whole envelope is exactly the number this door publishes as its `limit`. Article IX defines that number: \"the largest message it will accept, counted in bytes of the whole envelope as the carriage delivers it — the ephemeral key and the ciphertext together.\" Largest it will accept, so a message of exactly that size is accepted and judged like any other, and the answer is the estate this voice reaches. This is the half of the pair that a door erring one byte the other way would fail.",
+      "seq": "1",
+      "expect": "answered",
+      "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+      "give": "f24a1450d7f84eb6112dfc800c8ee33dd74139f6b66ef2b5f03d2cd7de76f93ba71190f0aa19760c9377622a987298168b0190e200f7ea00c713b45e0376dfae5d1c14cfd615f31bc1fa5256acd0bcda6f3a731a3f57c7fa69d22908d0d63fe98a15d9f5a71ae625cfdae3847874cb6f5e2b3a0c38d8138473ad28998432fc779c1ecea76eadb8569c06ffa81a749c9dff60aa1a4d8a1c1796c9d50b113f42755d43c267f8eef7045ab365570f65c33736d85ceaba0c56e82e79a1a03e8e42e468dd398bb44c9f11a466e4adbfd6aebfce926afee9cd3c95536568968cc45bdc2b19744f75d137b007e554289b8ae75527726eab4788143ea749bd7a375e782be9ca804602b1ab402629ca9dea2d829d870278f1ac",
+      "cargo": {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+        "cells": "",
+        "standings": [
+          {
+            "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+            "commitment": "290d6caefb277537554cc8f48597206e9b5ca2975dc81dc4c8f66662570b4d64",
+            "name": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+            "beings": ["8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c"],
+            "mark": "1",
+            "spent": [],
+            "padlock": "5a13b7a05e31ae998ad1307217981bb23bb17d277465829edd616e9169c8f46e",
+            "hints": ["a"]
+          }
+        ],
+        "relations": []
+      }
+    },
+    {
+      "name": "one byte over the published limit is silence, and spends nothing",
+      "law": "The carriage",
+      "obligations": ["III-6", "IX-5", "III-38"],
+      "derivation": "The same ask with one more character in its one hint, which is one more byte in the envelope and nothing else. It is over the number this door published, so it is refused — and Article III since S-14: \"the `limit` binds on every road, distance zero included ... a door that accepted locally what it refuses over the common carriage would have made its own published number false.\" The refusal is before the judgment, so nothing is spent: the mark is still 1 and the way back still holds the hint the exchange above taught it. A door that judged this and then refused it would have moved the mark, which is what separates a carriage bound from a step of the judgment.",
+      "seq": "2",
+      "expect": "silence",
+      "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+      "give": "1a61189b2818f9111a3280b9cee17fe2edc11271f54c1187e80ddefae590df7d3f684d3ff2804d116770d9c1310b8b04631db13d9c58ed150b469d3a03e60c22563ffb646059424ab717754e492a3b0fabd695c1ef36dcdad1d3e26dd11403b5da2b059cfa28cb035c183fac4b9ae87fc18c7300a180b5a674edd29c561a4c88976c345a1ba57762546fe7318a46cc61c9bbe96a5aafb5f8ab1da4c1e13bccb0e3ac0eda3f2ccee4cdce360e345975da33f6dc5e6df2ce624f59f9a414ece879d724237f7c0cebfde847874f8d76c118df934698f42e29a512c7b356ea61fdd74ee034028e9dd28241d8028e6a2f1480a9f59efc7c947236f4c064a629c695f2381341e050ef4da0ac7aa5504e70c1eae495b0b67722",
+      "cargo": {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+        "cells": "",
+        "standings": [
+          {
+            "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+            "commitment": "290d6caefb277537554cc8f48597206e9b5ca2975dc81dc4c8f66662570b4d64",
+            "name": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+            "beings": ["8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c"],
+            "mark": "1",
+            "spent": [],
+            "padlock": "5a13b7a05e31ae998ad1307217981bb23bb17d277465829edd616e9169c8f46e",
+            "hints": ["a"]
+          }
+        ],
+        "relations": []
+      }
+    }
+  ]
+}

@@ -18,6 +18,7 @@ import assert from 'node:assert/strict';
 import { connect } from 'node:tls';
 import { createHash, randomBytes } from 'node:crypto';
 import {
+  NoRoad,
   Warden,
   commitment,
   encode as encodeValue,
@@ -694,18 +695,19 @@ test('`ws://` names nothing, and a hint that is not a wss line is not dialled', 
   }
 
   // A ground offered nothing but `ws://` is offered no road: in the clear the
-  // line is already `tcp://`, so delivery passes the hint by in silence and
-  // never posts to it.
+  // line is already `tcp://`, so delivery passes the hint by and never posts
+  // to it. Having tried no road, it reports no road — which is neither silence
+  // nor weather, and is named apart from both.
   const ground = await stand({
     seeds: { name: fixed(93), padlock: fixed(94), heir: fixed(95) },
     clock: still,
     random: grain(200),
   });
-  const carried = await ground.delivery.send(
-    { padlock: fixed(96), hints: ['ws://127.0.0.1:1'] },
-    new Uint8Array(4),
+  await assert.rejects(
+    () =>
+      ground.delivery.send({ padlock: fixed(96), hints: ['ws://127.0.0.1:1'] }, new Uint8Array(4)),
+    (thrown) => thrown instanceof NoRoad && thrown.hints[0] === 'ws://127.0.0.1:1',
   );
-  assert.equal(carried, null);
   await ground.close();
 });
 

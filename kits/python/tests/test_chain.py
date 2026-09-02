@@ -77,8 +77,8 @@ class Middleman:
         self.reached = None
 
     async def lit(self) -> bool:
-        self.received = self.quo.leash
-        self.reached = await self.quo.relation("far").lit()
+        self.received = self._quo.leash
+        self.reached = await self._quo.relation("far").lit()
         return True
 
 
@@ -99,7 +99,7 @@ class ABeingInTheMiddleOfAChain(unittest.TestCase):
         self.man = Middleman()
         held = self.middle.beings[BEING_PK]
         held.obj = self.man
-        self.man.quo = warden.Quo(self.middle, held)
+        self.man._quo = warden.Quo(self.middle, held)
         self.middle.labels["far"] = {
             "row": self.row,
             "being": BEING_PK,

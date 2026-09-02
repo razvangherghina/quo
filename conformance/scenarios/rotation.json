@@ -1,0 +1,236 @@
+{
+  "scenario": "rotation",
+  "law": "https://github.com/razvangherghina/quo/blob/main/constitution.md",
+  "encoding": "hex",
+  "about": "Taking a standing over, and the door a being left behind. The rotation is never announced and never declared — it is read off who signed — so the only way to see one happen is the state underneath an ordinary answer, which is what a scenario is for and what no vector could hold. The being here has moved, so the same door answers `moved` with a succession and meets every other ask with silence.",
+  "stand": {
+    "warden": {
+      "nameSeed": "196982eee79e80efbc3131c93b99285a38c540c43e7e4fbb8399c260b1ce5103",
+      "padlockSeed": "7dbcdb3088339c02378f46525bff3fe2b84515973e28f5814301a99f386e20b1",
+      "heirSeed": "0303030303030303030303030303030303030303030303030303030303030303",
+      "heirCommitment": "83f960da653b61eb63f6b53b5d80adeb377e23e569f1c555395b9b119ad69603",
+      "limit": "1048576",
+      "hints": []
+    },
+    "beings": [
+      {
+        "seed": "0606060606060606060606060606060606060606060606060606060606060606",
+        "heirSeed": "0707070707070707070707070707070707070707070707070707070707070707",
+        "blueprint": "Ledger\n  note(what text) int\n  total() int\n",
+        "cells": ""
+      }
+    ],
+    "grants": [
+      {
+        "being": "8a875fff1eb38451577acd5afee405456568dd7c89e090863a0557bc7af49f17",
+        "voiceSeed": "5050505050505050505050505050505050505050505050505050505050505050",
+        "heirSeed": "5151515151515151515151515151515151515151515151515151515151515151",
+        "padlock": null,
+        "hints": []
+      }
+    ],
+    "moved": [
+      {
+        "being": "8a875fff1eb38451577acd5afee405456568dd7c89e090863a0557bc7af49f17",
+        "word": {
+          "being": "f80cccdce4ae1c07ae208a2adf99a310ae4207e0306fa0236110b06827bbb8d0",
+          "commitment": "cd4ec34b496f92013dba25b37ea20455075bc58cfe6461a22a65675eee5a701f",
+          "name": "f80cccdce4ae1c07ae208a2adf99a310ae4207e0306fa0236110b06827bbb8d0",
+          "padlock": "5a13b7a05e31ae998ad1307217981bb23bb17d277465829edd616e9169c8f46e",
+          "hints": ["tcp://elsewhere.example:9000"]
+        }
+      }
+    ],
+    "clock": [
+      "1000",
+      "1001",
+      "1002",
+      "1003",
+      "1004",
+      "1005",
+      "1006",
+      "1007",
+      "1008",
+      "1009",
+      "1010",
+      "1011",
+      "1012",
+      "1013",
+      "1014",
+      "1015",
+      "1016",
+      "1017",
+      "1018",
+      "1019",
+      "1020",
+      "1021",
+      "1022",
+      "1023",
+      "1024",
+      "1025",
+      "1026",
+      "1027",
+      "1028",
+      "1029",
+      "1030",
+      "1031",
+      "1032",
+      "1033",
+      "1034",
+      "1035",
+      "1036",
+      "1037",
+      "1038",
+      "1039"
+    ],
+    "random": [
+      "3232323232323232323232323232323232323232323232323232323232323232",
+      "3333333333333333333333333333333333333333333333333333333333333333",
+      "3434343434343434343434343434343434343434343434343434343434343434",
+      "3535353535353535353535353535353535353535353535353535353535353535",
+      "3636363636363636363636363636363636363636363636363636363636363636",
+      "3737373737373737373737373737373737373737373737373737373737373737",
+      "3838383838383838383838383838383838383838383838383838383838383838",
+      "3939393939393939393939393939393939393939393939393939393939393939",
+      "4040404040404040404040404040404040404040404040404040404040404040",
+      "4141414141414141414141414141414141414141414141414141414141414141",
+      "4242424242424242424242424242424242424242424242424242424242424242",
+      "4343434343434343434343434343434343434343434343434343434343434343"
+    ]
+  },
+  "unruled": [],
+  "being": "8a875fff1eb38451577acd5afee405456568dd7c89e090863a0557bc7af49f17",
+  "opening": {
+    "being": "8a875fff1eb38451577acd5afee405456568dd7c89e090863a0557bc7af49f17",
+    "digest": "4b44843fed65ecdb4fd4bd79149aea3de45abd75fb5d9ab42f90fa798c84fefe",
+    "cells": "",
+    "standings": [
+      {
+        "voice": "3ef08959033028c8fc6fc6d491a12548e78df6aefb2d7c2c190c3f78cef3f50b",
+        "commitment": "4d3b13006408d945c60cc9fcc60bd9a6b1c454ea0c7b61b387e71e6c8390dd42",
+        "name": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+        "beings": ["8a875fff1eb38451577acd5afee405456568dd7c89e090863a0557bc7af49f17"],
+        "mark": "0",
+        "spent": [],
+        "padlock": null,
+        "hints": []
+      }
+    ],
+    "relations": []
+  },
+  "beingCommitment": "ed4d580bb287b98674376c30d750d9926617873de8787e518c58c320d1899cbd",
+  "exchanges": [
+    {
+      "name": "a rotation is a prefix on an ask, and the ask is answered",
+      "law": "Keys, records and standings",
+      "obligations": ["VII-5", "VII-6", "XIII-4", "IX-7"],
+      "derivation": "Signed by the key the standing committed to, carrying a fresh commitment, and carrying an ordinary ask in the same act. Article VII: \"Rotation is never a call of its own; it is a prefix on an ask, and taking over a standing tells nobody\" — so the answer is the ask's answer and there is nothing in it about the takeover. And \"the two are told apart at the door by the signature alone\": nothing in these bytes declares a rotation, and the same bytes signed by the current holder would have been a plain ask. The ask it carries is `moved` on the being that left, so the answer is the succession this door published — Article XIII: \"It keeps the succession it published and answers `moved` with it.\" **The bytes of that answer are a `word`, and they are the same record the news scenario puts on the wire as the argument of a `tell`** — Article IX: \"`tell` is news; `moved` is the old door's pointer, which is why the two carry one shape.\" The emitter builds both from one `word` encoder, so a kit that used two shapes — an answer record for pointing and a different one for announcing, which is what a kit gets if it writes the two features apart — fails one pin or the other. The standing has changed hands underneath: the heir is the holder, the carried commitment is the new heir, and the mark starts fresh at 1.",
+      "seq": "1",
+      "voice": "c050c5637a44fa8629fff3cccce2300cb362a63d99d95fc54145266f4332445a",
+      "expect": "59d9225473451efffe6b36dbcaefdbf7b1895de62084509a7f5b58bf01d064183d0e9f38364e65372817fc540a351551a7cad5c13b5594def61c92d544afecd572a652e3c1fdc5aa70a7624ece29b926de3b1e4ef1c70d7aaa62f48c06fa4a637dec4d7595f1fe00037c47d0009aa03aeeedd0bc9f2b4026de269fe7f787c60ff4e1f2f6e1d0ea140d9ef098a7773391a518ab52953fe807fb24031f403979217ff415ba5f8d8ac02cae894a7fbbfd7996bf2138e8b364315d2071dc7ed968357d8f71922412f22d277b2ac95ef59950445f9707d9a624b76954c36cfb090cc730df0d38dfdc93d8162490e6d05002ee723c4800a8d7222f879039032b566c92926b980515f7fb7946cfda97d6ddea916f4afff90d8d339d29661a293a13aea28d22b3a8ffddcdfdecf95aa83b5f04359d5a98720703a36f0035d68ec9eba1c6a98288ffdcab19ed2504e11a180e927c6b421226",
+      "give": "17d224cc4d780e69a8af7bdf46ef4910a0d3e425af656c345726b448591f1f31c990e9db26bc45785b06d7c0e038d13b4cf03a521b195e3241501c7af7f20093f16586058fa4f5c707e66a53988edd21171cf70df5e314562a0da3461650f09fbc855649da8764b2a2030e2d12bf06261304c30aae84e8d3e17ba50f94be5d87aa13906162a5049d7eb3abbc91c4fd3c104fb3ffc2651261e33c01b9d20cbe45c9bfdc1d225f0a17ae570f0bbc4d892d673ab74a30df0cff4d02b92ed5920608c655f87e576c56688e06b45beceaf3d4cd454995a73ec9b520e9d7df24049a9c18c311a84f727535f037d94787be777db893264207e8c90a82758fdbe8312ba66a749641712e011ecc6ffbabad46cbf800ac5a552a1f0827df28a05ad56f3aab21d6c2e626e6ec9ce2f80d7c04a4a1be3bca35efe28e2cc212c99b7ba7c134e71c405207bcdd27a391",
+      "cargo": {
+        "being": "8a875fff1eb38451577acd5afee405456568dd7c89e090863a0557bc7af49f17",
+        "digest": "4b44843fed65ecdb4fd4bd79149aea3de45abd75fb5d9ab42f90fa798c84fefe",
+        "cells": "",
+        "standings": [
+          {
+            "voice": "c050c5637a44fa8629fff3cccce2300cb362a63d99d95fc54145266f4332445a",
+            "commitment": "3d6c932b2d088341dad02ef002d974911d385157d366ab6d024b223f7123b1ce",
+            "name": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+            "beings": ["8a875fff1eb38451577acd5afee405456568dd7c89e090863a0557bc7af49f17"],
+            "mark": "1",
+            "spent": [],
+            "padlock": "5a13b7a05e31ae998ad1307217981bb23bb17d277465829edd616e9169c8f46e",
+            "hints": []
+          }
+        ],
+        "relations": []
+      }
+    },
+    {
+      "name": "every other ask at the old door meets silence",
+      "law": "Rotation",
+      "obligations": ["XIII-4"],
+      "derivation": "The new holder asks the being itself for something. Article XIII: \"Every other ask meets silence: an answer's data is the field's declared answer type by the notation's rules, and a succession is not that type, so the old door cannot put one where the caller asked for something else.\" So this is silence and not the succession, and not an absent answer either — the door has the succession and may not hand it back under a field that declared something else. The number is still spent, the message having arrived and been judged.",
+      "seq": "2",
+      "expect": "silence",
+      "voice": "c050c5637a44fa8629fff3cccce2300cb362a63d99d95fc54145266f4332445a",
+      "give": "2bd3950461202e242f2bae83c077119d5ba4ae300583d7ebb7923b226d8533434be7eb848be3370e75083daf75b65726844e32a50a7674c5bbf7f71677059be531094a3c4e59ffc2a7bab7c242dabcb12cc151dd139a0f51dfda2ade1ebb925b85457933920cc12929b32104286b8f7299097ba4cdeb9c6c08044338aa2eaf61a151650d362a1ebfc21a478b4a949c0731c39c106e7b58272b4d9485b91eb2469d3158878abfa7948a55850bec9a033aaaa306e2b75dcfd692d14b6821b53aaf385e7d4004257ca25b9e67ac34e3e73c470e2db74cccb450e8941bca8923e08759aded34717ba9c3619a819c01062c5f7ab817ab6d937657e9089719161aad7bc1a9f830671abb582067d0197b8ea97c8a4d5b16a6f86c3463c76994ed4cdf190cd277c697edb77fc9",
+      "cargo": {
+        "being": "8a875fff1eb38451577acd5afee405456568dd7c89e090863a0557bc7af49f17",
+        "digest": "4b44843fed65ecdb4fd4bd79149aea3de45abd75fb5d9ab42f90fa798c84fefe",
+        "cells": "",
+        "standings": [
+          {
+            "voice": "c050c5637a44fa8629fff3cccce2300cb362a63d99d95fc54145266f4332445a",
+            "commitment": "3d6c932b2d088341dad02ef002d974911d385157d366ab6d024b223f7123b1ce",
+            "name": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+            "beings": ["8a875fff1eb38451577acd5afee405456568dd7c89e090863a0557bc7af49f17"],
+            "mark": "2",
+            "spent": ["1"],
+            "padlock": "5a13b7a05e31ae998ad1307217981bb23bb17d277465829edd616e9169c8f46e",
+            "hints": []
+          }
+        ],
+        "relations": []
+      }
+    },
+    {
+      "name": "knowing a being's name reaches nothing",
+      "law": "Keys, records and standings",
+      "obligations": ["VII-10"],
+      "derivation": "A stranger names the being by its pk, which anything that has seen an answer may have learned. Article VII: \"A pointer is not transitive. An answer may carry a being's name, and for the receiver that is a label. Standing travels by grant alone.\" So the name buys nothing: the voice reaches no being, and a door that answered would be confirming the being exists to whoever guessed at it. Silence, and no mark kept for a stranger.",
+      "seq": "1",
+      "expect": "silence",
+      "voice": "efc15f8742c6c2755887d9e83884dd30b69d25548ef299cdd296053be9c0df99",
+      "give": "d7b5e81d336e578b13b8d706e82d061e3038c96bce66cdcf50d566b96ddbba109813e19149381b071cc3e4da0922f82f19b58b7d59f57e2fdb8ff71842cf3a12ce16947aa04898c0fd4bbddd88d6a72bd98735da3b35f7bc1f46229943c731be45213d493dd63a16df8f8c9d5d269351123dbde524d1e71314f6b6cb6eb926f55f2a2dafe823cb36d8c3e5c25bbd14e9d69909a984a49247b80171b476169b67e0d0469bf2aa96888a216bfb40c667fcda85a7a26a59bd451977225f3a5dda34118ff4de32c90ec7308d92305bea00c02041a390219cf110eabb0c99b63d2f92a6d6184c718150d5d8b538f9bc90048883e9a30ddccc45d59d38406741ceacf30963dbc0f9e782f50ada6b8e1e10886eac934b5b55cadb4a914e2b2914ef8a854a68b4c337ae462fbc",
+      "cargo": {
+        "being": "8a875fff1eb38451577acd5afee405456568dd7c89e090863a0557bc7af49f17",
+        "digest": "4b44843fed65ecdb4fd4bd79149aea3de45abd75fb5d9ab42f90fa798c84fefe",
+        "cells": "",
+        "standings": [
+          {
+            "voice": "c050c5637a44fa8629fff3cccce2300cb362a63d99d95fc54145266f4332445a",
+            "commitment": "3d6c932b2d088341dad02ef002d974911d385157d366ab6d024b223f7123b1ce",
+            "name": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+            "beings": ["8a875fff1eb38451577acd5afee405456568dd7c89e090863a0557bc7af49f17"],
+            "mark": "2",
+            "spent": ["1"],
+            "padlock": "5a13b7a05e31ae998ad1307217981bb23bb17d277465829edd616e9169c8f46e",
+            "hints": []
+          }
+        ],
+        "relations": []
+      }
+    },
+    {
+      "name": "a rotation carrying no commitment is refused",
+      "law": "The envelope",
+      "obligations": ["XI-5", "VII-3", "IV-2"],
+      "derivation": "**The last of four exchanges in which the being under this door has been left entirely alone, and that is Article IV's obligation rather than Article XI's.** \"**A being's digest never changes for the life of its pk.** A different class is a different being, minted beside the old.\" Every exchange in this scenario reads the whole record back, digest included, and across a run in which **the standing changed hands, an ask was answered, two were met with silence and a name was asked after**, the digest is one value throughout. That is the whole of what a lifetime invariant can be held to from outside: no single message could witness it, because it is a claim about what did *not* happen over a door's run. It also separates the being from its occupant — the voice holding the standing is not the one it started as, and the being is unmoved. Signed by the key the standing now commits to, and carrying no commitment of its own. Article XI: \"The commitment is present only when the message spends an heir, and is present whenever one is spent. A plain ask carrying one is refused, and a rotation carrying none is refused — Article XII's fourth step makes the carried commitment the new heir, and with nothing carried the step has no outcome and the standing could never change hands again.\" Which is Article VII's \"every rotation carries a fresh commitment, or a standing could be taken over once and never again\" read as a refusal rather than as advice. So: silence, and a standing that has not changed hands — the voice is still the one that rotated in above, and the mark has not been made fresh.",
+      "seq": "1",
+      "expect": "silence",
+      "voice": "2012cb90ca60e8e5d8daf66e2272d2233e0486d557e8c66141ed8920177d7eb7",
+      "give": "7a1a4e709bf085ac494aba0469b9b1eda0ab1f78b16aabb79ffeda90623e8522cae4d774c186db6bcc9e91dfeae545d56b27a9bc9e3a0f35bfd80dccf383df8d73defda08471048900c2382d1c02737da7f2ca2a5b60bba639ce47f4ccbc97a802f38cccda636dbfc59ee525882be8334b1ffd6d9739a19fa2cd16072aca116213061449c903f8933e9e210fd42bbbe09a18636d8d9ea5b3ed8c0e45c39ae284b681024cfc6f35b7b85d7ee4cc72e79804ea4888cbdbc80b05513849cfa9ea04d8ea0f149dfe45819785437e66c08bcc42b1fd47a196630509aee39fe2bd579192c6296e5b2ddf35f16a0333e18be59688da2905614b82ff7724158086ed75223a0177ba788282641d0337db9a6c217081226395a37e3b4102e9986adc4e8fb90a9b9cd52f151f77bc",
+      "cargo": {
+        "being": "8a875fff1eb38451577acd5afee405456568dd7c89e090863a0557bc7af49f17",
+        "digest": "4b44843fed65ecdb4fd4bd79149aea3de45abd75fb5d9ab42f90fa798c84fefe",
+        "cells": "",
+        "standings": [
+          {
+            "voice": "c050c5637a44fa8629fff3cccce2300cb362a63d99d95fc54145266f4332445a",
+            "commitment": "3d6c932b2d088341dad02ef002d974911d385157d366ab6d024b223f7123b1ce",
+            "name": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+            "beings": ["8a875fff1eb38451577acd5afee405456568dd7c89e090863a0557bc7af49f17"],
+            "mark": "2",
+            "spent": ["1"],
+            "padlock": "5a13b7a05e31ae998ad1307217981bb23bb17d277465829edd616e9169c8f46e",
+            "hints": []
+          }
+        ],
+        "relations": []
+      }
+    }
+  ]
+}

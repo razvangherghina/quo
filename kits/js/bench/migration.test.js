@@ -828,7 +828,7 @@ test('a peer that missed the news meets silence, is rehoused, and reaches the ne
   // What the handle does with the silence is ask where the being went and hand
   // the word to its own warden — the same steps the news would have taken.
   assert.equal(await handle.count(), null, 'the ask that met the move was silence');
-  assert.equal(hex(handle.being), hex(moving.word.successor), 'and the handle moved with it');
+  assert.equal(hex(handle._quo.being), hex(moving.word.successor), 'and the handle moved with it');
   assert.equal(await two.peer.outboundFor(origin.name.pk), null);
   assert.equal(await two.peer.outboundFor(destination.name.pk), row, 'the same row, rehoused');
   assert.equal(hex(row.padlock), hex(destination.padlock.pk));
@@ -842,7 +842,7 @@ test('a peer that missed the news meets silence, is rehoused, and reaches the ne
   // one more word, and the peer is home over the standing that travelled —
   // nothing regranted and nobody asked.
   assert.equal(await handle.count(), null, 'the arriving name is pointed onward too');
-  assert.equal(hex(handle.being), hex(landed(destination).word.successor));
+  assert.equal(hex(handle._quo.being), hex(landed(destination).word.successor));
   assert.equal(await handle.count(), 2n, 'the next ask reaches the new house');
   assert.equal(hex(being).length, 64);
 });
@@ -863,7 +863,7 @@ test('a word the row has no commitment for rehouses nothing', async () => {
   assert.equal(hex(row.padlock), was.padlock);
   assert.deepEqual(row.hints, was.hints);
   assert.ok(await two.peer.outboundFor(origin.name.pk), 'and still at the old house');
-  assert.equal(hex(handle.being), hex(being), 'the handle stands where it stood');
+  assert.equal(hex(handle._quo.being), hex(being), 'the handle stands where it stood');
 });
 
 test('the same word twice rehouses once, because the chain has moved on', async () => {

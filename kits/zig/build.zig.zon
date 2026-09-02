@@ -1,6 +1,6 @@
 .{
     .name = .quo,
-    .version = "0.3.1",
+    .version = "0.4.0",
     .minimum_zig_version = "0.16.0",
     .fingerprint = 0x25372a0fad424ef8,
     .dependencies = .{},

@@ -35,7 +35,7 @@ const COUNTER =
 ;
 
 const Counter = struct {
-    quo: quo.Cell = .{},
+    _quo: quo.Cell = .{},
     n: i64 = 0,
     seen_voice: ?Key = null,
     seen_kind: ?warden.Kind = null,

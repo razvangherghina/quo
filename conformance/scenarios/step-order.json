@@ -1,0 +1,196 @@
+{
+  "scenario": "step-order",
+  "law": "https://github.com/razvangherghina/quo/blob/main/constitution.md",
+  "encoding": "hex",
+  "about": "Three envelopes that produce one identical silence and three different states. The corpus cannot express any of it: every refusal here has the same bytes — none — and what separates them is only what the door did to its own records on the way to refusing. That is what a verdict is, and why a vector cannot hold one.",
+  "stand": {
+    "warden": {
+      "nameSeed": "196982eee79e80efbc3131c93b99285a38c540c43e7e4fbb8399c260b1ce5103",
+      "padlockSeed": "7dbcdb3088339c02378f46525bff3fe2b84515973e28f5814301a99f386e20b1",
+      "heirSeed": "0303030303030303030303030303030303030303030303030303030303030303",
+      "heirCommitment": "83f960da653b61eb63f6b53b5d80adeb377e23e569f1c555395b9b119ad69603",
+      "limit": "1048576",
+      "hints": []
+    },
+    "beings": [
+      {
+        "seed": "0101010101010101010101010101010101010101010101010101010101010101",
+        "heirSeed": "0202020202020202020202020202020202020202020202020202020202020202",
+        "blueprint": "Counter\n  bump(by int) int\n  count() int\n",
+        "cells": ""
+      }
+    ],
+    "grants": [
+      {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "voiceSeed": "2ebd74bd564a8771fa628b28308c588588f5c0d0db17ae06b045b896d8218ad7",
+        "heirSeed": "7bae8096dc92d5f4e271742fd8db51abd563a8976c223dd734f1d2bdd553093c",
+        "padlock": null,
+        "hints": []
+      }
+    ],
+    "clock": [
+      "1000",
+      "1001",
+      "1002",
+      "1003",
+      "1004",
+      "1005",
+      "1006",
+      "1007",
+      "1008",
+      "1009",
+      "1010",
+      "1011",
+      "1012",
+      "1013",
+      "1014",
+      "1015",
+      "1016",
+      "1017",
+      "1018",
+      "1019",
+      "1020",
+      "1021",
+      "1022",
+      "1023",
+      "1024",
+      "1025",
+      "1026",
+      "1027",
+      "1028",
+      "1029",
+      "1030",
+      "1031",
+      "1032",
+      "1033",
+      "1034",
+      "1035",
+      "1036",
+      "1037",
+      "1038",
+      "1039"
+    ],
+    "random": [
+      "3232323232323232323232323232323232323232323232323232323232323232",
+      "3333333333333333333333333333333333333333333333333333333333333333",
+      "3434343434343434343434343434343434343434343434343434343434343434",
+      "3535353535353535353535353535353535353535353535353535353535353535",
+      "3636363636363636363636363636363636363636363636363636363636363636",
+      "3737373737373737373737373737373737373737373737373737373737373737",
+      "3838383838383838383838383838383838383838383838383838383838383838",
+      "3939393939393939393939393939393939393939393939393939393939393939",
+      "4040404040404040404040404040404040404040404040404040404040404040",
+      "4141414141414141414141414141414141414141414141414141414141414141",
+      "4242424242424242424242424242424242424242424242424242424242424242",
+      "4343434343434343434343434343434343434343434343434343434343434343"
+    ]
+  },
+  "unruled": [],
+  "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+  "opening": {
+    "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+    "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+    "cells": "",
+    "standings": [
+      {
+        "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+        "commitment": "290d6caefb277537554cc8f48597206e9b5ca2975dc81dc4c8f66662570b4d64",
+        "name": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+        "beings": ["8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c"],
+        "mark": "0",
+        "spent": [],
+        "padlock": null,
+        "hints": []
+      }
+    ],
+    "relations": []
+  },
+  "beingCommitment": "ed4d580bb287b98674376c30d750d9926617873de8787e518c58c320d1899cbd",
+  "exchanges": [
+    {
+      "name": "a payload addressed to another door touches nothing",
+      "law": "The judgment",
+      "obligations": ["XII-2", "XI-4"],
+      "derivation": "A well-formed `say`, signed by the voice that holds the standing and sealed to this door's padlock so it unseals and verifies — and then `recipient` set to a key that is neither the door's name nor its padlock. Article XII puts the recipient check at step 3 and says why there: \"a payload addressed elsewhere must never touch this house's records.\" So the expectation is silence, and a `cargo` identical to the one before it: the mark is still empty and the way back is still unlearned, because step 5 was never reached.",
+      "seq": "1",
+      "expect": "silence",
+      "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+      "give": "17ff733c9cffec197551af9aaf710b7b07a4d7aeffc9894d6e89b10df3d2d011f62de7fcf4fb8a6f895f554109bff5e88b7b5edfb58d6a82904e84f24d9f1da7c33147a97f2f38b5dfbb16a16824e56255664b927e49eeead4feceb06bebd3a9bcacfc723862c1ae752f0cc71fc8ce0cf527b1ff3c0c1809d2c0adba91b61c70c37d2b69e4f28474cb2bc531523b41bbb31f2eaa49e5ab3d6ff653717826693a82e25e5be5ae7ddd7ef636d146f9d684fe3c40075aab3b8d85c0d6a7095e809c57bfcf981a26e5470feac13345edae0c925000e31c95e02fad36512c725b0a7c350a8272b962cfd3b35ae3b19974370d2fe1c53b2ab3be217927b9020c0040f73d7c15cea47840726775e2e3d18efd191d776c1f",
+      "cargo": {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+        "cells": "",
+        "standings": [
+          {
+            "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+            "commitment": "290d6caefb277537554cc8f48597206e9b5ca2975dc81dc4c8f66662570b4d64",
+            "name": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+            "beings": ["8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c"],
+            "mark": "0",
+            "spent": [],
+            "padlock": null,
+            "hints": []
+          }
+        ],
+        "relations": []
+      }
+    },
+    {
+      "name": "a message refused for its leash has still spent its number",
+      "law": "The seq and the leash",
+      "obligations": ["VIII-3", "VIII-9", "XII-1", "VII-4", "XII-14"],
+      "derivation": "The same voice, correctly addressed, carrying seq 1 and an allowance whose time budget is zero. Article XII spends the seq at step 5 and the leash at step 6, in that order. Article VIII: \"a time budget at or below zero ... is silence\", and \"Honoured means the number is consumed, and nothing later gives it back — a message refused at routing or for its leash has still spent it.\" So: silence on the wire, and a mark that has moved to 1. The way back is learned here too, because Article XII refreshes it \"between the seq and the leash\" — \"a message refused for its leash still arrived and still spent its number.\" This is the exchange that makes step order visible, because the silence here is byte-for-byte the silence above and the state is not.",
+      "seq": "1",
+      "expect": "silence",
+      "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+      "give": "f77ff4b10788bfdca62ca0bb160d427cf5762d85f2b5cad6807ec9c3febbde0967312075c3df4adc0b6ccd220cc69fb92a572a4b58e1e6f0e903e60ef73fcaf3678116cc02359156e3a97db969ee159949326056565f8db777e9da68f75cd8eac5ba16b070fb3eb07d1e87f842cbbf77df14268b14d9784fb27470b8fcc2c8dd7975fff38e73bf091c1b193afb692b3520f902788dbf7febc6d8df137869837ea1db7ab80d778a224ea48fd045b49824a0d37fd76ab9051bcbe5c3964a52d5488d808c267c6fbb2b00f5d9a200cfe8d9e9bc537032e520551c91133edca6017fb996360de76875f141982169f1cb0d5f931934537231a4e0366abd8c04d5efb5bd5ba63499514729ab619eebd9e533facdbbe582",
+      "cargo": {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+        "cells": "",
+        "standings": [
+          {
+            "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+            "commitment": "290d6caefb277537554cc8f48597206e9b5ca2975dc81dc4c8f66662570b4d64",
+            "name": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+            "beings": ["8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c"],
+            "mark": "1",
+            "spent": [],
+            "padlock": "5a13b7a05e31ae998ad1307217981bb23bb17d277465829edd616e9169c8f46e",
+            "hints": []
+          }
+        ],
+        "relations": []
+      }
+    },
+    {
+      "name": "a rotation refused for its leash has still changed hands",
+      "law": "The judgment",
+      "obligations": ["XII-4", "XII-5", "VII-9", "I-1"],
+      "derivation": "**The third of three envelopes that come out of this door as one identical silence, and the exchange where Article I is on the line rather than Article XII.** \"A call is answered with data or with silence, and there is no third thing. Refused, broken and absent are indistinguishable by design; no door narrates what happened behind it.\" These three failed at three different steps — the recipient at 3, the leash at 6 after an ordinary placement, the leash at 6 after a rotation — and **all three produce no bytes at all, while leaving three different records**. A door that put a code, a reason or a distinguishing shape on any of them fails here and at every other silence in the suite, which is what makes the claim a real one: there are more than twenty silences across the scenarios, arising at every step of the judgment, and the expectation for every one of them is the same empty answer. Signed by the standing's heir, whose pk hashes with this door's name to the commitment the standing holds — which is Article XII step 4's test: \"its hash matches a standing's heir commitment → a rotation\". It carries a fresh commitment, as Article VII requires of every rotation, and seq 1, which Article VIII allows against a mark that step 4 has just made fresh. Its allowance is again a zero time budget, so it is refused at step 6. Article XII: \"the standing changes hands before anything else is judged.\" So the expectation is silence again — and a standing whose voice is now the heir's pk, whose commitment is the carried one, and whose mark is 1: fresh at step 4, then spent at step 5.",
+      "seq": "1",
+      "expect": "silence",
+      "voice": "afa0ce0919a81bf57861ac7139d8945a1fc2ba9f00e53a4f26f494c23f78338c",
+      "give": "73b2d8b76aa9b53660032bc8f5d8bee3a3ae4e3b3a7fd49ade81f7347a34aa68271766016acade84172d0b4f297654eb65ab87264dba0dcdcf6364808455194ab648a6b3d9a516af7e85efb4183ada035dd8f084bdff77ae0abaae5a915331d517dedb68f70fc7f0779f645e6757c8e20787b00f363b66913447321930d2f38c3eb751218542e00fc995336181b9d3b728c79d86c34e061b675165daef36cf22704ac15adb236496e18ce3905bf68128e433a5fb92fd7d49e33f665e819a5a82facfe8bd5faaa4018804b2dd5eb9c37799bd5704e4caa74bf1d480013d5452ace0ddbd19f909bd9def19912510a1a7fe5063f354a4d810d5e5416cb9a66183df8c2ed23d1a56b2b768442011364d570651cf4b5301f17c3419a4920140490e14d25d1c8de44560a3eafefebad6ff407dbb544d23",
+      "cargo": {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+        "cells": "",
+        "standings": [
+          {
+            "voice": "afa0ce0919a81bf57861ac7139d8945a1fc2ba9f00e53a4f26f494c23f78338c",
+            "commitment": "db264a809a1bd49a758fefaf59daa530e0235049dd311fd745f9ecd32674ff79",
+            "name": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+            "beings": ["8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c"],
+            "mark": "1",
+            "spent": [],
+            "padlock": "5a13b7a05e31ae998ad1307217981bb23bb17d277465829edd616e9169c8f46e",
+            "hints": []
+          }
+        ],
+        "relations": []
+      }
+    }
+  ]
+}

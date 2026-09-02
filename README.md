@@ -1,10 +1,48 @@
 # Quo
 
-**Quo is a small, open protocol for proving by whose authority a message was
-sent** — with keys and sealed letters instead of accounts, logins and master
-keys.
+**My assistant can talk to yours — and to your software — without either of
+us handing over a password, opening an account, or trusting a third party to
+hold the relation.** Quo is the small, open protocol that makes that
+reference real between two processes, in any language, on any host: a
+signed, sealed letter from a voice you granted standing to, judged at your
+own door, and taken back in one act when you choose.
 
-It answers exactly one question — _by whose authority?_ — and refuses every
+Here is the whole of what a being looks like in the JavaScript kit. Quo never
+looks inside the class; what crosses to strangers is its **blueprint**, and a
+method the blueprint does not declare does not exist for a peer.
+
+```js
+const DOG = `Dog
+  name() text
+  logWalk(minutes int) bool
+  invite() invitation
+`;
+
+class Dog {
+  constructor(name) {
+    this.dogName = name;
+    this.walks = [];
+  }
+  name() {
+    return this.dogName;
+  }
+  logWalk(minutes) {
+    this.walks.push(minutes);
+    return true;
+  }
+  async invite() {
+    return this._quo.grant(this);
+  }
+}
+```
+
+A warden holds the dog, hands it `this._quo`, and stands one door in front of
+it. Whoever you hand the invitation to — a person's ground, an agent's — can
+accept it and call `logWalk` from across the internet, and nobody else can.
+Revoke the standing and their key is dead at your door; no token expires, no
+broker is asked.
+
+Quo answers exactly one question — _by whose authority?_ — and refuses every
 other. You are keys, not an account. Your software lives in its own house, with
 one door. Standing is granted by invitation, spent once, and taken back in one
 act. Every message is a signed, sealed letter. Strangers get silence, not an
@@ -74,6 +112,12 @@ own tab at **[quo.systems](https://quo.systems)**.
   pip install quo-systems
   ```
 
+- **[conformance](https://github.com/razvangherghina/quo/tree/main/conformance)**
+  — the conformance kit, which is yours rather than ours. The scenarios, the
+  runner that drives them, and `CONTRACT.md`, the nine verbs a kit answers to
+  be driven. It needs Node and nothing else, and it carries no kit, so it
+  cannot hold a sixth implementation to a habit of one of the five.
+
 Five implementations of one text. Each was written from the constitution alone,
 and each is judged against the same pinned vector corpus, which lives in
 [`kits/js/vectors`](https://github.com/razvangherghina/quo/tree/main/kits/js/vectors).
@@ -92,6 +136,12 @@ What that means for you: the ideas are stable enough to build a real
 understanding on, and the exact spellings are not yet stable enough to ship a
 product against without talking to the author first. Pin an exact version of any
 kit you depend on.
+
+**What 1.0 waits on is a condition, not a date:** the wire freezes when a
+sixth implementation, written by someone who is not the author from the
+constitution and the conformance contract alone, passes conformance. Until a
+stranger has built it from the text, the claim that it can be built from the
+text is only a claim.
 
 ## Implementing it
 
@@ -116,8 +166,20 @@ kit with the clock and the randomness handed in, and pins both the envelope
 bytes and the warden's resulting record — so a kit that decides differently is
 caught, not merely found to be consistent with itself. Every article of the
 law is accounted for there: driven by a case, or named with the reason it
-cannot be. It runs against these five kits today; a sixth implements a small
-contract of verbs and is driven by the same scenarios.
+cannot be.
+
+**That lane is in `conformance/`, and it is there for you rather than for us.**
+Write one program — your warden with its inputs exposed, reading one JSON
+object per line and writing one back, nine verbs and no network, all of it in
+[`conformance/CONTRACT.md`](https://github.com/razvangherghina/quo/blob/main/conformance/CONTRACT.md)
+— and point the runner at it:
+
+```
+node conformance/conform.js -- ./my-subject
+```
+
+It reports, per field, what the law expected and what your kit answered. The
+scenarios are the same bytes the five are driven through, unchanged.
 
 ## Licence and ownership
 

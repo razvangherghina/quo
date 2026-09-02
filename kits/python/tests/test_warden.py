@@ -1360,7 +1360,7 @@ class Accepting(unittest.TestCase):
 
         # Two rotations, then the blueprint of the class the grant opened.
         self.assertEqual(len(self.sent), 3)
-        self.assertEqual(handle.declares(), ("lit",))
+        self.assertEqual(handle._quo.declares(), ("lit",))
 
         # The far door's standing now stands on the voice this ground drew,
         # and commits to the heir beside it.

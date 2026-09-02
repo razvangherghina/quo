@@ -45,7 +45,7 @@ const DOG =
 ;
 
 const Dog = struct {
-    quo: quo.Cell = .{},
+    _quo: quo.Cell = .{},
     gpa: std.mem.Allocator,
     walks: std.ArrayList(i64) = .empty,
 
@@ -70,7 +70,7 @@ const INBOX =
 ;
 
 const Inbox = struct {
-    quo: quo.Cell = .{},
+    _quo: quo.Cell = .{},
     gpa: std.mem.Allocator,
     heard: std.ArrayList(i64) = .empty,
 
@@ -91,7 +91,7 @@ const WALKER =
 ;
 
 const Walker = struct {
-    quo: quo.Cell = .{},
+    _quo: quo.Cell = .{},
 
     pub fn subscribe(_: *Walker, at: *quo.At, inbox: wire.Invitation) bool {
         var accepted = (at.accept(inbox) catch return false) orelse return false;

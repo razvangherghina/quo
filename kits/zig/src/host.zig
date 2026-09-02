@@ -16,7 +16,8 @@
 //! Delivery has three rules and no more. A row with hints: the first road
 //! this ground can speak that carried. A row without hints, or none it can
 //! speak: the line that padlock's last ask arrived on, if still held.
-//! Neither: weather, and the number was spent.
+//! Neither: weather where a road was tried and broke, no road where none
+//! could be — reported apart, and neither of them the far door's silence.
 
 const std = @import("std");
 const warden = @import("warden");
@@ -410,11 +411,22 @@ pub const Host = struct {
     ) std.mem.Allocator.Error!warden.Carried {
         const self: *Host = @ptrCast(@alignCast(context));
 
-        // Rule one: the first road this ground can speak that carried. A road
-        // it cannot speak is walked past — nothing was sent down it, so no
-        // door spoke and no road broke.
+        // Every road actually tried, so a fault can say what broke. A hint
+        // this ground cannot speak never joins it: nothing is sent down one,
+        // so no door spoke and no road broke, and it is walked past exactly as
+        // a hint never offered is.
+        var tried: std.ArrayList([]const u8) = .empty;
+        defer {
+            for (tried.items) |one| gpa.free(one);
+            tried.deinit(gpa);
+        }
+
+        // Rule one: the first road this ground can speak that carried.
         for (row.hints) |hint| {
             if (std.mem.startsWith(u8, hint, "mem://")) {
+                try tried.append(gpa, try gpa.dupe(u8, hint));
+                // A hint nothing is attached under is a door that is down,
+                // which at distance zero is the whole of weather.
                 const far = attachedAt(self.io, hint) orelse continue;
                 // Distance zero, and it waives no step: the bytes handed
                 // across are the same sealed envelope, and the far door
@@ -430,10 +442,12 @@ pub const Host = struct {
             if (std.mem.startsWith(u8, hint, "http://") or
                 std.mem.startsWith(u8, hint, "https://"))
             {
+                try tried.append(gpa, try gpa.dupe(u8, hint));
                 const back = carriage.post(gpa, self.io, hint, envelope, 1 << 20) catch continue;
                 return if (back) |bytes| .{ .answered = @constCast(bytes) } else .silence;
             }
             if (std.mem.startsWith(u8, hint, "tcp://")) {
+                try tried.append(gpa, try gpa.dupe(u8, hint));
                 const held = self.dial(hint) catch continue;
                 // The answer arrives as a frame of its own, through the door.
                 if (held.carry(envelope)) return .later;
@@ -445,11 +459,16 @@ pub const Host = struct {
         // held. This is how a peer that publishes nothing — a tab, a phone —
         // is reached at all.
         if (self.wayBack(row.padlock)) |held| {
+            try tried.append(gpa, try gpa.dupe(u8, "the line this padlock last asked on"));
             if (held.carry(envelope)) return .later;
         }
 
-        // Rule three: weather, and the number was spent.
-        return .silence;
+        // Rule three: nothing carried, and the two ways that happens are not
+        // one. A road was tried and broke, which is weather; or none could be,
+        // which is no road at all — and neither is the far door's silence,
+        // because the far door heard nothing either way.
+        if (tried.items.len == 0) return .no_road;
+        return .{ .weather = try tried.toOwnedSlice(gpa) };
     }
 
     fn wayBack(self: *Host, padlock: Key) ?*Line {

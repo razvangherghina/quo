@@ -44,7 +44,7 @@ const DOG =
 ;
 
 const Dog = struct {
-    quo: quo.Cell = .{},
+    _quo: quo.Cell = .{},
     gpa: std.mem.Allocator,
     dog_name: []const u8,
     walks: std.ArrayList(i64) = .empty,
@@ -109,7 +109,7 @@ const RECORD =
 ;
 
 const Record = struct {
-    quo: quo.Cell = .{},
+    _quo: quo.Cell = .{},
     callers: std.ArrayList(Key) = .empty,
     gpa: std.mem.Allocator,
     leash_hops: ?i64 = null,
@@ -135,7 +135,7 @@ const PROFILE =
 ;
 
 const Profile = struct {
-    quo: quo.Cell = .{},
+    _quo: quo.Cell = .{},
 
     pub fn name(_: *Profile) []const u8 {
         return "Bob";
@@ -155,7 +155,7 @@ const WALKER =
 ;
 
 const Walker = struct {
-    quo: quo.Cell = .{},
+    _quo: quo.Cell = .{},
     listening: bool = false,
 
     /// **Subscription is a grant backwards.** There is no subscribe verb
@@ -194,7 +194,7 @@ const INBOX =
 ;
 
 const Inbox = struct {
-    quo: quo.Cell = .{},
+    _quo: quo.Cell = .{},
     gpa: std.mem.Allocator,
     heard: std.ArrayList(i64) = .empty,
 

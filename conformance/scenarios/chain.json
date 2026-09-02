@@ -1,0 +1,267 @@
+{
+  "scenario": "chain",
+  "law": "https://github.com/razvangherghina/quo/blob/main/constitution.md",
+  "encoding": "hex",
+  "about": "What a door hands onward, which is the half of the leash no scenario could reach until the contract had a being that calls out. Everything asserted here is the warden composing an ask — the hop count it lowered, the budget it charged its own dwell for — and nothing is asserted about what the being decided. The corpus cannot hold any of it: the bytes handed onward are a function of two clock readings and a leash that arrived, neither of which is in the message that caused them.",
+  "stand": {
+    "warden": {
+      "nameSeed": "196982eee79e80efbc3131c93b99285a38c540c43e7e4fbb8399c260b1ce5103",
+      "padlockSeed": "7dbcdb3088339c02378f46525bff3fe2b84515973e28f5814301a99f386e20b1",
+      "heirSeed": "0303030303030303030303030303030303030303030303030303030303030303",
+      "heirCommitment": "83f960da653b61eb63f6b53b5d80adeb377e23e569f1c555395b9b119ad69603",
+      "limit": "1048576",
+      "hints": []
+    },
+    "beings": [
+      {
+        "seed": "0101010101010101010101010101010101010101010101010101010101010101",
+        "heirSeed": "0202020202020202020202020202020202020202020202020202020202020202",
+        "blueprint": "Counter\n  bump(by int) int\n  count() int\n",
+        "cells": "",
+        "onward": {
+          "when": "bump",
+          "at": "e5687b6d11ccfb632abbafe844f8f1693d160aa582156ed66eea38ab5e7d1e12",
+          "being": "d76dfc6e3d5e78f46c54e9421c979dcdc0d9d03981b61a865ab202b1808dce90",
+          "method": {
+            "name": "count",
+            "args": ""
+          },
+          "ephemeral": "8484848484848484848484848484848484848484848484848484848484848484",
+          "seq": "1"
+        }
+      }
+    ],
+    "grants": [
+      {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "voiceSeed": "2ebd74bd564a8771fa628b28308c588588f5c0d0db17ae06b045b896d8218ad7",
+        "heirSeed": "7bae8096dc92d5f4e271742fd8db51abd563a8976c223dd734f1d2bdd553093c",
+        "padlock": null,
+        "hints": []
+      }
+    ],
+    "relations": [
+      {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "warden": "e5687b6d11ccfb632abbafe844f8f1693d160aa582156ed66eea38ab5e7d1e12",
+        "commitment": "1df0b459cd16f9d034ca5584f997cd71c80d05ea2857d74b8216fca76c8ab2f8",
+        "padlock": "bb0109e1147cb2b716f9407f947b0c47a8c3c18ce00339dc02df47c54fd1e202",
+        "voiceSeed": "8181818181818181818181818181818181818181818181818181818181818181",
+        "heirSeed": "8282828282828282828282828282828282828282828282828282828282828282",
+        "hints": []
+      }
+    ],
+    "clock": [
+      "1000",
+      "1001",
+      "1002",
+      "1003",
+      "1004",
+      "1005",
+      "1006",
+      "1007",
+      "1008",
+      "1009",
+      "1010",
+      "1011",
+      "1012",
+      "1013",
+      "1014",
+      "1015",
+      "1016",
+      "1017",
+      "1018",
+      "1019",
+      "1020",
+      "1021",
+      "1022",
+      "1023",
+      "1024",
+      "1025",
+      "1026",
+      "1027",
+      "1028",
+      "1029",
+      "1030",
+      "1031",
+      "1032",
+      "1033",
+      "1034",
+      "1035",
+      "1036",
+      "1037",
+      "1038",
+      "1039"
+    ],
+    "random": [
+      "3232323232323232323232323232323232323232323232323232323232323232",
+      "3333333333333333333333333333333333333333333333333333333333333333",
+      "3434343434343434343434343434343434343434343434343434343434343434",
+      "3535353535353535353535353535353535353535353535353535353535353535",
+      "3636363636363636363636363636363636363636363636363636363636363636",
+      "3737373737373737373737373737373737373737373737373737373737373737",
+      "3838383838383838383838383838383838383838383838383838383838383838",
+      "3939393939393939393939393939393939393939393939393939393939393939",
+      "4040404040404040404040404040404040404040404040404040404040404040",
+      "4141414141414141414141414141414141414141414141414141414141414141",
+      "4242424242424242424242424242424242424242424242424242424242424242",
+      "4343434343434343434343434343434343434343434343434343434343434343"
+    ]
+  },
+  "unruled": [],
+  "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+  "opening": {
+    "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+    "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+    "cells": "",
+    "standings": [
+      {
+        "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+        "commitment": "290d6caefb277537554cc8f48597206e9b5ca2975dc81dc4c8f66662570b4d64",
+        "name": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+        "beings": ["8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c"],
+        "mark": "0",
+        "spent": [],
+        "padlock": null,
+        "hints": []
+      }
+    ],
+    "relations": [
+      {
+        "warden": "e5687b6d11ccfb632abbafe844f8f1693d160aa582156ed66eea38ab5e7d1e12",
+        "commitment": "1df0b459cd16f9d034ca5584f997cd71c80d05ea2857d74b8216fca76c8ab2f8",
+        "padlock": "bb0109e1147cb2b716f9407f947b0c47a8c3c18ce00339dc02df47c54fd1e202",
+        "voice": "93db9f2ee0f7e39e942fb59441190bf20b9c43cfcc8a051a152499cf392b7a37",
+        "heir": "fa01347a991e04ae0f1a6d81db29a5ea4eeb5965f577ac9efb44e7b1f2fbb028",
+        "seq": "0",
+        "news": "0",
+        "hints": []
+      }
+    ]
+  },
+  "beingCommitment": "ed4d580bb287b98674376c30d750d9926617873de8787e518c58c320d1899cbd",
+  "exchanges": [
+    {
+      "name": "the leash a door hands onward is the one it received, less what the door cost",
+      "law": "The seq and the leash",
+      "obligations": ["VIII-5", "VIII-6", "VIII-7", "VIII-8"],
+      "derivation": "An ask that reaches a being which calls onward. Article VIII: \"every door hands onward less than it received, never more. No door beneath may widen it.\" The two rules that say by how much are named separately — \"**The hop count falls by one at every door**\" and \"**The time budget falls by each door's own dwell**: the difference between when the message arrived and when it was handed onward, two readings of one clock. **The road is never counted.**\" This ask arrives with four hops and five thousand milliseconds, so the ask handed onward carries three hops and the budget less this door's dwell. **The dwell is one, and that is the assertion about the readings**: the clock this door was handed rises by one each time it is read, so a budget of 4999 says the two readings were consecutive — \"the two readings are taken at the ends of the judgment, the arrival one at the first step, before anything is unsealed; the onward one at the moment of handing onward.\" A door that read its clock once more in between would hand on 4998 and miss this. The being's own answer is not asserted anywhere: what it returns belongs to its blueprint.",
+      "seq": "1",
+      "expect": "answered",
+      "onward": [
+        "016fe972ee15bffc83ff35d19d3e149a4a515dc1515bf05c6b182928ae3cb914ba6bcbf8f01c8dcfca845b5e8a94d4c658710d3de4fbbe6817cf2ef24ced37a77ed0b48374f17487cdfe013bd9c86029f9f2c40294ac64a095b9bc79c3a80b8720371b1ffb7c24132ccba64d44d9bfb4a586672ee0836ffe508364af82e3bac1f947392163bbdc9b1d21a9492bb73c68b68952828a5b354ea9333fd86fbb3a43e6c8442055b3bbd757e123fcefc0cd0cf4579517f532e1819c3597d88179d3e475e6168bd17abb1cc5fa0dc3605cc19473c3a351099386e6ebce709bd4e615067f1e70f2b3db2d7edd58a24a32ba8782bc8cf7266bab3e3e280e5b768a89abd3ac2965495f2114e81329d14298fe9f2ce79a1565b6deca66b237b34dcb53bef4649973102f4ea3b787"
+      ],
+      "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+      "give": "ad908a8a708aca07588cda7c4ed3e44d4966a80a9abb2f1e4bbac53c67414e348457c6ed88253b82790568445cde86e0a284b77600fbd93c19e1b6713783d9b65cf29dd2a41159e388af63fa68eb352b3c29c7be3d258f78f7dc07787f893e8a949ea9d9c4fc209761f69251bed52cf66a54efb4566c4e1ea83a58dea760ad96b6075f7590bbfd86c51545611a1b00c8e124b6954bc73324f322b7b3d1b82615afff557e88f3da5e83c8e72747bb2c19554e8268d1f91db19e40247b5d4bd8fc8ffd78220395fdc9cdc20daa8a2ec5bc4253ea8b7d62c177380faf6d813f8f36194c2dc59815d8304657986085b6e903784b526e73b1db20f1da662ca3d9c447abdc0a9e862f1944e5508c2ddb55a2618fd3ae8bc6e19aa2334db3f382a794ee5d524f6d80191ca220f3b8c32f8cb9f9",
+      "cargo": {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+        "cells": "",
+        "standings": [
+          {
+            "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+            "commitment": "290d6caefb277537554cc8f48597206e9b5ca2975dc81dc4c8f66662570b4d64",
+            "name": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+            "beings": ["8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c"],
+            "mark": "1",
+            "spent": [],
+            "padlock": "5a13b7a05e31ae998ad1307217981bb23bb17d277465829edd616e9169c8f46e",
+            "hints": []
+          }
+        ],
+        "relations": [
+          {
+            "warden": "e5687b6d11ccfb632abbafe844f8f1693d160aa582156ed66eea38ab5e7d1e12",
+            "commitment": "1df0b459cd16f9d034ca5584f997cd71c80d05ea2857d74b8216fca76c8ab2f8",
+            "padlock": "bb0109e1147cb2b716f9407f947b0c47a8c3c18ce00339dc02df47c54fd1e202",
+            "voice": "93db9f2ee0f7e39e942fb59441190bf20b9c43cfcc8a051a152499cf392b7a37",
+            "heir": "fa01347a991e04ae0f1a6d81db29a5ea4eeb5965f577ac9efb44e7b1f2fbb028",
+            "seq": "1",
+            "news": "0",
+            "hints": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "a hop count of zero forbids onward and nothing else",
+      "law": "The seq and the leash",
+      "obligations": ["VIII-10", "VIII-11"],
+      "derivation": "The same call, arriving with a hop count of zero. Article VIII: \"**A hop count of zero is a legal leash for a call that goes no further** — what it forbids is onward.\" So the call is judged, the being is reached, and the answer comes back — and the onward ask is not made, because it would carry a hop count below zero: \"where either would fall below zero, or the budget to zero, the onward ask is not made and the work already routed stands.\" **Both halves are asserted here and they are what makes the pair worth writing**: bytes came back, so the work stands and the door did not roll it up or narrate the refusal, and nothing was handed onward. A door that refused the whole call would give no answer, and a door that handed on a negative hop count would put bytes here.",
+      "seq": "2",
+      "expect": "answered",
+      "onward": [],
+      "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+      "give": "f68b05ba03f7185e1ba88878682f8dd0b15158f6050889c9481d79c2d7d2fa078878a71499e21187e621868fc422148fca4c213c6a65289cdbfa7417a1ff0f751dfcbd3eb642ca9f66b62ea1a5256a610d0a05b350473237335d328bc87b5f138dfff24a92e5ad77dffa0fffb3605c24bf1e9659cb9beb1964c363ca6d67e34cde158f26c0b8c8c039a0501d6c6fe0f824e3a18d49af180c30cac4c927eefb92c65b9e5869e18885e2aa70feb24cd8519815c9c2fd27da0e8242d2b9c70b83f7db3eba0e362f195ad74b03f4f213e354ebd087ea8150b4692f12aa5fc0f8b84cbca3bc3707e44b5eed7384205bd502c32435cab25f244f8e6c0bd4a1c6190365c8ba69247cadc593c011c2c303205ad1048ce936a97f7207c00b66812edd96ce6cce85f7ce38b9dfb51d7af15ee46f1d",
+      "cargo": {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+        "cells": "",
+        "standings": [
+          {
+            "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+            "commitment": "290d6caefb277537554cc8f48597206e9b5ca2975dc81dc4c8f66662570b4d64",
+            "name": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+            "beings": ["8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c"],
+            "mark": "2",
+            "spent": ["1"],
+            "padlock": "5a13b7a05e31ae998ad1307217981bb23bb17d277465829edd616e9169c8f46e",
+            "hints": []
+          }
+        ],
+        "relations": [
+          {
+            "warden": "e5687b6d11ccfb632abbafe844f8f1693d160aa582156ed66eea38ab5e7d1e12",
+            "commitment": "1df0b459cd16f9d034ca5584f997cd71c80d05ea2857d74b8216fca76c8ab2f8",
+            "padlock": "bb0109e1147cb2b716f9407f947b0c47a8c3c18ce00339dc02df47c54fd1e202",
+            "voice": "93db9f2ee0f7e39e942fb59441190bf20b9c43cfcc8a051a152499cf392b7a37",
+            "heir": "fa01347a991e04ae0f1a6d81db29a5ea4eeb5965f577ac9efb44e7b1f2fbb028",
+            "seq": "1",
+            "news": "0",
+            "hints": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "the far house speaks, and the count this door sends does not move",
+      "law": "The warden's own blueprint",
+      "obligations": ["IX-1", "III-10", "XIII-1"],
+      "derivation": "**The one exchange in the suite where both of a relation's counters are non-zero and only one of them moves.** This door has composed one onward ask at the far house, so the row's `seq` stands at 1. Now that same far house speaks for itself — its own name signs, which Article XII step 4 places in the outbound record as news — and replaces its padlock. Article IX: \"`relation.news`, the mark kept for that far warden's news, held apart from `seq`, the count of what this door sends, **because one field cannot be two counters**.\" So `news` becomes 1 and `seq` stays 1. **A door that kept one counter fails whichever way it conflated them**: reading the arriving news number against its own sending count would refuse this message as a replay, and writing the news into `seq` would show 2 where the sending count belongs. Neither is visible in any single-counter scenario, which is why the news scenario — where this door never sends — and the caller scenario — where no far house ever speaks — each prove only half of it. **The news arrives at five and that is not decoration.** Article VIII leaves the opening number to the caller, and the far house is the caller here, so five is as legal as one against a fresh news mark. One would have been worthless: this door has sent exactly one ask, so a door writing the arriving number into its sending count would have written 1 over 1 and agreed with the expectation by coincidence. Five agrees with nothing by accident, and the two counters now differ in value as well as in meaning. **It is also the only place in the suite where one pair of houses speaks in both directions**, which is Article III's \"either end may originate an ask\". This door composed an ask to that far house two exchanges ago and is now judging an ask that house composed to it — **the same pair, the two directions, neither end a client**. The sentence is written about the line, where frames flow both ways on one connection; what a road cannot change is which end is allowed to speak first, and that half is here. A kit that made the relation one-way — a caller that can only ask and a door that can only answer, which is the shape almost every protocol has — could compose the onward ask or judge this news, and not both against one row. **And what the news does here is replace a padlock, which is the one kind of warden rotation that must leave everything else alone.** Article XIII: \"replacing the **padlock**, which moves no identity and touches no standing.\" This door holds a standing with a mark at 2 and the number 1 spent beneath it, and the whole record is asserted after: **the far row's lock changes and the standing does not move at all** — not its voice, not its commitment, not its mark, not its window. **The news scenario cannot carry this obligation**, because that door holds no standings for a replacement to leave alone; it is only visible at a door that has both records populated at once, and this is the only one in the suite that does. A kit that treated any believed news as a reason to re-derive what it holds — the tidy implementation, rebuilding state from the row it just rewrote — moves a mark here and is caught.",
+      "seq": "5",
+      "expect": "answered",
+      "onward": [],
+      "voice": "e5687b6d11ccfb632abbafe844f8f1693d160aa582156ed66eea38ab5e7d1e12",
+      "give": "261cd9cd2e935f9c2455876a80f02a4d6786b8ab877f07227737ca0b577bf161e3ae5ffb973f2db4e17a33166d429a84a9e4e398c408a2c71d08bdbf802d155fd7d70778d7cdef52c1b270000d8d0c7a50a19721d313e151daa7b254b133d081ffc6d1d7d32bce9fb1504c800b3579a84b7998da30b18ebfc9b7b1c6867e366dd2a8ef600fcdb8f16b421932a4a0e1db040d4f60b97b62714b8e09894912f830f8fa0a3865696d0a13b99ef0e623027a371a6097c32723567055cee533a8361ba2bd36166e1c1f65bd11c6fc5da8b853066f97d56d20fab31b79e5e267a232ed97f106a6d7c43c3b4c0e69c5e002f777400807b6c67d293de6b36dda3a50e4420af61668367861326feef39a2445cd74455b3a5c5df9146f402bfc232dbe6b9687d3e6b7f2c5f0edf5511e7791c98923473b1d3976",
+      "cargo": {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+        "cells": "",
+        "standings": [
+          {
+            "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+            "commitment": "290d6caefb277537554cc8f48597206e9b5ca2975dc81dc4c8f66662570b4d64",
+            "name": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+            "beings": ["8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c"],
+            "mark": "2",
+            "spent": ["1"],
+            "padlock": "5a13b7a05e31ae998ad1307217981bb23bb17d277465829edd616e9169c8f46e",
+            "hints": []
+          }
+        ],
+        "relations": [
+          {
+            "warden": "e5687b6d11ccfb632abbafe844f8f1693d160aa582156ed66eea38ab5e7d1e12",
+            "commitment": "1df0b459cd16f9d034ca5584f997cd71c80d05ea2857d74b8216fca76c8ab2f8",
+            "padlock": "5a13b7a05e31ae998ad1307217981bb23bb17d277465829edd616e9169c8f46e",
+            "voice": "93db9f2ee0f7e39e942fb59441190bf20b9c43cfcc8a051a152499cf392b7a37",
+            "heir": "fa01347a991e04ae0f1a6d81db29a5ea4eeb5965f577ac9efb44e7b1f2fbb028",
+            "seq": "1",
+            "news": "5",
+            "hints": []
+          }
+        ]
+      }
+    }
+  ]
+}

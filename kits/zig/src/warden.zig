@@ -1022,8 +1022,22 @@ pub const Carried = union(enum) {
     /// The road carried it and whatever comes back will arrive through the
     /// door as a message of its own.
     later,
-    /// Nothing carried. The number was spent all the same.
+    /// The far door heard and said nothing back. The number was spent all the
+    /// same, because a message a door judged spent its number there.
     silence,
+    /// **Weather**: a road was tried and never carried the bytes — a
+    /// connection refused, a name that does not resolve, a line that dropped.
+    /// It said neither an answer nor silence (Article III), so the far door
+    /// never heard and nothing there moved: the number is spent on this side
+    /// alone. The roads actually tried are carried back, owned by the
+    /// allocator `send` was handed and freed by the warden — never a road
+    /// walked past because nobody here could speak it.
+    weather: []const []const u8,
+    /// **No road**: every hint offered was one this ground cannot speak, and
+    /// there was no line to fall back to. Nothing was sent, so no door spoke
+    /// and no road broke — neither silence nor weather. The hints are the
+    /// row's own and the warden already holds them, so none ride back here.
+    no_road,
 };
 
 /// Delivery, handed to the warden at open and the one thing beneath it that
@@ -1054,11 +1068,25 @@ pub const Store = struct {
     load: *const fn (*anyopaque, std.mem.Allocator) anyerror!?[]u8,
 };
 
+/// A road's own fault, which is never the far door's silence: in both of
+/// these the far door heard nothing at all. Told inward and never on the wire.
+pub const RoadFault = union(enum) {
+    /// The roads tried, each of which broke.
+    weather: []const []const u8,
+    /// The hints offered, none of which this ground can speak.
+    no_road: []const []const u8,
+};
+
 /// The inward channel: why the door fell silent, told to its own house.
 /// Nothing here crosses the wire.
 pub const Observer = struct {
     context: *anyopaque,
     hush: *const fn (*anyopaque, []const u8) void,
+    /// Told when no road carried an ask this ground sent. It is kept apart
+    /// from `hush` because the two are different facts: a hush is this door
+    /// refusing what arrived, and this is a road beneath it that never
+    /// reached the far door at all.
+    road: ?*const fn (*anyopaque, RoadFault) void = null,
 };
 
 /// Which kind of caller the judgment found. A fact for telling callers apart,
@@ -2720,6 +2748,99 @@ pub const Warden = struct {
         return composed;
     }
 
+    /// A rotation, sent, and recovered when its answer is lost.
+    ///
+    /// **The trap is Article VIII's**: the rotation lands at step 4 and the
+    /// number is judged at step 5, so a silence coming back may mean the
+    /// takeover already happened — this ground holds the standing, the old key
+    /// is dead, and the granter's own key is dead with it. A caller that reads
+    /// that silence as "nothing landed" and sends the rotation again signs
+    /// with a key that now holds, which Article XI refuses as a plain ask
+    /// carrying a commitment — now and every time after. What was recoverable
+    /// is lost by the one reading of silence a caller would naturally make.
+    ///
+    /// The recovery the law names is **to ask again on the new voice**, and
+    /// that is what this does. Silence after the rotation is followed by a
+    /// plain ask on the same signer, at the number after: answered, the
+    /// takeover had landed and that answer is the proof; silent, it had not —
+    /// a voice still matching the heir commitment and carrying no fresh one is
+    /// refused — so the rotation goes once more, with the same signer and the
+    /// same commitment. Three sends, and then the kit stops guessing.
+    ///
+    /// **Weather is never retried from here.** No road carried the bytes, so
+    /// the far door heard nothing and nothing there moved: the caller retries
+    /// with exactly what it holds, which for an acceptance is the invitation
+    /// itself.
+    pub fn rotating(
+        self: *Warden,
+        gpa: std.mem.Allocator,
+        at: usize,
+        budget: envelope.Allowance,
+    ) Fault!?envelope.Opened {
+        self.take();
+        defer self.give();
+        if (at >= self.outbound.items.len) return null;
+
+        const roads_now = try self.roads(gpa);
+        defer gpa.free(roads_now);
+        const reaching: Reach = .{ .allowance = budget, .hints = roads_now };
+
+        const first, const first_seq = self.rotate(
+            gpa,
+            at,
+            self.random(),
+            self.random(),
+            reaching,
+        ) catch return null;
+        switch (try self.carry(gpa, at, first, first_seq, budget)) {
+            .answered => |opened| return opened,
+            .weather => return null,
+            .silence => {},
+        }
+
+        // The signer of that rotation is the row's voice now, so an ordinary
+        // ask down the row is the plain ask on the new voice.
+        const plain, const plain_seq = self.ask(gpa, at, self.random(), reaching) catch return null;
+        switch (try self.carry(gpa, at, plain, plain_seq, budget)) {
+            .answered => |opened| return opened,
+            .weather => return null,
+            .silence => {},
+        }
+
+        // It had not landed. The same rotation again: the same signer, the
+        // same commitment, at the number after — never a fresh next, which
+        // would retire a key the far door has never seen.
+        var again = reaching;
+        again.next = self.outbound.items[at].heir;
+        const signer = self.outbound.items[at].secret;
+        const third, const third_seq =
+            self.askSigned(gpa, at, self.random(), signer, again) catch return null;
+        return switch (try self.carry(gpa, at, third, third_seq, budget)) {
+            .answered => |opened| opened,
+            else => null,
+        };
+    }
+
+    /// One composed envelope handed to delivery, the door's turn already held.
+    /// The bytes are freed here, because a composed ask is the caller's.
+    fn carry(
+        self: *Warden,
+        gpa: std.mem.Allocator,
+        at: usize,
+        composed: []u8,
+        seq: i64,
+        budget: envelope.Allowance,
+    ) Fault!Said {
+        var s: Sealed = .{
+            .at = at,
+            .seq = seq,
+            .envelope = composed,
+            .deadline = self.clock() + budget.time,
+        };
+        defer s.deinit(gpa);
+        return self.sendHeld(gpa, s);
+    }
+
     /// Judge an answer at this caller's end — Article XII's shorter road,
     /// whole.
     ///
@@ -3414,18 +3535,37 @@ pub const Warden = struct {
         };
     }
 
+    /// What one ask met. **Weather is kept apart from silence** because the
+    /// caller's next move differs: a door that heard has spent the number and
+    /// may have acted, while a road that never carried leaves the far house
+    /// exactly as it was — so the one is retried with what this ground already
+    /// holds and the other never is.
+    pub const Said = union(enum) {
+        answered: envelope.Opened,
+        silence,
+        weather,
+    };
+
     /// Hand a sealed ask to delivery and wait for what settles it. **The same
     /// bytes may be sent again**: every message spends a number once, so the
     /// far door either already honoured that number and answers the resend
     /// with silence, or never saw it and honours it now.
     pub fn sendSealed(self: *Warden, gpa: std.mem.Allocator, s: Sealed) Fault!?envelope.Opened {
+        return switch (try self.sendSaid(gpa, s)) {
+            .answered => |opened| opened,
+            else => null,
+        };
+    }
+
+    /// The same send, with the road's fault told apart from the door's.
+    pub fn sendSaid(self: *Warden, gpa: std.mem.Allocator, s: Sealed) Fault!Said {
         self.take();
         defer self.give();
         return self.sendHeld(gpa, s);
     }
 
-    fn sendHeld(self: *Warden, gpa: std.mem.Allocator, s: Sealed) Fault!?envelope.Opened {
-        const d = self.delivery orelse return null;
+    fn sendHeld(self: *Warden, gpa: std.mem.Allocator, s: Sealed) Fault!Said {
+        const d = self.delivery orelse return .silence;
         try self.awaitAgain(s.at, s.seq);
 
         var scratch = std.heap.ArenaAllocator.init(gpa);
@@ -3454,14 +3594,43 @@ pub const Warden = struct {
             .later => if (!d.later) {
                 _ = self.forgo(s.at, s.seq);
                 _ = self.hush("delivery answered later without declaring it");
-                return null;
+                return .silence;
             },
             .silence => {
                 _ = self.forgo(s.at, s.seq);
-                return null;
+                return .silence;
+            },
+            // No road carried it, so the far door heard nothing: this ground
+            // is told which road failed, and outward nothing changes.
+            .weather => |tried| {
+                defer {
+                    for (tried) |one| gpa.free(one);
+                    gpa.free(tried);
+                }
+                _ = self.forgo(s.at, s.seq);
+                self.roadFault(.{ .weather = tried });
+                return .weather;
+            },
+            .no_road => {
+                _ = self.forgo(s.at, s.seq);
+                const offered: []const []const u8 = if (s.at < self.outbound.items.len)
+                    self.outbound.items[s.at].hints
+                else
+                    &.{};
+                self.roadFault(.{ .no_road = offered });
+                return .weather;
             },
         }
-        return self.awaitAnswer(gpa, s);
+        if (try self.awaitAnswer(gpa, s)) |opened| return .{ .answered = opened };
+        return .silence;
+    }
+
+    /// A road's fault, told inward. An observer that falls over is the
+    /// observer's problem and never the caller's, as with every hush.
+    fn roadFault(self: *Warden, why: RoadFault) void {
+        const o = self.observer orelse return;
+        const tell = o.road orelse return;
+        tell(o.context, why);
     }
 
     /// Take the answer this ask was settled with, or nothing. Taking it
@@ -3519,9 +3688,21 @@ pub const Warden = struct {
 
     /// Seal and send in one act, which is what an ordinary call is.
     pub fn askAt(self: *Warden, gpa: std.mem.Allocator, at: usize, r: Reach) Fault!?envelope.Opened {
+        return switch (try self.askSaid(gpa, at, r)) {
+            .answered => |opened| opened,
+            else => null,
+        };
+    }
+
+    /// The same ask, with the road's fault told apart from the door's.
+    pub fn askSaid(self: *Warden, gpa: std.mem.Allocator, at: usize, r: Reach) Fault!Said {
         self.take();
         defer self.give();
-        var sealed = self.sealAsk(gpa, at, r) catch return null;
+        return self.askHeld(gpa, at, r);
+    }
+
+    fn askHeld(self: *Warden, gpa: std.mem.Allocator, at: usize, r: Reach) Fault!Said {
+        var sealed = self.sealAsk(gpa, at, r) catch return .silence;
         defer sealed.deinit(gpa);
         return self.sendHeld(gpa, sealed);
     }

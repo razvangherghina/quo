@@ -73,8 +73,17 @@ be readable whole.
   as voices only, `relation(name)` for a handle under a private label,
   `grant`, `amend` and `release`, `accept(invitation)`, `knock(card)`,
   `again(handle)`, `label(name, handle)`, and `hold(T, object, blueprint,
-  name)`. A being outside a call reaches the same acts through the `quo.Cell`
+name)`. A being outside a call reaches the same acts through the `quo.Cell`
   it carries, whose `at()` is a walk of its own.
+
+  **The cell is one field, declared as `_quo: quo.Cell = .{}`**, and it is the
+  only thing Quo asks of a class. The underscore is why a class may declare
+  any field its blueprint names: the notation's identifier is a letter then
+  letters and digits, so no blueprint can spell `_quo`, and Zig — which
+  refuses a struct carrying both a field and a decl of one name — is left free
+  to carry a method called `quo` beside it. (A class that does declare `quo()`
+  shadows a module bound to `quo` in its own scope; import the kit under
+  another name there.)
 
   **Accepting answers handles, plural.** A standing names beings, so
   `accept` hands back a `quo.Accepted`: one handle per being the standing
@@ -89,6 +98,13 @@ be readable whole.
   value or silence. A handle at a being under the same warden answers all four
   too, and answers them the same — except the estate, which is what the door
   holds, because under one warden there is no voice to scope it by.
+
+  **Weather is kept apart from silence.** A road that never carried the bytes
+  is not the far door's refusal, so a handle still answers nothing while the
+  warden's observer is told the road's fault — `weather`, with the roads
+  tried, or `no road`, where no hint offered was one this ground can speak.
+  Nothing crosses the wire for it, and `accept` never retries what no road
+  carried: the far door heard nothing, so the invitation is still whole.
 
 - `src/host.zig` — the host: it opens the warden on what it is handed, stands
   roads in front of the one door, and is delivery beneath it with three rules

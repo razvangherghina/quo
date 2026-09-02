@@ -35,10 +35,15 @@ is its **blueprint** — a closed set of types, canonical text, its digest its
 identity — and a method the blueprint does not declare does not exist for a
 peer.
 
-The warden hands each being it holds a closure at `this.quo`. That closure is
+The warden hands each being it holds a closure at `this._quo`. That closure is
 the whole of the being's API to Quo: the caller during a call, the standings
 held at it, its relations elsewhere, and the social acts. It never sees a key,
 a seal, a road, or the machine it runs on.
+
+**The underscore is the whole point.** The notation's identifier is a letter
+then letters and digits, so no blueprint can spell a name beginning with one.
+Your class may therefore declare any field its blueprint names — `quo`,
+`describe`, `being`, anything — without the kit eating it.
 
 ```js
 const DOG = `Dog
@@ -60,35 +65,39 @@ class Dog {
     return true;
   }
   async invite() {
-    return this.quo.grant(this);
+    return this._quo.grant(this);
   }
 }
 ```
 
 The whole of it, on one screen:
 
-- **`this.quo.caller`** — during a call, the verified voice and the kind the
+- **`this._quo.caller`** — during a call, the verified voice and the kind the
   judgment found. A fact for telling callers apart, never a judgment of its own.
-- **`this.quo.leash`** — the allowance that arrived, to be handed on and never
+- **`this._quo.leash`** — the allowance that arrived, to be handed on and never
   widened.
-- **`this.quo.standings()`** — who holds a place at me, as voices only.
-- **`this.quo.relation(label)`** — a handle at a being elsewhere, under a
+- **`this._quo.standings()`** — who holds a place at me, as voices only.
+- **`this._quo.relation(label)`** — a handle at a being elsewhere, under a
   private label of this ground's own.
-- **`this.quo.grant(target)`**, **`amend(voice, { add, remove })`**,
+- **`this._quo.grant(target)`**, **`amend(voice, { add, remove })`**,
   **`release(target)`** — the social acts. `grant(this)` opens the being itself.
-- **`this.quo.accept(invitation, { label })`** — an invitation received as data
+- **`this._quo.accept(invitation, { label })`** — an invitation received as data
   turned into handles, with the double rotation done. A standing names beings,
   so this answers one handle per being it names.
-- **`this.quo.knock(card, { label })`** — a card turned into a handle at the far
+- **`this._quo.knock(card, { label })`** — a card turned into a handle at the far
   door's public being, held as a stranger.
-- **`this.quo.hold(object, { blueprint, label })`** — a smaller being minted
+- **`this._quo.hold(object, { blueprint, label })`** — a smaller being minted
   beside this one, and **`release`** drops it.
 - **`cells()`** and **`take(bytes)`** — what the being provides rather than
   receives: what of its state moves with it, and how it takes that state back.
 
 A handle looks like what it is: every declared field is an asynchronous method
 that answers a value or **silence**, which is `null` and means refused, broken
-or absent with no way to tell which.
+or absent with no way to tell which. **Weather is kept apart from silence**: a
+road that never carried the bytes is not the far door's refusal, so the handle
+still answers `null` but the warden's `observe` callback is told the road's
+fault — `weather`, with the roads tried, or `no road`, when no hint offered
+was one this ground can speak. Nothing crosses the wire for it.
 
 Beside those fields every handle carries the door's own introspection —
 `describe()`, the estate the far door shows this voice; `sketch(being)`, one

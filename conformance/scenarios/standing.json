@@ -1,0 +1,250 @@
+{
+  "scenario": "standing",
+  "law": "https://github.com/razvangherghina/quo/blob/main/constitution.md",
+  "encoding": "hex",
+  "about": "The one thing a door does to a standing that is not a message. A standing widens and narrows by the house changing its own mind, and the law is emphatic that nobody is told — so there is nothing on the wire to pin and the obligation lives entirely in what two describes either side of the change say. No corpus vector could hold it: both describes are well-formed answers, and what makes the pair mean something is that one act with no bytes happened between them.",
+  "stand": {
+    "warden": {
+      "nameSeed": "196982eee79e80efbc3131c93b99285a38c540c43e7e4fbb8399c260b1ce5103",
+      "padlockSeed": "7dbcdb3088339c02378f46525bff3fe2b84515973e28f5814301a99f386e20b1",
+      "heirSeed": "0303030303030303030303030303030303030303030303030303030303030303",
+      "heirCommitment": "83f960da653b61eb63f6b53b5d80adeb377e23e569f1c555395b9b119ad69603",
+      "limit": "1048576",
+      "hints": []
+    },
+    "beings": [
+      {
+        "seed": "0101010101010101010101010101010101010101010101010101010101010101",
+        "heirSeed": "0202020202020202020202020202020202020202020202020202020202020202",
+        "blueprint": "Counter\n  bump(by int) int\n  count() int\n",
+        "cells": ""
+      },
+      {
+        "seed": "0606060606060606060606060606060606060606060606060606060606060606",
+        "heirSeed": "0707070707070707070707070707070707070707070707070707070707070707",
+        "blueprint": "Ledger\n  note(what text) int\n  total() int\n",
+        "cells": ""
+      }
+    ],
+    "grants": [
+      {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "voiceSeed": "2ebd74bd564a8771fa628b28308c588588f5c0d0db17ae06b045b896d8218ad7",
+        "heirSeed": "7bae8096dc92d5f4e271742fd8db51abd563a8976c223dd734f1d2bdd553093c",
+        "padlock": null,
+        "hints": []
+      }
+    ],
+    "clock": [
+      "1000",
+      "1001",
+      "1002",
+      "1003",
+      "1004",
+      "1005",
+      "1006",
+      "1007",
+      "1008",
+      "1009",
+      "1010",
+      "1011",
+      "1012",
+      "1013",
+      "1014",
+      "1015",
+      "1016",
+      "1017",
+      "1018",
+      "1019",
+      "1020",
+      "1021",
+      "1022",
+      "1023",
+      "1024",
+      "1025",
+      "1026",
+      "1027",
+      "1028",
+      "1029",
+      "1030",
+      "1031",
+      "1032",
+      "1033",
+      "1034",
+      "1035",
+      "1036",
+      "1037",
+      "1038",
+      "1039"
+    ],
+    "random": [
+      "3232323232323232323232323232323232323232323232323232323232323232",
+      "3333333333333333333333333333333333333333333333333333333333333333",
+      "3434343434343434343434343434343434343434343434343434343434343434",
+      "3535353535353535353535353535353535353535353535353535353535353535",
+      "3636363636363636363636363636363636363636363636363636363636363636",
+      "3737373737373737373737373737373737373737373737373737373737373737",
+      "3838383838383838383838383838383838383838383838383838383838383838",
+      "3939393939393939393939393939393939393939393939393939393939393939",
+      "4040404040404040404040404040404040404040404040404040404040404040",
+      "4141414141414141414141414141414141414141414141414141414141414141",
+      "4242424242424242424242424242424242424242424242424242424242424242",
+      "4343434343434343434343434343434343434343434343434343434343434343"
+    ]
+  },
+  "unruled": [
+    {
+      "field": "standings.0.beings",
+      "reason": "Article IX's `cargo` is what travels with one being, so a standing in it is that voice's row as it goes with this being — what else the voice reaches here is the door's affair and stays. The two kits read the contract's `state` differently on exactly this point and the contract had not said which; it says now, and it says the packed meaning, because that is the one the law defines. So the row widening is not read from here. **It is read from the describe**, which is where Article VII puts it — \"the holder finds it on its next describe\" — and the third exchange asserts it there in pinned bytes."
+    }
+  ],
+  "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+  "opening": {
+    "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+    "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+    "cells": "",
+    "standings": [
+      {
+        "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+        "commitment": "290d6caefb277537554cc8f48597206e9b5ca2975dc81dc4c8f66662570b4d64",
+        "name": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+        "beings": ["8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c"],
+        "mark": "0",
+        "spent": [],
+        "padlock": null,
+        "hints": []
+      }
+    ],
+    "relations": []
+  },
+  "beingCommitment": "ed4d580bb287b98674376c30d750d9926617873de8787e518c58c320d1899cbd",
+  "exchanges": [
+    {
+      "name": "a holder describes, and reaches the one being its standing names",
+      "law": "Keys, records and standings",
+      "obligations": ["VII-7"],
+      "derivation": "The opening state: one voice, one standing, one being on it. The estate names the Counter class and the public being, and not the Ledger class, because a standing names beings and this one names a single being. **This exchange exists to be compared with the one after the amend**, which is the only way Article VII's claim can be watched: \"the warden adds a being to a voice's row or takes one away; nobody is told, no secret is minted, and the holder finds it on its next describe.\"",
+      "seq": "1",
+      "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+      "expect": "59d9225473451efffe6b36dbcaefdbf7b1895de62084509a7f5b58bf01d064183d0e9f38364e65372817fc540a351551a7cad5c13b5594def61c92d544afecd572a652e3c1fdc5aa70a7624ece29b926de511f4f09cbc1a64ecef462469a0fa6762abd1b178f8c304f9afb50ad850c3a19b73695575f041ff6dfd6886586fbb5d15306dc065899463987f3ae1df8254e9f348f6fec9ff46be5f32c8f6624ca803022d2289e2528e9d72f1d4d7c2b09485f9d2f08d4365c4879624a24e3c817256be3870664c7e4b338a0574f23b088805349556c0ea7f30624d23ff3558ddfe0db140d38dfdc93c462460b5887db3f994cee24dab5633205988e0f10564c256925e7fa15887c5ae2c18e145ff47cc04a483f4a8b5681d5ad14aa898c7c67b50b5c77d3b536f91851a39138adb61f411ee3a2d826dc49651b2e9aee9b80c3341bf47ba1a3d355d603f7180b5c60b52cf7eab58f70df26e986204b9dc456b0e04a104934854c6af7b5fef0973530aa58fec8b9bcf346288f0ce0c7",
+      "give": "b1d15b513029951e811115ffe62a614706554fb610b8295e889bc3bebdf4370ed81a9817378d2c667bc3411aa857ebeba9a595c95170f83ca2d1e11168a36221783190e3b19b7a47a05f4eeb8cfcdbeacdf68e3366e2535628d276372d45adc2e8cd9e79168841214b8312a125e70a35482d247c5896d52d36cf1449c3ed723ce41e8da1169cea79bc65cce4c0f29aa9101343ef83f4615ef157a349374d0029be145266afdccbfd6930296137e943c08c140cad6bfa9abbc5130b0398e32a59fb17e78f89bccb445f508fb0cf0cf1b8b3719a13c6669afea5e21566357eac71c05a01245b30c01054d8135fe91f3508c241c02efc28cb71e9659003b623012cd18828ba51bca6b17733c4811545feb1e21613cbf646bd37c8e3b0372cb861a384f1f477ef07d3e77650af6e",
+      "cargo": {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+        "cells": "",
+        "standings": [
+          {
+            "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+            "commitment": "290d6caefb277537554cc8f48597206e9b5ca2975dc81dc4c8f66662570b4d64",
+            "name": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+            "beings": ["8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c"],
+            "mark": "1",
+            "spent": [],
+            "padlock": "5a13b7a05e31ae998ad1307217981bb23bb17d277465829edd616e9169c8f46e",
+            "hints": []
+          }
+        ],
+        "relations": []
+      }
+    },
+    {
+      "name": "the standing widens, and not one byte crosses",
+      "law": "Keys, records and standings",
+      "obligations": ["VII-7"],
+      "derivation": "The house adds the Ledger being to that voice's row. **This is not a message and there is nothing on the wire to assert** — Article VII: \"nobody is told, no secret is minted\". So what is asserted is the record: the standing now names two beings, and **the mark has not moved and nothing is spent**, because an amend is not a call and consumes no number. A kit that announced the change, or minted a fresh commitment for it, or spent a number doing it, fails here — and each of those is a thing a kit might reasonably do if it read widening as an event rather than as a fact.",
+      "do": "amend",
+      "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+      "add": ["8a875fff1eb38451577acd5afee405456568dd7c89e090863a0557bc7af49f17"],
+      "expect": "done",
+      "cargo": {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+        "cells": "",
+        "standings": [
+          {
+            "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+            "commitment": "290d6caefb277537554cc8f48597206e9b5ca2975dc81dc4c8f66662570b4d64",
+            "name": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+            "beings": [
+              "8a875fff1eb38451577acd5afee405456568dd7c89e090863a0557bc7af49f17",
+              "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c"
+            ],
+            "mark": "1",
+            "spent": [],
+            "padlock": "5a13b7a05e31ae998ad1307217981bb23bb17d277465829edd616e9169c8f46e",
+            "hints": []
+          }
+        ],
+        "relations": []
+      }
+    },
+    {
+      "name": "the next describe is where the holder finds out",
+      "law": "Keys, records and standings",
+      "obligations": ["VII-7"],
+      "derivation": "The same ask as the first exchange, byte for byte but for its number, and **a different answer**: the estate now carries the Ledger class as well. That difference is the whole of what the holder was ever told, and it arrived because the holder asked. The three classes are ordered by digest bytes ascending, which is Article X and not this scenario: the emitter sorts them by the rule rather than transcribing an order, so a door that returned them in the order the beings were held, or in the order the row names them, misses the pin.",
+      "seq": "2",
+      "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+      "expect": "7b0d47d93427f8311160781c7c733fd89f88970aef490d8aa0ee19a4cb8a1b141de533a27dac95ea8ebaa25c119637b3ce050c8fab1ca44eb58f036c519cd6f58a0a77680e1d70c247fd00df036d1a5068da4e12690e0aef2133be12f69b5631232bd97bcc4265ee6ccb5bf6904336b03543945a3a52e18c11b93e7dc3e183902beda45fdcdf6943efb6f3ca837b23cbf2e49aaa551a488c5b4bc93391d1c27eb9cd10fac694dbcf9118672fb99d1ac3585113a705cdef154b4f8b2159874ab4030ebe8dd83e23cc6ad512528da816222a441339c1a195055aad9529e05edde7e87f9c9ecee1ff03a0d0ce3321d5436334166ab84b8e44a8c93b0d9c5bd68e1d067ef1082c3a6fd0fb97c91d624cad6e454164d9bf147b28ae68349b0b65f2e906cbe2fb2ee8bd7c2f11c285d4eb49c03b74343b330d06d366f60fdee2f944044d696861a8fb865514dc8eae7015c123ca6609a4e56126916330bbb03b5de8e8670c90f43869f4f25252441d535b154eb8a8ce87048f90a4d4a4b3e4e67da81408225da7ff22619726ce6aa57012a7e5f30cca259f521814174d757c2c50baddf8787e104c13d10060e3f83da1ab498c25c3c072c5c0bf65f20a613fce2f0e014109ce4a3583977ef2d52f73497a298b400cd64d8e44999020cd2850ec4354b70c33",
+      "give": "d3baf56cb00bfcbb41a459bd640f05a77ed6110809bf5f21be1a08e51dff7409d1c4460c9d77a1baa5602851107c3beda9672716e6e684298e5c3dd8158415df600ae312996bc85cd3c909a98c55a0e3567ab96e075a4067c189169dd8148171e3acc4853f37b74abe7dd6d39e8fa7b56fe6fc0aba8e5d39bfc554459dfc9616d12982dd11c0a31bbc64209a460966fb8f5bb7d031fda3b1d711cf05e12c65291ee33ba1161c6f297c63f4011aa45e8c01563027720a1c1d5f77e4a7a9245d2ea13f434fd11d572af00ff2070452d37b43b884227bfae761297c139602e213104a153861ac22383cba590f21372aa5ee8df218ae79d5a0e01ab0fc18e369cf45ac2616ddbee15b81ab3b44eece96a72c311eb84a6db7f5f13f1dd5ceec47bed77dcde720cd16f2ca578a85ed",
+      "cargo": {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+        "cells": "",
+        "standings": [
+          {
+            "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+            "commitment": "290d6caefb277537554cc8f48597206e9b5ca2975dc81dc4c8f66662570b4d64",
+            "name": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+            "beings": [
+              "8a875fff1eb38451577acd5afee405456568dd7c89e090863a0557bc7af49f17",
+              "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c"
+            ],
+            "mark": "2",
+            "spent": ["1"],
+            "padlock": "5a13b7a05e31ae998ad1307217981bb23bb17d277465829edd616e9169c8f46e",
+            "hints": []
+          }
+        ],
+        "relations": []
+      }
+    },
+    {
+      "name": "taking the last being away is release, with no separate act",
+      "law": "Keys, records and standings",
+      "obligations": ["VII-8"],
+      "derivation": "Both beings are taken off the row in one amend. Article VII: \"**Taking the last being away is release, and there is no separate act for it.**\" So the row is gone — not an empty row, which is a state the law does not have, but **no row at all**, and the cargo carries no standing afterwards. **The two failures this separates are both plausible**: a kit that kept a row holding no beings would show a standing here with an empty list, and a kit that required a release call before dropping a row would show the standing unchanged. The mark and the window go with it, which is what makes release different from narrowing.",
+      "do": "amend",
+      "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+      "remove": [
+        "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "8a875fff1eb38451577acd5afee405456568dd7c89e090863a0557bc7af49f17"
+      ],
+      "expect": "done",
+      "cargo": {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+        "cells": "",
+        "standings": [],
+        "relations": []
+      }
+    },
+    {
+      "name": "the released voice repeats a number it spent, and is answered",
+      "law": "Keys, records and standings",
+      "obligations": ["VII-8", "XIV-10"],
+      "derivation": "The same voice asks again **on the number it already spent two exchanges ago**, when it was still a holder and the mark moved to 2. It holds no standing anywhere now, so Article XII step 7 gives it the stranger's case — \"no standing anywhere ... the describe of whatever the warden's own public being exposes\" — and Article XIV says what that costs it: \"A stranger spends nothing. It has no row, so no mark is kept for it and its numbers are not counted.\" **So a replayed number is answered here, and that is the only thing in the suite that can tell release from a row kept empty.** The estate cannot: a row holding no beings reaches nothing but the public being, which is byte-for-byte what a stranger is given. The record cannot either: a cargo is read for one being, and a row that no longer names that being is absent from it whether it was released or merely emptied. **What separates them is the window.** A door that kept the empty row still keeps that voice's mark at 2 and must refuse this number as a replay; a door that released it has nothing to judge the number against and answers. One is bytes and the other is silence.",
+      "seq": "2",
+      "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+      "expect": "ffc951aa6f2fa03096d1d1b579735b2f6f84019fe2f617aa65ff3d68705f2527aa3eb6095a3c14d7cfe5181e9e2a6280ab5cce99ef46018a7c079859c2c9288e751777d2a570e1646bfd66486615f422b99ab165adf26b2542af44489d8ee6dd7ddf7826f722978c44cf0b38946bfa907ac80cfbe149e8408cf8725422d04dfb531a9ac25acd63eb19f7de0df5c97bed767d4f6fda80562e517eddd92a2955fcc4ad093315eca2b88843b07ad74d2002ffb6b2bd90384702da6b54a19eb53a5c9a6226e289bae47c6a751a7fb582de1f1fd7b782e0eabfcebe9248b6c1f82d1cd82199a156236a139e36c8d35320dfed1120be4b60a185f2db046140ca7dfacf21c69a447463df2691ec7121b0c55dd26f67",
+      "give": "b795bc45da876a734d4dd92a67e4dbcefab44bb99e8d15afb52aeae80c296a0cd0c0cbd2034a20e127d8f57f58b139ee8f8fa4e9e16f5b99241ce95e9f169cc185f3a9ff8581b0a530a8cfc63dfd7c43922417f3a1aefaeeeaca548016f700aba8a5ab801d48c3d740ad227df1f7d313f1175f410ad3db03e2c28cfe25664f68923091a14f031a93cc15c3ad7dfaae850b61c30ac893d08ea1812c4eca62376584e66640e9f935a2f69aadd3beda95fd9c6d7b9b099cd5e87f548cd2500549061c351bb0518f5338e928ad8e5569fb534a3d40b4ce2d64b8d55cfbcc15300ab035ece8fd829b6a12a769349364e4856bdc9fb748f1ed08fde243dbb3d8664e99aae428d61d9a2dbba6f89799136ade88e2320a1c746db4abb7b844c45fadd79887033a3eb109695301897d9e",
+      "cargo": {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+        "cells": "",
+        "standings": [],
+        "relations": []
+      }
+    }
+  ]
+}

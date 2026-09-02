@@ -29,6 +29,7 @@ from .being import (
     LocalHandle,
     Quo,
     RemoteHandle,
+    Silence,
     resolve,
     within,
 )
@@ -63,10 +64,6 @@ __all__ = [
     "RemoteHandle",
     "Quo",
 ]
-
-
-class Silence(Exception):
-    """Every failure the door has. It never says which step it was."""
 
 
 WARDEN_BLUEPRINT = (
@@ -264,7 +261,7 @@ class Being:
     """One being this warden holds: its keys, its class, and the object itself.
 
     The object is a plain class of the developer's and stays one. What it gains
-    is the closure at ``obj.quo``, the one API a being has to Quo, and a codec:
+    is the closure at ``obj._quo``, the one API a being has to Quo, and a codec:
     its declared methods are called with decoded arguments and answer plain
     values, which the warden encodes by the field's declared answer type. **The
     being never sees a byte.**
@@ -783,7 +780,7 @@ class Warden:
         # runs is this door's own, and what travelled is what it takes back.
         held.take(bytes(cargo["cells"]))
         if held.obj is not None:
-            held.obj.quo = Quo(self, held)
+            held.obj._quo = Quo(self, held)
         self.secrets[pk] = secret
         self.heirs[pk] = heir_secret
         for row in cargo["standings"]:
@@ -1164,7 +1161,7 @@ class Warden:
         """Hold an object: mint its keys, keep the pointer and the class text.
 
         The object is a plain class and stays one. What it gains is the closure
-        at ``obj.quo`` — the one API a being has to Quo — and a codec. Its heir
+        at ``obj._quo`` — the one API a being has to Quo — and a codec. Its heir
         lives under this warden, because nobody hand-manages three hundred
         keys, and the commitment serves the peer, which receives it in every
         describe.
@@ -1192,7 +1189,7 @@ class Warden:
         self.beings[pk] = held
         self.secrets[pk] = secret
         self.heirs[pk] = heir_secret
-        obj.quo = Quo(self, held)
+        obj._quo = Quo(self, held)
         if label is not None:
             self.labels[label] = {"local": pk}
         await self.persist()
@@ -1576,7 +1573,7 @@ class Warden:
 
     # ------------------------------------------- what the closure spends
     #
-    # Everything below is what a being reaches through ``obj.quo``, and what
+    # Everything below is what a being reaches through ``obj._quo``, and what
     # a handle spends on its behalf. None of it is a judgment: permission
     # lives in the inbound record alone, and narrowing is done with beings.
 
@@ -1816,8 +1813,8 @@ class Warden:
             return
         self.labels[label] = {
             "row": row,
-            "being": bytes(handles[0].being),
-            "digest": bytes(handles[0].digest),
+            "being": bytes(handles[0]._quo.being),
+            "digest": bytes(handles[0]._quo.digest),
             "handle": handles[0],
         }
 

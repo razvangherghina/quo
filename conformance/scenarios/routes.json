@@ -1,0 +1,296 @@
+{
+  "scenario": "routes",
+  "law": "https://github.com/razvangherghina/quo/blob/main/constitution.md",
+  "encoding": "hex",
+  "about": "Article XII's step 7 — the routes a call takes once it has survived the six steps before it. Four of the five are the warden answering, and all four are pinned exactly. The fifth, a being invoked with a method, is reached by the same routing but its answer is not pinned anywhere and will not be: what a being answers belongs to its blueprint, and a scenario naming a value there would be asserting a being this harness invented. The corpus cannot express any of this — which route a call takes is a fact about a door with records, and the routes differ in what they answer rather than in what arrives.",
+  "stand": {
+    "warden": {
+      "nameSeed": "196982eee79e80efbc3131c93b99285a38c540c43e7e4fbb8399c260b1ce5103",
+      "padlockSeed": "7dbcdb3088339c02378f46525bff3fe2b84515973e28f5814301a99f386e20b1",
+      "heirSeed": "0303030303030303030303030303030303030303030303030303030303030303",
+      "heirCommitment": "83f960da653b61eb63f6b53b5d80adeb377e23e569f1c555395b9b119ad69603",
+      "limit": "1048576",
+      "hints": []
+    },
+    "beings": [
+      {
+        "seed": "0101010101010101010101010101010101010101010101010101010101010101",
+        "heirSeed": "0202020202020202020202020202020202020202020202020202020202020202",
+        "blueprint": "Counter\n  bump(by int) int\n  count() int\n",
+        "cells": ""
+      },
+      {
+        "seed": "0606060606060606060606060606060606060606060606060606060606060606",
+        "heirSeed": "0707070707070707070707070707070707070707070707070707070707070707",
+        "blueprint": "Ledger\n  note(what text) int\n  total() int\n",
+        "cells": ""
+      }
+    ],
+    "grants": [
+      {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "voiceSeed": "3030303030303030303030303030303030303030303030303030303030303030",
+        "heirSeed": "3131313131313131313131313131313131313131313131313131313131313131",
+        "padlock": null,
+        "hints": []
+      }
+    ],
+    "relations": [
+      {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "warden": "1ba4075b77c9e3fb3ecde15cdaf5221f3c10373e623f7b0e1ef76366b0af7137",
+        "commitment": "23094711779588b0aced9d327714251901a101b8f2a5765d91fecc983d1fd636",
+        "padlock": "5a13b7a05e31ae998ad1307217981bb23bb17d277465829edd616e9169c8f46e",
+        "voiceSeed": "2ebd74bd564a8771fa628b28308c588588f5c0d0db17ae06b045b896d8218ad7",
+        "heirSeed": "7bae8096dc92d5f4e271742fd8db51abd563a8976c223dd734f1d2bdd553093c",
+        "hints": []
+      }
+    ],
+    "clock": [
+      "1000",
+      "1001",
+      "1002",
+      "1003",
+      "1004",
+      "1005",
+      "1006",
+      "1007",
+      "1008",
+      "1009",
+      "1010",
+      "1011",
+      "1012",
+      "1013",
+      "1014",
+      "1015",
+      "1016",
+      "1017",
+      "1018",
+      "1019",
+      "1020",
+      "1021",
+      "1022",
+      "1023",
+      "1024",
+      "1025",
+      "1026",
+      "1027",
+      "1028",
+      "1029",
+      "1030",
+      "1031",
+      "1032",
+      "1033",
+      "1034",
+      "1035",
+      "1036",
+      "1037",
+      "1038",
+      "1039"
+    ],
+    "random": [
+      "3232323232323232323232323232323232323232323232323232323232323232",
+      "3333333333333333333333333333333333333333333333333333333333333333",
+      "3434343434343434343434343434343434343434343434343434343434343434",
+      "3535353535353535353535353535353535353535353535353535353535353535",
+      "3636363636363636363636363636363636363636363636363636363636363636",
+      "3737373737373737373737373737373737373737373737373737373737373737",
+      "3838383838383838383838383838383838383838383838383838383838383838",
+      "3939393939393939393939393939393939393939393939393939393939393939",
+      "4040404040404040404040404040404040404040404040404040404040404040",
+      "4141414141414141414141414141414141414141414141414141414141414141",
+      "4242424242424242424242424242424242424242424242424242424242424242",
+      "4343434343434343434343434343434343434343434343434343434343434343"
+    ]
+  },
+  "unruled": [],
+  "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+  "opening": {
+    "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+    "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+    "cells": "",
+    "standings": [
+      {
+        "voice": "1ba4075b77c9e3fb3ecde15cdaf5221f3c10373e623f7b0e1ef76366b0af7137",
+        "commitment": "c6a7beb1604e18d3e2f617ce3842ba7b83749c7605841a74d26684528dbe3a75",
+        "name": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+        "beings": ["8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c"],
+        "mark": "0",
+        "spent": [],
+        "padlock": null,
+        "hints": []
+      }
+    ],
+    "relations": [
+      {
+        "warden": "1ba4075b77c9e3fb3ecde15cdaf5221f3c10373e623f7b0e1ef76366b0af7137",
+        "commitment": "23094711779588b0aced9d327714251901a101b8f2a5765d91fecc983d1fd636",
+        "padlock": "5a13b7a05e31ae998ad1307217981bb23bb17d277465829edd616e9169c8f46e",
+        "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+        "heir": "afa0ce0919a81bf57861ac7139d8945a1fc2ba9f00e53a4f26f494c23f78338c",
+        "seq": "0",
+        "news": "0",
+        "hints": []
+      }
+    ]
+  },
+  "beingCommitment": "ed4d580bb287b98674376c30d750d9926617873de8787e518c58c320d1899cbd",
+  "exchanges": [
+    {
+      "name": "neither a being nor a method is a describe of what that voice reaches",
+      "law": "The judgment",
+      "obligations": ["XII-7", "XII-9", "XII-3"],
+      "derivation": "An ask carrying no being and no method. Article XII's route list: \"Neither — the warden describes the estate, which means what that voice may reach, read off the inbound record.\" And there is no ambiguity about what an ask with nothing in it means: \"There is no empty ask, because there is a default one: describe. And the describe is the warden's answer, never the being's.\" So the answer is the estate this voice reaches — the Counter being it holds a standing on, and the public being everyone reaches — in digest order. **The voice is also a far warden this door holds a relation with**, which is what makes this an XII-3 case: step 4 places the voice \"in the two records and in that order\", inbound before outbound, so it is a holder and this is an ask. A door that looked at its outbound record first would find the same key there and call this news, which is answered with nothing at all.",
+      "seq": "1",
+      "voice": "1ba4075b77c9e3fb3ecde15cdaf5221f3c10373e623f7b0e1ef76366b0af7137",
+      "expect": "59d9225473451efffe6b36dbcaefdbf7b1895de62084509a7f5b58bf01d064183d0e9f38364e65372817fc540a351551a7cad5c13b5594def61c92d544afecd572a652e3c1fdc5aa70a7624ece29b926de511f4f09cbc1a64ecef462469a0fa6762abd1b178f8c304f9afb50ad850c3a19b73695575f041ff6dfd6886586fbb5d15306dc065899463987f3ae1df8254e9f348f6fec9ff46be5f32c8f6624ca803022d2289e2528e9d72f1d4d7c2b09485f9d2f08d4365c4879624a24e3c817256be3870664c7e4b338a0574f23b088805349556c0ea7f30624d23ff3558ddfe0db140d38dfdc93c462460b5887db3f994cee24dab5633205988e0f10564c256925e7fa15887c5ae2c18e145ff47cc04a483f4a8b5681d5ad14aa898c7c67b50b5c77d3b536f91851a39138adb61f411ee3a2d826dc49651b2e9aee9b80c3341bf47ba1a3d355d603f7180b5c60b52cf7eab58f70df26e986204b9dc456b0e04a104934854c6af7b5fef0973530aa58fec8b9bcf346288f0ce0c7",
+      "give": "6667427553076c7e43074151d9f45476ec7589a135337bf8dd54be2c6eea8e290333a060dda903f9ae1ebbb1469f298bc0420dda17edf911d1fafec71f0a9db4bc0404ae0841e2de661f0fd3a9f95d79226dfc6934cf425cdf8503612866e9f4e5a92081384ad64490b61eaceaa42332a4b727990eb152416e42ecb6482a65b328103f6c3abf8ff9bf16eb3b409e635e887b185202ef2485209b7eb24428fec1f886ef5b4985d02eb040e972700531ba76661584af355f7b0c12a8e5a9b89aa2b1bc61d93ec46bc5021d823a97f0a967627af68aef5efe3f6811330ad72ee7a8c49e5643fd27904c2bf2168d4d13d11714ecb9a0",
+      "cargo": {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+        "cells": "",
+        "standings": [
+          {
+            "voice": "1ba4075b77c9e3fb3ecde15cdaf5221f3c10373e623f7b0e1ef76366b0af7137",
+            "commitment": "c6a7beb1604e18d3e2f617ce3842ba7b83749c7605841a74d26684528dbe3a75",
+            "name": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+            "beings": ["8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c"],
+            "mark": "1",
+            "spent": [],
+            "padlock": "5a13b7a05e31ae998ad1307217981bb23bb17d277465829edd616e9169c8f46e",
+            "hints": []
+          }
+        ],
+        "relations": [
+          {
+            "warden": "1ba4075b77c9e3fb3ecde15cdaf5221f3c10373e623f7b0e1ef76366b0af7137",
+            "commitment": "23094711779588b0aced9d327714251901a101b8f2a5765d91fecc983d1fd636",
+            "padlock": "5a13b7a05e31ae998ad1307217981bb23bb17d277465829edd616e9169c8f46e",
+            "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+            "heir": "afa0ce0919a81bf57861ac7139d8945a1fc2ba9f00e53a4f26f494c23f78338c",
+            "seq": "0",
+            "news": "0",
+            "hints": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "a method with no being is the warden's own being, and answers the same",
+      "law": "The judgment",
+      "obligations": ["XII-7", "XII-8"],
+      "derivation": "The same describe, addressed the other way: a method and no being. Article XII: \"Method, no being — the warden's own being answers.\" And the two addresses are one being: \"The warden's own being answers to two addresses, and that is meant. Naming it is the ordinary form; omitting it is the shortcut for a stranger who holds a card and has described nothing yet. Nothing is identified by how a call was addressed, so nothing here can diverge.\" So this answer carries byte-for-byte the data the exchange above carries — the same estate value, built once — and differs only in the seq, which names the ask it answers. A door that routed the two addresses to two places would miss this pin, which is how XII-8 is asserted without comparing two answers to each other.",
+      "seq": "2",
+      "voice": "1ba4075b77c9e3fb3ecde15cdaf5221f3c10373e623f7b0e1ef76366b0af7137",
+      "expect": "7b0d47d93427f8311160781c7c733fd89f88970aef490d8aa0ee19a4cb8a1b141de533a27dac95ea8ebaa25c119637b3ce050c8fab1ca44eb58f036c519cd6f58a0a77680e1d70c247fd00df036d1a5069424e12690e0aef2132be12f69b5631232bd97bcc4265ee6ccb5bf6904336b03543945a3a52e18c11b93e7dc3e183902beda45fdcdf6943efb6f3ca837b23cbf2e49aaa551a488c5b4bc93391d1c27eb9cd10fac694dbcf9118672fb99d1ac3585113a705cdef154b4f8b2159874ab4030e332f0b4cc385a2645d2739f191f60a0e5b99c21d4d878d9f4626b4a38245fd4a9c9ecee1ff03a0d0af30068e05cbfdf02670fe12cf48b6183f8a8bdc2b3c1844992d2fb11df4bbdb87aac1dd813ab6ab3a952f9c580a07d604beed0c657ca23cf1c5d2a7c9f0c90d72fe5069f8035515d8acb5de546610a216661beafc4afd665cee67a055a7f3efba41b71b8687bd3b1f3574aa0b9b32cfea45a20a9e610f147faf8efe8e04faeb6774b16862de4b20a6ea8ade5c89534d",
+      "give": "e02f12680916c08a0d8e01e89dfca8fc51ac0fb713a6025ca74e199c823322623bf3011a5d2b2ca4f16f60c151d3787bc4c072dfffd0b079797a8f440027aa5e1213fb9b7c3fadb459c79c9ec4653c0f64866370912fada15b67b53b3daf794f08d660c609f5ab7bfbd5b7fce7c4f828d1d542404e439039b81a617e9941402d43de911009680b052f060c001ba011e42e5c3ed79383a33bbc922f38f523c9c00fdcb11e9a1d6c85b32ad04f2eebc8d19511efc6f1a5b28a6730ed83ba3657af83a489a2dac4604eb50e3bc5dfc296356d6bbad64da1d04df98bc50567ba0b05f06807aef175a0caf147fa36f40a70bc03f2f6f5d4819605cf4329a3998a8a354f7a75fcad655cbbc49a7dd3",
+      "cargo": {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+        "cells": "",
+        "standings": [
+          {
+            "voice": "1ba4075b77c9e3fb3ecde15cdaf5221f3c10373e623f7b0e1ef76366b0af7137",
+            "commitment": "c6a7beb1604e18d3e2f617ce3842ba7b83749c7605841a74d26684528dbe3a75",
+            "name": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+            "beings": ["8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c"],
+            "mark": "2",
+            "spent": ["1"],
+            "padlock": "5a13b7a05e31ae998ad1307217981bb23bb17d277465829edd616e9169c8f46e",
+            "hints": []
+          }
+        ],
+        "relations": [
+          {
+            "warden": "1ba4075b77c9e3fb3ecde15cdaf5221f3c10373e623f7b0e1ef76366b0af7137",
+            "commitment": "23094711779588b0aced9d327714251901a101b8f2a5765d91fecc983d1fd636",
+            "padlock": "5a13b7a05e31ae998ad1307217981bb23bb17d277465829edd616e9169c8f46e",
+            "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+            "heir": "afa0ce0919a81bf57861ac7139d8945a1fc2ba9f00e53a4f26f494c23f78338c",
+            "seq": "0",
+            "news": "0",
+            "hints": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "a being with no method is a describe of that one being",
+      "law": "The judgment",
+      "obligations": ["XII-7"],
+      "derivation": "An ask naming the Counter being and no method. Article XII: \"Being, no method — the warden describes that one being.\" That describe is Article IX's `sketch(being being) sketch?`, whose record is the being, the digest of its blueprint and its heir commitment — the same three things a class entry carries, for one being rather than an estate. The optional is present, because the voice reaches this being; a being it did not reach would be silence rather than an absent sketch, which Article X separates: \"a door that answered \\\"absent\\\" about a being you do not reach would be a door confirming that being exists.\"",
+      "seq": "3",
+      "voice": "1ba4075b77c9e3fb3ecde15cdaf5221f3c10373e623f7b0e1ef76366b0af7137",
+      "expect": "ffc951aa6f2fa03096d1d1b579735b2f6f84019fe2f617aa65ff3d68705f2527aa3eb6095a3c14d7cfe5181e9e2a6280ab5cce99ef46018a7c079859c2c9288e751777d2a570e1646afd66486615f422b98bb0ef2511b6514b5f17539818c6cde3e80a4d990bbbdf1aaabc315e2ad8fb3821ac78a6237ba988e72d075cfc718e8367f85a81a534ec3c9024e174c77b607bf0aafc9aae715d587b098d49726dfb4b2f18ac62b1fa6b91d682003ab55d53dbc1383f7f6be7e7945778d7dd7c58f684afa16adfdc407adeb0a60edfed710a06c8d1d18bc7226a7aa8d9d80a600d9f534de42de32b020527e00599bf5f63cca02d4783e5f4214c5be3258e7b0a0c331569a1",
+      "give": "7f4cc2ce004491660a3d9ba0650ca35006d7ba655518728a4a47f2c266f8ce27cf8abd721534ab689cd5e524b36e803f51a668a29c03a5f458d602e40825e452bc842e6eae980588a7ae4c40f05eee9cc7421912b665b13d03c37452ad9794f44f60f930cc81604d95440c284e4203199b010871fc01bae08e7f5b1366c06e33096b30809d21381328b1de1f60c7c7f58fa03799f8e50244024c63496ab846e0f67240b622853540735696d30bca37c85910cf549af8880cb4e5d3d1ca97d0c5c07a6002196cb9c818ca77466d9d06c32a5581d3f21a42ce5f9673b3a188cbd170565d704f8e28736e56b8f37ad49f4328187a58827fa399c796904ab754133f99573eaef192e917e6d5aa9197762678a550993e",
+      "cargo": {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+        "cells": "",
+        "standings": [
+          {
+            "voice": "1ba4075b77c9e3fb3ecde15cdaf5221f3c10373e623f7b0e1ef76366b0af7137",
+            "commitment": "c6a7beb1604e18d3e2f617ce3842ba7b83749c7605841a74d26684528dbe3a75",
+            "name": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+            "beings": ["8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c"],
+            "mark": "3",
+            "spent": ["1", "2"],
+            "padlock": "5a13b7a05e31ae998ad1307217981bb23bb17d277465829edd616e9169c8f46e",
+            "hints": []
+          }
+        ],
+        "relations": [
+          {
+            "warden": "1ba4075b77c9e3fb3ecde15cdaf5221f3c10373e623f7b0e1ef76366b0af7137",
+            "commitment": "23094711779588b0aced9d327714251901a101b8f2a5765d91fecc983d1fd636",
+            "padlock": "5a13b7a05e31ae998ad1307217981bb23bb17d277465829edd616e9169c8f46e",
+            "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+            "heir": "afa0ce0919a81bf57861ac7139d8945a1fc2ba9f00e53a4f26f494c23f78338c",
+            "seq": "0",
+            "news": "0",
+            "hints": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "no standing anywhere is the stranger's case",
+      "law": "The judgment",
+      "obligations": ["XII-7"],
+      "derivation": "A voice in neither record, carrying neither being nor method. Article XII: \"No standing anywhere — the stranger's case, the describe of whatever the warden's own public being exposes.\" So the answer is an estate of one class, the Warden digest, with the warden's own name under it — not the Counter being, which this voice reaches nothing of. It is the fifth route and the only one that is reached by having no standing rather than by what the payload carries.",
+      "seq": "1",
+      "voice": "efc15f8742c6c2755887d9e83884dd30b69d25548ef299cdd296053be9c0df99",
+      "expect": "627967ac833d07ad274bdfb6fb7ba2a336780e721e82f1447e859bf90a69ad62740899b0370f362973ab3bee9096813342a58b715c0fc0a62c712dc0c83c00e479aaf94a92ea83d8287a191e04ec2dc3fa0b1dc8a04837deae7a77c2c9d439cc0a004328904af97836a9c59396a2492ac45f14f9964605b910766b7f084100f1f2cb5c82a319877748707d136742f7c74dea1f23dffb1e91688b0168ae0905dab84542eac5c8ad95cfaa0e48c721060da109341a61e1ded75be0499f019cd4fc4a85c4d964bb533f757c05e1ac6d447b2f4319374f05c593835ddac50c88479815d769e7d1b146e30b45494550916a490436a9b9f0a9aba42e52b763e7a6fa0fe3c3b17e25ac198b756de208dd8abbd95fe1",
+      "give": "51ddf3cb36a42fdf3d6a81dfcaada9fe17818aa145548a08e51f2d73e9452478f266f77a1a457b94e371bd1f8e15611c75272c1bc38201376af6f2df6907d141a9b43f39e80857fd3b77d3c56dd99714107189010d0f881b3533d2293a562bb8432f43cd2e2412d0e5f2824058f38be93f6cc7e4470129c207d7e2f1d2e2f762ac3de3229d4e9332b7adecf5f144c3ab1fe24427da0578d715f2c37774c991c968cda00c754e5f0bb14dfe581d5e133c2743e6f208724edcecdbdbb071c72620137d202f800673a32141f3327eead19f059a15c0787b8af5708cedb27d803ec272c30a4d92486b509d2f5eaa86b2f1301b6c4f6a",
+      "cargo": {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+        "cells": "",
+        "standings": [
+          {
+            "voice": "1ba4075b77c9e3fb3ecde15cdaf5221f3c10373e623f7b0e1ef76366b0af7137",
+            "commitment": "c6a7beb1604e18d3e2f617ce3842ba7b83749c7605841a74d26684528dbe3a75",
+            "name": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+            "beings": ["8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c"],
+            "mark": "3",
+            "spent": ["1", "2"],
+            "padlock": "5a13b7a05e31ae998ad1307217981bb23bb17d277465829edd616e9169c8f46e",
+            "hints": []
+          }
+        ],
+        "relations": [
+          {
+            "warden": "1ba4075b77c9e3fb3ecde15cdaf5221f3c10373e623f7b0e1ef76366b0af7137",
+            "commitment": "23094711779588b0aced9d327714251901a101b8f2a5765d91fecc983d1fd636",
+            "padlock": "5a13b7a05e31ae998ad1307217981bb23bb17d277465829edd616e9169c8f46e",
+            "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+            "heir": "afa0ce0919a81bf57861ac7139d8945a1fc2ba9f00e53a4f26f494c23f78338c",
+            "seq": "0",
+            "news": "0",
+            "hints": []
+          }
+        ]
+      }
+    }
+  ]
+}

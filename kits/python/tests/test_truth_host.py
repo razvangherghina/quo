@@ -64,7 +64,7 @@ class Walker:
         self.listener = None
 
     async def subscribe(self, invitation) -> bool:
-        [self.listener] = await self.quo.accept(invitation, label="inbox")
+        [self.listener] = await self._quo.accept(invitation, label="inbox")
         return self.listener is not None
 
     async def walk(self, minutes: int) -> bool:
@@ -84,12 +84,12 @@ class TheSameBeingBehindEveryRoad(unittest.IsolatedAsyncioTestCase):
         try:
             rex = Dog()
             await alice.warden.hold(rex, DOG)
-            [handle] = await bob.warden.accept(rex.quo.grant(), label="rex")
+            [handle] = await bob.warden.accept(rex._quo.grant(), label="rex")
             self.assertEqual(await handle.name(), "Rex")
             self.assertIs(await handle.logWalk(12), True)
             self.assertEqual(rex.walks, [12])
             # The being never learned the road: nothing on it names one.
-            self.assertFalse(hasattr(rex.quo, "road"))
+            self.assertFalse(hasattr(rex._quo, "road"))
         finally:
             await alice.close()
             await bob.close()
@@ -119,11 +119,11 @@ class EachRoadPublishesItsHintAndRetractsItOnClose(unittest.IsolatedAsyncioTestC
         await ground.warden.hold(rex, DOG)
         standing = ground.warden.hints
         self.assertEqual(len(standing), 1)
-        self.assertIn(standing[0], rex.quo.grant().hints)
+        self.assertIn(standing[0], rex._quo.grant().hints)
 
         await ground.close()
         self.assertEqual(ground.warden.hints, ())
-        self.assertEqual(tuple(rex.quo.grant().hints), ())
+        self.assertEqual(tuple(rex._quo.grant().hints), ())
 
     async def test_a_closed_ground_mints_its_memory_hint_into_nothing(self):
         await self._retracted("memory")
@@ -167,7 +167,7 @@ class WhatDeliveryDoes(unittest.IsolatedAsyncioTestCase):
         try:
             rex = Dog()
             await alice.warden.hold(rex, DOG)
-            invitation = rex.quo.grant()
+            invitation = rex._quo.grant()
             self.assertEqual(len(invitation.hints), 2)
             self.assertEqual(invitation.hints[0], "pigeon://loft")
             [handle] = await bob.warden.accept(invitation, label="rex")
@@ -187,8 +187,8 @@ class WhatDeliveryDoes(unittest.IsolatedAsyncioTestCase):
             await tab.warden.hold(inbox, INBOX)
             self.assertEqual(tab.warden.hints, ())
 
-            [bob] = await inbox.quo.accept(walker.quo.grant(), label="walker")
-            self.assertIs(await bob.subscribe(inbox.quo.grant()), True)
+            [bob] = await inbox._quo.accept(walker._quo.grant(), label="walker")
+            self.assertIs(await bob.subscribe(inbox._quo.grant()), True)
             await bob.walk(9)
             await bob.walk(11)
             self.assertEqual(inbox.heard, [9, 11])
@@ -203,8 +203,8 @@ class WhatDeliveryDoes(unittest.IsolatedAsyncioTestCase):
         inbox = Inbox()
         await laptop.warden.hold(walker, WALKER)
         await tab.warden.hold(inbox, INBOX)
-        [bob] = await inbox.quo.accept(walker.quo.grant(), label="walker")
-        await bob.subscribe(inbox.quo.grant())
+        [bob] = await inbox._quo.accept(walker._quo.grant(), label="walker")
+        await bob.subscribe(inbox._quo.grant())
         await bob.walk(1)
         await tab.close()
         # Walker's own answer to itself is unaffected; only the push found
@@ -229,7 +229,7 @@ class WhatDeliveryDoes(unittest.IsolatedAsyncioTestCase):
         delivery.watch(rows.append)
         rex = Dog()
         await warden.hold(rex, DOG)
-        [handle] = await other.accept(rex.quo.grant(), label="rex")
+        [handle] = await other.accept(rex._quo.grant(), label="rex")
         await handle.name()
         self.assertGreater(len(rows), 0)
         for row in rows:

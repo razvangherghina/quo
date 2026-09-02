@@ -1,0 +1,258 @@
+{
+  "scenario": "estate-order",
+  "law": "https://github.com/razvangherghina/quo/blob/main/constitution.md",
+  "encoding": "hex",
+  "about": "Article X against a live door, and the first scenario that pins an answer's bytes. The corpus can already encode an estate and order one, and it cannot say which estate a door owes a particular voice: that the Ledger being is absent from the holder's answer and the Counter being from the stranger's is the whole content of the article, and it is a fact about a door with records rather than about a value.",
+  "stand": {
+    "warden": {
+      "nameSeed": "196982eee79e80efbc3131c93b99285a38c540c43e7e4fbb8399c260b1ce5103",
+      "padlockSeed": "7dbcdb3088339c02378f46525bff3fe2b84515973e28f5814301a99f386e20b1",
+      "heirSeed": "0303030303030303030303030303030303030303030303030303030303030303",
+      "heirCommitment": "83f960da653b61eb63f6b53b5d80adeb377e23e569f1c555395b9b119ad69603",
+      "limit": "1048576",
+      "hints": []
+    },
+    "beings": [
+      {
+        "seed": "0101010101010101010101010101010101010101010101010101010101010101",
+        "heirSeed": "0202020202020202020202020202020202020202020202020202020202020202",
+        "blueprint": "Counter\n  bump(by int) int\n  count() int\n",
+        "cells": ""
+      },
+      {
+        "seed": "0606060606060606060606060606060606060606060606060606060606060606",
+        "heirSeed": "0707070707070707070707070707070707070707070707070707070707070707",
+        "blueprint": "Ledger\n  note(what text) int\n  total() int\n",
+        "cells": ""
+      }
+    ],
+    "grants": [
+      {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "voiceSeed": "2ebd74bd564a8771fa628b28308c588588f5c0d0db17ae06b045b896d8218ad7",
+        "heirSeed": "7bae8096dc92d5f4e271742fd8db51abd563a8976c223dd734f1d2bdd553093c",
+        "padlock": null,
+        "hints": []
+      }
+    ],
+    "clock": [
+      "1000",
+      "1001",
+      "1002",
+      "1003",
+      "1004",
+      "1005",
+      "1006",
+      "1007",
+      "1008",
+      "1009",
+      "1010",
+      "1011",
+      "1012",
+      "1013",
+      "1014",
+      "1015",
+      "1016",
+      "1017",
+      "1018",
+      "1019",
+      "1020",
+      "1021",
+      "1022",
+      "1023",
+      "1024",
+      "1025",
+      "1026",
+      "1027",
+      "1028",
+      "1029",
+      "1030",
+      "1031",
+      "1032",
+      "1033",
+      "1034",
+      "1035",
+      "1036",
+      "1037",
+      "1038",
+      "1039"
+    ],
+    "random": [
+      "3232323232323232323232323232323232323232323232323232323232323232",
+      "3333333333333333333333333333333333333333333333333333333333333333",
+      "3434343434343434343434343434343434343434343434343434343434343434",
+      "3535353535353535353535353535353535353535353535353535353535353535",
+      "3636363636363636363636363636363636363636363636363636363636363636",
+      "3737373737373737373737373737373737373737373737373737373737373737",
+      "3838383838383838383838383838383838383838383838383838383838383838",
+      "3939393939393939393939393939393939393939393939393939393939393939",
+      "4040404040404040404040404040404040404040404040404040404040404040",
+      "4141414141414141414141414141414141414141414141414141414141414141",
+      "4242424242424242424242424242424242424242424242424242424242424242",
+      "4343434343434343434343434343434343434343434343434343434343434343"
+    ]
+  },
+  "unruled": [],
+  "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+  "opening": {
+    "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+    "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+    "cells": "",
+    "standings": [
+      {
+        "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+        "commitment": "290d6caefb277537554cc8f48597206e9b5ca2975dc81dc4c8f66662570b4d64",
+        "name": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+        "beings": ["8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c"],
+        "mark": "0",
+        "spent": [],
+        "padlock": null,
+        "hints": []
+      }
+    ],
+    "relations": []
+  },
+  "beingCommitment": "ed4d580bb287b98674376c30d750d9926617873de8787e518c58c320d1899cbd",
+  "exchanges": [
+    {
+      "name": "a holder describes, and the estate is ordered by digest",
+      "law": "The describe",
+      "obligations": ["X-1", "X-2", "X-5", "IX-4"],
+      "derivation": "A `describe` from the voice that holds a standing on the Counter being. Article X: \"An estate — every being that voice may reach, given as digests with the pks and their commitments under each. The order is derived, never chosen: classes by their digest bytes ascending, beings under each by their pk bytes ascending.\" This voice reaches the Counter being by its standing and the public being because \"the public being is reachable by everyone, holders included, and appears in every estate\" (Article IX). It does not reach the Ledger being, so no Ledger class is in the answer at all. The two digests are the corpus's own Warden digest and the digest of the Counter blueprint, and 1ce9ee40… sorts below c6e6574d…, so the Counter class is first. **The public being is what makes this a two-class answer rather than a one-class one, and that is IX-4 able to fail**: a door that gave the public being only to strangers — a reading of \"public\" a kit could honestly take — would answer this holder with the Counter class alone, and these bytes would not match. The stranger's estate below is the same claim from the other end. The answer is one `answer` record — \"the answering warden's name, the number of the ask it answers, and the data\" — under Article XI's `answer` byte, signed by the warden's own name and sealed to the padlock the ask named.",
+      "seq": "1",
+      "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+      "expect": "59d9225473451efffe6b36dbcaefdbf7b1895de62084509a7f5b58bf01d064183d0e9f38364e65372817fc540a351551a7cad5c13b5594def61c92d544afecd572a652e3c1fdc5aa70a7624ece29b926de511f4f09cbc1a64ecef462469a0fa6762abd1b178f8c304f9afb50ad850c3a19b73695575f041ff6dfd6886586fbb5d15306dc065899463987f3ae1df8254e9f348f6fec9ff46be5f32c8f6624ca803022d2289e2528e9d72f1d4d7c2b09485f9d2f08d4365c4879624a24e3c817256be3870664c7e4b338a0574f23b088805349556c0ea7f30624d23ff3558ddfe0db140d38dfdc93c462460b5887db3f994cee24dab5633205988e0f10564c256925e7fa15887c5ae2c18e145ff47cc04a483f4a8b5681d5ad14aa898c7c67b50b5c77d3b536f91851a39138adb61f411ee3a2d826dc49651b2e9aee9b80c3341bf47ba1a3d355d603f7180b5c60b52cf7eab58f70df26e986204b9dc456b0e04a104934854c6af7b5fef0973530aa58fec8b9bcf346288f0ce0c7",
+      "give": "bce059bf5b2ab7a91f3e863acf0c84d3ebbe04ca8490094b052b5b15afab1743ccaa24afb237a852bb735c9669583a81f1fd1ddad0b11561a4e5692a8719cff74f094edb282b10c3915ad016284fc0c2520cf3c334bad9a1f3fc2e7daef43b9d3b462e220588c77ba47122e0cc6951c89b5e409c5b6bb8b8e6acf5fcd972603cce101302a117ef6b07a1a84bd84a54e9b5825cdb11ed90e3487600fe11a16044113e0641bdeb7ec9ccc47e928af59a2d51b57c09afaf6ecea2c5215541f5b064414553b1e1808730d02f27abb2505c079c8f2769e27ecebf0d8e9f2a7844aa54815baff52ba6f02d48d13c4135897482fde015eee8511fbe59b09581050cdc3a21831370c520a66ccdd44b61f1eaf1941b08537e59c5f17ba4809c722b0d611d68cf95d43af23c34656f2938",
+      "cargo": {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+        "cells": "",
+        "standings": [
+          {
+            "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+            "commitment": "290d6caefb277537554cc8f48597206e9b5ca2975dc81dc4c8f66662570b4d64",
+            "name": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+            "beings": ["8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c"],
+            "mark": "1",
+            "spent": [],
+            "padlock": "5a13b7a05e31ae998ad1307217981bb23bb17d277465829edd616e9169c8f46e",
+            "hints": []
+          }
+        ],
+        "relations": []
+      }
+    },
+    {
+      "name": "a stranger's estate is the public being alone",
+      "law": "The describe",
+      "obligations": ["X-4", "XIV-10", "IX-3"],
+      "derivation": "The same `describe`, from a voice with no row anywhere. Article X: \"The stranger's case — no standing anywhere, so the estate is the warden's own public being. Being public is not a flag on anything.\" So one class, the Warden digest, one being under it, the warden's name — and neither the Counter being nor the Ledger being, which a door that described its whole estate to strangers would leak. It names the public being, which a stranger may address because that being is reachable by everyone. Article XIV: \"A stranger spends nothing\", so the holder's mark does not move and no row appears. **And the pk under that class is the warden's own name, byte for byte**, which is Article IX: \"The key that names the house and the key that names the being the house speaks as are one key.\" This is where that claim is sharpest, the public being being the whole of the answer. **A door that minted a separate key for the being it speaks as** — the obvious design, and the one a kit reaches for if it reads the public being as an ordinary being that happens to be public — would put that key here instead, and these bytes would not match. It would also have to publish the second key somewhere, and there is nowhere in the envelope to publish it.",
+      "seq": "1",
+      "voice": "efc15f8742c6c2755887d9e83884dd30b69d25548ef299cdd296053be9c0df99",
+      "expect": "7b0d47d93427f8311160781c7c733fd89f88970aef490d8aa0ee19a4cb8a1b141de533a27dac95ea8ebaa25c119637b3ce050c8fab1ca44eb58f036c519cd6f58a0a77680e1d70c244fd00df036d1a5069ea4e12690e0aef2131641d4f9694f2d31e8aa4e95e8370da35ebafe2850907a824363c5ca3bbdd11c03e7dc3e183902bedc55347a645515394152a20906a75d5f007b351d379d9c7ec68674de77ea109ca7e4efe450c73497570ee609690132c2842cea1156e9cf04b3e2201b601eb09b007582e747ac30bfbe283bf3c2e81abf662af10afaeb2dafe419c5d05a250511eaa646e1d66fa0f69f8715c415e9345a6cd93ffa71f9ee5b9fcb9ea88e17aa2f88275b028a0f7c5f4be5d28d8ec76be71",
+      "give": "7f442fb4ecc9dd6cde4635881fbe2bb433b67b004935c4330d21e36f681a0e123bf0b70c70dc6a2e210f6a2280161b4fa675d5f068f5cc19f10b2660c925cb64e75f024daaac60cf40da76eef03ac5c015d9f4a2ace92fc72d41b41b68f5b981dc7619d1b0253c82989465bcf0972644d36b54c0e31ce289f8abdde1bb01d50883011a186a32ea7d989ec4a570f252c878588ccf44d410cc2544d3f1e1d9b9790d670b0f52f320bc80dd2cc98adea416fa94858af43b3cd9c5b494b3f9393a55f85615be62c707ef11168186497a7ca5511f1db18031cba13b3bf67fc1363f636e1781f7ff540b7bba7c1bd48dcd2814599bc8c8e44db44b9912e398ca33b7f67d187d4e8dffb6ffe7d93921ebb94ed13893007047b453483fa3fe125d2d95fbaf8cf2948dea2efa241e7313",
+      "cargo": {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+        "cells": "",
+        "standings": [
+          {
+            "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+            "commitment": "290d6caefb277537554cc8f48597206e9b5ca2975dc81dc4c8f66662570b4d64",
+            "name": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+            "beings": ["8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c"],
+            "mark": "1",
+            "spent": [],
+            "padlock": "5a13b7a05e31ae998ad1307217981bb23bb17d277465829edd616e9169c8f46e",
+            "hints": []
+          }
+        ],
+        "relations": []
+      }
+    },
+    {
+      "name": "a blueprint is answered to someone who reaches that class",
+      "law": "The describe",
+      "obligations": ["X-3", "X-5"],
+      "derivation": "Article X: \"A blueprint — asked for by its digest, and answered only if the asker already reaches a being of that class or the warden's own public being declares it.\" The holder reaches the Counter being, so it may have the Counter text. The field is `blueprint(digest b32) text?` (Article IX), so the answer's data is an optional text present — Article XI: \"An answer's data is the field's declared answer type by the notation's rules.\" The text is the blueprint in the form its digest is taken over: this scenario's blueprints are authored already in canonical form, so the case does not turn on whether a door answers the authored text or the canonical one, which the law does not rule.",
+      "seq": "2",
+      "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+      "expect": "ffc951aa6f2fa03096d1d1b579735b2f6f84019fe2f617aa65ff3d68705f2527aa3eb6095a3c14d7cfe5181e9e2a6280ab5cce99ef46018a7c079859c2c9288e751777d2a570e1646bfd66486615f422b9d8b065adf26b2542aeabeda5b685853cc772a7de6071affe90c5bb0acbb73b1e6e990a3bc71b46045c073a56f864db3a75054c8f01a8b60cea043129f1a4f7a1be4ea44877b9f79ea39e7a60ffffd9ccd09e611610a21dd50736d2f9f9ec83478481106cecb7a2301230edd23809efab1b8cb01d1db6c1491ef64b87ce5b5e4acdb313",
+      "give": "f13fef3efa9598a2a23fc756bf688fe8bbd7f6cf9528bbaef3b4442688f0ab31196ae7f852280ff0a134dde4874f37ac993ecd39e66a52f7083bbbf6fe18ae89fd5d3ab7aff40c3031ede5ef48665a01a65e999e60fcd656c8c9e469957f59065c899a8ba0343ad3e290f075dbbf6fa96bb52229445cd03e4f2da1a864566a16e7154fc311ac26c8b35cabce91b1f84896be820a034a8d0524114777a8a4d8f00c2c1a3f6b7b220acb23bf4638a21e574dd8caa2002550085234601601cd014a694c8d418065769241066780e88315f695642d6a1fb1b371743886bf9d31930f73875897c0761eb59124ecb6e0ba7f6abf6c739c8e2cb0048ff9a33a74f4e227c0611eb4373bb4ba9e05adb8bd8e3b7bd969b36485b32fbfde2d3bab0f9bdd88b7ff724241e0d0a6932345ef45dafee4d0d07119d85e7728c5d318e7549b172838ec9503120d63a6f78c931acb",
+      "cargo": {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+        "cells": "",
+        "standings": [
+          {
+            "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+            "commitment": "290d6caefb277537554cc8f48597206e9b5ca2975dc81dc4c8f66662570b4d64",
+            "name": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+            "beings": ["8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c"],
+            "mark": "2",
+            "spent": ["1"],
+            "padlock": "5a13b7a05e31ae998ad1307217981bb23bb17d277465829edd616e9169c8f46e",
+            "hints": []
+          }
+        ],
+        "relations": []
+      }
+    },
+    {
+      "name": "absence is an answer, and it is not silence",
+      "law": "The describe",
+      "obligations": ["X-6"],
+      "derivation": "Article X: \"Silence and absence are two different answers. Silence is for what a voice may not reach. An absent optional is a legal answer to a legal ask: nothing has moved, so `moved` answers absence.\" The being has not moved, and the holder reaches it, so the ask is legal and the answer carries the field's declared type — `word?` from Article IX — with the optional absent. So the answer's data is present and is one byte, the absent flag, and not an absent `data`: `data` is absent where a field answers nothing at all, and `moved` answers something.",
+      "seq": "3",
+      "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+      "expect": "627967ac833d07ad274bdfb6fb7ba2a336780e721e82f1447e859bf90a69ad62740899b0370f362973ab3bee9096813342a58b715c0fc0a62c712dc0c83c00e479aaf94a92ea83d82a7a191e04ec2dc3fa7a1d390252dbdd51ba0e81c1275bc89e413d6dd316455b59a6c00d925338cc9d3b25ca4d7677195cb9d83dde6b9dd8e0d4cd024ef2529b3e8d7846421870cefa334c09de3ffcaf3742c4c0761fd7a430b57b",
+      "give": "72caf0575187341305b0350744395862aebe978b3b2cd7963575251a0ee4e4667334b45f186f9be098042348b3f3957ce50a33f9ef7ce9a38a0ada59d8e26f69a0abc4cb58b90cd3a5c23b9b36d57459eee886cbccedd3ae63a07be450bd2c006a6d7e4513561113f483d3e590c5677237e7fc8979779a39a6fc30887db7c39d644f7f5f4764c2d171e0c10eee9982fcf2a7ca1dcac1ba5f0c5c1b54b32dae44a0eb2417a2d3a3fdaecd5462a966857b486ce56c11a6f23f01316d3319b16eb0b2d479bc723c9999481eb96cd9901e5d3b8dda67b08d2cc4872360b779390f28e5fe863bb7c24a2803b6727c836720abc5048a5eb8e9f5cbb2410de06fd618cde9b7b84bc274d840352fb792bf4588fcca8a4acf6a06b438f94a96687cdd2fc7face93034eab0649157745f158c0ef188119463b0a7c8b2895f6863336f51a91e728bd146ac90185b7",
+      "cargo": {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+        "cells": "",
+        "standings": [
+          {
+            "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+            "commitment": "290d6caefb277537554cc8f48597206e9b5ca2975dc81dc4c8f66662570b4d64",
+            "name": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+            "beings": ["8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c"],
+            "mark": "3",
+            "spent": ["1", "2"],
+            "padlock": "5a13b7a05e31ae998ad1307217981bb23bb17d277465829edd616e9169c8f46e",
+            "hints": []
+          }
+        ],
+        "relations": []
+      }
+    },
+    {
+      "name": "a blueprint nobody reaches meets silence",
+      "law": "The describe",
+      "obligations": ["X-3", "X-6"],
+      "derivation": "The stranger asks for the Ledger digest. It reaches no being of that class — its estate is the public being alone — and the warden's own public being does not declare it, so Article X says \"Otherwise silence.\" Not an absent answer: \"A door that answered \\\"absent\\\" about a being you do not reach would be a door confirming that being exists.\" This is the only unanswered exchange in the scenario and it is last, because no answer after a silence could have its bytes pinned.",
+      "seq": "1",
+      "expect": "silence",
+      "voice": "efc15f8742c6c2755887d9e83884dd30b69d25548ef299cdd296053be9c0df99",
+      "give": "973ac258850f1ca00630b7aaa5cd9ab76ef29265eb81061618b7874cfa2ba1560a1a165fda233edaf74ee52e9052bbe16159b28d5025e9325e16366585ad626e601870f0235d6a1b9975f1a4c6d6779c9ad7c198e235faff45ecfbd014d8bce896e6c6c268a5df9a4684735dcefb97e44589916eea555dcf74d91052b273ec30bee3f24d481a4e121d8b9d78ebbbaea8864f2527eccacfc9f02e1c5af74ca284942487e11d477f86b0cdc36ce43e2a98510512f6742fa2179f23a7ade44f3de80b505ebb57af46786cf0963d2186f3320580557ab96a7d13839498bde6398ea138bb9acd70093ad5f9b2bb4d1027c8f20c7813ae042d84e04f2780deccae919e1483710f92612d0d2b33a32b6d5e8959edaaeeea64da0119e03b4e75938aff463b1373b407bbbb581f24eb1b74588af47958d20ee64f9adaa718e52ff0ba173bee45296e2901619dded74011d0",
+      "cargo": {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+        "cells": "",
+        "standings": [
+          {
+            "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+            "commitment": "290d6caefb277537554cc8f48597206e9b5ca2975dc81dc4c8f66662570b4d64",
+            "name": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+            "beings": ["8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c"],
+            "mark": "3",
+            "spent": ["1", "2"],
+            "padlock": "5a13b7a05e31ae998ad1307217981bb23bb17d277465829edd616e9169c8f46e",
+            "hints": []
+          }
+        ],
+        "relations": []
+      }
+    }
+  ]
+}

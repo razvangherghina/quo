@@ -172,6 +172,9 @@ pub const At = struct {
 /// What a being holds so it can reach Quo outside a call — from a clock, an
 /// event, or a walk of its own. It is filled in when the warden takes the
 /// object up, and is nothing at all until then.
+///
+/// A class carries it as `_quo: quo.Cell = .{}`, and under that name it can
+/// never collide with a field the class declares.
 pub const Cell = struct {
     door: ?*warden.Warden = null,
     being: Key = std.mem.zeroes(Key),
@@ -183,6 +186,13 @@ pub const Cell = struct {
         return .{ .door = door, .being = self.being, .gpa = gpa };
     }
 };
+
+/// What one far call met: the value or nothing, and whether that nothing was
+/// a road that never carried rather than the far door's silence. **The second
+/// half never leaves this ground** — outward the two are one, as they must be.
+fn Met(comptime A: type) type {
+    return struct { value: ?A, weather: bool };
+}
 
 // -------------------------------------------------------------- the handle
 
@@ -352,9 +362,13 @@ pub const Handle = struct {
             .far => {
                 var sealed = try self.seal(gpa, name, args);
                 defer if (sealed) |*one| one.deinit(gpa);
-                const answered = try self.send(gpa, A, name, sealed);
-                if (answered == null) self.follow(gpa);
-                return answered;
+                const answered = try self.met(gpa, A, name, sealed);
+                // **Weather is not the far door's silence**: no road carried
+                // the bytes, so nothing there moved and there is nothing to
+                // ask after. The handle keeps its shape and answers nothing;
+                // the ground was told the road's fault inward.
+                if (answered.value == null and !answered.weather) self.follow(gpa);
+                return answered.value;
             },
         }
     }
@@ -436,22 +450,45 @@ pub const Handle = struct {
         name: []const u8,
         sealed: ?warden.Warden.Sealed,
     ) Fault!?A {
+        return (try self.met(gpa, A, name, sealed)).value;
+    }
+
+    /// The same send, keeping what only this ground learns: whether the
+    /// nothing it answers was the far door's silence or a road that never
+    /// carried. Outward the two are one, which is what `send` answers.
+    fn met(
+        self: Handle,
+        gpa: std.mem.Allocator,
+        comptime A: type,
+        name: []const u8,
+        sealed: ?warden.Warden.Sealed,
+    ) Fault!Met(A) {
+        const nothing: Met(A) = .{ .value = null, .weather = false };
         switch (self.reach) {
-            .near => return null,
+            .near => return nothing,
             .far => |far| {
-                const s = sealed orelse return null;
-                var shape = notation.parse(gpa, far.text) catch return null;
+                const s = sealed orelse return nothing;
+                var shape = notation.parse(gpa, far.text) catch return nothing;
                 defer shape.deinit();
-                const field = fieldOf(shape.class, name) orelse return null;
+                const field = fieldOf(shape.class, name) orelse return nothing;
 
                 // The door takes its own turn here: sending gives it up
                 // around delivery and waits for the answer without it, so a
                 // caller that held it would be holding the door against the
                 // very road that must bring the answer in.
-                var opened = (self.door.sendSealed(gpa, s) catch null) orelse return null;
-                defer opened.deinit();
-                const data = opened.payload.answer.data orelse return null;
-                return try readAnswer(A, gpa, field, shape.records, data);
+                var said = self.door.sendSaid(gpa, s) catch warden.Warden.Said.silence;
+                switch (said) {
+                    .silence => return nothing,
+                    .weather => return .{ .value = null, .weather = true },
+                    .answered => |*opened| {
+                        defer opened.deinit();
+                        const data = opened.payload.answer.data orelse return nothing;
+                        return .{
+                            .value = try readAnswer(A, gpa, field, shape.records, data),
+                            .weather = false,
+                        };
+                    },
+                }
             },
         }
     }
@@ -794,8 +831,15 @@ pub fn organ(comptime T: type, object: *T) warden.Organ {
 /// Every being carries one field of this kit's own: the cell that says which
 /// warden holds it and under what name. It is the only thing Quo asks of a
 /// class, and it is filled in by the warden rather than by the author.
+///
+/// **It is named `_quo` because the notation cannot spell that.** Article IV's
+/// identifier is a letter then letters and digits, so no blueprint in any
+/// language declares a field beginning with an underscore. Zig refuses a
+/// struct carrying both a field and a decl of one name, so a cell named `quo`
+/// would make a blueprint declaring `quo()` impossible to write a class for —
+/// a name the law allows that this kit could not serve.
 fn cellOf(object: anytype) *Cell {
-    return &object.quo;
+    return &object._quo;
 }
 
 // ------------------------------------------------------- holding a being
@@ -828,7 +872,7 @@ pub fn holding(
         return why;
     };
     door.give();
-    object.quo = .{ .door = door, .being = pk };
+    object._quo = .{ .door = door, .being = pk };
     return .{
         .door = door,
         .under = .{ .door = door, .being = pk, .gpa = gpa },
@@ -1005,32 +1049,16 @@ fn forget(door: *warden.Warden, at: usize) bool {
     return door.drop(at);
 }
 
+/// One rotation down a relation, recovered where its answer is lost: the
+/// warden holds the whole of it, because the trap it walks around is the
+/// judgment's own (Article VIII).
 fn rotateAt(
     door: *warden.Warden,
     gpa: std.mem.Allocator,
     at: usize,
     budget: warden.Allowance,
 ) Fault!?envelope.Opened {
-    door.take();
-    const roads = try door.roads(gpa);
-    defer gpa.free(roads);
-    const sealed, const seq = door.rotate(gpa, at, door.random(), door.random(), .{
-        .allowance = budget,
-        .hints = roads,
-    }) catch {
-        door.give();
-        return null;
-    };
-    var s: warden.Warden.Sealed = .{
-        .at = at,
-        .seq = seq,
-        .envelope = sealed,
-        .deadline = door.clock() + budget.time,
-    };
-    defer s.deinit(gpa);
-    // Composed with the door's turn in hand, sent without it.
-    door.give();
-    return door.sendSealed(gpa, s) catch null;
+    return door.rotating(gpa, at, budget) catch null;
 }
 
 fn askBlueprint(

@@ -93,14 +93,40 @@ pub struct Way {
 pub struct Via(pub u64);
 
 /// What a road did with an envelope handed to it.
+///
+/// **Weather is not silence** (Article III). A road that never carried the
+/// bytes means the far door never heard, so nothing moved there and the
+/// caller may retry with exactly what it holds; the far door's silence means
+/// it heard and said nothing, and the number is spent over there. A caller
+/// that cannot tell the two apart cannot tell a safe retry from one that
+/// retires its own key, so delivery names which it was.
 pub enum Carried {
     /// The road answered in its own response — the common carriage's way.
     Answer(Vec<u8>),
     /// The road carried it, and the answer will come back through the door as
     /// a frame of its own — a line's way.
     Later,
-    /// Nothing carried. Weather, and the number was spent.
+    /// The road carried it and the far door answered nothing.
     Silence,
+    /// A road was tried and broke: nothing arrived anywhere. `tried` is the
+    /// roads actually tried, never one walked past because nobody here could
+    /// speak it.
+    Weather { tried: Vec<String> },
+    /// No road at all: every hint offered was one this ground cannot speak,
+    /// and there was no line to fall back to. Nothing was sent, so no door
+    /// spoke and no road broke — neither silence nor weather.
+    NoRoad { hints: Vec<String> },
+}
+
+/// What one say came back as, as the caller's side of the warden holds it.
+/// **Weather is kept apart from silence** all the way up, because the next
+/// move differs: silence may mean the far door judged the say and answered
+/// nothing, so a rotation cannot simply be sent again; weather means no door
+/// heard it at all.
+enum Said {
+    Answered(Answer),
+    Silence,
+    Weather,
 }
 
 /// Beneath the warden, and the only thing here that reads a hint.
@@ -168,12 +194,15 @@ impl Store for Memory {
 }
 
 /// A delivery that carries nothing: the ground publishes no road and dials
-/// none. Every send is weather.
+/// none. It can speak no road at all, so every send is no road — which is
+/// neither the far door's silence nor a road that broke.
 pub struct Nowhere;
 
 impl Delivery for Nowhere {
-    fn send(&self, _way: &Way, _envelope: &[u8]) -> Carried {
-        Carried::Silence
+    fn send(&self, way: &Way, _envelope: &[u8]) -> Carried {
+        Carried::NoRoad {
+            hints: way.hints.clone(),
+        }
     }
 }
 
@@ -1085,6 +1114,28 @@ impl Warden {
         now
     }
 
+    /// A rotation, and the recovery the trap needs.
+    ///
+    /// Article VIII's trap is that the rotation lands at step 4 and the number
+    /// is judged at step 5, so a silence back may mean the takeover already
+    /// happened and only the answer was lost. Giving up there throws away a
+    /// standing the far door now holds — on keys only this ground has seen,
+    /// and unreachable by any retry of the invitation — while the key the
+    /// granter minted stays live over there. And the rotation cannot simply be
+    /// sent again: if it did land, this voice is the holder now, and a holder's
+    /// say carrying a commitment is refused as a plain ask carrying one
+    /// (Article XI), now and every time after.
+    ///
+    /// So the recovery is the one the law names — ask again on the new voice.
+    /// A plain ask, signed by the key that signed the rotation, at the number
+    /// after it: answered, the takeover had landed and that answer is the
+    /// answer. Silent, it had not — a voice still matching the heir commitment
+    /// and carrying no fresh one is refused — so the same rotation goes once
+    /// more, signed by the same key and committing the same heir. Three sends,
+    /// then the kit stops guessing.
+    ///
+    /// Weather is never tried again from here: the far door never heard, so
+    /// nothing there moved and the caller retries with exactly what it holds.
     fn rotate(&self, at: usize, reach: &Reach) -> Option<Answer> {
         let next = self.0.random.draw();
         let ephemeral = self.0.random.draw();
@@ -1092,25 +1143,66 @@ impl Warden {
             let mut state = self.state();
             state.door.rotate(at, &ephemeral, &next, reach).ok()
         }?;
-        self.put(at, composed.0, composed.1)
+        match self.put(at, composed.0, composed.1) {
+            Said::Answered(answer) => return Some(answer),
+            Said::Weather => return None,
+            Said::Silence => {}
+        }
+        // The row already stands on the rotation's signer, so an ordinary ask
+        // is signed by exactly the voice the far door would hold if the
+        // rotation landed.
+        let plain = Reach {
+            next: None,
+            seq: None,
+            ..reach.clone()
+        };
+        match self.said(at, &plain) {
+            Said::Answered(answer) => return Some(answer),
+            Said::Weather => return None,
+            Said::Silence => {}
+        }
+        let committed = self.state().door.outbound.get(at)?.heir;
+        let again = Reach {
+            next: Some(committed),
+            seq: None,
+            ..reach.clone()
+        };
+        match self.said(at, &again) {
+            Said::Answered(answer) => Some(answer),
+            _ => None,
+        }
     }
 
     fn spend(&self, at: usize, reach: &Reach) -> Option<Answer> {
+        match self.said(at, reach) {
+            Said::Answered(answer) => Some(answer),
+            _ => None,
+        }
+    }
+
+    /// Compose one ask down a relation and send it, keeping the three outcomes
+    /// apart for the callers whose next move differs by which it was.
+    fn said(&self, at: usize, reach: &Reach) -> Said {
         let ephemeral = self.0.random.draw();
         let composed = {
             let mut state = self.state();
             state.door.ask(at, &ephemeral, reach).ok()
-        }?;
-        self.put(at, composed.0, composed.1)
+        };
+        match composed {
+            Some((envelope, seq)) => self.put(at, envelope, seq),
+            None => Said::Silence,
+        }
     }
 
     /// Hand a composed envelope to delivery and wait for whatever answers it.
     /// **`seal` and `send` are two halves apart**, so a caller that met
     /// silence can resend the identical envelope: this is the second half.
-    fn put(&self, at: usize, envelope: Vec<u8>, seq: i64) -> Option<Answer> {
+    fn put(&self, at: usize, envelope: Vec<u8>, seq: i64) -> Said {
         let (way, far, deadline) = {
             let state = self.state();
-            let row = state.door.outbound.get(at)?;
+            let Some(row) = state.door.outbound.get(at) else {
+                return Said::Silence;
+            };
             (
                 Way {
                     padlock: row.padlock,
@@ -1127,12 +1219,20 @@ impl Warden {
             .expect("the asks awaiting")
             .insert(key, None);
         let back = self.0.delivery.send(&way, &envelope);
+        // Weather is reported inward and never made to look like the far
+        // door's silence: the observer is told which it was, and the ask is
+        // forgone. Nothing crosses the wire for it.
+        let weathered = match &back {
+            Carried::Weather { tried } => Some(format!("weather: {}", tried.join(" "))),
+            Carried::NoRoad { hints } => Some(format!("no road: {}", hints.join(" "))),
+            _ => None,
+        };
         let bytes = match back {
             // A road that answers in its own response has answered: bytes, or
             // the empty body that is silence's wire form.
             Carried::Answer(bytes) if bytes.is_empty() => None,
             Carried::Answer(bytes) => Some(bytes),
-            Carried::Silence => None,
+            Carried::Silence | Carried::Weather { .. } | Carried::NoRoad { .. } => None,
             // A road that answers through the door: wait for the frame.
             Carried::Later => self.wait(key, deadline),
         };
@@ -1141,17 +1241,28 @@ impl Warden {
             .lock()
             .expect("the asks awaiting")
             .remove(&key);
+        if let Some(why) = weathered {
+            {
+                let mut state = self.state();
+                state.door.forgo(at, seq);
+            }
+            let _: Option<()> = self.hush(&why);
+            return Said::Weather;
+        }
         match bytes {
             None => {
                 let mut state = self.state();
                 state.door.forgo(at, seq);
-                None
+                Said::Silence
             }
             Some(bytes) => {
                 let mut state = self.state();
                 match state.door.hear(at, &bytes) {
-                    Ok(answer) => Some(answer),
-                    Err(Refused(why)) => self.hush(&why),
+                    Ok(answer) => Said::Answered(answer),
+                    Err(Refused(why)) => {
+                        let _: Option<()> = self.hush(&why);
+                        Said::Silence
+                    }
                 }
             }
         }
@@ -1507,9 +1618,14 @@ impl Handle {
                 row.awaiting.insert((padlock, sealed.seq));
             }
         }
+        // The handle keeps its shape — a value or silence — because a being
+        // pushing into a subscriber that closed its tab is not in error. What
+        // changes is inward: weather told the ground's own observer, and no
+        // `moved` asked down a road that just failed.
         let answer = match self.warden.put(at, sealed.envelope.clone(), sealed.seq) {
-            Some(answer) => answer,
-            None => {
+            Said::Answered(answer) => answer,
+            Said::Weather => return None,
+            Said::Silence => {
                 self.met_the_move(at);
                 return None;
             }

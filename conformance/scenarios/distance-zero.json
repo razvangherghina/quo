@@ -1,0 +1,178 @@
+{
+  "scenario": "distance-zero",
+  "law": "https://github.com/razvangherghina/quo/blob/main/constitution.md",
+  "encoding": "hex",
+  "about": "Article III's own carriage, and the only one a contract that refuses sockets can drive. The law names distance zero a carriage like any other and then says the thing worth saying about it: it waives no step. What the corpus cannot hold is either half — that a door ran every step when no wire existed to make it, and that it reached the same verdict it would have reached with different bytes in a field it is forbidden to read.",
+  "stand": {
+    "warden": {
+      "nameSeed": "196982eee79e80efbc3131c93b99285a38c540c43e7e4fbb8399c260b1ce5103",
+      "padlockSeed": "7dbcdb3088339c02378f46525bff3fe2b84515973e28f5814301a99f386e20b1",
+      "heirSeed": "0303030303030303030303030303030303030303030303030303030303030303",
+      "heirCommitment": "83f960da653b61eb63f6b53b5d80adeb377e23e569f1c555395b9b119ad69603",
+      "limit": "1048576",
+      "hints": []
+    },
+    "beings": [
+      {
+        "seed": "0101010101010101010101010101010101010101010101010101010101010101",
+        "heirSeed": "0202020202020202020202020202020202020202020202020202020202020202",
+        "blueprint": "Counter\n  bump(by int) int\n  count() int\n",
+        "cells": ""
+      }
+    ],
+    "grants": [
+      {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "voiceSeed": "2ebd74bd564a8771fa628b28308c588588f5c0d0db17ae06b045b896d8218ad7",
+        "heirSeed": "7bae8096dc92d5f4e271742fd8db51abd563a8976c223dd734f1d2bdd553093c",
+        "padlock": null,
+        "hints": []
+      }
+    ],
+    "clock": [
+      "1000",
+      "1001",
+      "1002",
+      "1003",
+      "1004",
+      "1005",
+      "1006",
+      "1007",
+      "1008",
+      "1009",
+      "1010",
+      "1011",
+      "1012",
+      "1013",
+      "1014",
+      "1015",
+      "1016",
+      "1017",
+      "1018",
+      "1019",
+      "1020",
+      "1021",
+      "1022",
+      "1023",
+      "1024",
+      "1025",
+      "1026",
+      "1027",
+      "1028",
+      "1029",
+      "1030",
+      "1031",
+      "1032",
+      "1033",
+      "1034",
+      "1035",
+      "1036",
+      "1037",
+      "1038",
+      "1039"
+    ],
+    "random": [
+      "3232323232323232323232323232323232323232323232323232323232323232",
+      "3333333333333333333333333333333333333333333333333333333333333333",
+      "3434343434343434343434343434343434343434343434343434343434343434",
+      "3535353535353535353535353535353535353535353535353535353535353535",
+      "3636363636363636363636363636363636363636363636363636363636363636",
+      "3737373737373737373737373737373737373737373737373737373737373737",
+      "3838383838383838383838383838383838383838383838383838383838383838",
+      "3939393939393939393939393939393939393939393939393939393939393939",
+      "4040404040404040404040404040404040404040404040404040404040404040",
+      "4141414141414141414141414141414141414141414141414141414141414141",
+      "4242424242424242424242424242424242424242424242424242424242424242",
+      "4343434343434343434343434343434343434343434343434343434343434343"
+    ]
+  },
+  "unruled": [],
+  "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+  "opening": {
+    "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+    "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+    "cells": "",
+    "standings": [
+      {
+        "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+        "commitment": "290d6caefb277537554cc8f48597206e9b5ca2975dc81dc4c8f66662570b4d64",
+        "name": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+        "beings": ["8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c"],
+        "mark": "0",
+        "spent": [],
+        "padlock": null,
+        "hints": []
+      }
+    ],
+    "relations": []
+  },
+  "beingCommitment": "ed4d580bb287b98674376c30d750d9926617873de8787e518c58c320d1899cbd",
+  "exchanges": [
+    {
+      "name": "a hint the protocol cannot parse changes no judgment",
+      "law": "The carriage",
+      "obligations": ["III-30", "VII-4", "III-24"],
+      "derivation": "An ordinary ask carrying three hints: one with a scheme no kit speaks, one that is not a road at all, and one that is empty. Article III: \"A hint is where to send bytes, and the judgment never reads one. It is an opaque string the carriage understands and the protocol does not parse: nothing inside a hint reaches a warden, and no ruling anywhere turns on what one says.\" So the judgment is the judgment it would have been with no hints at all, and the answer is the estate this voice reaches. What the door may do with them is keep them: Article VII has the way back refreshed by every call that arrives, and \"the padlock and hints the payload carried replace what the row held.\" So they land in the row **verbatim, unparsed and unvalidated** — a door that dropped the ones it could not understand would have read them to decide that. **The fourth hint is a different claim and is why it is here.** Article III: \"**A hint is matched byte for byte as written** — case, leading zeros and all\". It is spelled `TCP://Example.INVALID:00080?cap=0016384` — an upper-case scheme, a mixed-case host, a port written with a leading zero and a cap with two — and every one of those is something a kit that treated a hint as an address would tidy on the way in. **A door that lower-cased a scheme, or stripped a leading zero, or re-emitted a parsed cap in canonical form, fails on this string and on nothing else in the suite**: the other three hints survive canonicalisation unchanged, which is exactly why they cannot carry this obligation and this one can. The rule matters because two spellings of one road are two roads by that same sentence, so a door that normalises has silently merged roads its peer published apart.",
+      "seq": "1",
+      "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+      "expect": "59d9225473451efffe6b36dbcaefdbf7b1895de62084509a7f5b58bf01d064183d0e9f38364e65372817fc540a351551a7cad5c13b5594def61c92d544afecd572a652e3c1fdc5aa70a7624ece29b926de511f4f09cbc1a64ecef462469a0fa6762abd1b178f8c304f9afb50ad850c3a19b73695575f041ff6dfd6886586fbb5d15306dc065899463987f3ae1df8254e9f348f6fec9ff46be5f32c8f6624ca803022d2289e2528e9d72f1d4d7c2b09485f9d2f08d4365c4879624a24e3c817256be3870664c7e4b338a0574f23b088805349556c0ea7f30624d23ff3558ddfe0db140d38dfdc93c462460b5887db3f994cee24dab5633205988e0f10564c256925e7fa15887c5ae2c18e145ff47cc04a483f4a8b5681d5ad14aa898c7c67b50b5c77d3b536f91851a39138adb61f411ee3a2d826dc49651b2e9aee9b80c3341bf47ba1a3d355d603f7180b5c60b52cf7eab58f70df26e986204b9dc456b0e04a104934854c6af7b5fef0973530aa58fec8b9bcf346288f0ce0c7",
+      "give": "95f4eafe1fe1b695e4bd27fc3838c527b1945afc455ee2b0e0f81bdffbadce24c3e903caf9a13a9a2f14c35d126fee5ac5f2eafcc31a423cadcb994e7814086c450db2c5b02b97fd39ba92cac880eff19de483a4b49269232167820749f11c82780cbd367d82609cd1913e8929eafeebbb31c105108a43e31c907d246e83187d824006700aa51f92cf085069b2ef134e1f14c5ec2833cf28044b4c026edd10752ac1a6aa7b40279b10169d817a2461f74b2ff01a66f4f038231415cd6cd4a2ecf04cde040a8bc5a20bc8b1b2b919e871eb37b2d3d2bf1a038688f68f5766301320813f4602bfebb63474435363ddac7f2844c273a5fe2f9233e633ff4dcb96917ae0e49a6dd95f0287dfd792dbe1af8bb6e0492fd0e5ccef9e92e5600999684cf322edafaec0a09a5ac5c1574eeadb0239b7f72df1fde535fda344de3687904a9cf3c6a476273b4a1675b71fc033e5cc47f87c6f9ebdfeac7c400ab99549ec68b30eeba1123b28b8bbaba0e7a76989d2e18ba911dc7a1fcb493cfa3ad2ee5a",
+      "cargo": {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+        "cells": "",
+        "standings": [
+          {
+            "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+            "commitment": "290d6caefb277537554cc8f48597206e9b5ca2975dc81dc4c8f66662570b4d64",
+            "name": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+            "beings": ["8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c"],
+            "mark": "1",
+            "spent": [],
+            "padlock": "5a13b7a05e31ae998ad1307217981bb23bb17d277465829edd616e9169c8f46e",
+            "hints": [
+              "gopher://nowhere.invalid:70",
+              "not a road at all",
+              "",
+              "TCP://Example.INVALID:00080?cap=0016384"
+            ]
+          }
+        ],
+        "relations": []
+      }
+    },
+    {
+      "name": "distance zero waives no step, so a payload addressed elsewhere is still silence",
+      "law": "The carriage",
+      "obligations": ["III-27", "XII-2", "I-7"],
+      "derivation": "**Article I decides the shape of this whole scenario before Article III does.** \"Two beings under different wardens are signed by the caller, sealed to the recipient, and judged from the seal alone — whether or not a network lies between them.\" Every envelope here is sealed and signed and judged from the seal, and **there is no network anywhere in this scenario**: the bytes are handed straight to the door. So the clause that matters is the last one, and a kit that made the seal conditional on a wire — trusting what arrived in its own process — would answer this message instead of refusing it. The same ask, the same hints, the same voice — and a recipient that is neither this door's name nor its padlock. Article III rules the road this arrives on directly: \"**What is law is this: distance zero waives no step of the judgment.**\" There is no wire here and nothing to disagree about, and a kit that trusted bytes handed to it inside one process would skip the check and answer. It must not: the recipient check is step 3 and it runs. So this is silence — and the row still holds the hints the exchange above taught it, because \"a payload addressed elsewhere must never touch this house's records\" and step 5, where the way back is refreshed, is never reached. The pair is the point: two messages differing in one field, one answered and one silent, both at distance zero, and the hints identical in each so that nothing about them can be what decided it.",
+      "seq": "2",
+      "expect": "silence",
+      "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+      "give": "2ea20c093a1201cc85bfefc8eb4673b90b23b6c0038fa2b5b5c5a78b73800910a1829c9c47f03d313df33c347b7c3eefe254c09c4b52d14beeb18ced1d8de4978042abff149263a89e10a83ba184c81d5784b84d52578eb5744c12f4b7f6d6752efc0616b044a838891b5045d3669408146d91ed5b6e5226a408d17a45dc6a674bdd39b69195ac1e6e03e008a281a630668d77825aca08a7a2a99ec6fc6961b45a70c5dc340c5a5ac959eb1d39f2400680bc52515343821e3391dcd2ea669462e4892f157e045cdba10db5fc8f789d1f55723357134e82af1e5376eea5ed527d0e0212d3fc0259069a4f81fd5b75d41b7c080add6445b39ceeec9e5a2e5510241531c1b4c19083cf1671487fede4dc547e1ae2e9e0095544d1cc8b602e5e8ed678208f5a0aa9b4b3a0c7d201760bb0505c563069618b241ec76266e3ff398f1040724034a7a8062dc6e173892e954e5c03ee25de8ab30efb6bc3b055df2bd8fcbbb1498c54074b5371b905f1359eb6a3d6234643664628471f6f20aafe8c00",
+      "cargo": {
+        "being": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+        "digest": "1ce9ee40cfefd45f537e2c3c75d07c891ca3cc0f1c68d0e15ef9c8758977ebb2",
+        "cells": "",
+        "standings": [
+          {
+            "voice": "be6615086e715c9cea8856a892c7e363cc2401b5edccadb49b347a8bee22c6e2",
+            "commitment": "290d6caefb277537554cc8f48597206e9b5ca2975dc81dc4c8f66662570b4d64",
+            "name": "eb8478a4581b4db71bb278c675047a66577e0d762cc18ebc5220543708d0df5b",
+            "beings": ["8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c"],
+            "mark": "1",
+            "spent": [],
+            "padlock": "5a13b7a05e31ae998ad1307217981bb23bb17d277465829edd616e9169c8f46e",
+            "hints": [
+              "gopher://nowhere.invalid:70",
+              "not a road at all",
+              "",
+              "TCP://Example.INVALID:00080?cap=0016384"
+            ]
+          }
+        ],
+        "relations": []
+      }
+    }
+  ]
+}
