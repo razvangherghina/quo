@@ -1,0 +1,92 @@
+{
+  "corpus": "@quo-systems/quo",
+  "encoding": "hex",
+  "area": "framing",
+  "note": "The formats a second kit must reproduce byte for byte: the ward pk, the digest, the signed ask body, the sealed ask, the sealed reply, the invitation and the knock. Every random input is fixed here, so every output is fixed. The ask body is JSON.stringify of the payload with the heir it is for in front, which is not canonical: these vectors pin the key order sealAsk writes, to, by, next, seq, time, method, args, and to is signed with the rest, null for nobody; hops is in no vector, because nothing sets it. The two signed bodies are the bytes inside the two sealed asks. A kit that emits another order still interoperates, because a door verifies the bytes it received, but it will not reproduce these vectors. An invitation is JSON too, ward, heir, secret, and a heir secret is the seed of a being key. A knock is an ask whose by is the heir pk, signed with the heir secret, whose next is the knocker's own key, and whose to is the heir; its answer is an ordinary reply, and the heir is spent by it. A reply is one of three shapes: an object with its digest, silence, or the ward's word to a key the door has bound, { quo: word }, where word is one of removed, absent, unannounced, repeated, threw. The ward here is the one from the ward pk vector, and the heir secret is the first entropy it draws, so the invitation it mints and the knock its door binds are these bytes.",
+  "vectors": [
+    {
+      "name": "a ward pk from a fixed seed",
+      "seed": "1111111111111111111111111111111111111111111111111111111111111111",
+      "pk": "6d773f8156c80eb9f34d0734e889d824a0d0515f527b853771208ef1ed3feb281fc3da3532de3b20deafd145e30c3de979917e96c22f6c3113a731379eeb3200",
+      "signPk": "6d773f8156c80eb9f34d0734e889d824a0d0515f527b853771208ef1ed3feb28",
+      "padlockPk": "1fc3da3532de3b20deafd145e30c3de979917e96c22f6c3113a731379eeb3200"
+    },
+    {
+      "name": "a being key from a fixed secret",
+      "secret": "2222222222222222222222222222222222222222222222222222222222222222",
+      "pk": "a09aa5f47a6759802ff955f8dc2d2a14a5c99d23be97f864127ff9383455a4f0"
+    },
+    {
+      "name": "the digest is SHA-256 of the canonical form",
+      "blueprint": "{\"asks\":{\"hello\":{\"note\":\"z\"}},\"note\":null,\"list\":[1,2]}",
+      "canonical": "{\"asks\":{\"hello\":{\"note\":\"z\"}},\"list\":[1,2],\"note\":null}",
+      "digest": "269c9e90f39f6fcae9deab916e3a4148788dec5ba0d06023edc8e52180c773db"
+    },
+    {
+      "name": "the digest where JCS is hard: UTF-16 key order and ES numbers",
+      "blueprint": "{\"asks\":[],\"notes\":{\"1\":\"One\",\"\u20ac\":\"Euro Sign\",\"\\r\":\"Carriage Return\",\"\ufb33\":\"Hebrew Letter Dalet With Dagesh\",\"\ud83d\ude00\":\"Emoji: Grinning Face\",\"\u0080\":\"Control\",\"\u00f6\":\"Latin Small Letter O With Diaeresis\"},\"numbers\":[1e+21,0,0.1,1e-7,9007199254740992,0.3333333333333333]}",
+      "canonical": "{\"asks\":[],\"notes\":{\"\\r\":\"Carriage Return\",\"1\":\"One\",\"\u0080\":\"Control\",\"\u00f6\":\"Latin Small Letter O With Diaeresis\",\"\u20ac\":\"Euro Sign\",\"\ud83d\ude00\":\"Emoji: Grinning Face\",\"\ufb33\":\"Hebrew Letter Dalet With Dagesh\"},\"numbers\":[1e+21,0,0.1,1e-7,9007199254740992,0.3333333333333333]}",
+      "digest": "dc5306089d6bf46d9f91d25290b770c0f18955f1192525b51389fd4c23e02089"
+    },
+    {
+      "name": "the signed ask body for nobody, and its signature: to is inside, first",
+      "to": "",
+      "payload": "{\"to\":null,\"by\":\"a09aa5f47a6759802ff955f8dc2d2a14a5c99d23be97f864127ff9383455a4f0\",\"next\":null,\"seq\":1,\"time\":30000,\"method\":\"hello\",\"args\":{\"name\":\"quo\"}}",
+      "body": "7b22746f223a6e756c6c2c226279223a2261303961613566343761363735393830326666393535663864633264326131346135633939643233626539376638363431323766663933383334353561346630222c226e657874223a6e756c6c2c22736571223a312c2274696d65223a33303030302c226d6574686f64223a2268656c6c6f222c2261726773223a7b226e616d65223a2271756f227d7d",
+      "secret": "2222222222222222222222222222222222222222222222222222222222222222",
+      "signature": "535c50354632d607fc5b68d081a0191ebf85c296b6c7e67b7b0dcc6030d569673dfe35f164b6b2eb3558c4454c32aabc5586bd82e305401a82fda7a166b91906"
+    },
+    {
+      "name": "the signed ask body to a heir, and its signature: the same payload, to named",
+      "to": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "payload": "{\"to\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"by\":\"a09aa5f47a6759802ff955f8dc2d2a14a5c99d23be97f864127ff9383455a4f0\",\"next\":null,\"seq\":1,\"time\":30000,\"method\":\"hello\",\"args\":{\"name\":\"quo\"}}",
+      "body": "7b22746f223a2261616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161222c226279223a2261303961613566343761363735393830326666393535663864633264326131346135633939643233626539376638363431323766663933383334353561346630222c226e657874223a6e756c6c2c22736571223a312c2274696d65223a33303030302c226d6574686f64223a2268656c6c6f222c2261726773223a7b226e616d65223a2271756f227d7d",
+      "secret": "2222222222222222222222222222222222222222222222222222222222222222",
+      "signature": "1f0e63f365dd09bff2c070091ea209d14eefec1026bf210dba87a4a18135fd90107c9879177695f0b4a899e67777b75d6001229e0875657cfc9a2cd197880500"
+    },
+    {
+      "name": "a sealed ask to a heir: the ephemeral pk, then the box, and nothing outside it",
+      "to": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "ephemeralSeed": "3333333333333333333333333333333333333333333333333333333333333333",
+      "bytes": "7b0d47d93427f8311160781c7c733fd89f88970aef490d8aa0ee19a4cb8a1b140f393feeee5faf9a2707cd3e47c06e7edfd9f5b705ea3ee1a2a2a25b591b37a0af5a068c6455d3cc2dc2948615faf29b182a81ea3d73c166e68f4bb1578c3fbaf22f1dea223d9b84e7e5b90f65139bba894cee2bf68ced2192e548c174bc593dd16d124eb21d3bbde81169bab147676bb11869e08dedb2b15a782d6236ff2ae6b9fa578be8008707ca238f28d39f5029a0340b2e5299e97e44ce9140f8a40ad038d28c931d7872bcfa06f1e29ec964491d4b4ee425ab55b3a09a501a50b6c36f159962247650ec31c42b0c711d97dfc832086366e7c856d332e5bccce04c44c7b67be20bb35d52cccf3a4bf1055fa2a38246c61adc2114da603bd419885b79eb9e3f429d4e26e808beb562d5c60e635649acda8170834f68aee612b56416d369cc72edc8ac1b6204e7"
+    },
+    {
+      "name": "a sealed ask for nobody: the same shape, with to null inside",
+      "to": "",
+      "ephemeralSeed": "3333333333333333333333333333333333333333333333333333333333333333",
+      "bytes": "7b0d47d93427f8311160781c7c733fd89f88970aef490d8aa0ee19a4cb8a1b140f393feeee5fe38e2a0a807d44d82d259cd9a4ef05ea6ae6f7f4a20c0f4f6ff9fe09018b3c0187cb74c796d510a9f2cb4d2ad5e8652bc435b48c4fe9018b66eda77f4ebc253ac395f3f4ef4372488dbd8957a368ad8fa162d1e9118121e8452dc46e5a59bd4a2ffbff4a60edf24c603ab44b60f5cbb2e4a7572e7e2634eb76b2e7a15ecffd11de46996598739cdb0e6ae1734771089cbe2b08c6807f88d64cf37b26b15e6a32d654377acd67283bc2cfea8117f24d135dec11d10d05c6e65e67cc09a5334fe6ce0ed4bbcb06f54b304e15725b956f00d5c8f6e3b48e4b634b743c581e15f86f7b17b52a96"
+    },
+    {
+      "name": "the sealed silence reply",
+      "reply": "{\"silence\":true}",
+      "replySeed": "4444444444444444444444444444444444444444444444444444444444444444",
+      "bytes": "ff2ee45601ec1b67310c7790404585ae697331eee1c1f8cf2419731c1fff3e6b76ec8fe27c6573176a8974f123537984bdd8baea7cbd4e9b81f38db22c5917e9674bc082183e532adba06227f7e023955f16afcb723ca826a579fc08af3306824c8f8012687532ad79d81b77a7c84a429d151cc593b81312bc44433571a0b4aa"
+    },
+    {
+      "name": "a sealed object reply",
+      "reply": "{\"object\":{\"hi\":\"quo\"},\"seen\":null}",
+      "replySeed": "4444444444444444444444444444444444444444444444444444444444444444",
+      "bytes": "ff2ee45601ec1b67310c7790404585ae697331eee1c1f8cf2419731c1fff3e6b76ec93e97a657e002d9135a7394f3ec33bcd723c9d8947909f4cc659d8dfeed743f5b6012ed80af39f9d1bc16c995f69944a0c94244e349308704f2070a98b59a5a4f3e9b1e2a1bfe2e7bcba2446de1fbf84dc15cc5fa5ac03a175cce7d2eaa07b0e1148416580932306d41dc961f145fa7141"
+    },
+    {
+      "name": "a sealed word reply: the ward's word to a key it has bound",
+      "reply": "{\"quo\":\"removed\"}",
+      "replySeed": "4444444444444444444444444444444444444444444444444444444444444444",
+      "bytes": "ff2ee45601ec1b67310c7790404585ae697331eee1c1f8cf2419731c1fff3e6b76ec8dfe7f2227567dce23ea274378db6487fe336070ff4780aec6e6cb89197c05df879e39252f523fc910bf2268ded0d2f323f395a4e2352a5004424b828c43f3163595c67c120e5ea029cfecec4abe575fb4327449cd6003634f30b3cc056a54"
+    },
+    {
+      "name": "an invitation for a heir: the ward pk, the heir pk, the heir secret, and nothing else",
+      "wardSeed": "1111111111111111111111111111111111111111111111111111111111111111",
+      "heirSecret": "4444444444444444444444444444444444444444444444444444444444444444",
+      "invitation": "{\"ward\":\"6d773f8156c80eb9f34d0734e889d824a0d0515f527b853771208ef1ed3feb281fc3da3532de3b20deafd145e30c3de979917e96c22f6c3113a731379eeb3200\",\"heir\":\"d759793bbc13a2819a827c76adb6fba8a49aee007f49f2d0992d99b825ad2c48\",\"secret\":\"4444444444444444444444444444444444444444444444444444444444444444\"}"
+    },
+    {
+      "name": "a sealed knock: the first ask under a heir, by the heir, announcing her own key, to the heir",
+      "heirSecret": "4444444444444444444444444444444444444444444444444444444444444444",
+      "ownSecret": "5555555555555555555555555555555555555555555555555555555555555555",
+      "ephemeralSeed": "6666666666666666666666666666666666666666666666666666666666666666",
+      "payload": "{\"to\":\"d759793bbc13a2819a827c76adb6fba8a49aee007f49f2d0992d99b825ad2c48\",\"by\":\"d759793bbc13a2819a827c76adb6fba8a49aee007f49f2d0992d99b825ad2c48\",\"next\":\"c6822637c7d310ec57627be00ba259d253749f4aaf644470cffbe53a35f73242\",\"seq\":1,\"time\":30000,\"method\":\"hello\",\"args\":{\"name\":\"quo\"}}",
+      "bytes": "219e4d800da968d2a5fcb009c784f4746c7138edb9ee4844b739e830b05cf424e0590708caeb7c3c01e2ae8a2fa26a18bc504b84e06e80b104eab60c233b6ab42709b03434573a932c55e1977311a6358713251329e652d3d4bf212e4fe2062629f886a825315d8338de702e40457e2371eb4cd3b6633e0e986ea724fe6128a664bc61c7113106858540f20df784583e3ede4f125841a5d359cc94784bcee04d303b26b1008392420ae8f0930650c6aeefa3ed6138ab791a92870cb4f4d2d8e634e216cfdec86e8b3ceeef0b4f8a49477e95c04423808150ef381f7ef5390f3182f825a7be03e48edd981d66c3131ed9cca37c6348ef7f8dccc01018ff8417e09c6958b77ea269c58a47683f2b369ca13a434117d38f2f726b8a422e5004db32613ddc300d6f90805597d96ed51ef22bdd6353507857ab50edc2a3719e9081491a4722728275e263c9f6c286a1b39ab7cbd755805f2610410073ece392af0b3b960e68b0143a05674398927a57e2d99396b577ef7d1c618d32c9af619a79954ad413d7b5fe4cf3"
+    }
+  ]
+}

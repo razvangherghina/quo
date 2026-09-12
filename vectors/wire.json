@@ -1,0 +1,48 @@
+{
+  "corpus": "@quo-systems/quo",
+  "encoding": "hex",
+  "area": "wire",
+  "note": "The frames on a socket reach, which a second kit reproduces byte for byte: an ask is one kind byte 00, a four-byte big-endian frame id, the 64-byte ward pk and the sealed bytes; a reply is kind 01, the id and the bytes; nothing delivered is kind 02 and the id alone. The one text frame is JSON, {\"announce\":[pk,...],\"suite\":1}, the ward pks a side holds and the wire suite it speaks, sent when the line opens and whenever the pks change. The suite is which frames these are and which four algorithms seal what they carry; it is one value, never negotiated, and it rides in the handshake and never on an ask, so an ask stays bytes nobody can tell from noise. A side meeting a suite it does not know carries nothing for it and closes with code 4001, which names the refusal so the far side is not left reconnecting without ever being told why. A request reach has no frame: the sealed bytes are the body of a POST to the URL with the pk as its last segment, carrying the suite as the header quo-suite, the sealed reply is the body of a 200, and a 404 is nothing delivered, which is what a door answers a suite it does not speak. The ids here are the first a socket mints, one, and the sealed bytes are stand-ins, since the frame reads nothing.",
+  "vectors": [
+    {
+      "name": "an ask frame: kind, id, pk, bytes",
+      "id": 1,
+      "pk": "6d773f8156c80eb9f34d0734e889d824a0d0515f527b853771208ef1ed3feb281fc3da3532de3b20deafd145e30c3de979917e96c22f6c3113a731379eeb3200",
+      "bytes": "010203",
+      "frame": "00000000016d773f8156c80eb9f34d0734e889d824a0d0515f527b853771208ef1ed3feb281fc3da3532de3b20deafd145e30c3de979917e96c22f6c3113a731379eeb3200010203"
+    },
+    {
+      "name": "a reply frame: kind, id, bytes",
+      "id": 1,
+      "bytes": "2a",
+      "frame": "01000000012a"
+    },
+    {
+      "name": "a none frame: kind and id, nothing delivered",
+      "id": 1,
+      "frame": "0200000001"
+    },
+    {
+      "name": "the announce frame, text",
+      "pks": [
+        "6d773f8156c80eb9f34d0734e889d824a0d0515f527b853771208ef1ed3feb281fc3da3532de3b20deafd145e30c3de979917e96c22f6c3113a731379eeb3200"
+      ],
+      "frame": "{\"announce\":[\"6d773f8156c80eb9f34d0734e889d824a0d0515f527b853771208ef1ed3feb281fc3da3532de3b20deafd145e30c3de979917e96c22f6c3113a731379eeb3200\"],\"suite\":1}",
+      "suite": 1
+    },
+    {
+      "name": "the request door: no frame, one POST, the suite in a header, 200 and 404",
+      "method": "POST",
+      "url": "<base>/<pk>",
+      "headers": {
+        "content-type": "application/octet-stream",
+        "quo-suite": "1"
+      },
+      "body": "the sealed ask bytes",
+      "replies": {
+        "200": "the sealed reply bytes",
+        "404": "nothing delivered"
+      }
+    }
+  ]
+}
