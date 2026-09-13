@@ -5,11 +5,12 @@
 // compares is one a stranger can see. It seals nothing, opens nothing and
 // signs nothing. The day it needs to, the design is wrong.
 //
-// One round per record, four steps: stand, and the kit's `before` and `ask`
-// are the record's; the record's ask posted to the ward, and the reply is
-// the record's byte for byte; digest, and `after` is the record's; and
-// `wrote` is whether the two digests differ. Each record stands on its own,
-// so an order is a choice and never a dependency.
+// One round per record, four steps: stand, and the kit's `ask` is the
+// record's; the record's ask posted to the ward, and the reply is the
+// record's byte for byte; digest; and `wrote`, whether the two digests
+// differ, is the record's. A digest's value is the kit's own and is never
+// compared to a corpus: only its change is Quo's. Each record stands on its
+// own, so an order is a choice and never a dependency.
 //
 // This file runs wherever `fetch` does: a page in a tab, a shell under Node,
 // an edge worker. It imports nothing.
@@ -31,10 +32,8 @@ export async function corpusAt(base) {
 // differed and not merely that some did.
 function judge(record, got) {
   const checks = {
-    before: { expected: record.before, got: got.before },
     ask: { expected: record.ask, got: got.ask },
     reply: { expected: record.reply, got: got.reply },
-    after: { expected: record.after, got: got.after },
     wrote: { expected: record.wrote, got: got.wrote },
   };
   const failed = Object.keys(checks).filter((k) => checks[k].expected !== checks[k].got);

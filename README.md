@@ -27,4 +27,4 @@ repeat.
 The spec has no version. It is rewritten in place to say what is, and at
 1.0.0 it is frozen once.
 
-Apache-2.0, held by Razvan Gherghina. `hello@quo.systems`.
+Apache-2.0, held by Razvan Gherghina. `spec@quo.systems`.

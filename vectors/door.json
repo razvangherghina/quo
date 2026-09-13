@@ -1,8 +1,8 @@
 {
-  "corpus": "@quo-systems/quo",
+  "corpus": "quo",
   "encoding": "hex",
   "area": "door",
-  "note": "The door's thirteen cases as fixed bytes: what a ward answers to every arrival it will not answer, and what it writes while doing so. Each record is one arrival at one door: the ask exactly as it arrives, the reply exactly as it leaves, what that reply opens to where the hand holds the lid's secret, and the ward partition's digest before and after, so `nothing written` is a value a kit checks and not a sentence it reads. Every random is fixed. The world is two harbors linked as a wire, wards on the seeds A, B and P, and every byte of entropy any of them draws comes from SplitMix64 seeded at 20250901: the state starts at the seed, each draw adds 0x9e3779b97f4a7c15, mixes with two xor-shift-multiplies, and the sixty-four bit result is spent eight bytes at a time, least significant byte first. The stream is reset at the start of every record, so a record is reproduced without running the ones before it. D1 noise is the one record whose reply nobody can open: the door seals it to the first thirty-two bytes of the noise, and no one holds a secret for those. That is the case, not a gap in it. A word to a bound key is a different length from a silence to a stranger, on purpose. The law of one silence equalizes what strangers see and nothing else, so every record of kind `silence` is one length and every record of kind `word` or `object` is not. `ward` is the seed of the ward whose door judged the arrival. `state` says what that ward was in the middle of when it did, which is the only thing a kit needs beyond the bytes to stand a door in the same place.",
+  "note": "The door s thirteen cases as fixed bytes: what a ward answers to every arrival it will not answer, and what it writes while doing so. Each record is one arrival at one door: the ask exactly as it arrives, the reply exactly as it leaves, what that reply opens to where the hand holds the lid s secret, and whether the ward wrote while judging it, so `nothing written` is a value a kit checks and not a sentence it reads. No digest is here: what a kit takes one over is its own, and only the change is Quo s. Every random is fixed. The world is two harbors linked as a wire, wards on the seeds A, B and P, and every byte of entropy any of them draws comes from SplitMix64 seeded at 20250901: the state starts at the seed, each draw adds 0x9e3779b97f4a7c15, mixes with two xor-shift-multiplies, and the sixty-four bit result is spent eight bytes at a time, least significant byte first. The stream is reset at the start of every record, so a record is reproduced without running the ones before it. D1 noise is the one record whose reply nobody can open: the door seals it to the first thirty-two bytes of the noise, and no one holds a secret for those. That is the case, not a gap in it. A word to a bound key is a different length from a silence to a stranger, on purpose. The law of one silence equalizes what strangers see and nothing else, so every record of kind `silence` is one length and every record of kind `word` or `object` is not. `ward` is the seed of the ward whose door judged the arrival. `state` says what that ward was in the middle of when it did, which is the only thing a kit needs beyond the bytes to stand a door in the same place.",
   "vectors": [
     {
       "case": "D1",
@@ -11,13 +11,12 @@
       "ward": "B",
       "kind": "silence",
       "heard": false,
+      "draws": 20,
       "ask": "d1fc81101fc0d82fb5c7298d598aadd7146299554890bd22c140350d5efabd3a17c7fe10142dec3537204579e051a006349247a4078cd3723d854b8ca07afd4a7b17fca2078eef5a624baa41381687774e11164b4a60ae5ecef6b93f6f793bc3445be287c45e83d8fd03e210637aeaa177a418ab6f21db665af8a03c7d2ccc390b3c90d8526a883f28acd478109f4b3691ad6f0e07d111fc1a2517899c3874219edf5f14b97801924296115153b18e9fdaf74ba9124e3e0ff2793189af09f25c6c0793f4241303b3ada7529eabb144c28c8545c7c8421d06cbb4fcdcdc18c682fd36462747cd6d1ae3f59de12b072d7357293f2e71c48af57bbecefb19df2439d99ae1233e20bf7d77fbc1dad12681913f2ee386c1fec9e836e3f1f5456ed4c53fb1dfff6a7689ab4929d46cd33532073eb545739b4efe216a1f46757c4ea0b1",
       "reply": "84637ecbb7afd6785f3d54e8a1f8f03161d14cdadae513c3a0fd8524f8836220e2e9b1e962a94de7d12632b93c811f561f8cf7ab1071afe44abbd59d18272319624a3ad1c2630c1ea8f02f3364869642ed30f568d6885f42db8a68e14f77549098683dd5c826a5abf0c658eff571e2786d9f808bd613e4c7b580d1c19e933c6d",
       "opens": {
         "silence": true
       },
-      "before": "0cef327059b38467e3f7bb2ccc494150ef80e690a31e633181ffd64534b2df32",
-      "after": "0cef327059b38467e3f7bb2ccc494150ef80e690a31e633181ffd64534b2df32",
       "wrote": false
     },
     {
@@ -27,11 +26,10 @@
       "ward": "B",
       "kind": "silence",
       "heard": false,
+      "draws": 30,
       "ask": "01c0b7c9e315dc00c2913141db31df59a760f3cea15ad41d5c51eadb39d927b4035fe63be4f7794aa739a173fea2c4c0606717001e28c219b638bec66a9d299f9da2f1ef860034d7e23a6e203f8139996d912d084d4df8923d5745aa53cfce040b9b16cfb47ffb4dd79a9b391c116cd235",
       "reply": "eea19c6ed20cc8562606ce2695bd54d5524a3b0cbf3a224fd5a944a920dba85440682158d87d5f046a69925d12015bac1416b51fe89e1fa7f10f69478f29234a0eda4ab1468d813c3f00562c2a740d187ecf7c11fb15857a3c8023fa991dbd59bd605dec985ae25631ce152bc3e2596e6e0481f78218ba2e27859d00dc3c0d8e",
       "opens": null,
-      "before": "0cef327059b38467e3f7bb2ccc494150ef80e690a31e633181ffd64534b2df32",
-      "after": "0cef327059b38467e3f7bb2ccc494150ef80e690a31e633181ffd64534b2df32",
       "wrote": false
     },
     {
@@ -41,13 +39,12 @@
       "ward": "B",
       "kind": "silence",
       "heard": false,
+      "draws": 36,
       "ask": "3f43ed1fa30e3cfa3b4fd56b428e3d3c9f8561a11a6a20c76c38332f468ead0124c1b80f327342ce552b30a7ace0af22f5bb02737198288e8342a5bcfb41321c078f47c0f4c288681e134f1aa1c6262ce862b0a391196060d3107054933b5794d3c099133add19e1532fed4f8609cdd6f13d83d492606286e34bcccb6523b0f2d02188ccef483c4fd53283d8570ec0f837248276d7fe5fd7df0a361aded88bc98bc735b39b0adffd1410ac10acbb79fb0561f5a04e1990f3cedc9b13352805c8038b1b35f177345d075948a5a84e8878a41acb54aef478fe080923c1a58c639ddf51cda073d6ace5734b0dabebbca1ae8b0bacf1cfe3a555ddcc7d497c9deb4b89ebc5ff0bcc14ed95d0c73f5fc98456e9daca100b9e68bbd19caec646792e270abb88105bc93c34ea5c08f44a3ddd29d2f3c016cc6239e158fa",
       "reply": "a8cf51bfc797db309b9d1d0ff388ab9681f00d6d96c4a32fc5c4f2c71b130a3402a74cfedc99744f293794909c6a1f57c8e4a787dbe3591c2f543539f1013d8a86f6810e7f24e485766763b2db3642dedf361f92900101a4e9a8cdded78fe397e952f7e7f446149cbb238ab3596b772ee9767b9f8d2ecb1dfa3ba33d75cad543",
       "opens": {
         "silence": true
       },
-      "before": "d2330d40c0e9dc0cba9f5f6a5a1a6a79cb02d3b93f91642d1f19225e1c53a743",
-      "after": "d2330d40c0e9dc0cba9f5f6a5a1a6a79cb02d3b93f91642d1f19225e1c53a743",
       "wrote": false
     },
     {
@@ -57,13 +54,12 @@
       "ward": "B",
       "kind": "silence",
       "heard": false,
+      "draws": 36,
       "ask": "3f43ed1fa30e3cfa3b4fd56b428e3d3c9f8561a11a6a20c76c38332f468ead0124c1b80f327342ce552b30a7ace0af22f5bb02737198288e8342a5bcfb41321c078f47c0f4c288681e134f1aa1c6262ce862b0a391196060d3107054933b5794d3c099133add19e1532fed4f8609cdd6f13d83d492606286e34bcccb6523b0f2d02188ccef483c4fd53283d8570ec0f837248276d7fe5fd7df0a361aded88bc98bc735b39b0adffd1410ac10acbb79fb0561f5a04e1990f3cedc9b13352805c8038b1b35f177345d075948a5a84e8878a41acb54aef478fe080923c1a58c76d9985cd3a822d8b4ff7c51daef31e729c80716985e463fb7ba473e8e191954a84f44681e490edfc9f2998df9794c9136df18841541da782c9e49ccd859161e3d2ca93fdc1f5fa5160f8d578e54b2ee94318f415685278f49295cb4ea3da40eae",
       "reply": "a8cf51bfc797db309b9d1d0ff388ab9681f00d6d96c4a32fc5c4f2c71b130a3402a74cfedc99744f293794909c6a1f57c8e4a787dbe3591c2f543539f1013d8a86f6810e7f24e485766763b2db3642dedf361f92900101a4e9a8cdded78fe397e952f7e7f446149cbb238ab3596b772ee9767b9f8d2ecb1dfa3ba33d75cad543",
       "opens": {
         "silence": true
       },
-      "before": "d2330d40c0e9dc0cba9f5f6a5a1a6a79cb02d3b93f91642d1f19225e1c53a743",
-      "after": "d2330d40c0e9dc0cba9f5f6a5a1a6a79cb02d3b93f91642d1f19225e1c53a743",
       "wrote": false
     },
     {
@@ -73,13 +69,12 @@
       "ward": "B",
       "kind": "silence",
       "heard": false,
+      "draws": 36,
       "ask": "3f43ed1fa30e3cfa3b4fd56b428e3d3c9f8561a11a6a20c76c38332f468ead0124c1b80f327342ce552b30a7ace0af22f5bb02737198288e8342a5bcfb41321c078f47c0f4c288681e134f1aa1c6262ce862b0a391196060d3107054933b5794d3c099133add19e1532fed4f8609cdd6f13d83d492606286e34bcccb6523b0f2d02188ccef483c4fd53283d8570ec0f837248276d7fe5fd7df0a361aded88bc98bc735b39b0adffd1410ac10acbb79fb0561f5a04e1990f3cedc9b13352805c8038b1b34ed657218484803f2fe5c827ba406d909e7a27df418437687efd338dd921293e56186f1ed2c0cd2b0767052ead4c22c91120e7934a9e4a6846af69cfa849fba769e872443dfeaea6a42209de7ea7bf1b671312ed95d3d4b60024c2944b43d66c5cd8edd6a2398c6ff9f319ee5c5886d96111ad5b7d2216f8249",
       "reply": "a8cf51bfc797db309b9d1d0ff388ab9681f00d6d96c4a32fc5c4f2c71b130a3402a74cfedc99744f293794909c6a1f57c8e4a787dbe3591c2f543539f1013d8a86f6810e7f24e485766763b2db3642dedf361f92900101a4e9a8cdded78fe397e952f7e7f446149cbb238ab3596b772ee9767b9f8d2ecb1dfa3ba33d75cad543",
       "opens": {
         "silence": true
       },
-      "before": "d2330d40c0e9dc0cba9f5f6a5a1a6a79cb02d3b93f91642d1f19225e1c53a743",
-      "after": "d2330d40c0e9dc0cba9f5f6a5a1a6a79cb02d3b93f91642d1f19225e1c53a743",
       "wrote": false
     },
     {
@@ -89,13 +84,12 @@
       "ward": "B",
       "kind": "silence",
       "heard": false,
+      "draws": 36,
       "ask": "3f43ed1fa30e3cfa3b4fd56b428e3d3c9f8561a11a6a20c76c38332f468ead0124c1b80f327342ce552b30a7ace0af22f5bb02737198288e8342a5bcfb41321c078f47c0f4c288681e134f1aa1c6262ce862b0a391196060d3107054933b5794d3c099133add19e1532fed4f8609cdd6f13d83d492606286e34bcccb6523b0f2d02188ccef483c4fd53283d8570ec0f837248276d7fe5fd7df0a361aded88bc98bc735b39b0adffd1410ac10acbb79fb0561f5a04e1990f3cedc9b13352805c8038b1b35f177345d075948a5a84e8866a506d909e7a27df418437687efd338dd921293e56186f1ed2c0cd2b076d82048d224068df7986c2df5654e7121a0262e0a5b71110a8401cd9845c8ff6d34128fa6767a47b43a9aeaf3a28f194a98860a2b870e25e8d404df48144b0e92c707111060764444fdbfe6cfe8d52dd5",
       "reply": "a8cf51bfc797db309b9d1d0ff388ab9681f00d6d96c4a32fc5c4f2c71b130a3402a74cfedc99744f293794909c6a1f57c8e4a787dbe3591c2f543539f1013d8a86f6810e7f24e485766763b2db3642dedf361f92900101a4e9a8cdded78fe397e952f7e7f446149cbb238ab3596b772ee9767b9f8d2ecb1dfa3ba33d75cad543",
       "opens": {
         "silence": true
       },
-      "before": "d2330d40c0e9dc0cba9f5f6a5a1a6a79cb02d3b93f91642d1f19225e1c53a743",
-      "after": "d2330d40c0e9dc0cba9f5f6a5a1a6a79cb02d3b93f91642d1f19225e1c53a743",
       "wrote": false
     },
     {
@@ -105,13 +99,12 @@
       "ward": "B",
       "kind": "silence",
       "heard": false,
+      "draws": 36,
       "ask": "3f43ed1fa30e3cfa3b4fd56b428e3d3c9f8561a11a6a20c76c38332f468ead0124c1b80f327342ce552b30a7ace0af22f5bb02737198288e8342a5bcfb41321c078f47c0f4c288681e134f1aa1c6262ce862b0a391196060d3107054933b5794d3c099133add19e1532fed4f8609cd81a87f82978e703cd1af5e88c66f32e9a99a659a90ae5b351ad235d2971643caf163308c76d7ac09d1971f6e4a988881cf9d982ebfc6508bf7520eba44bce53ffb1338e6b8c4535b70444541a3fa4bf589b8ff6961343d221866eede55bb7497d0ad205966d315a04d0207d9bf4baa822cbf5c5d0946fb86b2e8bb3e29168f025f052078b09dfc6556ea5542afebb2c0bdf5ef0056",
       "reply": "a8cf51bfc797db309b9d1d0ff388ab9681f00d6d96c4a32fc5c4f2c71b130a3402a74cfedc99744f293794909c6a1f57c8e4a787dbe3591c2f543539f1013d8a86f6810e7f24e485766763b2db3642dedf361f92900101a4e9a8cdded78fe397e952f7e7f446149cbb238ab3596b772ee9767b9f8d2ecb1dfa3ba33d75cad543",
       "opens": {
         "silence": true
       },
-      "before": "d2330d40c0e9dc0cba9f5f6a5a1a6a79cb02d3b93f91642d1f19225e1c53a743",
-      "after": "d2330d40c0e9dc0cba9f5f6a5a1a6a79cb02d3b93f91642d1f19225e1c53a743",
       "wrote": false
     },
     {
@@ -121,13 +114,12 @@
       "ward": "B",
       "kind": "silence",
       "heard": false,
+      "draws": 36,
       "ask": "3f43ed1fa30e3cfa3b4fd56b428e3d3c9f8561a11a6a20c76c38332f468ead0124c1b80f327342ce552b30a7ace0af22f5bb02737198288e8342a5bcfb41321c078f47c0f4c288681e134f1aa1c6262ce862b0a391196060d3107054933b5794d3c099133add19e1532fed4f8609cdd6f13d83d492606286e34bcccb6523b0f2d02188ccef483c4fd53283d8570ec0f837248276d7fe5fd7df0a361aded88bc98bc735b39b0adffd1410ac10acbb79fb0561f5a04e1990f3cedc9b13352805c8038b1b35f177345d075948a5a84e8878a41acb54aef478fe080923c1a58c76d9985cd3a822d8b4ff7c51daef31ab29c03b7882cf8d868ab1391fcaf6e8cf7ea3c990d262268ea4d28fe61810e87190c30f41d68644d3511cf3a58cab78a278cca9229a50fbbeb2fb0e6607face7ecd82419c65ff2baa6607094e06eb80acb728fb3bd6b628be45a4b9",
       "reply": "a8cf51bfc797db309b9d1d0ff388ab9681f00d6d96c4a32fc5c4f2c71b130a3402a74cfedc99744f293794909c6a1f57c8e4a787dbe3591c2f543539f1013d8a86f6810e7f24e485766763b2db3642dedf361f92900101a4e9a8cdded78fe397e952f7e7f446149cbb238ab3596b772ee9767b9f8d2ecb1dfa3ba33d75cad543",
       "opens": {
         "silence": true
       },
-      "before": "d2330d40c0e9dc0cba9f5f6a5a1a6a79cb02d3b93f91642d1f19225e1c53a743",
-      "after": "d2330d40c0e9dc0cba9f5f6a5a1a6a79cb02d3b93f91642d1f19225e1c53a743",
       "wrote": false
     },
     {
@@ -137,13 +129,12 @@
       "ward": "B",
       "kind": "silence",
       "heard": false,
+      "draws": 24,
       "ask": "84637ecbb7afd6785f3d54e8a1f8f03161d14cdadae513c3a0fd8524f8836220ba17e2a2e1fde39c1b7f215273348cf6d0e5e0bdf2045199fea841fcb99ae6842d14b40710c9e7f2a9ad106487cb41e16a1b8bc35ac660911cf7e35c3ae1c9a3e600dd40e8a85d32d1a78b05c185e12496169c6fefe493e9e631bf439f3314cb61ce8c5c2cf328ca15247763bed2a5c072e758578504aded3f75b8923939307aeb59eaf924a4e7ef1df23ad8eef50ad880b960185795b762f38b9bb7ea9629505c25296244b5665e9c0d1d9a2c1690c02d77c167882a2f1f9180ca8f2b11a37bbd263dc9fbff020b31812ca12b76930dfbb06e6ef00074ff05614bf62d14b22530d3",
       "reply": "5f1426463a519ded7693446c34eb6751015d932d4d929557abf3ee32ecfdcc192baea2488556aacc13b62ccbb07b7888dc2af01a2a7e59152b9546b1e185e0c50b34a4c7e9665fc5592cdb61993f571bebc20a713c733b58acbd703408206c5a42f2b644ad19e79ce07ec8b51064c369635a3ce7353dc49a112788ef910aad10",
       "opens": {
         "silence": true
       },
-      "before": "0cef327059b38467e3f7bb2ccc494150ef80e690a31e633181ffd64534b2df32",
-      "after": "0cef327059b38467e3f7bb2ccc494150ef80e690a31e633181ffd64534b2df32",
       "wrote": false
     },
     {
@@ -153,13 +144,12 @@
       "ward": "P",
       "kind": "silence",
       "heard": false,
+      "draws": 28,
       "ask": "5f1426463a519ded7693446c34eb6751015d932d4d929557abf3ee32ecfdcc19f7cb3d88928e737cc1502a253c5a301097cad7810345026dc168c010c0ae3e2e01ad94f6278407c1874cfea971c97e46d2adf623ca548ba6f972fcd20bdffa32b7a25faaf36f8f41053079df352547ca562be02c22e4ace975d9c4926e82152e0c24eb7de188b7ce11e81a2bed397363832c78ae09ad96e09e53b024eabf686c89ccb453cfb35fa368f46f31d321a67eb16a9c67788272def37a1dc55d6a5489d4aae9b132f446fffaa89d0e09f03f33e70cddfe1eb50e7254dd85821c9d3265d0c3362fb0499e7bde0a277b7d2021fd7aa970edc2cea02560bbaee91624d2f1d9ee",
       "reply": "9f1bf06332529ed4df06d6000f037f02e2d822d0e8c6256842817e568383c372f50e74b15f3135af6b35a9b3776809dc400adf30b1fc380b2d77c40544424dd0fcb48c5808822b51a7260219bcda18d1321c626a71351958d941833ec7c62b9615a7120992ddddfeecc26276a833d3975021d2906a4ec771350770e925a01463",
       "opens": {
         "silence": true
       },
-      "before": "cc8ba34d418b81459d6654b95f81ddd6f9a5296bb88d8a405614b1db45dd6ed9",
-      "after": "cc8ba34d418b81459d6654b95f81ddd6f9a5296bb88d8a405614b1db45dd6ed9",
       "wrote": false
     },
     {
@@ -169,13 +159,12 @@
       "ward": "B",
       "kind": "silence",
       "heard": false,
+      "draws": 24,
       "ask": "84637ecbb7afd6785f3d54e8a1f8f03161d14cdadae513c3a0fd8524f8836220ba17e2a2e1fdaf8f11756b16772bc8aa94b7b6b8a55b54cfaeaf14fcbdc8b7db2f10ea584098e5a7f7a91430809517e63f49db9c0d9660c64ca3e30b38bfc9a6b0518944b7ad0c26c9e1db1d87dcf276c5578174e2b1ddfcf76db302c4665c8b2a92cb4972f12098463a342fe7def3d67eed5951d305b7fd3421a8c2303e2277fb53b6f67ffdf1a70df22cdcacb15381d1e6acc757bf4535f4c28e1283269e8139b10710ecd0648e63ef3aa6536a694eb28ef6662d14d7f9492015e9ef85734c6e420dc0eef0fbe560d2bf4029fb5d379660b94644eed49986ea9ad9642fb391dd4fca23035ffef81a2e5543ccf5dd2f0991e9e97fed86d0d86fba15b2c2026f2a5b04c96212583a38c9b1870bcf40cd2b64ed6c706c2a2415513e255f10869d",
       "reply": "5f1426463a519ded7693446c34eb6751015d932d4d929557abf3ee32ecfdcc192baea2488556aacc13b62ccbb07b7888dc2af01a2a7e59152b9546b1e185e0c50b34a4c7e9665fc5592cdb61993f571bebc20a713c733b58acbd703408206c5a42f2b644ad19e79ce07ec8b51064c369635a3ce7353dc49a112788ef910aad10",
       "opens": {
         "silence": true
       },
-      "before": "0cef327059b38467e3f7bb2ccc494150ef80e690a31e633181ffd64534b2df32",
-      "after": "0cef327059b38467e3f7bb2ccc494150ef80e690a31e633181ffd64534b2df32",
       "wrote": false
     },
     {
@@ -185,13 +174,12 @@
       "ward": "B",
       "kind": "silence",
       "heard": false,
+      "draws": 40,
       "ask": "a8cf51bfc797db309b9d1d0ff388ab9681f00d6d96c4a32fc5c4f2c71b130a34b31ba0403a808d63af3f5b706095ed7def0893fe00e2fc7c2aabe76cea0b61af4c594718fb40c235b6a35696800ea29d4d9277fcd470671c7bcc5e18c79f9aa5c0afcd7f83274ec57f1730594ac30b836507c76e4b814465a7c0e1085d834389bdc1caeca09ce3c77137a4f46b54982cdcfe313c35ac39d9f44efd792103b87ba4c808383ed50f77534c9e4d801160d5ca2fc87a91e007aed7993d25ce4255c89372e3b5be9aa263f2bb34bf0f1732d0c7ca6be29b5c2737a888f480b3e86e83dd1ce923fc5954409cfedb9727d6db42ef81e7a22d571dbbf7e66221e161fb37305c424ea1bcf03686fc0cac293144c507a27a15b1f949f4268e13bf918f2fb0a84b5866c4658aeea297519181c4301b349fb79224575ed898dbf9ceac9f724e",
       "reply": "dd9a4e87c36a6c2db4a3d6b33bd5a9d471d2ac9410cc2596cb769cb57407125051baef6786856eb312eaea0b6709252f32a9ea831eadc8fcad6d1d031f01484c70dcfe83061a57e421d9321ab846aa33a213e89dd8f6aa116af8d5bb447abcd04f4edd8edf63bf2b6a606f9f21a72181ab5555a4cd13ce7cb5224077254972e8",
       "opens": {
         "silence": true
       },
-      "before": "d2330d40c0e9dc0cba9f5f6a5a1a6a79cb02d3b93f91642d1f19225e1c53a743",
-      "after": "d2330d40c0e9dc0cba9f5f6a5a1a6a79cb02d3b93f91642d1f19225e1c53a743",
       "wrote": false
     },
     {
@@ -201,13 +189,12 @@
       "ward": "B",
       "kind": "silence",
       "heard": false,
+      "draws": 40,
       "ask": "a8cf51bfc797db309b9d1d0ff388ab9681f00d6d96c4a32fc5c4f2c71b130a34b31ba0403a808d63af3f5b706095ed7def0893fe00e2fc7c2aabe76cea0b61af4c594718fb40c235b6a35696800ea29d4d9277fcd470671c7bcc5e18c79f9aa5c0afcd7f83274ec57f1730594ac30b826751c16b4a8b4735aa94b25e0cd5128fbfc3c8e1a1cfe0c57f64f2a16a5cc82ddca9333735fd67daa94dfb2a720dee7bf39a026a36d40774074a984ed11b65d5ca2fc87a91e007aed7993d25ce4255c89372e3b5be9aa263f2bb34bf0f1732d0c7ca6be29b5c2737a888f480b3e86e83dd1ce923fc5954409cfedb9727d6db424d264e8cdcbd7dc8e2b6af09e8f2d7c189cf2d1f3dfd05ffa99e48d7d8e1d79f89a11e15fef1a8124bf13cd07a1036b806f46f16e87ad790496b579ac490db131979d762571fe600cba5a04f6a695b9c",
       "reply": "dd9a4e87c36a6c2db4a3d6b33bd5a9d471d2ac9410cc2596cb769cb57407125051baef6786856eb312eaea0b6709252f32a9ea831eadc8fcad6d1d031f01484c70dcfe83061a57e421d9321ab846aa33a213e89dd8f6aa116af8d5bb447abcd04f4edd8edf63bf2b6a606f9f21a72181ab5555a4cd13ce7cb5224077254972e8",
       "opens": {
         "silence": true
       },
-      "before": "d2330d40c0e9dc0cba9f5f6a5a1a6a79cb02d3b93f91642d1f19225e1c53a743",
-      "after": "d2330d40c0e9dc0cba9f5f6a5a1a6a79cb02d3b93f91642d1f19225e1c53a743",
       "wrote": false
     },
     {
@@ -216,14 +203,13 @@
       "state": "the ward restarted without her class: her heirs stand and she does not",
       "ward": "B",
       "kind": "word",
-      "heard": false,
-      "ask": "d1fc81101fc0d82fb5c7298d598aadd7146299554890bd22c140350d5efabd3af181a0bd75844672e9f707bb65dc951964f73a82e009ef628bcfed3bc81502e96dc21f4a8d206183b3613631a09475b93505b8e0d549a5e3c5c0172ec4a4bd79961dd1772ed0a49d4ff4b0524de8e7f35995367237ea4e8429089ef618f29f2bc7e59350d694cb7f1019a5e456c72ef608f0040461e8aff6acc8b3b934936d09655450287f7083e2f1ab2a8677ee52e7ecc97fdc0671fe65f0895685ce567091ab8888eeb8d37259c0efb78e4418839ea7f4f8c68909f0cdcacfc8669547c7524600d57180a97435ec91f033c05a8782bc1df6755f31770522eeff58a23da34ca3036797fa411083f210af546844ba40b640bd05383e4f4beeda12149741faaf2db903acdc81712c3c6c1bd1fd2ce5c049f84bbdd5d3eea4ac5e9180d62c913fbe6b48974783e08e6cbc5768adce3c753ac2058c5f00a06896c1e90acef9580a20c1d03b3e1a7260c52bba5194164a3d1a04c2cb4fde6d8b0265b7e1f28c",
-      "reply": "84637ecbb7afd6785f3d54e8a1f8f03161d14cdadae513c3a0fd8524f8836220e2e9b1e962a94de7d12632b93c811f561f8cf7ab1071afe44abbd59d18272319624a3ad1c2630c1ea8f02f3364869642ed30f568d6885f42db8a68e14f77549098683dd5c826a5abf0c658eff571e2786d9f808bd613e4c7b580d1c19e933c6d",
+      "heard": true,
+      "draws": 36,
+      "ask": "3f43ed1fa30e3cfa3b4fd56b428e3d3c9f8561a11a6a20c76c38332f468ead0124c1b80f327342ce552b30a7ace0af22f5bb02737198288e8342a5bcfb41321c078f47c0f4c288681e134f1aa1c6262ce862b0a391196060d3107054933b5794d3c099133add19e1532fed4f8609cdd6f13d83d492606286e34bcccb6523b0f2d02188ccef483c4fd53283d8570ec0f837248276d7fe5fd7df0a361aded88bc98bc735b39b0adffd1410ac10acbb79fb0561f5a04e1990f3cedc9b13352805c8038b1b35f177345d075948a5a84e8878a41acb54aef478fe080923c1a58c76d9985cd3a822d8b4ff7c51daef31ab2991225bfd71f871729fd0e6ec4fdc6d81cc0db739af5c768653bb2757b20dce0d210bbbacacb37779203717be35a85f937a266cbb9f563ef35ab6dfb2aa268b825f3f1d5ec5cc1a4e2bc03299c34149b180",
+      "reply": "a8cf51bfc797db309b9d1d0ff388ab9681f00d6d96c4a32fc5c4f2c71b130a3402a74ee2dfde200e2d77dd81806b5857962be84b5f5ea9ae2269c130e34a982b092497eff71240c78d9f4243ffaeefee8ed1395c86967eb52afca50ad2961faed3128213064c18dbe4c718168d6bc7232fb160ed9a0e931020807b7669b4e7e9",
       "opens": {
-        "silence": true
+        "quo": "absent"
       },
-      "before": "0cef327059b38467e3f7bb2ccc494150ef80e690a31e633181ffd64534b2df32",
-      "after": "0cef327059b38467e3f7bb2ccc494150ef80e690a31e633181ffd64534b2df32",
       "wrote": false
     },
     {
@@ -233,13 +219,12 @@
       "ward": "B",
       "kind": "word",
       "heard": true,
+      "draws": 36,
       "ask": "3f43ed1fa30e3cfa3b4fd56b428e3d3c9f8561a11a6a20c76c38332f468ead0124c1b80f327342ce552b30a7ace0af22f5bb02737198288e8342a5bcfb41321c078f47c0f4c288681e134f1aa1c6262ce862b0a391196060d3107054933b5794d3c099133add19e1532fed4f8609cdd6f13d83d492606286e34bcccb6523b0f2d02188ccef483c4fd53283d8570ec0f837248276d7fe5fd7df0a361aded88bc98bc735b39b0adffd1410ac10acbb79fb0561f5a04e1990f3cedc9b13352805c8038b1b35f177345d075948a5a84e8878a41acb54aef478fe080923c1a58c76d9985cd3a822d8b4ff7c51daef31ab2991225bfd71f871729fd0e6ec4fdc6d81cc0db739af5c768653bb2757b20dce0d210bbbacacb37779203717be35a85f937a266cbb9f563ef35ab6dfb2aa268b825f3f1d5ec5cc1a4e2bc03299c34149b180",
       "reply": "a8cf51bfc797db309b9d1d0ff388ab9681f00d6d96c4a32fc5c4f2c71b130a3402a74ee2dfde200e3e70c38b987a1e08811d4d79177fad4387bd22187dcfb6a0d200e61decd85bebb9a83822d7bfda170d83c5baada11f4787f46b41e998375e5e800bb3751a9a8a66a70172edc19447a3975841b33edd84d64f66952b6d0582c5",
       "opens": {
         "quo": "removed"
       },
-      "before": "ac56803213dec9a818db15c7b0b946fad9b05ee6e81f7f9388450fbd8648958f",
-      "after": "ac56803213dec9a818db15c7b0b946fad9b05ee6e81f7f9388450fbd8648958f",
       "wrote": false
     },
     {
@@ -249,13 +234,12 @@
       "ward": "B",
       "kind": "word",
       "heard": true,
+      "draws": 24,
       "ask": "84637ecbb7afd6785f3d54e8a1f8f03161d14cdadae513c3a0fd8524f8836220ba17e2a2e1fdafdd47703c49727d98adc1b7b2eaf40456cbf0f044adbf9de9df2b44ed06169fb0f5a7f6436080c247b23f1ed9c20d93369718a7bc0e69ef9ba4e4568b41e0ad0926c9e1db1d87dcf276c5578174e2b1ddfcf76db302c4665c8b2a92cb4972f12098463a342fe7def3d67eed5951d305b7fd3421a8c2303e2277fb53b6f67ffdf1a70df22cdcacb15381d1e6acc757bf4535f4c28e1283269e8139b10710ecd0648e63ef3aa6536a694eb28ef6662d14d7f9492015e9ef85734c6e420dc0eef0fbe560d2bf4029fb5d37e38972cbf17e9d9b7809b4d4200ad6098aba8fca967288509acc3c22056a7cef0da21ab8ac7fa279061d5b824464a21b63704485aead00bca83c724e4999b7c247130a027532de913cdd64ebf9b0ce3c",
       "reply": "5f1426463a519ded7693446c34eb6751015d932d4d929557abf3ee32ecfdcc192baea0548611fe8d03fa77d1ac61689b8ba92c3370c3e2d832328ac1595d9d421c8d48e32b9a0b246bf24614a286d0df0ad99cdbd637102870d1e8e95c620498fac0bcd1ba582435b1327de076f8d2e22679b9c1e0a1e14527e1bed1941a6f582141b7b5b5",
       "opens": {
         "quo": "unannounced"
       },
-      "before": "d0eef8ac1466acb55969bc26b3abe1efc7da1536279b8f5579429308a5ce0367",
-      "after": "d0eef8ac1466acb55969bc26b3abe1efc7da1536279b8f5579429308a5ce0367",
       "wrote": false
     },
     {
@@ -265,6 +249,7 @@
       "ward": "B",
       "kind": "object",
       "heard": true,
+      "draws": 36,
       "ask": "3f43ed1fa30e3cfa3b4fd56b428e3d3c9f8561a11a6a20c76c38332f468ead0124c1b80f327342ce552b30a7ace0af22f5bb02737198288e8342a5bcfb41321c078f47c0f4c288681e134f1aa1c6262ce862b0a391196060d3107054933b5794d3c099133add19e1532fed4f8609cdd6f13d83d492606286e34bcccb6523b0f2d02188ccef483c4fd53283d8570ec0f837248276d7fe5fd7df0a361aded88bc98bc735b39b0adffd1410ac10acbb79fb0561f5a04e1990f3cedc9b13352805c8038b1b35f177345d075948a5a84e8878a41acb54aef478fe080923c1a58c76d9985cd3a822d8b4ff7c51daef31ab2991225bfd71f871729fd0e6ec4fdc6d81cc0db739af5c768653bb2757b20dce0d210bbbacacb37779203717be35a85f937a266cbb9f563ef35ab6dfb2aa268b825f3f1d5ec5cc1a4e2bc03299c34149b180",
       "reply": "a8cf51bfc797db309b9d1d0ff388ab9681f00d6d96c4a32fc5c4f2c71b130a3402a750f5da9979586e2fd5c686765810de652eae81f6d65bb704d6820eb59123f51202a9f7b952bfe24eaa05da66b584ad9697dd8c5f86f18e8124a50d54b06a30061bc9a8e219ec0dd8fac9d312991f9b5c12240d44f14f84d6bb8fa3daf822b9dbc48ca9552a86d8bf1b12a22468ca6fcd43192b26040e9b78b8b7a17532c7c9775ce18a7c26b0a3f8af2d65b15682c82cb3a804c77072bbe1a14562af60fdfe99204e7cab5271fbf3edeb1d3ffc71",
       "opens": {
@@ -273,8 +258,53 @@
         },
         "seen": "b51674a53e5fa1e707b2cf1f322ffaefa54bde51436f12b5853741570771618f"
       },
-      "before": "d2330d40c0e9dc0cba9f5f6a5a1a6a79cb02d3b93f91642d1f19225e1c53a743",
-      "after": "eb0d99882afb6353165fdad8799f31414f8f9fba268bd077993b096654588f31",
+      "blueprint": {
+        "asks": [
+          {
+            "name": "hello",
+            "input": {
+              "type": "object"
+            }
+          },
+          {
+            "name": "err",
+            "input": {
+              "type": "object"
+            }
+          },
+          {
+            "name": "nul",
+            "input": {
+              "type": "object"
+            }
+          },
+          {
+            "name": "quiet",
+            "input": {
+              "type": "object"
+            }
+          },
+          {
+            "name": "boom",
+            "input": {
+              "type": "object"
+            }
+          },
+          {
+            "name": "bad",
+            "input": {
+              "type": "object"
+            }
+          },
+          {
+            "name": "never",
+            "input": {
+              "type": "object"
+            }
+          }
+        ],
+        "notes": {}
+      },
       "wrote": true
     },
     {
@@ -284,13 +314,12 @@
       "ward": "B",
       "kind": "word",
       "heard": true,
+      "draws": 36,
       "ask": "3f43ed1fa30e3cfa3b4fd56b428e3d3c9f8561a11a6a20c76c38332f468ead0124c1b80f327342ce552b30a7ace0af22f5bb02737198288e8342a5bcfb41321c078f47c0f4c288681e134f1aa1c6262ce862b0a391196060d3107054933b5794d3c099133add19e1532fed4f8609cdd6f13d83d492606286e34bcccb6523b0f2d02188ccef483c4fd53283d8570ec0f837248276d7fe5fd7df0a361aded88bc98bc735b39b0adffd1410ac10acbb79fb0561f5a04e1990f3cedc9b13352805c8038b1b35ed657218484803f2fe5c827ba406d909e7a27df418437687efd338dd921293e56186f1ed2c0cd2b07648aacadc56034e397a15c8399fed53930390d4119cdd52312169f1ece0b84c02aaa408ccdd1acb079879ea0f2d2ebb15a15394e7a0e22ded4fe77d6879f23a982d28bef4aee07a2241e7fab279af3254",
       "reply": "a8cf51bfc797db309b9d1d0ff388ab9681f00d6d96c4a32fc5c4f2c71b130a3402a74ee2dfde200e3e70de818f6b1f4ede7fc3dd501392b9f23dfff145b7d1fd60c8dbb0ab26ff7dd66f6363e24d2c6a2efa26e468654c0ee8cfe8f033fd70096bad181116f4d9af00e1f81746a28b31fd67038b4536107326ff221138148bc59727",
       "opens": {
         "quo": "repeated"
       },
-      "before": "d2330d40c0e9dc0cba9f5f6a5a1a6a79cb02d3b93f91642d1f19225e1c53a743",
-      "after": "d2330d40c0e9dc0cba9f5f6a5a1a6a79cb02d3b93f91642d1f19225e1c53a743",
       "wrote": false
     },
     {
@@ -300,13 +329,12 @@
       "ward": "B",
       "kind": "word",
       "heard": true,
+      "draws": 36,
       "ask": "3f43ed1fa30e3cfa3b4fd56b428e3d3c9f8561a11a6a20c76c38332f468ead0124c1b80f327342ce552b30a7ace0af22f5bb02737198288e8342a5bcfb41321c078f47c0f4c288681e134f1aa1c6262ce862b0a391196060d3107054933b5794d3c099133add19e1532fed4f8609cdd6f13d83d492606286e34bcccb6523b0f2d02188ccef483c4fd53283d8570ec0f837248276d7fe5fd7df0a361aded88bc98bc735b39b0adffd1410ac10acbb79fb0561f5a04e1990f3cedc9b13352805c8038b1b35f177345d075948a5a84e8878a41acb54aef478fe080923c1a58c76d3925fd2e52cd6f7ec69458bf770ad295d490ae9cb2baaeb0e491098845f38d60f1801811937181f651667622b8f02054378fb442a71e81bf80b4255a068975b7f6a0e95bb906d7ced6000349b06859a29f516bd2070aec3d53bc9c42747cf62",
       "reply": "a8cf51bfc797db309b9d1d0ff388ab9681f00d6d96c4a32fc5c4f2c71b130a3402a74ee2dfde200e387ddc81993d07f5ad7025106aae5e4741c9be9d82f9e9ad5d90b806f1d8303ee0c75f106f7652a73c6a1312d11b7947537198eeca32946be853e37d96a62ce2d2b95f54519faef2dc35227d4becd78da6cb5d940ca1e4",
       "opens": {
         "quo": "threw"
       },
-      "before": "d2330d40c0e9dc0cba9f5f6a5a1a6a79cb02d3b93f91642d1f19225e1c53a743",
-      "after": "0af31511f1fb9f98fc84fd817efa847e6be922f7e537f83f60b9a7298306ebd0",
       "wrote": true
     },
     {
@@ -316,13 +344,12 @@
       "ward": "B",
       "kind": "silence",
       "heard": true,
+      "draws": 36,
       "ask": "3f43ed1fa30e3cfa3b4fd56b428e3d3c9f8561a11a6a20c76c38332f468ead0124c1b80f327342ce552b30a7ace0af22f5bb02737198288e8342a5bcfb41321c078f47c0f4c288681e134f1aa1c6262ce862b0a391196060d3107054933b5794d3c099133add19e1532fed4f8609cdd6f13d83d492606286e34bcccb6523b0f2d02188ccef483c4fd53283d8570ec0f837248276d7fe5fd7df0a361aded88bc98bc735b39b0adffd1410ac10acbb79fb0561f5a04e1990f3cedc9b13352805c8038b1b35f177345d075948a5a84e8878a41acb54aef478fe080923c1a58c76c08859dab322d8b4ff7c51daef31ab29915344dccc90cf697d08ea0b2bb00e6776c286ab75b4da33844f177a096a0d955fb83096bbb748bb099b0eb1b1f6ae519aa3f1d93795c190ecee293e03ec3ef159bd0ce64ea70728540a68ed570e031c24",
       "reply": "a8cf51bfc797db309b9d1d0ff388ab9681f00d6d96c4a32fc5c4f2c71b130a3402a74cfedc99744f293794909c6a1f57c8e4a787dbe3591c2f543539f1013d8a86f6810e7f24e485766763b2db3642dedf361f92900101a4e9a8cdded78fe397e952f7e7f446149cbb238ab3596b772ee9767b9f8d2ecb1dfa3ba33d75cad543",
       "opens": {
         "silence": true
       },
-      "before": "d2330d40c0e9dc0cba9f5f6a5a1a6a79cb02d3b93f91642d1f19225e1c53a743",
-      "after": "0af31511f1fb9f98fc84fd817efa847e6be922f7e537f83f60b9a7298306ebd0",
       "wrote": true
     },
     {
@@ -332,13 +359,12 @@
       "ward": "B",
       "kind": "word",
       "heard": true,
+      "draws": 36,
       "ask": "3f43ed1fa30e3cfa3b4fd56b428e3d3c9f8561a11a6a20c76c38332f468ead0124c1b80f327342ce552b30a7ace0af22f5bb02737198288e8342a5bcfb41321c078f47c0f4c288681e134f1aa1c6262ce862b0a391196060d3107054933b5794d3c099133add19e1532fed4f8609cdd6f13d83d492606286e34bcccb6523b0f2d02188ccef483c4fd53283d8570ec0f837248276d7fe5fd7df0a361aded88bc98bc735b39b0adffd1410ac10acbb79fb0561f5a04e1990f3cedc9b13352805c8038b1b35f177345d075948a5a84e8878a41acb54aef478fe080923c1a58c76d39c549deb2295e4f97d1493b676adbc9ac462bc76aeca060a3dfb5b547dde4b43504507eaceb2ea2829389ec62c359df96cf6e0fbf0c5edb96ffc5f254994cce731764d7cf5adc66ef71afb41b3d29788ef4b6c2803ae9627306220e5ffeb",
       "reply": "a8cf51bfc797db309b9d1d0ff388ab9681f00d6d96c4a32fc5c4f2c71b130a3402a74ee2dfde200e387ddc81993d07f5ad7025106aae5e4741c9be9d82f9e9ad5d90b806f1d8303ee0c75f106f7652a73c6a1312d11b7947537198eeca32946be853e37d96a62ce2d2b95f54519faef2dc35227d4becd78da6cb5d940ca1e4",
       "opens": {
         "quo": "threw"
       },
-      "before": "d2330d40c0e9dc0cba9f5f6a5a1a6a79cb02d3b93f91642d1f19225e1c53a743",
-      "after": "0af31511f1fb9f98fc84fd817efa847e6be922f7e537f83f60b9a7298306ebd0",
       "wrote": true
     }
   ]

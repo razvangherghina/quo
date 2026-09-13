@@ -1,5 +1,5 @@
 {
-  "corpus": "@quo-systems/quo",
+  "corpus": "quo",
   "encoding": "hex",
   "area": "arithmetic",
   "vectors": [

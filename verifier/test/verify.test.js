@@ -12,11 +12,15 @@ import { fixture } from './fixture.js';
 
 const corpus = JSON.parse(await readFile(new URL('../../vectors/door.json', import.meta.url), 'utf8'));
 
-test('[verifier] the corpus holds the door\'s thirteen cases, each with the five things a stranger can see', () => {
+test('[verifier] the corpus holds the door\'s thirteen cases, each with the three things a stranger can see', () => {
   assert.equal(corpus.area, 'door');
   const numbers = new Set(corpus.vectors.map((v) => v.case));
   for (let n = 1; n <= 13; n++) assert.ok(numbers.has(`D${n}`), `D${n}`);
-  for (const v of corpus.vectors) for (const k of ['ask', 'reply', 'before', 'after', 'wrote']) assert.ok(k in v, `${v.case} ${v.name} carries ${k}`);
+  for (const v of corpus.vectors) for (const k of ['ask', 'reply', 'wrote', 'ward', 'draws']) assert.ok(k in v, `${v.case} ${v.name} carries ${k}`);
+  for (const v of corpus.vectors) assert.ok(Number.isInteger(v.draws) && v.draws >= 0, `${v.case} ${v.name}: draws is where the stream stands`);
+  const shapes = corpus.vectors.filter((v) => v.opens && typeof v.opens === 'object' && typeof v.opens.seen === 'string');
+  for (const v of shapes) assert.ok(v.blueprint && typeof v.blueprint === 'object', `${v.case} ${v.name}: a reply carrying seen carries the shape it is of`);
+  for (const v of corpus.vectors) for (const k of ['before', 'after']) assert.ok(!(k in v), `${v.case} ${v.name} carries no ${k}: a digest is the kit's own`);
 });
 
 test('[verifier] a stand that answers the corpus passes every record, and the report says so', async () => {
@@ -33,13 +37,12 @@ test('[verifier] a stand that answers the corpus passes every record, and the re
   }
 });
 
-test('[verifier] each thing a kit can get wrong is caught by name: before, the hand, the reply, after, and a step that does not answer', async () => {
-  for (const [wrong, step] of [
-    [{ before: true }, 'before'],
-    [{ ask: true }, 'ask'],
-    [{ reply: true }, 'reply'],
-    [{ after: true }, 'after'],
-    [{ silent: true }, 'reply'],
+test('[verifier] each thing a kit can get wrong is caught by name: the hand, the reply, the writing, and a step that does not answer', async () => {
+  for (const { wrong, step } of [
+    { wrong: { ask: true }, step: 'ask' },
+    { wrong: { reply: true }, step: 'reply' },
+    { wrong: { wrote: true }, step: 'wrote' },
+    { wrong: { silent: true }, step: 'reply' },
   ]) {
     const { url, close } = await fixture(corpus, { ...wrong, at: 'D5' });
     try {
@@ -55,12 +58,14 @@ test('[verifier] each thing a kit can get wrong is caught by name: before, the h
   }
 });
 
-test('[verifier] a wrong after is also a wrong wrote, since wrote is the two digests compared', async () => {
-  const { url, close } = await fixture(corpus, { after: true, at: 'D1' });
+test('[verifier] a digest is never compared to the corpus: only whether it moved is read', async () => {
+  const { url, close } = await fixture(corpus, { wrote: true, at: 'D1' });
   try {
     const r = await replay(url, corpus.vectors.find((v) => v.case === 'D1'));
-    assert.deepEqual(new Set(r.failed), new Set(['after', 'wrote']));
-    assert.equal(r.checks.after.got, 'e'.repeat(64));
+    assert.deepEqual(r.failed, ['wrote']);
+    assert.equal(r.checks.wrote.expected, false);
+    assert.equal(r.checks.wrote.got, true);
+    assert.ok(!('before' in r.checks) && !('after' in r.checks), 'neither digest is a check');
   } finally {
     await close();
   }
