@@ -22,7 +22,10 @@ This repository is the protocol and nothing that runs it.
 Quo publishes no code and no kit. Anyone may write a kit, in any language,
 and a kit is Quo when its door answers the vectors. Kits that pass are
 listed at [quo.systems/kits](https://quo.systems/kits/) by a run anyone can
-repeat.
+repeat. Quo shown in other languages, each written from this spec alone and
+passing every vector, stands at
+[quo-examples](https://github.com/razvangherghina/quo-examples): examples to
+read, on no registry.
 
 The spec has no version. It is rewritten in place to say what is, and at
 1.0.0 it is frozen once.
