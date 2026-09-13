@@ -463,7 +463,9 @@ D1   the box does not open           wrong padlock, garbage, too short, over the
                                      will not take a seal either, the public key of thirty-two more. those
                                      are drawn before the reply's own ephemeral key.
                                      too short is anything that does not open, or opens to sixty-four bytes
-                                     or fewer, since those hold no payload beside a signature.
+                                     or fewer, since those hold no payload beside a signature. a payload
+                                     that opens and is not JSON text by the value rule, not UTF-8, a
+                                     duplicate key, nested past sixty-four, is a box that does not open.
 D2   the payload is malformed        to, by or next not 64 lowercase hex where a hex is owed, method not a
                                      string, args present and not one object of values, seq not a whole
                                      number from one, time not a whole number above zero, hops not a whole
@@ -471,7 +473,7 @@ D2   the payload is malformed        to, by or next not 64 lowercase hex where a
                                      payload missing a field it owes is malformed like any other. method and
                                      args may be absent and never null. a field the payload does not name
                                      is not read, and absent args are handed to her as the empty object.
-D3   for nobody, and nobody is home  no public being on this ward.
+D3   for nobody, and nobody is home  no public being on this ward, or one that did not come back this run.
 D4   for nobody, signature fails     the payload names a key it was not signed with.
 D5   the heir is not held            never minted here, and not one she removed either.
 D6   the key is not admitted         not the key held for the heir, and not the key it announced. a
@@ -479,10 +481,12 @@ D6   the key is not admitted         not the key held for the heir, and not the 
                                      removed, under a key that was not the one she removed.
 D7   signature fails                 under an admitted key, or under the key held for a heir she removed.
 refusals to a bound key: a word, nothing written, heard true
-D8   she is not there                `absent`: the being did not come back this run. `removed`: the occupant
-                                     record is gone, and this is the key it was bound to when it went.
-                                     absent is met first, since the record is in her cells and cells are
-                                     not read while she is away.
+D8   she is not there                `removed`: the id was removed and this is a key it held when it went,
+                                     kept under `gone`, which names no being, so nothing more is asked.
+                                     for a heir still held: `absent`, the being did not come back this run,
+                                     and then `removed`, her occupant record is gone. absent is met first
+                                     there, since the record is in her cells and they are not read while
+                                     she is away.
 D9   a knock announces nothing       `unannounced`: the heir is fresh and next is null, or is the heir
                                      itself, which is no key of her own. it binds nothing.
 D10  the number is refused           `repeated`: already honoured, or at or below the span.
@@ -736,7 +740,8 @@ occupant invited with no notes has the empty object for them.
   would be one kit made wrong by another. The answer itself still goes to
   whoever asked, unread.
 - `seen` is the digest her ward last saw arrive with an answer. A silent
-  refresh leaves it untouched.
+  refresh leaves it untouched, and so does an answered empty ask, whose
+  reply carries no digest.
 - `notes` is hers. Quo never reads it. Tier, expiry, kinship between an
   occupant and a standing that are the same far being: all hers. `invite`
   may seed it, which is how an inviter says the terms it mints under, and
@@ -803,9 +808,11 @@ beings still ask concurrently, and a slow relation never holds up another.
 Before take the lane is the invitation's; after take it is the standing's,
 and a knock on a taken invitation joins the standing's lane.
 
-The keys an ask sends under are read when she calls, not when the lane
+The standing an ask sends on is taken when she calls, not when the lane
 reaches her: an ask issued while the standing stood is answered even if she
-drops it in the next line. An ask on a standing she has already dropped is
+drops it in the next line. The keys inside it are read when the lane reaches
+her, so an ask queued behind another signs with the key the one before it
+moved to. An ask on a standing she has already dropped is
 the word `dropped`, and nothing is sent. A knock on the invitation it was
 born on, after take and a drop, is a knock as a heir the far door has already
 spent, so bytes leave and the door's silence comes back: after take the
@@ -927,8 +934,11 @@ is sealed to. Beings never own a padlock.
   The door holds two pks for her: the one that may speak now, and the one
   it vouched for. Whichever speaks first wins, and the other dies. There is
   no rotate call: every honoured ask rotates, and a lost reply strands
-  nobody. Her side moves to the announced key only when an answer came back
-  that was not silence; the door has already moved, and admits both.
+  nobody. Her side moves to the announced key only when an object came
+  back: not on silence, not on `threw`, and not on any other word. The door
+  has moved on every choice and on none of its refusals, and it admits both
+  keys, so a side that stays behind is always heard and a side that moved
+  on a refusal would be refused for good.
 
 The knock is the one place where both sides cannot be brought back into
 agreement by that rule alone. If the reply to the first knock is lost, the
@@ -1958,7 +1968,10 @@ whether an occupant is a person, a model or a program.
 A being is anything her language can construct with the stance and ask with
 `answer`. She needs no import from any kit, and a kit that could only make
 beings out of a base class of its own would be a kit standing between a
-being and her ward.
+being and her ward. So the value silence and the words are spelled where a
+being reaches them without one: a name her language's runtime already
+shares, which every kit of that language spells the same, or a value the
+stance hands her. Which is the kit's, and a kit writes it down.
 
 ## Where the tree stands
 
