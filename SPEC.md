@@ -496,6 +496,20 @@ D12  she answered silence            on a named ask, or on the empty ask. nothin
 D13  she answered a non-value        `threw`: a word, or anything her language holds that is not a value. none is hers to make.
 ```
 
+D1 and D2 are one function and then the next, in that order, and the line
+between them is here so that two kits draw it in one place. D1 asks whether
+the bytes yield a payload at all: the box opens under the ward's padlock, it
+opens to more than sixty-four bytes, what stands before the signature is
+UTF-8, that text is JSON the value rule admits, with no duplicate key and
+nested no deeper than the bound, and the value it names is one object. A
+payload that is a JSON array, a string or a number is no payload, and falls
+here with the rest. Short of all of that, nothing of the payload is read,
+because there is no payload to read. D2 asks the fields of that object, one
+at a time, and nothing else. What a stranger can see of the boundary is
+nothing: both are one silence of the same length, sealed to the same lid,
+with nothing written either way, so a kit that draws the line elsewhere
+answers alike and a kit that draws it here answers alike to itself.
+
 The signature is verified before anything is written and before any word is
 said, so a stranger cannot burn a number she could not sign for and cannot
 hear a word she could not sign for. The public being is asked by strangers
@@ -706,9 +720,18 @@ is constructed again with the same cells. Three keys at their root are the
 ward's, `standings`, `occupants` and `class`, and a write of hers to them is
 refused where she wrote it, like a non-value, and removing one is a write to
 it. A value nested past sixty-four levels is refused the same way, wherever
-it crosses and not in cells alone: a level is a container, a scalar is none,
-so sixty-four nested arrays are a value and sixty-five are not, counted from
-the value written and never from the root it is written under. That bound
+it crosses and not in cells alone. The bound is arithmetic and is written as
+arithmetic, since a sentence about a boundary is a sentence two kits read two
+ways. A level is a container, an object or an array, and a scalar is none.
+The depth of a value is the greatest number of containers on any path from
+that value inward, counting the value itself when it is one: a number is
+depth zero, the empty array is depth one, an array holding an array is depth
+two. A value of depth sixty-four stands and one of depth sixty-five is
+refused, so sixty-four nested arrays are a value and sixty-five are not. It
+is counted from the value written and never from the root it is written
+under, so a value that stands on its own stands wherever it is put: a value
+of depth sixty-four written into a cell that already sits deep is a value,
+and what is checked is never the sum of the two. That bound
 is Quo's because a far ward
 reads what a near one wrote: a kit with a deeper stack still refuses at
 sixty-four, or two kits disagree about which blueprint is a value. A kit
@@ -934,7 +957,29 @@ is sealed to. Beings never own a padlock.
   The door holds two pks for her: the one that may speak now, and the one
   it vouched for. Whichever speaks first wins, and the other dies. There is
   no rotate call: every honoured ask rotates, and a lost reply strands
-  nobody. Her side moves to the announced key only when an object came
+  nobody.
+
+  The door's own move is written as arithmetic, because a sentence about a
+  rotation is a sentence two kits read two ways and a relation that then dies
+  over one key. It moves on an honoured ask and on nothing else, and the
+  fresh heir is one case and every ask after it the other.
+
+  On a fresh heir, the honoured ask is a knock, and it announced a key or it
+  was `unannounced` and never reached here. The key it announced becomes the
+  key held, the heir dies as it speaks and is held by nobody, and nothing is
+  vouched for.
+
+  On a heir already spent, the key that signed becomes the key held, whichever
+  of the two was admitted, and the other is forgotten. The key the ask
+  announced becomes the key vouched for. An ask that announces nothing moves
+  the first and leaves the second exactly as it stood, holding whatever key it
+  held.
+
+  So the key held for a heir is the key that last spoke, and a door that kept
+  the first one forever would refuse the caller the moment she signed with the
+  key she announced.
+
+  Her side moves to the announced key only when an object came
   back: not on silence, not on `threw`, and not on any other word. The door
   has moved on every choice and on none of its refusals, and it admits both
   keys, so a side that stays behind is always heard and a side that moved
@@ -957,7 +1002,9 @@ Three keys per relation over its life, one rule at the door: the key I hold
 for you may speak, and so may the key it announced last time, and each
 number once.
 
-A send that announces nothing leaves the spare standing. Every ask announces
+A send that announces nothing leaves the spare standing, holding the key it
+already held, and it is never cleared to nothing: a third ask signed with
+that key is admitted exactly as the second would have been. Every ask announces
 its next but a public one, which holds no heir and is one key for life, so
 this is a foreign kit's send and not this one's; and a caller who skipped an
 announcement still holds the key she announced before it. The door forgets no
@@ -1977,13 +2024,21 @@ stance hands her. Which is the kit's, and a kit writes it down.
 
 The only place this document may name a gap between itself and the tree.
 Each line is a debt to close, not a note to keep.
+The debt named under Open below is one such line.
 
 ## Open
 
-Named, not decided. Nothing is here today: every question this document ever
-named is decided under Closed, and the slot each one needed is already cut,
-because a slot costs two lines before 1.0.0 and a partition or a payload
-shape after it.
+Named, not decided.
+
+- **The empty-announce and depth-arithmetic rules are unverified against
+  Nervur.** The relation's move on a fresh heir and on an honoured ask
+  after it, the empty-announce leaving the spare key standing rather than
+  clearing it, and depth counted as containers-on-a-path rather than
+  counted from the root, are written as rules but `door.json` exercises
+  none of the last two and the first two only through the fresh-heir case.
+  Whether `packages/nervur` already answers them this way, or needs to
+  change, is unchecked; closing this needs new door records emitted from
+  the kit once it is checked, or a fix to the kit if it is not.
 
 ### Closed
 
