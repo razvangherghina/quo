@@ -71,6 +71,25 @@ test('[verifier] a digest is never compared to the corpus: only whether it moved
   }
 });
 
+test('[verifier] a stand at no network address is reached through the fetch it is given', async () => {
+  const { url, close } = await fixture(corpus);
+  try {
+    // The routes are named at an address nobody holds and carried to the
+    // fixture by the function handed in, as a page carries them to a stand
+    // running in its own tab.
+    const reached = [];
+    const inTab = (to, init) => {
+      reached.push(to);
+      return fetch(to.replace('tab://example', url), init);
+    };
+    const report = await verify('tab://example', corpus, { fetch: inTab });
+    assert.equal(report.fail, 0);
+    assert.equal(reached.length, corpus.vectors.length * 3, 'three routes a record, all through the function');
+  } finally {
+    await close();
+  }
+});
+
 test('[verifier] nobody home is a failure at stand, not an exception', async () => {
   const r = await replay('http://127.0.0.1:1', corpus.vectors[0]);
   assert.equal(r.ok, false);

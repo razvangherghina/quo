@@ -43,7 +43,11 @@ function judge(record, got) {
 // One record against the kit at `url`. A step that does not answer is a
 // failure of that step, named, and the round stops there: nothing after it
 // could mean anything.
-export async function replay(url, record) {
+//
+// `fetch` is how the three routes are reached, the global one unless another
+// is given: a stand running in the same tab answers through a function of
+// the same shape, and the round is the same four steps.
+export async function replay(url, record, fetch = globalThis.fetch) {
   const base = url.replace(/\/$/, '');
   const got = {};
   const fail = (step, why) => ({ case: record.case, name: record.name, state: record.state, kind: record.kind, ok: false, failed: [step], checks: {}, error: `${step}: ${why}` });
@@ -79,11 +83,12 @@ export async function replay(url, record) {
 
 // The whole corpus against the kit at `url`, one record after another.
 // `onRecord` hears each result as it lands, so a page can draw the report
-// while the rest runs. The report is the records, and the two counts.
-export async function verify(url, corpus, { onRecord } = {}) {
+// while the rest runs, and `fetch` reaches a stand that is not at a network
+// address. The report is the records, and the two counts.
+export async function verify(url, corpus, { onRecord, fetch } = {}) {
   const records = [];
   for (const record of corpus.vectors) {
-    const r = await replay(url, record);
+    const r = await replay(url, record, fetch);
     records.push(r);
     if (onRecord) onRecord(r);
   }
