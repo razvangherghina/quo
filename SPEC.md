@@ -84,19 +84,24 @@ together is not.
 
 1. **The seed.** The ward derives its pk from it and from nothing else.
    Thirty-two bytes are the seed; anything else, text or bytes of another
-   length, is SHA-256'd to thirty-two bytes first.
+   length, is SHA-256'd to thirty-two bytes first. Text is hashed as its
+   UTF-8 bytes, whatever its length, so text is never taken as a key.
 2. **The partition.** The ward's files, as values, opaque to the harbor.
 3. **Instantiate.** A class name and a stance in, the being or nothing out.
    A name the harbor does not hold is nothing, and the boot that named it
-   fails.
+   fails. A class that throws while it is made throws out of instantiate,
+   and the ward reads that throw as a being that threw at birth: the boot
+   fails the same way, and a being booted before is absent this run.
 4. **Carry.** A ward pk and bytes in, bytes or nothing out. Nothing means no
    door was reached, and a throw is read the same way.
 5. **Random.** A count in, that many bytes of entropy out. Every key a ward
    mints is drawn from it.
 6. **Wrote.** The ward says it after every write to its partition, and after
-   nothing else, naming the row. It is told, and nothing comes back from it.
-   A harbor that keeps the partition saves in the order it was told. A
-   harbor that keeps nothing needs it not at all.
+   nothing else, naming the row. What a row is, is the kit's own, since the
+   partition's shape is: the harbor keeps rows and reads none. It is told,
+   and nothing comes back from it. A harbor that keeps the partition saves
+   in the order it was told. A harbor that keeps nothing needs it not at
+   all.
 7. **Keep.** Whether what was written is kept. The ward asks it once, at the
    end of an arrival, after the being has answered and before the reply is
    sealed, and no in makes that arrival a failed ask. It is the only thing
@@ -399,7 +404,9 @@ and each says what it is.
 
 ```
 S1  the invitation is not one         a shape that is not a ward pk, a heir with no secret, a secret with no heir.
-                                      nothing is sent. the word is `invitation`.
+                                      nothing is sent. the word is `invitation`. nothing else is read: a field
+                                      beside the three is ignored, and a secret that is not the heir's is sent
+                                      and meets D6 at the far door.
 S2  the standing is gone              she held a standing, dropped it, and asked on what she held.
                                       nothing is sent. an ask issued while it stood is answered. the word is `dropped`.
 S3  the wait ran out                  the ask's time was spent and no reply was read.
@@ -424,7 +431,10 @@ honours any number above its mark.
 
 S4 is strict, and strict is a price paid on purpose. A reply carries `seen`
 always, and a reply whose `seen` is neither a digest nor null is none of the
-three shapes, so an answer a far being really gave is read as silence and the
+three shapes; so is a reply with any field beside its shape's, and an
+`object` that is not a value, nested past sixty-four or a number the value
+rule refuses, since what crosses is held to that rule in both directions.
+So an answer a far being really gave is read as silence and the
 number is spent with it. The alternative is to read the object and drop the
 field, and then two kits disagree about whether an answer arrived: one hands
 her an object, the other hands her silence, and silence is not blindly
@@ -448,12 +458,19 @@ D1   the box does not open           wrong padlock, garbage, too short, over the
                                      sealed to the lid: the first thirty-two bytes of what arrived when there
                                      are that many, whatever they are, and a key nobody holds when there are
                                      not. a lid that will not take a seal, a small-order point among them,
-                                     is answered the same way, to a key nobody holds.
+                                     is answered the same way, to a key nobody holds. a key nobody holds is
+                                     thirty-two bytes drawn from random and taken as a lid, and when that
+                                     will not take a seal either, the public key of thirty-two more. those
+                                     are drawn before the reply's own ephemeral key.
+                                     too short is anything that does not open, or opens to sixty-four bytes
+                                     or fewer, since those hold no payload beside a signature.
 D2   the payload is malformed        to, by or next not 64 lowercase hex where a hex is owed, method not a
                                      string, args present and not one object of values, seq not a whole
                                      number from one, time not a whole number above zero, hops not a whole
                                      number or at zero. to and next may be null; absent is not null, and a
-                                     payload missing a field it owes is malformed like any other.
+                                     payload missing a field it owes is malformed like any other. method and
+                                     args may be absent and never null. a field the payload does not name
+                                     is not read, and absent args are handed to her as the empty object.
 D3   for nobody, and nobody is home  no public being on this ward.
 D4   for nobody, signature fails     the payload names a key it was not signed with.
 D5   the heir is not held            never minted here, and not one she removed either.
@@ -462,8 +479,10 @@ D6   the key is not admitted         not the key held for the heir, and not the 
                                      removed, under a key that was not the one she removed.
 D7   signature fails                 under an admitted key, or under the key held for a heir she removed.
 refusals to a bound key: a word, nothing written, heard true
-D8   she is not there                `removed`: the occupant record is gone, and this is the key it was
-                                     bound to when it went. `absent`: the being did not come back this run.
+D8   she is not there                `absent`: the being did not come back this run. `removed`: the occupant
+                                     record is gone, and this is the key it was bound to when it went.
+                                     absent is met first, since the record is in her cells and cells are
+                                     not read while she is away.
 D9   a knock announces nothing       `unannounced`: the heir is fresh and next is null, or is the heir
                                      itself, which is no key of her own. it binds nothing.
 D10  the number is refused           `repeated`: already honoured, or at or below the span.
@@ -546,13 +565,22 @@ second as a fraction has invented a distinction no wire carries. A number is
 minus zero when the text is a negative zero, `-0` or `-0.0` alike, and both
 are refused, since JSON writes minus zero as zero and reads it back as zero,
 so a harbor keeping objects would hand her a sign a harbor writing bytes
-would not. A number is outside the doubles when the text names a value no
-double holds exactly, `9007199254740993` included, and a kit whose parser
-kept it exactly refuses it all the same: what one kit preserved and another
-rounded is not one value. A boolean is never a number, however a language
-files it. And an object has no duplicate keys: two of one name is not one
-object, it is text two kits read differently, so it is refused where it is
-read and never quietly resolved to the last.
+would not. A number is outside the doubles in three ways, and each is
+refused. Text that names a whole number is refused unless that number is
+exactly a double, or the text is how ECMAScript writes a double:
+`9007199254740993` and `9007199254740993.0` are refused, since one kit
+keeps them exactly and another rounds, while `1e21`, `2^60` written out and
+`1e+23` stand, since the last is the spelling every writer gives the double
+nearest it and a kit must read back what it writes. Text that names a
+fraction is the double nearest it, as every reader of JSON takes `0.1`.
+Text past the largest double, or naming a value other than zero that rounds
+to zero, `1e-400` among them, is refused. A boolean is never a number,
+however a language files it. And an object has no duplicate keys: two of
+one name is not one object, it is text two kits read differently, so it is
+refused where it is read and never quietly resolved to the last. Bytes that
+are not UTF-8 are no JSON text at all, and are refused rather than mended.
+Noncharacters are text, and stand, where I-JSON would refuse them: they
+cross any encoding unchanged, so no kit gives back other than it was given.
 
 The two above are the shape of every rule here: a value is a value when every
 harbor and every kit gives back what was put in. Anything a harbor keeping
@@ -607,8 +635,12 @@ The digest is SHA-256, as hex, over the JCS (RFC 8785) canonical
 serialization of the blueprint. Same bytes from every language. This is law:
 two wards in two languages always hash one blueprint to one digest. A ward
 that cannot do this is not a ward. Because only values reach a digest, a key
-holding what is not a value is dropped before hashing and an array slot
-holding one is null, which is what crossing an edge does to them anyway.
+holding what her language holds and JSON does not is dropped before hashing
+and an array slot holding one is null, which is what crossing an edge does
+to them anyway. A describe that JSON can write but the value rule refuses,
+nested past sixty-four or holding a number outside the doubles, is not
+mended into one: it costs the digest, as a describe that throws does. The
+digest is written in lowercase hex.
 
 Two places in RFC 8785 are where languages part, and a kit is held to both by
 `vectors/framing.json`. Keys sort by **UTF-16 code unit**, not by code point
@@ -644,9 +676,10 @@ and value layer. Quo is the relation layer.
 ### Ids
 
 An id is minted by the being, bound by the ward, permanent, and never crosses
-the door. Her id for you and your id for her are unrelated. One id names one
-record, and standings and occupants are one namespace: invite refuses an id a
-standing holds, take refuses an id an occupant holds.
+the door. It is any string, the empty one included. Her id for you and your
+id for her are unrelated. One id names one record, and standings and
+occupants are one namespace: invite refuses an id a standing holds, take
+refuses an id an occupant holds.
 
 Two words are the ward's and no being may mint them: `OWNER` and `PUBLIC`,
 the reserved askers of the ward-to-being edge. The ward speaks at every
@@ -667,8 +700,12 @@ refuse.
 Cells are I-JSON values. The ward may persist them. A restart is silent: she
 is constructed again with the same cells. Three keys at their root are the
 ward's, `standings`, `occupants` and `class`, and a write of hers to them is
-refused where she wrote it, like a non-value. A value nested past sixty-four
-levels is refused the same way, and that bound is Quo's because a far ward
+refused where she wrote it, like a non-value, and removing one is a write to
+it. A value nested past sixty-four levels is refused the same way, wherever
+it crosses and not in cells alone: a level is a container, a scalar is none,
+so sixty-four nested arrays are a value and sixty-five are not, counted from
+the value written and never from the root it is written under. That bound
+is Quo's because a far ward
 reads what a near one wrote: a kit with a deeper stack still refuses at
 sixty-four, or two kits disagree about which blueprint is a value. A kit
 refuses beside it whatever its own runtime writes one way and reads another,
@@ -682,14 +719,22 @@ cells
   anything else                                        hers
 ```
 
+`standings` and `occupants` stand as empty objects from her birth. A standing
+is born at take with `digest`, `blueprint` and `seen` all null, and an
+occupant invited with no notes has the empty object for them.
+
 - `digest` is the hash of the blueprint she last fetched by the empty ask.
   It is over what came back, whatever that was.
 - `blueprint` is that blueprint, and only if it is one. A far describe is
   somebody else's code and may answer any value at all; the ward reads it as
-  a blueprint before writing it as one, a list of asks with a name and an
-  input each, and writes `null` when it is not. A side walks `asks` by name,
-  and a side that broke on a far ward's answer would be one kit made wrong
-  by another. The answer itself still goes to whoever asked, unread.
+  a blueprint before writing it as one, and writes `null` when it is not. A
+  blueprint is an object with `notes` present, whatever they hold, and
+  `asks` an array, each entry an object with a string `name` and an `input`
+  that is an object; nothing else is required of it, and when it is one the
+  whole value is written, fields this document does not name included. A
+  side walks `asks` by name, and a side that broke on a far ward's answer
+  would be one kit made wrong by another. The answer itself still goes to
+  whoever asked, unread.
 - `seen` is the digest her ward last saw arrive with an answer. A silent
   refresh leaves it untouched.
 - `notes` is hers. Quo never reads it. Tier, expiry, kinship between an
@@ -856,7 +901,11 @@ is sealed to. Beings never own a padlock.
 - **The ward key** comes from the seed. Its pk on the wire is the signing pk
   then the padlock, 128 hex, and it routes. Two curves, and each secret is
   HKDF-SHA-256 of the seed under its own label, `quo-ward-sign` and
-  `quo-ward-seal`, empty salt, 32 bytes out. Fed the seed straight the two
+  `quo-ward-seal`, empty salt, the seed as the input keying material, 32
+  bytes out. The first thirty-two bytes are the Ed25519 private key as
+  RFC 8032 names it, the seed that key is expanded from; the second are the
+  X25519 scalar as RFC 7748 takes it, clamped by the function and not
+  before. Fed the seed straight the two
   scalars would still differ, because Ed25519 hashes what it is given and
   X25519 clamps it raw, but that is an accident of the two designs and no
   separation: one secret would be doing two jobs with nothing said about it,
@@ -1008,7 +1057,10 @@ was heard.
 
 Each ask is bounded on its own. The time an arriving call has left does not
 bound the asks a being makes while answering it, and an ask carries no count
-of doors; see Closed. Every wait still ends.
+of doors; see Closed. Every wait still ends. How a kit bounds a wait, a
+timer, a thread or a deadline read between steps, is its own; that the wait
+ends at the bound with `late` is Quo's, in every language, a blocking one
+included.
 
 ### Judgment
 
@@ -1098,14 +1150,24 @@ A key is a seed and nothing is derived from it twice. The thirty-two bytes
 drawn for an ephemeral, and the thirty-two bytes of a heir secret, are the
 secret as they stand: no hash, no label, no second derivation. Only the
 ward's key is derived, because only the ward's one seed has two curves to
-serve. A small-order public key verifies nothing, and so does a public key
-whose y coordinate is not reduced, at or above the field's prime, since the
-field has room for that spelling and it names one of the same points; an
-all-zero agreement is refused; a signature of any length but sixty-four
-verifies nothing. Verification is strict: a signature is checked against the
-bytes exactly as they were received, never against a re-serialisation of
-what they parsed to, and a kit that canonicalises before verifying will
-refuse its own peers. SHA-256,
+serve.
+
+Verification is one rule, because two kits that verify differently answer
+one ask two ways. A signature is checked against the bytes exactly as they
+were received, never against a re-serialisation of what they parsed to, and
+a kit that canonicalises before verifying will refuse its own peers. It is
+RFC 8032's cofactorless check, `[s]B = R + [k]A`, and it refuses in four
+places and no others: a signature of any length but sixty-four; an `s` at or
+above the group order; an `R` whose bytes are not the bytes the point it
+names encodes to, so `R` is compared as encoded; and a public key that is
+small-order in any spelling, the sign bit set on `x = 0` included, or whose
+y coordinate is not reduced, at or above the field's prime, since the field
+has room for that spelling and it names one of the same points. A public key
+with a torsion component that is not small-order verifies like any other,
+and so does a small-order `R`: only the key's holder can write either, and
+refusing them buys nothing a stranger can use. An all-zero agreement is
+refused: at a door it is a box that does not open, D1, and on a reply it is
+S4. SHA-256,
 AES-GCM and HKDF are everywhere; the two curves are recent, and a terrain
 without them is a terrain no ward runs on. `vectors/arithmetic.json` and
 `vectors/framing.json` hold fixed inputs and outputs so a kit in another
@@ -1210,24 +1272,34 @@ lets the partition keep the freedoms it is given, the two bounded lists'
 lengths and a `minted` list a kit may keep empty, without a stranger's
 replay turning them into a shape everyone must copy.
 
+`ward` is 128 lowercase hex, `before` and `after` are strings, and `ask` is
+the sealed bytes in lowercase hex. A body that is not one record by its two
+names is answered nothing delivered, and the world the last good `stand`
+left stands. The suite header is read on the reach alone, since `stand` and
+`digest` are no reach. Each request is answered on its own, and a kit may
+close the connection after every answer.
+
 `stand` puts the kit's world in the record's state and leaves its stream
-where the record says. How that state is reached is the kit's own: a
-record's `state` says what the ward was in the middle of, and a kit builds
-that however its own harness builds anything. What is not the kit's own is
-three things, and they are all the record carries.
+where the record says. The world is the corpus's, because the `ask` a
+record returns was sealed in it: the keys that sign it, the numbers it
+carries and the ids its answers name are drawn and minted there, so a kit
+that builds another world seals other bytes. `door.json`'s note writes that
+world out whole, the harbors, the wards and beings, what each relation
+draws and in which order, and the hand that seals every ask the corpus
+carries, and a kit reads it there rather than recovering it from the bytes.
+How a kit's harness builds that world is its own. What the record itself
+carries is three things.
 
 The **ward** is the seed of the ward whose door judges, and it is that seed
 as text: `A`, `B`, `P`, each of them a name that is not thirty-two bytes and
 so is SHA-256'd to thirty-two, as every seed is. Same seed, same key,
 in any language.
 
-**`draws`** is how many words of the stream were spent before the arrival.
-A kit resets its stream to the corpus's seed and spends that many words, or
-arrives there by doing its own setup; either way the stream stands at the
-same place, so the door draws the reply's ephemeral key from the same bytes
-this corpus drew it from. It is the whole of what a setup's history is worth
-to a stranger. Nobody needs to know what the wards did, only where the
-stream stands when the door is about to answer.
+**`draws`** is how many words of the stream were spent before the arrival,
+the hand's sealing of the ask included. A kit that built the world as the
+note writes it arrives there on its own, and `draws` is what it checks
+itself against; the door then draws the reply's ephemeral key from the same
+bytes this corpus drew it from.
 
 **`blueprint`** is on the one record whose reply carries `seen`, and is the
 shape that digest is taken over. A being's shape reaches the wire in that
@@ -1722,9 +1794,25 @@ segment and the reply as the answer, listener to listener; and a
 **socket**, one held line used in
 both directions, opened by whichever side can dial, with a frame id
 matching each reply to its ask and one text frame in which a side announces
-the ward pks it holds. The framing on a socket is binary: an ask is a kind
-byte, a four-byte id, the 64-byte pk and the bytes; a reply is the kind, the
-id and the bytes; and nothing delivered is the kind and the id alone. A kit
+the ward pks it holds. The framing on a socket is binary: an ask is the kind
+byte `00`, a four-byte id, the 64-byte pk and the bytes; a reply is the kind
+`01`, the id and the bytes; and nothing delivered is the kind `02` and the
+id alone. The id is big-endian and the asking side's own, one for its first
+ask on the line and unique among the asks it holds open there. A binary
+frame that is none of the three, an unknown kind, an ask too short to hold a
+pk or a nothing with bytes after its id, is not a frame and is dropped: it
+tells no side that nothing was delivered, so an ask waiting on its id ends at
+the ward's bound. The text frame is the JSON object
+`{"announce":[pk,...],"suite":1}`, read as JSON and in any key order, an
+absent `suite` read as this one.
+A request is posted with `content-type: application/octet-stream`, which no
+door reads. The reply is the body of a `200` of the same type. `404` is
+nothing delivered, and the listener answers it for a pk it holds no door
+for, a path that is not one pk in lowercase hex, and a suite it does not
+speak; the caller reads `404`, any other `4xx`, `502`, `503` and `504` as
+nothing delivered, and any other status as bytes sent and no answer, which
+the ward's bound ends. The suite header is compared as HTTP delivers it,
+with its outer whitespace gone. A kit
 holds either end of a line and never a listener: who accepts a socket is the
 terrain's business. A reach reads nothing; a
 harbor opens no box but its own probe's.
@@ -1876,8 +1964,6 @@ being and her ward.
 
 The only place this document may name a gap between itself and the tree.
 Each line is a debt to close, not a note to keep.
-
-Nothing is named here today.
 
 ## Open
 

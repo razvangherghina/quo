@@ -2,6 +2,7 @@
   "corpus": "quo",
   "encoding": "hex",
   "area": "arithmetic",
+  "note": "The primitives the seal rests on, each with fixed inputs and outputs: SHA-256, an Ed25519 pair and signature, an X25519 pair and agreement, HKDF-SHA-256 under a label, and AES-256-GCM under the key and nonce that derivation gives. A secret is the thirty-two bytes a key is made from, as RFC 8032 and RFC 7748 take them. `voice` is an Ed25519 public key a signature is checked under. A record carrying `refuses` is one that must not verify or open: the wrong key, other bytes, an all-zero key, a small-order key, an unreduced y, a turned byte, other additional data.",
   "vectors": [
     {
       "name": "SHA-256 of nothing",
