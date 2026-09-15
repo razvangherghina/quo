@@ -215,7 +215,6 @@ route   { far, at }              { routed: far }
   seed, on a second address this program opens, and answers that address.
   The two are one name on two listeners, which is the custody
   cost of chapter 7, and `at` tells them apart from then on.
-
 - `route` tells this program's carrier that the ward whose 128 hex pk is
   `far` is dialed at `at`, `host:port`, from then on, for every ward this
   program stands. A far ward with no route is not delivered, and the ask

@@ -68,6 +68,16 @@ cargo build --manifest-path examples/rust/harness/Cargo.toml --bin stand
 node verifier/cli.js -- examples/rust/harness/target/debug/stand
 ```
 
+A kit of your own is verified the same way. Its stand program answers
+`vectors/HARNESS.md`, and everything after `--` is the command that starts
+it. The verifier needs Node alone, prints one line per record of
+`vectors/door.json` and what differed on a record that fails, and exits
+zero when every record passes.
+
+```bash
+node verifier/cli.js -- <your stand program and its arguments>
+```
+
 The world of `SCENARIOS.md` runs on loopback, and builds the Rust stand
 itself.
 
