@@ -28,6 +28,7 @@ function ensureRustBuilt() {
   // Built once per process, always: cargo is incremental, so a stale binary
   // never stands in for the harness as it is now.
   const res = spawnSync('cargo', ['build', '--bin', 'stand'], { cwd: RUST_HARNESS_DIR, stdio: 'inherit' });
+  if (res.error?.code === 'ENOENT') throw new Error('cargo is not on PATH: the Rust stand needs Rust, https://rustup.rs');
   if (res.status !== 0) throw new Error('cargo build --bin stand failed');
   rustBuilt = true;
 }

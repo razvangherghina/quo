@@ -31,8 +31,10 @@ function hold(claim, line) {
   say(`  ok ${line}`);
 }
 
-const a = startStand('js', ['--listen', '127.0.0.1:0', '--ward', 'A', '--class', 'Host']);
+// The Rust stand is started first: it may need building, and a build that
+// fails then leaves no JavaScript stand running behind it.
 const b = startStand('rust', ['--listen', '127.0.0.1:0', '--ward', 'B', '--class', 'Host']);
+const a = startStand('js', ['--listen', '127.0.0.1:0', '--ward', 'A', '--class', 'Host']);
 const observer = createObserver();
 let code = 0;
 
