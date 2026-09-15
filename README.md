@@ -24,7 +24,8 @@ enough.
   and the world of `SCENARIOS.md` between them. Scholastic, not a library
   and not a reference: Quo ships none. `examples/README.md` says how to run
   both kits, the world and the verifier from this folder, with Node 24,
-  Rust and, for containers, Docker.
+  Rust and, for containers, Docker. `node examples/e2e/demo.js` shows the
+  two kits meet, step by step.
 
 Anyone may write Quo, and no list of kits is part of it. The spec has no
 version until 1.0.0, when it is frozen once.

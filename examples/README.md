@@ -38,6 +38,21 @@ The JavaScript kit has one dependency to install.
 npm --prefix examples/js install
 ```
 
+### Two kits meet
+
+One command stands the JavaScript kit as one ward and the Rust kit as
+another, two processes, with the observer on the wire between them. It
+boots a being on each, invites, routes, knocks, takes and asks, and then
+knocks as a stranger and hears silence. Each step prints what crossed, and
+it exits zero only when every step held. It needs Node 24 and Rust, and
+builds the Rust stand itself.
+
+```bash
+node examples/e2e/demo.js
+```
+
+### Every proof
+
 ```bash
 npm --prefix examples/js test
 ```
