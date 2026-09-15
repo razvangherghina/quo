@@ -1,4 +1,4 @@
-// `quo/SCENARIOS.md` chapter 3, "The count", one test per line and per
+// `SCENARIOS.md` chapter 3, "The count", one test per line and per
 // direction. Each test first runs its check on evidence where the line's
 // claim is broken, by the hand, the observer or the harbor, and shows it
 // throws, then keeps the claim and shows the check holds.

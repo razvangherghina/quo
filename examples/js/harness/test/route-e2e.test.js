@@ -1,5 +1,5 @@
 // Two `stand` programs of this kit, on two real addresses, routed to each
-// other over the root channel of `quo/vectors/HARNESS.md` section 2, where
+// other over the root channel of `vectors/HARNESS.md` section 2, where
 // a being on one invites and a being on the other knocks, takes and asks
 // over real TCP.
 

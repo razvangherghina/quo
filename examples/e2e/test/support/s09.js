@@ -1,4 +1,4 @@
-// Ground for `quo/SCENARIOS.md` chapters 9 and 10 that no other scenario
+// Ground for `SCENARIOS.md` chapters 9 and 10 that no other scenario
 // shares: a kit's ward B with the hand standing as its door behind an
 // observer, a pair of kit wards whose asker holds `Caller`, `Caller` booted
 // with a `Host` of her own, the hand asking itself so a payload no kit writes

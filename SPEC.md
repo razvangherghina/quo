@@ -19,12 +19,12 @@ should add is asked of it first. What fails the test is not Quo's: Quo
 neither requires it nor forbids it, weighs no options for it and leaves it
 open to nobody's ruling. Where leaving a thing out has a consequence a
 reader would not see, the consequence is said once, and chapter 7 holds
-them. Nothing in the door, the stance or the ground says how bytes travel, how a
-ward is stored, scheduled or defended, or how a language spells a thing.
-Those belong to the carrier, the harbor and the kit. Quo names no carrier
-the door depends on. Chapter
-6 is the one carrier Quo publishes, so that two kits that have never met
-can reach each other's doors, and the door stands without it.
+them. Nothing in the door, the stance or the ground says how bytes travel,
+how a ward is stored, scheduled or defended, or how a language spells a
+thing. Those belong to the carrier, the harbor and the kit. Quo names no
+carrier the door depends on. Chapter 6 is the one carrier Quo publishes,
+so that two kits that have never met can reach each other's doors, and the
+door stands without it.
 
 Quo is bytes in, bytes out. An ask sealed to a ward's key is handed to
 anything that carries bytes, and what comes back is bytes with Quo meaning
@@ -876,9 +876,8 @@ is, is Quo's, and how a kit holds them together is not.
 - **The partition.** The ward's state at one moment, as values, opaque to
   the harbor. Everything durable a ward has is in it, every secret
   included, the lock among them, and nothing in it is ever in a being's
-  cells. Between one run
-  and the next the ward is this record, and standing it again on any
-  harbor is standing the same ward.
+  cells. Between one run and the next the ward is this record, and
+  standing it again on any harbor is standing the same ward.
 - **Instantiate.** A class name and a stance in, the being or nothing out.
   A name the harbor does not hold is nothing, and that boot makes nobody. A
   class that throws while it is made is a being who threw at birth: she is

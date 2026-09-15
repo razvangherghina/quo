@@ -1,4 +1,4 @@
-// Support for `quo/SCENARIOS.md` chapter 6, "Values across two languages",
+// Support for `SCENARIOS.md` chapter 6, "Values across two languages",
 // that no other scenario shares. The hand writes each payload's exact text,
 // since no JavaScript value spells `9007199254740993`, `-0`, `1.0`, a
 // duplicate key or bytes that are not UTF-8. It dials A's door through the

@@ -1,7 +1,7 @@
-// The trace of `quo/SCENARIOS.md` "How the world is built" and
-// `quo/vectors/HARNESS.md` section 8: one kit's stand under fixed entropy, the
+// The trace of `SCENARIOS.md` "How the world is built" and
+// `vectors/HARNESS.md` section 8: one kit's stand under fixed entropy, the
 // hand on its own fixed stream, and the observer between them. Each record
-// of `quo/vectors/door.json` is one story told from nothing, and what the
+// of `vectors/door.json` is one story told from nothing, and what the
 // observer recorded of its last arrival is the record. Every step before it
 // is written into the record too, root requests and arrivals as bytes, so a
 // verifier holding no key puts a kit in the record's state by replaying them.

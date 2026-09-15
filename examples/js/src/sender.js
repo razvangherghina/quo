@@ -90,6 +90,10 @@ export function createSender({ key, partition, random, carry, door }) {
       // every choice, and no object came back to move her side.
       const was = knocking.unsure;
       knocking.unsure = target.heir !== null;
+      // Every knock is signed with the heir and announces her one own key for
+      // this invitation. After an answered knock her key signs, so the heir
+      // takes its place again and her key is announced.
+      if (target.heir !== null && knocking.by !== target.secret) Object.assign(knocking, { next: knocking.by, by: target.secret });
       const reply = await speak(knocking, target, method, args, time, isLate, target.lock);
       if (!reply) return word('late');
       if (reply.unreached) {
@@ -97,7 +101,7 @@ export function createSender({ key, partition, random, carry, door }) {
         return toBeing(reply);
       }
       knocking.unsure = target.heir !== null && (reply.silence === true || reply.quo === 'threw');
-      if (reply.object !== undefined) knocking.answered = true;
+      knocking.answered = reply.object !== undefined;
       return toBeing(reply);
     });
   }

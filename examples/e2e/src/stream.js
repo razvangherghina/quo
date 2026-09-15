@@ -1,4 +1,4 @@
-// The fixed stream of `quo/vectors/HARNESS.md` section 6, SplitMix64 from a
+// The fixed stream of `vectors/HARNESS.md` section 6, SplitMix64 from a
 // 64-bit seed, each draw spent eight bytes, least significant byte first.
 // The hand draws its own keys from one when the trace fixes entropy.
 

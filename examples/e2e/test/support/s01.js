@@ -1,4 +1,4 @@
-// Support for `quo/SCENARIOS.md` chapters 1 and 5: the world with a second
+// Support for `SCENARIOS.md` chapters 1 and 5: the world with a second
 // forward the hand dials, the observer's two moves these chapters need that
 // no other chapter shares (a reply forged under a key that is not the
 // ward's, knocks held until both racers arrived), and the checks each line

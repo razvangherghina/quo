@@ -1,4 +1,4 @@
-// `quo/vectors/HARNESS.md` section 1 and `quo/SPEC.md` chapter 6: the stand
+// `vectors/HARNESS.md` section 1 and `SPEC.md` chapter 6: the stand
 // program's own TCP listener, reached over a real socket by a far ward that
 // dials in, and two stand programs standing on two real addresses at once.
 //

@@ -1,6 +1,6 @@
 # KIT-SPEC
 
-This is `quo/KIT-SPEC.md`, every choice the spec leaves open, answered for
+This is `KIT-SPEC.md`, every choice the spec leaves open, answered for
 this kit in the template's own order, chapter by chapter and number by
 number, so the two are read side by side. Every answer is this kit's choice
 and carries its reason, and another kit choosing otherwise is still Quo.
@@ -36,9 +36,10 @@ tcp.js         listen and dial over node:net
 ```
 
 Beside `src/` stand two folders that are not the kit. `test/` replays the
-four vector files, holds the checks a stranger cannot make, and keeps its
-fixtures, the vectors' beings, the record builder and SplitMix64, under
-`test/fixtures/`. `harness/` is the stand program of `HARNESS.md`, an
+arithmetic, framing and tcp vector files and holds the checks a stranger
+cannot make. Its fixtures stand under `test/fixtures/`: the vectors' beings
+in `beings.js`, SplitMix64 in `splitmix64.js`, and the vector reader in
+`vectors.js`. `harness/` is the stand program of `HARNESS.md`, an
 adapter over the kit with its own beings and its own tests. Both stay
 outside `src/` because nothing of a test or a harness is reachable from a
 harbor that is not in it.
@@ -339,16 +340,17 @@ A counter, from one, wrapping at thirty-two bits, which is what the frame's
 field holds. It is unique in flight because no connection holds four billion
 asks.
 
-## From chapter 8, what a stranger cannot see
+## From chapter 8, what a stranger can observe
 
 ### 1. What the conformance suite holds beyond the vectors
 
 The three things a stranger cannot see, under `test/`, each held where the
 chapter it belongs to is tested.
 
-- `door.test.js` replays every record of the door corpus and checks, beside
-  the bytes, the random spent, the `heard` bit, whether the ward wrote while
-  judging, and what the reply opens to under the lid.
+- The door corpus is replayed by `verifier/` over `harness/stand.js`,
+  which compares the bytes and whether the ward wrote. The `heard` bit is
+  held in `ward.test.js` and `wire.test.js`, and what a reply opens to in
+  `sender.test.js`.
 - `value.test.js`: the value rule and JCS.
 - `keys.test.js`: the count's window, a mark of one hundred honouring
   thirty-seven and refusing thirty-six and itself, and the door's move.
@@ -370,7 +372,9 @@ chapter it belongs to is tested.
 ### 2. The kit's partition digest, and the harness
 
 There is none. The partition is a value, so equality of its JSON text is
-what Quo asks of a digest, and `door.test.js` compares that text.
+what Quo asks of a digest. `harness/stand.js` answers `digest` with that
+text, and `verifier/` compares it before and after each arrival of the door
+corpus.
 
 The harness that replays a record is `harness/stand.js`: one executable over
 the kit's own `createWard` and `tcp.js`, speaking the root channel of

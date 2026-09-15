@@ -932,6 +932,10 @@ fn reserved_on(ward: &Ward, being: &str, name: &str, inner: Map) -> Outcome {
 fn harbor_stop(harness: &Harness, pk: WardPk, at: Option<&str>) -> Outcome {
     let Some(slot) = resolve_slot(harness, pk, at) else { return Outcome::Object(err("no such ward")) };
     slot.ward.borrow_mut().take();
+    // A stopped ward sends nothing and writes nothing, so what `hold` and
+    // `drop` still had to spend goes with its run.
+    slot.hold.store(0, std::sync::atomic::Ordering::SeqCst);
+    *slot.drop.borrow_mut() = 0;
     let mut m = Map::new();
     m.insert("stopped", pk.to_string());
     Outcome::Object(Value::Object(m))

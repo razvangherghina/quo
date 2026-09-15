@@ -1,5 +1,5 @@
-// What `quo/SCENARIOS.md` chapter 2, "Keys rotate", needs beside `src/`: a
-// door written from `quo/SPEC.md` "Keys" and "The count" that stands on the
+// What `SCENARIOS.md` chapter 2, "Keys rotate", needs beside `src/`: a
+// door written from `SPEC.md` "Keys" and "The count" that stands on the
 // hand and breaks one rule on demand, a kit's door the hand dials, and the
 // lengths a line reads an ask box by.
 

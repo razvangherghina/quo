@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# Stands the world of `quo/SCENARIOS.md` in containers and runs the same
+# Stands the world of `SCENARIOS.md` in containers and runs the same
 # suite `npm test` runs on loopback against it: builds and starts `js`, `rust` and `observer` (`compose.yaml`), waits for
 # the Rust stand's own build (its healthcheck), builds and runs `driver`
-# once, then tears the whole world down -- whatever the suite decided.
+# once, then tears the whole world down, whatever the suite decided.
 # Loopback's own `npm test` is untouched by any of this: it never sets
 # `E2E_DOCKER` and never sees this file.
 set -uo pipefail

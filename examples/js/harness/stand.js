@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// The stand program, `quo/vectors/HARNESS.md` section 1: one executable that
+// The stand program, `vectors/HARNESS.md` section 1: one executable that
 // a harbor runs, speaking the root channel of section 2 on stdin/stdout and
 // standing wards over the reference carrier of `../src/tcp.js`. It is an
 // adapter over the kit (`../src/ward.js`, `../src/harbor.js`) and changes
@@ -349,7 +349,9 @@ async function main() {
     // The harbor's verbs (section 4) act on the ward as a whole.
     switch (method) {
       case 'stop':
-        record.stopped = true;
+        // A stopped ward sends and writes nothing, so what `hold` and `drop`
+        // still had to spend goes with its run.
+        Object.assign(record, { stopped: true, holdRemaining: 0, dropRemaining: 0 });
         return { id, object: { stopped: record.pk } };
       case 'digest':
         return { id, object: { digest: JSON.stringify(record.partition) } };

@@ -44,14 +44,9 @@ pub(super) fn knock(core: &Rc<Core>, being: &str, invitation: &Value, method: Op
     }
     let heir = invitation.heir.as_ref().map(|(pk, _, _)| hex(pk));
     // The knock waits its turn on the relation's line, as every send does.
-    let Some(line) = core.line(being, &invitation.ward.to_string(), heir.as_deref(), deadline(time)) else {
+    let Some(_line) = core.line(being, &invitation.ward.to_string(), heir.as_deref(), deadline(time)) else {
         return Answer::Word(Word::Unreached);
     };
-    let taken = core.partition.borrow().bind.get(being).and_then(|b| b.standings.iter().find(|(_, s)| s.ward == invitation.ward.to_string() && s.heir == heir).map(|(id, _)| id.clone()));
-    if let Some(id) = taken {
-        drop(line);
-        return ask(core, being, &id, method, args, time);
-    }
     let key = knock_key(&invitation);
     let record = core.partition.borrow().bind.get(being).and_then(|b| b.knock(&key).cloned());
     let record = match record {
@@ -64,29 +59,38 @@ pub(super) fn knock(core: &Rc<Core>, being: &str, invitation: &Value, method: Op
         }
     };
     let own: [u8; 32] = unhex(&record.by).expect("a key this ward wrote");
-    let own_pk = being_pk(&own);
     let to = invitation.heir.as_ref().map(|(pk, _, _)| *pk);
     let knocked = |by: &[u8; 32], next: Option<[u8; 32]>, lock: Option<&[u8; LOCK_LEN]>| exchange(core, being, &key, &invitation.ward, to, by, next, lock, method, args, time);
+    // As the heir, announcing her own key, the one key she knocks under for
+    // this invitation, so a door that bound it at any knock still admits it.
+    let as_heir = |heir_secret: &[u8; 32], lock: &[u8; LOCK_LEN]| knocked(heir_secret, Some(being_pk(&own)), Some(lock));
     let answer = match &invitation.heir {
         // The public being: one key for life, announcing nothing.
         None => knocked(&own, None, None),
-        // Answered before and not taken: the door already binds her own key.
-        Some(_) if record.spoke => knocked(&own, None, None),
-        // Sent before and never answered: her own key first, under the knock's
-        // edge key and with no ciphertext, then the heir with a fresh m.
-        Some((_, heir_secret, lock)) if record.sent => match knocked(&own, None, None) {
-            Answer::Silence => knocked(heir_secret, Some(own_pk), Some(lock)),
+        // The lost knock: the last knock was sent and brought no object, word
+        // or refusal back, so the door may hold the key it announced. Her own
+        // key first, under the knock's edge key and with no ciphertext, then
+        // the heir with a fresh m. A knock after an answered one is signed
+        // with the heir like any other, and meets silence.
+        Some((_, heir_secret, lock)) if record.sent && !record.spoke => match knocked(&own, None, None) {
+            Answer::Silence => as_heir(heir_secret, lock),
             other => other,
         },
-        Some((_, heir_secret, lock)) => knocked(heir_secret, Some(own_pk), Some(lock)),
+        Some((_, heir_secret, lock)) => as_heir(heir_secret, lock),
     };
-    if matches!(answer, Answer::Value(_)) {
-        core.bind_mut(being, |b| {
-            if let Some(r) = b.knock_mut(&key) {
-                r.spoke = true;
+    // What the last knock brought back. Take reads whether it was an object.
+    // A word is the door's refusal, which binds nothing, so the next knock has
+    // nothing to recover.
+    let answered = matches!(answer, Answer::Value(_));
+    let refused = matches!(answer, Answer::Word(Word::Removed | Word::Absent | Word::Unannounced | Word::Repeated));
+    core.bind_mut(being, |b| {
+        if let Some(r) = b.knock_mut(&key) {
+            r.spoke = answered;
+            if refused {
+                r.sent = false;
             }
-        });
-    }
+        }
+    });
     answer
 }
 

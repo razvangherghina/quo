@@ -1,4 +1,4 @@
-// `quo/SCENARIOS.md` chapter 11, Custody. Each line runs in both directions,
+// `SCENARIOS.md` chapter 11, Custody. Each line runs in both directions,
 // or with each kit as the door where the asker is the hand, and each carries
 // its broken run: a story in which the claim does not hold, and the check
 // seen to throw on it.

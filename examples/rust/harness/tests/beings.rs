@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-//! The harness beings against `quo/SCENARIOS.md` "The beings".
+//! The harness beings against `SCENARIOS.md` "The beings".
 
 mod support;
 

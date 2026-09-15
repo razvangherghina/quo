@@ -1,4 +1,4 @@
-// The two `stand` programs of `quo/vectors/HARNESS.md` section 1, as
+// The two `stand` programs of `vectors/HARNESS.md` section 1, as
 // executables the driver spawns and speaks the root channel to on stdin and
 // stdout. Read only as programs to run: nothing here imports a kit's own
 // library, in JavaScript or in Rust.

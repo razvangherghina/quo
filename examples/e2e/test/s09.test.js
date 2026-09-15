@@ -1,4 +1,4 @@
-// `quo/SCENARIOS.md` chapter 9, "Time". Where the door is the hand, each kit
+// `SCENARIOS.md` chapter 9, "Time". Where the door is the hand, each kit
 // is the asker; where the door is a kit, each kit is the door once. Each test
 // breaks its claim once, through the hand or the observer, and shows the
 // check rejects it, then keeps it.

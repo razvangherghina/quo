@@ -1,4 +1,4 @@
-// `quo/SCENARIOS.md` chapter 2, "Keys rotate", one test per line. A line whose
+// `SCENARIOS.md` chapter 2, "Keys rotate", one test per line. A line whose
 // asker is a kit runs each kit as the asker; a line between two kits runs
 // both ways; a line whose asker is the hand runs each kit as the door. Each
 // test first runs its check on evidence where the line's claim is broken, by
@@ -210,7 +210,7 @@ for (const [doorKit, askerKit] of DIRECTIONS) {
 
   test(`2.15 a knock with quiet, then hello with no ciphertext (${doorKit} door, ${askerKit} asks)`, T, async () => {
     const rest = async (w, invitation) => {
-      await knock(w.asker, w.b.pk, invitation, { method: 'quiet' });
+      await knock(w.asker, w.b.pk, invitation, { method: 'quiet', wanted: W });
       await knockHello(w, invitation);
       await take(w.asker, w.b.pk, 'a', invitation);
       await askOn(w.asker, w.b.pk, 'a', { wanted: W });
@@ -237,8 +237,8 @@ for (const [doorKit, askerKit] of DIRECTIONS) {
 
   test(`2.17 a knock again after two silences goes under the same m (${doorKit} door, ${askerKit} asks)`, T, async () => {
     const rest = async (w, invitation) => {
-      await knock(w.asker, w.b.pk, invitation, { method: 'quiet' });
-      await knock(w.asker, w.b.pk, invitation, { method: 'quiet' });
+      await knock(w.asker, w.b.pk, invitation, { method: 'quiet', wanted: W });
+      await knock(w.asker, w.b.pk, invitation, { method: 'quiet', wanted: W });
       await knockHello(w, invitation);
       await take(w.asker, w.b.pk, 'a', invitation);
       await askOn(w.asker, w.b.pk, 'a', { wanted: W });

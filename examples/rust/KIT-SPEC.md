@@ -1,6 +1,6 @@
 # KIT-SPEC
 
-This paper is the template `quo/KIT-SPEC.md` answered for this kit, question
+This paper is the template `KIT-SPEC.md` answered for this kit, question
 by question in its order. Each answer is one choice, and another kit choosing
 otherwise is still Quo.
 
@@ -155,8 +155,9 @@ read.
 
 ## 4.11 How does a being name the class she boots?
 
-`Stance::boot` takes the class name and the key the new being stands under,
-both strings she chooses, and a key already held makes nobody.
+`Stance::boot(class, key, occupant, standing)` takes the class name and the
+key the new being stands under, both strings she chooses, beside the two ids
+of 4.13. A key already held makes nobody.
 
 ## 4.12 How does an ask between two beings of one ward travel?
 
@@ -180,7 +181,9 @@ A `Ground` trait of six methods, `instantiate`, `door`, `carrier`, `random`,
 `Ward::birth`. The carrier of chapter 5 is two of them: `door` names a ward
 running in this process, and `carrier` hands the `Carrier` that reaches any
 other. `MemoryHarbor` is the one harbor: one process, no socket, no
-disk, every door in process and no carrier.
+disk. Its `door` names a ward it booted or a ward of a harbor linked to it
+by `MemoryHarbor::link`, and it keeps the trait's `carrier`, which hands
+none.
 
 ## 5.2 How is a seed handed in and held?
 
@@ -227,8 +230,10 @@ its ephemeral key.
 
 ## 5.7 Which carriers does the kit stand beside the reference one?
 
-One: the memory harbor's in-process copy, to a door of its own or of a linked
-harbor, always a copy and never a reference.
+None. The kit holds the reference carrier over TCP in `src/wire.rs`, and
+`MemoryHarbor` hands no carrier. An ask to a ward its `door` names, of its
+own or of a linked harbor, is handed to that door as sealed bytes on this
+stack, and no carrier stands in it.
 
 ## 5.8 How does the door tell its harbor what was written, and when?
 

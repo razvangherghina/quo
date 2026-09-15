@@ -1,4 +1,4 @@
-// `quo/SCENARIOS.md` chapter 1, "The relation is born": one test per line,
+// `SCENARIOS.md` chapter 1, "The relation is born": one test per line,
 // each run in both directions. Every test first runs its check on evidence
 // where the line's claim is broken, by the hand or the observer, and shows
 // it throws, then keeps the claim and shows the check holds.
@@ -197,6 +197,25 @@ for (const [doorKit, askerKit] of DIRECTIONS) {
         return;
       }
       assert.fail('the hand won every race, so the kit asker never lost one');
+    }));
+
+  test(`1.10 ${dir}: an answered knock not taken; a knock again is silence; a third is an object; take and ask are answered`, () =>
+    withEdge({ doorKit, askerKit }, async (w) => {
+      const invitation = await w.invite('b');
+      const check = (answers) => {
+        assert.deepEqual(
+          answers.map((a) => ('object' in a ? 'object' : a.silence ? 'silence' : a.quo)),
+          ['object', 'silence', 'object'],
+        );
+      };
+      // Broken: three invitations, so every knock binds a fresh heir.
+      assert.throws(() => check([{ object: {} }, { object: {} }, { object: {} }]));
+
+      const answers = [];
+      for (let i = 0; i < 3; i++) answers.push(await w.knock(invitation));
+      check(answers);
+      await take(w.asker, w.b.pk, 'a', invitation);
+      checkAnswered(await w.during(() => w.ask('a')), w.a.pk, { hi: 'b' });
     }));
 }
 

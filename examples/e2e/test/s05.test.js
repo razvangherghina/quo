@@ -1,4 +1,4 @@
-// `quo/SCENARIOS.md` chapter 5, "The public being": one test per line, each
+// `SCENARIOS.md` chapter 5, "The public being": one test per line, each
 // run in both directions. Every test first runs its check on evidence where
 // the line's claim is broken and shows it throws, then keeps the claim and
 // shows the check holds.

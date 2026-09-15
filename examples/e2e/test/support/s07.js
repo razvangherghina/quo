@@ -1,4 +1,4 @@
-// Ground for `quo/SCENARIOS.md` chapter 7, "The blueprint and the digest",
+// Ground for `SCENARIOS.md` chapter 7, "The blueprint and the digest",
 // that no other scenario shares: a target that is either a kit's door or the
 // hand standing as a door that breaks a line, B's standing at a target, the
 // hand holding a relation at a target, and a script for the hand as a door

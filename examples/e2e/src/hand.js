@@ -1,4 +1,4 @@
-// The hand, `quo/vectors/HARNESS.md` section 3 and `quo/SPEC.md` chapter 3:
+// The hand, `vectors/HARNESS.md` section 3 and `SPEC.md` chapter 3:
 // a dialer that mints its own keys and writes boxes and frames itself, so it
 // can put on the wire what no ward would, and a ward on its own address
 // under its own seed, so a kit knocks and asks at it and reads the replies
@@ -182,7 +182,7 @@ export function sealReply(lidHex, signKey, reply) {
 
 // Opens a reply box with the ephemeral secret the matching `sealAsk` kept.
 // Returns `{ payloadBytes, sig }` on a box that opens and is at least a
-// signature long, or `null` -- `SPEC.md`: "a reply over the size, or that
+// signature long, or `null`. `SPEC.md`: "a reply over the size, or that
 // does not open, ... is silence to the sender." A reply that is an object
 // moves the edge key of the heir its lid was sealed for to `quo-edge` of
 // the edge key the ask came under and the reply's agreement.
@@ -298,7 +298,7 @@ function wardKeyOf(seed) {
 // ward in the story holds.
 export const wardPkOf = (seed) => wardKeyOf(seed).pk;
 
-// The hand standing as a ward, `SCENARIOS.md` "A hand": it listens on
+// The hand standing as a ward, `SCENARIOS.md` "How the world is built": it listens on
 // `listen`, mints invitations to heirs of its own under a lock of its own,
 // opens every ask framed to its pk, and answers each with what `answer`
 // returns for it. `answer(ask)` is handed `{ heir, knock, edge, lid,

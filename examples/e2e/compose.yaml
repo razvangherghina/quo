@@ -1,4 +1,4 @@
-# The world of `SCENARIOS.md` "In containers": the JavaScript ward, the Rust
+# The world of `SCENARIOS.md` "How the world is built": the JavaScript ward, the Rust
 # ward and the observer between them on one network, and `driver`, the same
 # suite `npm test` runs on loopback, inside that network. `src/docker-net.js`
 # says what changes and why; nothing in `src/` outside it and `world.js`
@@ -70,9 +70,6 @@ services:
     container_name: observer
     hostname: observer
     networks: [e2e]
-    # `NET_ADMIN` is what `tc qdisc ... netem` on this container's interface
-    # needs, for a line that asks for packet-level delay or reordering.
-    cap_add: [NET_ADMIN]
     volumes:
       - .:/work:ro
     working_dir: /work

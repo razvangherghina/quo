@@ -1,5 +1,5 @@
 // A small driver over one `stand` process: the root channel of
-// `quo/vectors/HARNESS.md` section 2, spoken on its stdin and stdout, used by
+// `vectors/HARNESS.md` section 2, spoken on its stdin and stdout, used by
 // every test in this directory.
 
 import { spawn } from 'node:child_process';

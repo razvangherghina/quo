@@ -1,4 +1,4 @@
-// The harbor's verbs, `quo/vectors/HARNESS.md` section 4.
+// The harbor's verbs, `vectors/HARNESS.md` section 4.
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';

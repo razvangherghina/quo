@@ -1,4 +1,4 @@
-// `quo/SCENARIOS.md` chapter 6, "Values across two languages": each value
+// `SCENARIOS.md` chapter 6, "Values across two languages": each value
 // is written by the hand as the exact text the line names, sent to A's door
 // through the observer, and the claim is what that door says. Each line runs
 // with the JavaScript ward as the door, then the Rust ward, and each test

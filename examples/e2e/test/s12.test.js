@@ -1,4 +1,4 @@
-// `quo/SCENARIOS.md` chapter 12, A third party. Each line runs in both
+// `SCENARIOS.md` chapter 12, A third party. Each line runs in both
 // directions, and 12.1 once more with the hand as the door and each kit as
 // the asker, so the keys B mints are read where they are made. Each test
 // carries its broken run: the observer puts on the wire what breaks the

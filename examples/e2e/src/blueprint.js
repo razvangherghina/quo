@@ -1,5 +1,5 @@
-// `Host`'s blueprint as `quo/SCENARIOS.md` "The beings" writes it, and the
-// digest by `quo/SPEC.md` "The blueprint, the digest and seen" alone:
+// `Host`'s blueprint as `SCENARIOS.md` "The beings" writes it, and the
+// digest by `SPEC.md` "The blueprint, the digest and seen" alone:
 // SHA-256, lowercase hex, over the JCS (RFC 8785) form, keys sorted by UTF-16
 // code unit and numbers as ECMAScript writes them.
 

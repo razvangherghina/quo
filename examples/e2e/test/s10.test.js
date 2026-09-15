@@ -1,4 +1,4 @@
-// `quo/SCENARIOS.md` chapter 10, "Boot and remove". Each line runs with the
+// `SCENARIOS.md` chapter 10, "Boot and remove". Each line runs with the
 // JavaScript ward as the door and the Rust ward as the asker, then the
 // reverse. Each test breaks its claim once, through the hand or the
 // observer, and shows the check rejects it, then keeps it.

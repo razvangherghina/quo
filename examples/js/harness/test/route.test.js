@@ -1,4 +1,4 @@
-// `route`, `quo/vectors/HARNESS.md` section 4: where a far pk this program
+// `route`, `vectors/HARNESS.md` section 4: where a far pk this program
 // does not stand is dialed, for every ward this program stands, and how a
 // second `route` for one `far` replaces the first.
 

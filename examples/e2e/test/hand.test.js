@@ -1,4 +1,4 @@
-// The hand standing as a ward, `quo/SCENARIOS.md` "A hand": each kit knocks
+// The hand standing as a ward, `SCENARIOS.md` "How the world is built": each kit knocks
 // at it with an invitation it minted, and its asker reads the reply the
 // hand forges. A reply signed by a key that is not the hand's ward key is
 // silence to the asker, and the same reply signed by the ward key is the

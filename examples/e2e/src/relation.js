@@ -1,4 +1,4 @@
-// A relation the hand holds at a kit's door, `quo/SPEC.md` "Keys" and "The
+// A relation the hand holds at a kit's door, `SPEC.md` "Keys" and "The
 // edge keys" read from her side, with every key in plain view: `held` is the
 // key she signs with now, `edge` the edge key she sends under now, `open` the
 // edge key the last ask answered with an object came under, and `seq` the

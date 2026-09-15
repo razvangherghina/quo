@@ -56,30 +56,27 @@ in both.
 
 - **On loopback.** Two harbors as two processes on one machine, the
   observer a proxy between them. No docker. This is what a stranger runs
-  with the two kits' toolchains alone, in seconds.
-- **In containers.** Three services on one compose network: each kit's
-  ward, and the observer between them. Separate network namespaces, real
-  addresses, real TCP across a bridge, two binaries that share no memory,
-  no clock and no filesystem. A ward is moved by stopping one container and
-  starting another from the same partition. The observer runs a network
-  emulator when a scenario asks for it: latency, jitter, partition,
-  reordering at the packet level and not only the frame level, so the lost
-  reply is proven against packets that arrive late.
+  with the two kits' toolchains alone, in a few minutes.
+- **In containers.** Four services on one compose network: each kit's
+  stand, the observer, and the driver. Separate network namespaces, real
+  addresses and real TCP across a bridge, between two binaries that share
+  no memory and no clock. The one volume they share holds the partition
+  files a `save` or a `stand` names, so a path the driver writes is the
+  file the ward opens.
 
-Three things stand on the world once it runs.
+Three things stand on the world.
 
 - **The stories.** Every line below, both directions, on every run.
-- **The fuzzer.** A driver that draws a sequence of root actions from a
-  seed, invite, knock, ask, remove, drop a reply, restart, and runs it in
-  both directions, checking after every step that the two doors say the
-  same: same object, same word, same silence, same `seen`, same reply
-  length. A disagreement is a sentence of the spec read two ways. The seed
-  reproduces it exactly.
+- **The fuzzer.** A story drawn from a seed instead of written: invite,
+  knock, take, ask, remove, drop a reply, restart, and read a standing,
+  told in both directions. After every step the two directions show the
+  same answer and the same reply lengths. A disagreement is a sentence read
+  two ways, and its seed tells the story again.
 - **The trace.** Under fixed entropy, the observer's recording of a story
-  is a set of records: the bytes in, the bytes out, what the reply opens
-  to, whether the ward wrote. That is `vectors/door.json`, generated from a
-  story two kits agreed on. The observer's frames are checked against
-  `vectors/tcp.json`, which chapter 6 alone writes.
+  is a record: the bytes in, the bytes out, what the reply opens to, and
+  whether the ward wrote. The records are `vectors/door.json`, written
+  only from a story both kits told to the same bytes. The observer reads
+  its frames as `vectors/tcp.json` pins them.
 
 Everything runs on demand and in no gate.
 
@@ -361,6 +358,11 @@ named.
    connections. Exactly one is answered with an object and the other is
    silence. The loser's next ask, under the key it announced, is silence,
    and the winner's next ask is answered.
+10. B knocks and is answered, and does not take. B knocks again with the
+    same invitation: silence, since every knock is signed with the heir and
+    the heir is spent. B knocks a third time: an object, since that knock
+    brought nothing back and her own key is the one the door binds. B takes
+    it, and B's next ask is answered.
 
 ## 2. Keys rotate
 

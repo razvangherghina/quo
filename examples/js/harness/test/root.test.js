@@ -1,4 +1,4 @@
-// The root channel of `quo/vectors/HARNESS.md` section 2: the requests every
+// The root channel of `vectors/HARNESS.md` section 2: the requests every
 // adapter answers, and the six named refusals.
 
 import { test } from 'node:test';

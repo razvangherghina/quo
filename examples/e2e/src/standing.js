@@ -1,4 +1,4 @@
-// The root steps a story is set up with, `quo/vectors/HARNESS.md` section 2
+// The root steps a story is set up with, `vectors/HARNESS.md` section 2
 // and 4, spoken to a stand's root channel: invite, knock and take, ask on a
 // standing, read a standing, digest, route, a partition file path. A step
 // that the setup cannot do without throws, so a story never mistakes a

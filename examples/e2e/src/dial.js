@@ -1,4 +1,4 @@
-// A dialer of `quo/SPEC.md` chapter 6, "The line", as the hand is one: one
+// A dialer of `SPEC.md` chapter 6, "The line", as the hand is one: one
 // TCP connection to a listener, frames written byte for byte, and every
 // frame that comes back kept under the id it copies, so a replayed ask's two
 // replies are both read, a `02` is told from a reply, and a connection the

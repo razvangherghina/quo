@@ -1,4 +1,4 @@
-// `wanted` on the root channel of `quo/vectors/HARNESS.md` section 2 is the
+// `wanted` on the root channel of `vectors/HARNESS.md` section 2 is the
 // allowance in milliseconds: an ask to `never` with wanted 200 ends `late`
 // long before the kit's own default.
 

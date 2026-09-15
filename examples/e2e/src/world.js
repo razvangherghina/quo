@@ -1,4 +1,4 @@
-// The world of `quo/SCENARIOS.md`, "How the world is built", on loopback:
+// The world of `SCENARIOS.md`, "How the world is built", on loopback:
 // two harbors as two processes, the observer a proxy between them, each
 // routed to the other only through it.
 

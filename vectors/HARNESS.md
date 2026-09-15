@@ -226,7 +226,8 @@ route   { far, at }              { routed: far }
   first. The verb acts on the program, so `ward` names any ward it stands.
 
 `hold` and `drop` take a count so the driver spends exactly what a claim
-needs. A count of zero cancels what is outstanding.
+needs. A count of zero cancels what is outstanding, and so does `stop`,
+since a stopped ward sends and writes nothing.
 
 ## 5. The partition file
 
@@ -269,11 +270,15 @@ standing one world draw one set of bytes.
   heir pk is derived from that secret, and the invitation's lock from d and
   z. A ward stood from a partition that holds a lock never draws for one.
 - **At knock.** Four words for her own key, which the knock announces in
-  `next`, and then the ask's own draws below.
+  `next`, at the first knock on an invitation, and then the ask's own draws
+  below. A knock again on that invitation announces the same key and draws
+  none for it.
 - **At seal, on every ask that leaves.** Four words for the lid, the ask's
-  ephemeral key, drawn after every key the ask announces. A knock as the
-  heir draws four words more, m, right after the lid, and draws last. An ask
-  under her own key after a lost knock carries no ciphertext and draws no m.
+  ephemeral key, drawn after every key the ask announces. The first knock as
+  the heir on an invitation draws four words more, m, right after the lid,
+  and draws last. A knock again as that heir carries the same m and draws
+  none. An ask under her own key after a lost knock carries no ciphertext
+  and draws no m.
 - **At reply.** Four words for the reply's ephemeral key. On noise, the key
   nobody holds is drawn first, four words, and four more when the first will
   not take a seal, and only then the reply's own four.
@@ -292,7 +297,8 @@ is recorded, and what is left of them is bytes. So a verifier replays a
 record with the stand program of section 1 and a TCP socket, and nothing
 else.
 
-The corpus names what every story starts from.
+The corpus names what every story starts from, beside `vectors`, the list
+of its records.
 
 - `entropy` is the seed of section 6, as decimal text.
 - `stand` is the program's arguments beside `--listen` and `--entropy`: the
@@ -317,7 +323,7 @@ one of three.
 A kit that told the story arrives at the record's arrival in the record's
 state, and `ward` is the seed text of the ward whose door judges it.
 
-`quo/verifier/` is the program that does this. It starts the stand once per
+`verifier/` is the program that does this. It starts the stand once per
 record, tells the story, reads `digest`, sends the record's ask, reads
 `digest` again, and compares the reply byte for byte and whether the two
 digests differ.
@@ -325,8 +331,8 @@ digests differ.
 ## 8. The trace
 
 The observer records, per frame: the frame's length, its kind, its id, the
-ward pk on an ask, the whole box, and the time from an ask's last byte to its
-reply's first byte. Under fixed entropy the hand tells a story to one kit's
+ward pk on an ask, the whole box, and the moment it passed. Under fixed
+entropy the hand tells a story to one kit's
 stand through the observer, and the recording becomes a record of
 `vectors/door.json`. The observer reads every frame as `vectors/tcp.json`
 pins, and a recording holding bytes it could not read as a frame is no
@@ -355,9 +361,11 @@ blueprint   on a record whose reply carries a seen, the shape that digest is
             taken over
 ```
 
-Whether the being was reached is the bit beside the bytes, and no record
-carries it: chapter 8 leaves it to each kit's own tests, since no stranger
-sees it.
+A verifier compares `reply` and `wrote` and nothing else, because it holds
+no lid's secret. `kind`, `opens` and `blueprint` are what the hand read
+while recording, so a reader of a record sees what its bytes say. Whether
+the being was reached is the bit beside the bytes, and no record carries
+it: chapter 8 leaves it to each kit's own tests, since no stranger sees it.
 
 A record of `vectors/tcp.json` is one frame, on its own, and what a side
 made of it.

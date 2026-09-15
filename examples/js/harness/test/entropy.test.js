@@ -1,4 +1,4 @@
-// `quo/vectors/HARNESS.md` section 6: `--entropy` fixes the SplitMix64
+// `vectors/HARNESS.md` section 6: `--entropy` fixes the SplitMix64
 // stream at a seed; without it the harbor draws real entropy.
 
 import { test } from 'node:test';

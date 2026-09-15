@@ -24,14 +24,26 @@ the two differ wherever the spec leaves a choice. Each carries a
 
 ## Running
 
-From the repository's root:
+The toolchain is Node 24 or later, since the hand uses ML-KEM-768 and SHA3
+from Node's own `crypto`, Rust with cargo, and Docker for the container run.
+Each block below runs from the repository's root, in order.
 
 ```bash
 git clone https://github.com/razvangherghina/quo && cd quo
 ```
 
+The JavaScript kit has one dependency to install.
+
 ```bash
-cd examples/js && npm install && npm test
+npm --prefix examples/js install
+```
+
+```bash
+npm --prefix examples/js test
+```
+
+```bash
+node --test "examples/js/harness/test/*.test.js"
 ```
 
 ```bash
@@ -39,11 +51,41 @@ cargo test --manifest-path examples/rust/Cargo.toml
 ```
 
 ```bash
-cd examples/e2e && npm install && npm test
+cargo test --manifest-path examples/rust/harness/Cargo.toml
 ```
+
+The verifier replays the door corpus against each stand program.
 
 ```bash
 node verifier/cli.js -- node examples/js/harness/stand.js
+```
+
+```bash
+cargo build --manifest-path examples/rust/harness/Cargo.toml --bin stand
+```
+
+```bash
+node verifier/cli.js -- examples/rust/harness/target/debug/stand
+```
+
+The world of `SCENARIOS.md` runs on loopback, and builds the Rust stand
+itself.
+
+```bash
+npm --prefix examples/e2e test
+```
+
+The same suite runs in containers.
+
+```bash
+./examples/e2e/run-docker.sh
+```
+
+`trace.js` writes `vectors/door.json` again, and only when both kits
+recorded the same bytes.
+
+```bash
+node examples/e2e/trace.js
 ```
 
 Apache-2.0.

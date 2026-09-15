@@ -1,4 +1,4 @@
-// `quo/SCENARIOS.md` chapter 8, "Size and the stream": one test per line,
+// `SCENARIOS.md` chapter 8, "Size and the stream": one test per line,
 // each run in both directions. Every test first shows its check refusing a
 // run where the hand or the observer breaks the line's claim, then shows the
 // check holding over the kits.
@@ -257,7 +257,7 @@ for (const [doorKit, askerKit] of DIRECTIONS) {
           const d = dial(door.via);
           await d.ready;
           await d.write(bytes);
-          closed.push(await d.whenClosed(3000));
+          closed.push(await d.whenClosed(1000));
           d.close();
         }
         const rel = await relationAt(door, 'c');

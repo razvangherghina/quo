@@ -1,8 +1,9 @@
 # KIT-SPEC
 
 This paper is the list of every choice the spec leaves open, derived from
-the spec alone. Quo is what crosses the wire, chapters 3 and 6, and what
-the stance and the ground mean, chapters 4 and 5. Everything else the spec
+the spec alone. Quo is what crosses the door, chapter 3, and what the
+stance and the ground mean, chapters 4 and 5. Chapter 6 is the one carrier
+Quo publishes, and the door stands without it. Everything else the spec
 hands to the kit, the being, the harbor or the carrier on purpose, and says
 once what the choice costs. A kit is one set of those choices. Two kits
 choosing differently are both Quo, and that is the proof Quo is a protocol.
@@ -259,10 +260,11 @@ kit still reads wrong, each with what catches it.
   small-order `R` verify. `arithmetic.json`.
 - **A number is judged on its text.** `1`, `1.0` and `1e0` are one whole
   number, `9007199254740993` and `-0` are refused, `1e21` stands. Section 6
-  of `SCENARIOS.md`.
+  of `SCENARIOS.md`, and chapter 3's value rules for `1e0`.
 - **Depth is counted from the value written.** An arg of sixty-four, a
   payload of sixty-six, a reply of sixty-five. The D2 records of
-  `door.json`.
+  `door.json` for the arg and the payload, and `framing.json` for the
+  reply.
 - **JCS parts languages in two places.** Keys sort by UTF-16 code unit;
   numbers are written as ECMAScript writes them. `framing.json`, the
   digests.

@@ -22,7 +22,9 @@ enough.
   `node verifier/cli.js -- <stand>`.
 - `examples/`: two kits, JavaScript and Rust, written cold from the text,
   and the world of `SCENARIOS.md` between them. Scholastic, not a library
-  and not a reference: Quo ships none.
+  and not a reference: Quo ships none. `examples/README.md` says how to run
+  both kits, the world and the verifier from this folder, with Node 24,
+  Rust and, for containers, Docker.
 
 Anyone may write Quo, and no list of kits is part of it. The spec has no
 version until 1.0.0, when it is frozen once.

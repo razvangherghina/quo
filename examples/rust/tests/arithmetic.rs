@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-// Every record of quo/vectors/arithmetic.json, and the ward key derivation
+// Every record of vectors/arithmetic.json, and the ward key derivation
 // the arithmetic owns, pinned in framing.json.
 
 use curve25519_dalek::constants::EIGHT_TORSION;

@@ -1,8 +1,7 @@
 // The observer's own program when the world stands in containers,
-// `quo/SCENARIOS.md` "How the world is built": "the observer runs a
-// network emulator when a scenario asks for it" lives here because the
-// observer must sit on the wire for real, in its own network namespace, on
-// this compose network's `observer` service. It adds only what a process
+// `SCENARIOS.md` "How the world is built". The observer lives here because
+// it must sit on the wire for real, in its own network namespace, on this
+// compose network's `observer` service. It adds only what a process
 // boundary costs: a control connection over which the driver keeps its own
 // `frames`, `read` and `illegal`, and decides a frame's fate the way a hook
 // of `../src/observer.js` does on loopback.
@@ -13,16 +12,16 @@
 // this connection opened is closed when it ends, on a `close` request or
 // on the socket's own close.
 //
-// The protocol. Every legal frame this reads, as it is read -- nothing
+// The protocol. Every legal frame this reads, as it is read (nothing
 // here ever waits on the driver before reading the next one, the same as
 // `../src/observer.js`'s own `FrameParser`, whose loop never waits on a
-// hook either -- is offered to the driver, `{op:"frame", seq, ...}`, and
+// hook either) is offered to the driver, `{op:"frame", seq, ...}`, and
 // this side does nothing with it on its own: `src/docker-net.js` puts
 // bytes on the wire toward that frame's destination only by naming its
 // `seq` in an `{op:"act", seq, bytes}`, zero or more times, whenever it
 // chooses to, for as long as this forward stands. Zero, ever, is a drop;
 // one, right away, is an ordinary forward; more than one, or one sent
-// after other frames' own acts, is a replay or a reorder -- `HARNESS.md`
+// after other frames' own acts, is a replay or a reorder: `HARNESS.md`
 // section 3's own "replay, reorder, delay, drop and alter", read onto a
 // process boundary rather than a function call, and needing no reply from
 // this side for the same reason a write needs none: a hook may decide a
@@ -40,7 +39,7 @@
 // frame's crossing can have any effect the root channel reports. That
 // holds by construction on `src/docker-net.js`'s own side, not by luck of
 // timing: it records a pushed frame into `frames`/`illegal` before it ever
-// decides what, if anything, to write back -- this file only ever writes
+// decides what, if anything, to write back. This file only ever writes
 // what an `act` names, so nothing crosses before that recording did.
 
 import { createServer, connect } from 'node:net';
@@ -55,7 +54,7 @@ function splitHostPort(s) {
   return { host: s.slice(0, at), port: Number(s.slice(at + 1)) };
 }
 
-// The inverse of `encodeFrame`, read straight off `quo/SPEC.md` chapter 6
+// The inverse of `encodeFrame`, read straight off `SPEC.md` chapter 6
 // exactly as `../src/observer.js`'s own `FrameParser` is (that class is
 // not exported, so a process boundary away from it writes its own): a
 // length below five, above the largest body, a kind that is none of the

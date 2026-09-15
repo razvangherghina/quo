@@ -1,4 +1,4 @@
-// Support for `quo/SCENARIOS.md` chapter 4, "Words and silences", holding
+// Support for `SCENARIOS.md` chapter 4, "Words and silences", holding
 // only what no other scenario needs: the Ed25519 arithmetic line 4.10 puts
 // on the wire where no library signs, and the seal under the all-zero
 // agreement line 4.9 reads a reply against. Built on Node's own `crypto`
@@ -7,7 +7,7 @@
 import crypto from 'node:crypto';
 import { mintKey } from '../../src/hand.js';
 
-// ---- the all-zero agreement, `quo/SPEC.md` "The box" ----
+// ---- the all-zero agreement, `SPEC.md` "The sealed box" ----
 
 const zeroSeal = () => Buffer.from(crypto.hkdfSync('sha256', Buffer.alloc(32), Buffer.alloc(0), Buffer.from('quo-seal'), 44));
 

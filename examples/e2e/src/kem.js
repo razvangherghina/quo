@@ -1,5 +1,5 @@
 // ML-KEM-768 encapsulation from a chosen m, `Encaps_internal(ek, m)` of FIPS
-// 203, which `quo/SPEC.md` chapter 3 names for the knock. Node's own
+// 203, which `SPEC.md` chapter 3 names for the knock. Node's own
 // `crypto.encapsulate` draws m itself, so a hand drawing from a fixed stream
 // needs the arithmetic spelled out here, on Node's SHA3 and SHAKE alone.
 

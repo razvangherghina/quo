@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-//! The being classes of `quo/SCENARIOS.md` "The beings", written in the
+//! The being classes of `SCENARIOS.md` "The beings", written in the
 //! harness, over the kit. Nothing here is reachable from a harbor outside
 //! this crate.
 
@@ -222,7 +222,7 @@ fn field(mut v: Value) -> Value {
 /// field: all of those read `None` too, the same as an absent field, so a
 /// non-object `args` would never reach the kit's own `sendable` check
 /// (the kit's `src/ward/send.rs`, "args that are not one object of
-/// values leave nothing") at all -- `Stance::ask`/`knock` only take
+/// values leave nothing") at all. `Stance::ask`/`knock` only take
 /// `Option<&Map>`, with no way to spell "present and not one". This is the
 /// one place that distinction is still read, before it is lost.
 fn channel_args(args: &Map) -> Result<Option<Map>, ()> {
@@ -334,7 +334,7 @@ impl Being for Host {
 /// otherwise reach separately (`Ward::ask`'s own "knock" fuses a take, and
 /// it has no "ask on a standing", no "standing" verb, and no "boot" with a
 /// relation, at all). Section 2 of `HARNESS.md` names the channel's own
-/// shapes; this is every being's own way there -- shared, and never one
+/// shapes; this is every being's own way there, shared and never one
 /// class's own, since the root channel reaches whichever being a scenario
 /// names, `Caller` included (`SCENARIOS.md` 9.4/9.5's own standing to `a`,
 /// minted through `__knock`/`__take` exactly as `Host`'s is).

@@ -1,6 +1,6 @@
-// The beings of `quo/SCENARIOS.md` "The beings", written here over the kit
+// The beings of `SCENARIOS.md` "The beings", written here over the kit
 // and never inside it. Each class is constructed with the stance the kit
-// hands her (`quo/KIT-SPEC.md`, chapter 4 #4) and answers her own asks by it
+// hands her (`KIT-SPEC.md`, chapter 4 #4) and answers her own asks by it
 // alone. `stanceOf` below is a harness-only hook: it lets `stand.js` reach a
 // being's own stance (`invite`, `knock`, `take`, `ask`, `remove`, `boot`,
 // `cells`, `standings`) directly, since the root channel's per-being verbs

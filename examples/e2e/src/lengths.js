@@ -1,4 +1,4 @@
-// Lengths read on the wire, `quo/SPEC.md` "The box" and "What a carrier
+// Lengths read on the wire, `SPEC.md` "The sealed box" and "What a carrier
 // sees". A word or a silence is read by a box's length only against a
 // reference the hand opened on that same door, so the references here are
 // asks the hand sends to the door a line reads, whose replies it opens.

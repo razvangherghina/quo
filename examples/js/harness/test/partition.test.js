@@ -1,4 +1,4 @@
-// `quo/vectors/HARNESS.md` section 5: the partition file, both ways. `save`
+// `vectors/HARNESS.md` section 5: the partition file, both ways. `save`
 // and `stand` are covered in harbor.test.js; this is the other way, `--ward
 // SEED=FILE` at startup, with beings loaded from it reachable by every
 // per-being verb (invite, knock, take, ask, remove, standing) and not only

@@ -2,7 +2,7 @@
   "name": "quo-example-e2e",
   "private": true,
   "type": "module",
-  "description": "The world of quo/SCENARIOS.md built and running: the JavaScript and Rust stand programs, driven over quo/vectors/HARNESS.md's root channel, with an observer on the wire between them and a hand that writes boxes and frames itself.",
+  "description": "The world of SCENARIOS.md built and running: the JavaScript and Rust stand programs, driven over vectors/HARNESS.md's root channel, with an observer on the wire between them and a hand that writes boxes and frames itself.",
   "scripts": {
     "test": "node --test --test-timeout=60000 \"test/*.test.js\""
   }

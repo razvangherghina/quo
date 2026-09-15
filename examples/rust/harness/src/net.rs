@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-//! The harness's own TCP serving, chapter 6 of `quo/SPEC.md` and section 1
+//! The harness's own TCP serving, chapter 6 of `SPEC.md` and section 1
 //! and 4 of `HARNESS.md`: a listener this program owns, framed exactly as
 //! the kit's own `wire` module frames, but served by hand rather than
 //! through `wire::Listener::serve_one`. That call answers a reply or a

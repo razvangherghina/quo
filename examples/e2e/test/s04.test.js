@@ -1,4 +1,4 @@
-// `quo/SCENARIOS.md` chapter 4, "Words and silences", one test per line.
+// `SCENARIOS.md` chapter 4, "Words and silences", one test per line.
 // Where a kit is the door, each line runs with the JavaScript door and the
 // Rust asker, then the reverse. Where the hand is the door, each kit is the
 // asker. Every test breaks its claim once on the wire, by the hand or the

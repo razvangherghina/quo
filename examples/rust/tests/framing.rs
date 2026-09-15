@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-// Every record of quo/vectors/framing.json, byte for byte.
+// Every record of vectors/framing.json, byte for byte.
 
 use quo_kit::arithmetic;
 use quo_kit::hex::hex;

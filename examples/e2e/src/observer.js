@@ -1,6 +1,6 @@
-// The observer, `quo/vectors/HARNESS.md` section 3 and `quo/SCENARIOS.md`
-// "The driver holds four things": a TCP proxy that sits on the wire between
-// two harbors, reads every frame by `quo/SPEC.md` chapter 6, "The frame",
+// The observer, `vectors/HARNESS.md` section 3 and the opening of
+// `SCENARIOS.md`: a TCP proxy that sits on the wire between
+// two harbors, reads every frame by `SPEC.md` chapter 6, "The frame",
 // and records every frame as it crossed on:
 //
 //   frame  = length (4, big-endian) || body

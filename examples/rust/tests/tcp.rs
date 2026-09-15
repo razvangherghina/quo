@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-// Every record of quo/vectors/tcp.json, byte for byte.
+// Every record of vectors/tcp.json, byte for byte.
 
 use std::io::{Cursor, ErrorKind};
 

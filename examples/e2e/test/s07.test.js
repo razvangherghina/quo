@@ -1,4 +1,4 @@
-// `quo/SCENARIOS.md` chapter 7, "The blueprint and the digest": one test per
+// `SCENARIOS.md` chapter 7, "The blueprint and the digest": one test per
 // line, each run in both directions. Every test first runs its line against
 // the hand standing as a door that breaks the line's claim and shows the
 // check refuses it, then runs it against the door the line names and shows
