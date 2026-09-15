@@ -1,0 +1,12 @@
+{
+  "name": "quo-example-js",
+  "private": true,
+  "type": "module",
+  "description": "Quo in JavaScript: one memory harbor, the door, and the reference carrier over TCP.",
+  "scripts": {
+    "test": "node --test --test-timeout=30000 \"test/*.test.js\""
+  },
+  "dependencies": {
+    "@noble/post-quantum": "0.7.1"
+  }
+}

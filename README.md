@@ -1,35 +1,32 @@
 # Quo
 
-Quo is a protocol that lets an object ask another object and get an
-answer, without knowing whether that other object is in the same process,
-on the same device, or on another planet. It is three words, two of which
-are beings: a harbor boots wards, a ward keeps beings and judges its door,
-and a being is one ordinary object with one voice. Nothing else is Quo.
+A protocol for one object to ask another and get an answer, without knowing
+whether the other is in its process, on its device or on another planet.
+Three words: a harbor boots wards and carries bytes, a ward is its seed and
+its partition and judges its one door, a being is one ordinary object with
+one answer.
 
-This repository is the protocol and nothing that runs it.
+This repository is the protocol, and the least that proves the text is
+enough.
 
-- `SPEC.md` is the whole truth, in no language. It assumes nothing from
-  any other document, and an implementation in any language, which the
-  document calls a kit, is written against it and against nothing else.
-- `vectors/` is four files of fixed bytes: the arithmetic, the framing,
-  the wire and the door's thirteen cases. An implementation reproduces
-  them or it is not this protocol.
-- `verifier/` is one program that holds no key. It replays the door's
-  cases against an implementation standing in vector mode at an address,
-  and reports what differed, byte for byte. `node verifier/cli.js <url>`
-  from a shell, or the same run in a tab.
+- `SPEC.md`: the whole truth. A kit, Quo in any language, is written
+  against it alone.
+- `KIT-SPEC.md`: every choice the spec leaves to a kit, as questions.
+- `SCENARIOS.md`: the claims two kits must agree on when they speak to each
+  other.
+- `vectors/`: the bytes a kit reproduces or it is not Quo, the arithmetic,
+  the framing, the door's cases and the TCP frames, with `HARNESS.md`, the
+  adapter a kit exposes to be replayed.
+- `verifier/`: replays the door's cases against a kit's stand program and
+  reports what differed, byte for byte, holding no key.
+  `node verifier/cli.js -- <stand>`.
+- `examples/`: two kits, JavaScript and Rust, written cold from the text,
+  and the world of `SCENARIOS.md` between them. Scholastic, not a library
+  and not a reference: Quo ships none.
 
-Anyone may write Quo, in any language, and nobody's list is part of it:
-the verifier is the whole test, and Quo names no implementer. Its own
-examples, Quo written from this spec alone in JavaScript and in Rust,
-stand in a repository of their own and on no registry.
+Anyone may write Quo, and no list of kits is part of it. The spec has no
+version until 1.0.0, when it is frozen once.
 
-The spec has no version. It is rewritten in place to say what is, and at
-1.0.0 it is frozen once.
-
-- [quo.systems/write](https://quo.systems/write/): the road to writing one
-- [quo.systems/verify](https://quo.systems/verify/): the verifier in a tab
-- [quo-examples](https://github.com/razvangherghina/quo-examples): the
-  examples
+- [quo.systems](https://quo.systems): the protocol, read in a tab
 
 Apache-2.0, held by Razvan Gherghina. `spec@quo.systems`.

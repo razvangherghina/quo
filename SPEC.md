@@ -1,642 +1,720 @@
 # SPEC
 
-This is the truth of Quo, and the whole context. It assumes nothing from any
-other document. It is the protocol and nothing else: what any ward anywhere
-must do, in any language, for its bytes to be Quo. A sentence is here only
-because a ward written in another language needs it to interoperate with
-ours. What one kit chose, and another kit may refuse, is that kit's paper and
-never this one.
+This is Quo, the protocol, with the one carrier Quo publishes inside it.
+The promise is one sentence: an object asks another object and gets an
+answer, and cannot tell whether the other is in its process, on its device,
+or on another planet. Everything below is what two kits must share to keep
+it. Quo is shaped on how people dealt with each other before anything
+could be forced by a machine: one asks, the other answers or does not,
+and the one asked judges for herself what the asker is worth. Nothing in
+Quo makes a being do anything. It only makes sure that what is said was
+said by the one who said it, is heard only by the one it was said to, and
+that nobody else learns a thing. This document is the whole truth and
+stands on nothing else.
 
-It carries no version and keeps no history. There is no 1.0.0 yet, so there
-is nobody holding an older Quo to be compatible with, and no changelog to
-write. This file is rewritten in place to say what the tree says, and when
-the two disagree the fix is to move one of them, the same day. Where the tree
-is behind a decision, the chapter "Where the tree stands" says so; that
-chapter is the one place a gap is allowed to be named instead of closed.
-Before 1.0.0 there is no compatibility promise: this document may still
-move under anyone holding it. At 1.0.0 it is frozen once, and versioning
-starts to mean something.
+Quo decides a thing only when two kits that have never met cannot
+exchange bytes correctly unless both decide it the same way. That one test
+is how a sentence enters this document, and every question of what Quo
+should add is asked of it first. What fails the test is not Quo's: Quo
+neither requires it nor forbids it, weighs no options for it and leaves it
+open to nobody's ruling. Where leaving a thing out has a consequence a
+reader would not see, the consequence is said once, and chapter 7 holds
+them. Nothing in the door, the stance or the ground says how bytes travel, how a
+ward is stored, scheduled or defended, or how a language spells a thing.
+Those belong to the carrier, the harbor and the kit. Quo names no carrier
+the door depends on. Chapter
+6 is the one carrier Quo publishes, so that two kits that have never met
+can reach each other's doors, and the door stands without it.
 
-## What Quo is
+Quo is bytes in, bytes out. An ask sealed to a ward's key is handed to
+anything that carries bytes, and what comes back is bytes with Quo meaning
+or nothing. The document is shaped around the ward, because the ward is the
+one thing that stands on both sides of the line between the wire and the
+inside. Its door faces out and is written byte for byte. Its stance faces
+in and is written as meaning. Its ground faces down and is written as
+meaning. What Quo enforces is on the door. Everywhere else Quo states a
+consequence and enforces nothing, because nothing else is observable on
+the wire.
 
-Quo is a protocol that lets an object ask another object and get an answer,
-without knowing whether that other object is in the same process, on the same
-device, or on another planet. It works on any device and in any language that
-can run code. It is three words, two of which are beings, and two edges.
-Nothing else is Quo.
+## 1. The graph
 
-- **Harbor.** The program a device runs to boot wards. Owns the wire and the
-  operating system. Not a being. Nobody outside its device.
-- **Ward.** One process of its harbor. A being plus ward functions. Keeps
-  beings and judges its door.
-- **Being.** One ordinary object, one voice.
+Quo is a graph. A node is a ward, named by one public key derived from its
+seed. An edge is a relation, and it is keyed at both ends: each end holds a
+key minted for that edge alone and an id chosen by the being at that end.
+A being lives inside a node. She is reached only along an edge that ends at
+her, and she holds no name in the graph. The harbor is the physics under
+the graph. It gives a node ground to run on and carries bytes between
+nodes. It is no node, no edge, and nothing in the graph names it.
 
-Each word names both the interface and the thing. There is no fourth word.
+An edge is born by invite, knock and take, and nothing else births one:
+one being invites, the other knocks with the invitation, and the knocker
+takes what answered. Each end names the edge by its own id, and neither id
+ever crosses the wire.
 
-```
-device A                            device B
-  harbor A                            harbor B
-    map: pk -> door | reach             map: pk -> door | reach
-    ward W1  (pk1)                      ward W3  (pk3)
-      being b1                            being b4
-        standings: [shop, bank]             occupants: [cust7]
-        occupants: [owner]                being b5   public
-      being b2
-    ward W2  (pk2)
-      being b3
-```
+An edge has a direction, and the direction is set by who invited. The end
+that invited holds an **occupant**: an id the inviting being minted, and
+the keys her ward binds to it. The end that knocked and took holds a
+**standing**: an id the taking being minted, and the keys her ward speaks
+under. Asks flow from a standing to an occupant. A being asks only through
+a standing she holds, and she is asked only by an occupant she invited, with
+one exception: a ward may have one public being, and a stranger reaches her
+with no edge at all.
 
-- A ward is named outward by one public key, its pk, derived from its seed.
-  That pk routes and nothing else. A being has no pk and no address. She has
-  relations, named by ids that never leave her ward.
-- A **standing** is a pointer a being holds to another being, through which
-  she asks. An **occupant** is a being she invited, whom her ward names when
-  she asks.
-- Every relation has two keys, one minted by each side for that relation
-  alone. Underneath every id her ward keeps the far ward's pk, the key she
-  is known by in that relation, and the key the far side is known by. She
-  never sees them.
-- The harbor routes by ward pk only. Its own pks map to doors, one per ward
-  it booted. Foreign pks map to whatever the device calls a reach. How a
-  harbor fills the foreign half is its own directory, and Quo says nothing
-  about it.
-- b1 asking b3 and b1 asking b4 are the same act inside the ward. The first
-  never leaves harbor A. The second does. b1 cannot tell, and should not. b1
-  asking b2 never leaves the ward at all.
-- The ward routes one thing: its own pk. Every other ward pk goes into one
-  call the harbor gave it, and what comes back is bytes or nothing.
+Two beings who want to ask each other hold two edges, one invited by each,
+and the two edges share no key. Two edges that end at one ward share the
+ward's key and nothing else, so a far ward learns nothing about one edge
+from another.
 
-The rule that closes every chapter: whatever does not fit one of the lines in
-this document is not Quo's.
+Nothing inner ever appears in the bytes. An id, a method, an arg, an answer,
+a cell, a secret: none is readable on the wire. What the wire sees is ward
+keys, ephemeral keys and ciphertext. A heir key is inside the seal and never
+outside it.
 
-## The two edges
+## 2. The three words
 
-Quo has two edges, harbor to ward and ward to being. At each an object
-crosses once, at birth, and calls cross for the rest of the ward's life.
-Nothing crosses either of them but what is written here.
+A **harbor** boots wards and carries bytes. It judges nothing and speaks no
+Quo. It is nobody's occupant and holds no standing anywhere.
 
-### Harbor to ward
+A **ward** is its seed and its partition, and has one door. Between one
+run and the next it is its record, and a harbor that stands that record
+again stands the same ward. It is itself a being, the first in its own map.
+It keeps its beings, mints every key, seals every ask that leaves and
+judges every arrival. Only a ward has a door, and only a ward moves, whole.
 
-The harbor passes the **ground**, once, at birth, and receives two pointers.
-The ground is nine things, and a kit gathers them however its
-language gathers things. What each one is, is Quo's; how they are held
-together is not.
+A **being** is one ordinary object with one answer. She is asked and she
+answers. She touches no key, no wire, no address. She never leaves the ward
+that booted her.
 
-1. **The seed.** The ward derives its pk from it and from nothing else.
-   Thirty-two bytes are the seed; anything else, text or bytes of another
-   length, is SHA-256'd to thirty-two bytes first. Text is hashed as its
-   UTF-8 bytes, whatever its length, so text is never taken as a key.
-2. **The partition.** The ward's files, as values, opaque to the harbor.
-3. **Instantiate.** A class name and a stance in, the being or nothing out.
-   A name the harbor does not hold is nothing, and the boot that named it
-   fails. A class that throws while it is made throws out of instantiate,
-   and the ward reads that throw as a being that threw at birth: the boot
-   fails the same way, and a being booted before is absent this run.
-4. **Carry.** A ward pk and bytes in, bytes or nothing out. Nothing means no
-   door was reached, and a throw is read the same way.
-5. **Random.** A count in, that many bytes of entropy out. Every key a ward
-   mints is drawn from it.
-6. **Wrote.** The ward says it after every write to its partition, and after
-   nothing else, naming the row. What a row is, is the kit's own, since the
-   partition's shape is: the harbor keeps rows and reads none. It is told,
-   and nothing comes back from it. A harbor that keeps the partition saves
-   in the order it was told. A harbor that keeps nothing needs it not at
-   all.
-7. **Keep.** Whether what was written is kept. The ward asks it once, at the
-   end of an arrival, after the being has answered and before the reply is
-   sealed, and no in makes that arrival a failed ask. It is the only thing
-   the ward learns about storage, and it learns it as yes or no and never as
-   a reason. A harbor that keeps nothing needs it not at all, and a ward
-   never asked answers as though no store could ever say no.
-8. **Calling.** A call of this ward's has begun, and what comes back says it
-   has ended. The ward says it, because the ward is the one that knows where
-   a call begins: a being reaching another being is one relation and two
-   halves, and she writes her side before the bytes go out and again when
-   they come back. Between the two her rows are half of a call, and a harbor
-   may write them down but may not take them as a point to put a refused ward
-   back to. Calls nest, a call that threw ends like any other, and a harbor
-   that keeps nothing needs it not at all.
-9. **The box.** One invitation on the box's own being, minted for this ward
-   alone. The ward takes it at birth as a standing of its own being, and
-   that standing is the whole device. A harbor that lends nothing leaves it
-   out.
+There is no fourth word.
 
-Nine things, and nothing else is ever passed: a harbor that needs a tenth
-has found a gap in Quo or a leak into the ward. The box is the whole of what
-a device offers, and it offers it as a relation and never as an object: the
-things a device can do are beings, booted by the harbor in a ward of its
-own, and a being reaches one by holding a standing at her, exactly as she
-reaches a being on another planet. One being of that ward is the box's own,
-and she holds a standing at each of the others under the name it is lent as.
-The name is her namespace and no word of the ward. Which ward may have which
-name is her gate, reading who asks, and a stranger's ward holds no standing
-at her and is lent nothing. A harbor mints nothing for a lend and nothing
-for the box: it holds the ask pointer of the ward it booted, so it is that
-ward's root, and it places the box's invitation the way a root invites on
-any being of its ward, once, before any ward it hosts is born.
+## 3. The door, outward
 
-Returned:
+This chapter is where two kits meet. Every rule in it is on the bytes, and
+a kit that draws any line elsewhere answers differently from a kit that
+draws it here.
 
-- **The door.** One call: sealed bytes in, sealed bytes out, and one bit
-  beside them, `heard`: whether a key this door holds spoke. Always bytes:
-  when the ask did not open, the reply is a silence sealed to whatever
-  ephemeral pk the bytes carried, and to a key nobody holds when they carried
-  none. **Noise** is that second reply, and it is noise to whoever receives
-  it and not in how it is made: the same silence, the same length, sealed to
-  a lid no one can open. A reply is never random bytes, because the law of
-  one silence is a law about length. The bit is all a
-  harbor learns from an arrival, never a reason: a pk that only ever brings
-  strangers' bytes is the harbor's to rate or refuse, and what a bound key
-  hears is sealed to its own lid.
-- **The ask.** One call: method and args in, a value or silence out. A value,
-  not an object: what a being answers is held to the value rule and nothing
-  narrower, so a string, a number and an array are all answers.
-  In-process and unsealed. This is the one unsealed ask in Quo, and the only
-  way a ward is piloted. Judgment, catching, and the return table are not
-  skipped: a throw inside is silence, and an unreached shape is silence.
+### Values
 
-The harbor learns the ward's pk the way anyone learns anything: it asks. The
-empty ask on the ask pointer answers with the ward's describe, and the pk is
-in its notes.
+Everything that crosses is a value, and a value is I-JSON (RFC 7493) held to
+the rules below. Every rule is about the JSON text and never about what a
+language parses it into, because a language is where two kits stop
+agreeing.
 
-### Ward to being
+Whitespace that RFC 8259 allows, between tokens and around the value, is
+read wherever JSON text is read: a payload, a reply, an invitation. So a
+writer may pad what it seals with whitespace, the signature covers the
+padding as it covers every byte, and no reader refuses it. A reader that
+refused it would silence a kit that hides its lengths.
 
-The ward passes one object, once, at birth, and receives one object, on
-which it calls one method.
+- A string is valid Unicode text. A surrogate stands in a pair or the text
+  is no string. Noncharacters are text and stand.
+- A number is representable as an IEEE double. Text naming a whole number
+  is refused unless that number is exactly a double or the text is how
+  ECMAScript writes a double: `9007199254740993` is refused, `1e21` and
+  `1e+23` stand. Text naming a fraction is the double nearest it. Text past
+  the largest double is refused. Text naming a value other than zero that
+  rounds to zero, `1e-400` among them, is refused. Minus zero, `-0` or
+  `-0.0`, is refused. A number is whole when the text names an integer, so
+  `1`, `1.0` and `1e0` are one whole number. A boolean is never a number.
+- An object has no duplicate keys. Two of one name is refused where it is
+  read and never resolved to the last.
+- Bytes that are not UTF-8 are no JSON text and are refused, not mended.
+- A value nests no deeper than sixty-four. A level is a container, an
+  object or an array. The depth of a value is the greatest number of
+  containers on any path from the value inward, counting the value itself
+  when it is one: a number is depth zero, the empty array is depth one, an
+  array holding an array is depth two. Depth sixty-four stands and depth
+  sixty-five is refused. Depth is counted from the value written and never
+  from a root it is written under: an arg of depth sixty-four stands
+  whatever carries it. The payload is itself a value written at its own
+  root, one object holding `args` holding that arg, so a payload nests no
+  deeper than sixty-six, and that bound is on the payload and never on
+  the arg. A reply is written the same way, one object holding `object`,
+  so a reply nests no deeper than sixty-five, and that bound is on the
+  reply and never on the object.
+- Nothing else is a value. No dates, no references, no functions, no native
+  types. Larger integers and exact decimals travel as strings. Bytes travel
+  as base64 strings, and which base64 is the two beings' business, since no
+  ward decodes one.
 
-```
-in    the stance      at birth, once, for life
-      the asker       at every ask
-out   her answer(asker, method?, args?) -> object | silence      the one method the ward calls
-```
+Every rule above has one reason: a value is a value when every kit gives
+back what was put in. Anything one kit would preserve and another would
+lose is refused where it is written. The depth bound is Quo's and not a
+ward's because a far ward reads what a near one wrote, and a kit with a
+deeper stack that stood deeper would call a blueprint a value where another
+kit refuses it.
 
-The stance is her cells, her standings to ask, the calls to invite,
-knock, take and remove, boot, and lend. The ward builds it and hands it
-to the harbor's instantiate with a class name, and receives her. No method is
-the empty ask, and what she answers to it is her blueprint.
+### The sealed box
 
-The stance, as every being in every language receives it. Nothing more is
-ever offered, and nothing here may be missing.
+Six algorithms, named once and never negotiated: Ed25519 signs, X25519
+agrees, ML-KEM-768 encapsulates, SHA-256 hashes, AES-256-GCM encrypts, and
+HKDF-SHA-256 derives. HKDF appears in three places, and the labels are six
+so that two derivations never answer to one name: `quo-seal` and
+`quo-edge-seal` at the message cipher, `quo-lock` and `quo-edge` at the
+edge key, `quo-ward-sign` and `quo-ward-seal` at the ward key. A label is
+HKDF's `info` and is the ASCII bytes of the name, with no length in front
+and no prefix, so `quo-seal` is eight bytes. The salt is the zero-length
+salt of RFC 5869 everywhere, and not a string.
 
-The table below is written in one language's spelling, and three of its words
-mean one thing. `nothing` is a call that answers nothing at all, `null` is a
-call that answers an absence where a value was possible, and `undefined` is a
-lookup that found no record. A language with one absence spells all three
-with it and loses nothing, because no being ever tells them apart: what she
-is owed is that a lookup that found nothing is not an error, that a call that
-refused says so as an absence and not as a throw, and that an absence is
-never a value that crossed a door. A language with none, where a lookup
-returns a pair or a case of its own, uses that. The distinction the table
-draws is one language's grammar, and no byte on any wire carries it.
+**The ward key.** One thirty-two byte seed is one ward. Two secrets come
+from it, each HKDF-SHA-256 of the seed under its own label, the seed as the
+input keying material, thirty-two bytes out. Under `quo-ward-sign` the
+thirty-two bytes are the Ed25519 private key as RFC 8032 names it, the seed
+that key is expanded from. Under `quo-ward-seal` they are the X25519 scalar
+as RFC 7748 takes it, clamped by the function and not before. The ward's
+public key on the wire is the signing pk then the padlock, 128 lowercase
+hex, and it is the one name that routes. A seed handed in as thirty-two
+bytes is the seed. Anything else, text or bytes of another length, is
+SHA-256'd to thirty-two bytes first, text as its UTF-8 bytes, so a
+thirty-two character name is a name and not a key.
+
+**Every other key is a seed and is derived from nothing.** The thirty-two
+bytes drawn for an ephemeral key, and the thirty-two bytes of a heir secret,
+are the secret as they stand: no hash, no label, no second derivation.
+
+**The lock.** A ward's lock is its ML-KEM-768 key pair, FIPS 203. It is
+born once and lives in the partition: sixty-four bytes drawn in one draw at
+the ward's first invite that names a heir, before that invite's heir
+secret, `d` the first thirty-two and `z` the last, handed to
+`ML-KEM.KeyGen_internal(d, z)`. It is not derived from the seed and it is
+not in the ward pk, so the name that routes never grows. Its encapsulation
+key, 1184 bytes, travels in every invitation that names a heir. A ward
+stood on an empty partition has no lock until it invites.
+
+**The box.** An ask is one box and a reply is one box, and nothing rides
+outside either but the ephemeral key in front of it. No relation key, no
+tag, no number and no ward key is in the clear.
 
 ```
-stance
-  cells                                                her state. values only.
-
-  occupants.invite(id, notes?)                         -> invitation | null      awaitable: a key is minted
-  occupants.remove(id)                                 -> nothing
-
-  standings.knock(invitation, method?, args?, wanted?) -> object | silence | word
-  standings.take(id, invitation)                       -> id | null            awaitable: it waits for the relation
-  standings[id]                                        -> standing | undefined
-  standings[id].ask(method?, args?, wanted?)           -> object | silence | word
-  standings.remove(id)                                 -> nothing
-
-  boot(class, key, id?)                                -> key | null           a new being of her ward, by class name.
-                                                                               with an id, her standing to her under it
-
-  lend(name, id)                                       -> id | null            a standing at what this device lends,
-                                                                               by the harbor's name for it. awaitable:
-                                                                               the ward knocks and takes it for her
-
-  wanted = { time? }                                   what this one ask may spend, in milliseconds. optional,
-                                                       and so is saying anything at all
+ask box   = ephemeral X25519 pk (32) || AES-256-GCM( head ) || AES-256-GCM( body )
+knock box = ephemeral X25519 pk (32) || AES-256-GCM( head ) || ML-KEM-768 ciphertext (1088)
+            || AES-256-GCM( body )
+reply box = ephemeral X25519 pk (32) || AES-256-GCM( body )
+head      = heir pk (32), or thirty-two zero bytes for nobody
 ```
 
-Return table.
+A knock is an ask on a fresh heir, and it is the one box that carries a
+ciphertext. The knocker draws the ephemeral secret, then thirty-two bytes
+`m`, and `ML-KEM.Encaps_internal(lock, m)` gives the ciphertext and a
+thirty-two byte shared secret.
 
-| call                | returns    | when                                                                                                         |
-| ------------------- | ---------- | ------------------------------------------------------------------------------------------------------------ |
-| invite(id, notes?)  | invitation | she minted a fresh id; the occupant record exists from now, with those notes on it                           |
-|                     | null       | the id already names a record, occupant or standing, or is a reserved word, or the notes are not values      |
-| remove(id)          | nothing    | always. removing what is not there is nothing                                                                |
-| knock(inv, m, a, w) | object     | the far being answered                                                                                       |
-|                     | silence    | no ward claims the invitation, or another consumed it, or the far being chose silence                        |
-|                     | word       | why not, when the far door or her own ward can say: removed, absent, unannounced, repeated,                  |
-|                     |            | threw, unreached, late, invitation. see "Silence, the words, error"                                          |
-| take(id, inv)       | id         | she knocked with this invitation and was answered, and the id is fresh                                       |
-|                     | null       | no answered knock on this invitation, or the id already names a record, or is a reserved word                |
-| standings[id]       | standing   | the record exists                                                                                            |
-|                     | undefined  | it does not. not an error                                                                                    |
-| ask(m, a, w)        | object     | she answered                                                                                                 |
-|                     | silence    | she chose to say nothing, or bytes came back that are not Quo's                                              |
-|                     | word       | why not: removed, absent, repeated, threw, unreached, late, dropped                                          |
-| boot(cls, key, id?) | key        | she exists from now, with fresh cells, and a restart finds her; with an id, her maker holds her standing     |
-|                     | null       | the key is already booted, the harbor holds no such class, the class threw at birth, the id is one the maker |
-|                     |            | already holds or a reserved word, or the relation was refused; nothing of the being made is left             |
-| lend(name, id)      | id         | this device lends that name to her ward, and she holds a standing at it under the id she gave                |
-|                     | null       | it lends no such name here, the id already names a record or is a reserved word, or the relation was         |
-|                     |            | refused; nothing is left behind                                                                              |
+The sender draws a fresh ephemeral key and agrees it with the padlock the
+box is sealed to. The thirty-two byte agreement as it stands goes to
+HKDF-SHA-256 under `quo-seal`, with nothing concatenated to it, and seals
+the head of an ask and the body of a reply. The body of an ask is sealed
+under `quo-edge-seal`, over sixty-four bytes: the agreement, then the edge
+key the ask is sent under. Each call gives forty-four bytes: the first
+thirty-two are the AES-256 key and the last twelve are the nonce, in that
+order. The nonce needs no randomness, since the key beside it is fresh on
+every box. Each tag is sixteen bytes and rides at the end of its
+ciphertext. The additional authenticated data of every ciphertext is the
+ephemeral pk its box carries, and never anything from another box, so a box
+is opened without knowing what it answers. An all-zero agreement is a box
+that does not open.
 
-A being may make, and only the owner reaches into another. Boot touches
-nobody else: the being made has empty cells and no relation but the one her
-maker named, and every other is invited and taken like any other. That one is
-made the way all of them are, and it is the whole of what making gives: the
-being made mints an occupant for her maker under the maker's own key, so she
-knows who made her by that name and by nothing else, and her maker knocks
-with it and takes the standing under the id she gave. Naming no id makes no
-relation at all, and a being made that way is reachable by the owner alone. A
-relation that could not be made is a boot that made nobody: the being made
-goes out again, and nobody saw her, since she is a moment old and named to
-no one yet. What the owner has that the maker does not is every ask that
-reaches into a being from outside: public, invite and knock for her, remove,
-unboot. Who may ask her to boot is her gate, as who may ask her anything is.
+An ask's box is one hundred and sixty bytes longer than its payload:
+thirty-two of ephemeral pk, forty-eight of sealed head, sixteen of tag and
+sixty-four of signature. A knock's box is 1,248 bytes longer: the same, and
+the ciphertext. A reply's box is one hundred and twelve longer
+than its reply: thirty-two of ephemeral pk, sixteen of tag and sixty-four of
+signature. An observer who reads a box's length reads its payload's.
 
-Lend is boot's shape for what the device already has. What a device can do
-is beings, in a ward its harbor booted and roots, and `lend` is how a being
-of another ward comes to hold a standing at one: her ward asks the box, on
-its own standing, for the name, and the box's being answers with the lent
-being's own invitation, minted by that being on herself. Her ward knocks
-with it and takes it under the id she gave. She is handed the id and
-nothing else, exactly as her maker is handed a key. From then on it is an
-ordinary standing, counted and rotated, removable by her, and told
-`removed` when the far being drops her.
+An ask's box is sealed to the ward's padlock. The reply's box is sealed to
+the ask's ephemeral pk, the **lid**, and to nothing else. The sender keeps
+the ephemeral secret until the reply comes and opens the reply with it. A
+lid is one per ask and never reused.
 
-Boot's shape includes what boot does when it fails. A being made whose
-relation could not be made is unmade, because she is her maker's ward's own
-and that ward may take her out again. The being lent is not: she stands in
-the box's ward, which no other ward may reach into. So the ward that was
-offered says so instead. A knock refused, a take that lost the id to another
-line of hers, a ward gone in between: each answers no, and her ward tells
-the box, on the same standing, which offer went untaken. The lent being
-removes the occupant she minted for it. Nothing half-lives on either side
-of the seam, and a refused lend costs the box nothing, which is what the
-table above promises.
+The heir rides inside the box because it is the one name in a relation that
+never rotates. Outside the box it would be a handle an intermediary could
+follow for as long as the relation lasts. What carries an ask to a ward is
+the ward pk, which the carrier holds itself and never reads from these
+bytes. The door opens the head with its own padlock, learns which heir the
+ask names, and opens the body under an edge key it holds for that heir.
+What an intermediary still learns is the ward it is carrying to, and that
+is the price of being reachable.
 
-The invitation never reaches her, and that is the difference between this
-relation and every other one she holds. Her own invitations are hers to
-give away, because giving one away is giving her own relation away. This
-one is not hers: it is the device's, minted for her ward alone, and a value
-she could copy is a capability she could hand to anyone. So she never sees
-it. A being who wants to lend her device access to another lends it in the
-open, by offering an ask of her own that forwards to her standing, where her
-gate reads who is asking and she can stop.
+**The edge key.** Every relation carries one secret beside its signing
+keys, thirty-two bytes that only its two ends hold and that move on every
+choice. A knock's edge key is HKDF-SHA-256 of the knock's shared secret
+under `quo-lock`, thirty-two bytes out, and the knock's body is sealed
+under it. Both ends compute every reply's agreement, the door from the
+reply's ephemeral secret and the lid, the sender from the lid's secret and
+the reply's ephemeral pk. The next edge key is HKDF-SHA-256 under
+`quo-edge` over sixty-four bytes, the edge key the ask came under then that
+agreement, thirty-two bytes out. The **zero edge key** is thirty-two zero
+bytes. Every ask to the public being and every ask on a standing taken on
+`{ ward }` alone are sent under it, and it never moves.
 
-Null is every kind of no, and she cannot tell them apart because there is
-nothing she would do differently: this harbor lends nothing, or nothing of
-that name, or nothing of that name to her ward, or her ward could not take
-the box this run, or what was offered could not be taken. What a device has
-is not hers to enumerate.
+The edge key is why a stolen ward does not open its past. The padlock never
+rotates, so whoever takes a seed can open every head ever sealed to it. A
+body is sealed under an edge key as well, and an edge key that has been
+replaced is held nowhere, so whoever takes a seed and its partition opens
+the bodies sent under the edge keys that partition holds and no older one.
 
-The ground is the harbor's, so `lend` reaches the box she is running on and
-no other. A ward that could not take the box at birth, the box down or the
-invitation spent, is born all the same, lends nothing this run, and takes it
-again at the next. A ward that moved box is handed the new harbor's ground,
-and a standing she woke up holding names a being on the box she left, which is
-what a standing means and is why it is not a bug. A being who wants the box
-she is on asks for it again at every birth, which she cannot tell from a
-restart and does not need to.
+The lock is why a broken curve does not open them either. Every edge key
+after a knock is chained from the knock's, and the knock's comes from
+ML-KEM-768, so whoever records a relation and later solves X25519 still
+needs the lock's secret to open one body on it. The head still says which
+heir an ask named, and an ask to the public being is sealed under X25519
+alone.
 
-Lend is one direction, and the other one is not a second mechanism. A being
-who wants to be woken invites, hands that invitation to whoever will wake
-her inside an ask, and is woken as the occupant she named. A tick, a
-delivery, a push and a stranger's ask are one act at her door, told apart by
-the id her ward puts on them and by nothing else. Nothing reaches her that
-she did not invite, and nothing wakes her that does not hold a standing at
+**The body** is a payload then a signature, and the signature is sixty-four
+bytes of Ed25519 over the payload bytes exactly as they stand in the box.
+
+```
+body    = payload (JSON text) || signature (64)
+```
+
+**Verification** is one rule. A signature is checked against the bytes as
+they were received, never against a re-serialisation of what they parsed
+to, and a kit that canonicalises before verifying refuses its own peers. It
+is RFC 8032's cofactorless check, `[s]B = R + [k]A`, and it refuses in four
+places and no others: a signature of any length but sixty-four; an `s` at
+or above the group order; an `R` whose bytes are not the bytes the point it
+names encodes to, so `R` is compared as encoded; and a public key that is
+small-order in any spelling, the sign bit set on `x = 0` included, or whose
+y coordinate is at or above the field's prime. A public key with a torsion
+component that is not small-order verifies like any other, and so does a
+small-order `R`.
+
+**The size.** There is one size and it is on the bytes. A door refuses the
+bytes of an ask whose count is above 1,048,576, and the asker refuses the
+bytes of a reply whose count is above the same, each before anything is
+opened: 1,048,576 bytes stand and 1,048,577 are refused. What is refused on
+arrival is never sealed. An asker does not seal an ask above the size, and
+it is `unreached`, since nothing left. A door does not seal a reply above
+the size: her answer is `threw` to a bound key and silence to a stranger,
+since she answered and her answer cannot cross, and the number is spent as
+on every choice. Only what crosses is bounded. An ask is a message and not
+a file, and what is larger is asked for in pieces by a being who knows how
+her work divides. A stream is
+assembled by a being out of asks, and Quo does not know it is one: no ask
+names the one before it, and the door judges each on its own. The bound is
+not on what a being may say, since a carrier splits and joins bytes as it
+likes. It is on what a door holds before it can judge: the signature covers
+the whole body and the seal proves itself at its last byte, so whoever
+knows a ward pk can make its door hold that many bytes before a word is
+said. The number is one and it is Quo's and not a ward's because a door
+that will not hold a box cannot open it to say why, so its refusal is
+nothing, and a sender must know before it seals whether a door anywhere
+will read what it sends. What a carrier
+wraps around the bytes is bounded by that carrier, and the reference
+carrier's bound stands in chapter 6.
+
+### The payload
+
+```
+payload = JSON { to, by, next, seq, time, method?, args? }
+```
+
+- `to` is the heir pk the ask is for, 64 lowercase hex, or `null` for the
+  public being.
+- `by` is the pk the payload is signed with, 64 lowercase hex.
+- `next` is the pk the sender will sign with next, 64 lowercase hex, or
+  `null` to announce nothing.
+- `seq` is the number for this relation, a whole number from one.
+- `time` is the allowance, in milliseconds, a whole number above zero. It
+  is a duration and never a moment: no wall-clock time is ever on the wire.
+- `method`, when present, is a string. Absent is the empty ask.
+- `args`, when present, is one object of values. Absent is handed to her as
+  the empty object.
+
+A field the payload owes and does not name is malformed. `to` and `next`
+may be null and absent is not null. `method` and `args` may be absent and
+never null. A field the payload does not name is not read. The payload is
+one JSON object: an array, a string or a number is no payload.
+
+### The replies
+
+```
+reply   = JSON { object, seen } | { silence: true } | { quo: word }
+```
+
+The reply is a box of the same shape as the ask, sealed to the lid, its
+body the reply text then sixty-four bytes of Ed25519 by the ward key over
+that text. It is one of three shapes with no field beside its shape's.
+
+- `{ object, seen }`: she answered. `object` is a value. `seen` is always
+  present: the digest, 64 lowercase hex, on a named ask that had one, and
+  `null` otherwise, the empty ask included.
+- `{ silence: true }`: bytes that say nothing. It is what every stranger
+  hears and what a bound key hears when the being chose to say nothing.
+- `{ quo: word }`: a reason, said only to a key the door has bound. The word
+  is one of five: `removed`, `absent`, `unannounced`, `repeated`, `threw`.
+
+**Reading a reply is strict.** A reply over the size, or that does not open,
+or that is not signed by the ward it was sent to, or that is none of the
+three shapes, is silence to the sender. A reply with a field beside its
+shape's, a `seen` that is neither a digest nor null, or an `object` that is
+not a value is none of the three shapes. The alternative is to read the
+object and drop the field, and then two kits disagree about whether an
+answer arrived. That is the one disagreement Quo cannot afford, so an
+answer a far being really gave is lost when the kit that wrote it wrote one
+field wrong.
+
+**Silence is bytes.** It is never zero bytes and never nothing. Nothing
+means not delivered and is the carrier's alone: a ward never answers
+nothing.
+
+**Noise.** When an ask does not open, the reply is still a reply: the same
+silence, the same length, sealed to the first thirty-two bytes of what
+arrived when there are that many, whatever they are, and to a key nobody
+holds when there are not. A lid that will not take a seal, a small-order
+point among them, is answered the same way, to a key nobody holds. A key
+nobody holds is thirty-two bytes drawn from random and taken as a lid, and
+when that will not take a seal either, the public key of thirty-two more.
+Those are drawn before the reply's own ephemeral key. A reply is never
+random bytes, because the law of one silence is a law about length.
+
+### The invitation
+
+An invitation is a value and goes anywhere: by mail, on paper, inside the
+args of another ask. It carries no route, because a route inside it would
+go stale while the invitation stayed good. It carries no time, because a
+moment written into it would be a clock two wards must share.
+
+```
+invitation = { ward, heir, secret, lock }   ward: 128 hex. heir: 64 hex, the heir pk. secret: 64 hex,
+                                            the heir seed. lock: 2368 hex, the lock's encapsulation key.
+             { ward }                        the public being of that ward
+```
+
+Nothing else is read from it. A shape that is not one of the two is no
+invitation: a ward pk alone with a secret or a lock, a heir with no secret,
+a secret with no heir, a heir with no lock, a lock that is not 2368
+lowercase hex. A
+field beside the four is ignored. A secret that is not the heir's, or a
+lock that is not the ward's, is sent and refused at the far door.
+
+### Keys
+
+Three keys per relation over its life, and one rule at the door: the key it
+holds for you may speak, and so may the key it vouched for last time, and
+each number once.
+
+- **The heir** is minted by the inviting ward at invite, for one id. The
+  ward keeps the heir pk beside the id and gives the secret away inside the
+  invitation. The heir never rotates: it names the relation outward for as
+  long as it lasts, and that is why it rides inside the box and never
+  outside it.
+- **Her own key** is minted by the knocker at knock. She signs the knock
+  with the heir and announces her own key in `next`. The door binds the
+  heir to her key and the heir dies as it speaks. From then on she signs
+  with a key the inviter never held.
+- **Next.** Every ask announces the key she will sign with next. The door
+  holds two pks for a heir: the one **held**, which may speak now, and the
+  one **vouched for**, which it will admit when it speaks. Whichever speaks
+  first wins and the other dies. There is no rotate call: every honoured ask
+  rotates.
+
+**Admission.** For a heir, the signer is admitted when it is the key held
+for that heir, or the key vouched for, or a key held or vouched for when the
+id was removed after the heir spoke. A key that is none of those is a
+stranger.
+
+**The door's move** is arithmetic. It moves on an honoured ask and on
+nothing else.
+
+- On a fresh heir, the honoured ask is a knock. The key it announced becomes
+  the key held. The heir dies as it speaks and is held by nobody. Nothing is
+  vouched for. A knock that announces nothing, or announces the heir itself,
+  binds nothing and is `unannounced`.
+- On a heir already spent, the key that signed becomes the key held,
+  whichever of the two was admitted, and the other is forgotten. The key
+  the ask announced becomes the key vouched for. An ask that announces
+  nothing moves the held key and leaves the vouched key exactly as it stood.
+  When the key that signed is the one vouched for, it becomes the key
+  held, the key it replaces is forgotten, and nothing is vouched for until
+  an ask announces a key.
+
+So the key held for a heir is the key that last spoke. A door that kept the
+first one forever would refuse the caller the moment she signed with the
+key she announced. A door that forgot the vouched key when an ask announced
+nothing would meet that key with silence at the next ask and kill a healthy
+relation over a field.
+
+**The edge keys** move by the same arithmetic. The door holds two for a
+heir: the one **open**, the edge key that last opened an honoured ask, and
+the one **offered**, the edge key that follows the reply to the last
+choice. On a fresh heir the door reads the ciphertext, decapsulates it with
+its lock, and opens the body under the knock's edge key alone. For nobody,
+a heir never minted here or a heir removed before it spoke, it reads no
+ciphertext and opens the body under the zero edge key alone. Otherwise it
+reads no ciphertext and opens the body under the open key and then the
+offered one, and the first that opens is the key the ask came under. On
+every choice the door draws the reply's ephemeral key before it writes,
+and writes with the choice:
+
+- On a fresh heir, the open key is the knock's edge key, and the offered
+  key follows it under the reply.
+- On a heir already spent, when the ask came under the offered key, it
+  becomes the open key and the one it replaces is forgotten. Either way,
+  the offered key follows the key the ask came under, under the reply.
+
+Her side holds the knock's edge key from the moment she seals the knock.
+When an object comes back, she moves to the key that follows the one she
+sent under, at the moment her signing key moves, and on nothing else. So
+the open key is the key she last sent under, whatever the door answered
+after it, and a knock that brought no object back leaves her the knock's
+edge key, which a door that heard the knock holds open.
+
+**The cost on her side.** The door moves on every choice and on none of its
+refusals. On a spent heir it admits both keys, so a sender who moves to her
+announced key only when an object came back is always heard. A sender who
+moves on a word is refused for good, because the door did not move. A knock
+is the one ask after which the door admits one key and not two: the heir
+dies and the key she announced is held. So a knock that met silence or
+`threw` spent the heir as surely as one answered with an object.
+
+**The lost knock.** When a knock brings no object back, because its reply
+was lost or it met silence or `threw`, the door may have spent the heir and
+hold the key she announced, and she cannot always know it. Knocking as the
+heir again would then be refused for good. She learns which case she is in
+by asking: she sends under her own key and the knock's edge key first, with
+no ciphertext. If the door bound it, that key is admitted and she is
+answered with an object or a word. If it did not, the heir is fresh, the
+door looks for a ciphertext that is not there, the box does not open, the
+refusal writes nothing, and she knocks as the heir again with the same
+`m`. A silence tells her nothing, since the being's silence and the door's
+are one reply, so she knocks as the heir after it too: where the heir is
+spent that knock is refused and writes nothing. The `m` is the same so the
+edge key is one whichever knock the door heard: a knock the door bound
+under it and a knock it refused leave her holding the key the door holds,
+and a fresh `m` would leave her shut out of a relation the door binds. One
+extra round trip where a knock brought no object back, and it gives a
+stranger nothing: whoever holds the invitation could always knock as the
+heir, and her own key is admitted only where the door already bound it to
 her.
 
-Ask, knock, invite, take, boot and lend are awaitable. Async where the
-language has it, blocking where it does not. Every ask she makes is a new
-call.
+**What the knock guarantees.** Until it is used, an invitation is a bearer
+secret: the inviter, the channel it went by and anyone who read it hold the
+heir. The knock ends that. The door binds the key she announced, which her
+ward minted and never gave away, and the heir dies as it speaks. So when
+her knock is answered with an object, the relation is hers alone: nobody
+who held the invitation can speak on it, the inviter included, and every
+key the door admits from then on was announced under a key only she held.
+Only the first knock binds. A knock that another met before hers is
+silence, take births nothing, and a standing that exists is proof that the
+knock was hers. Whether the channel carried the invitation unaltered is
+the channel's to prove, and Quo cannot see it.
 
-The asker has three shapes and no fourth, and nothing else ever reaches her.
+**Removed.** When a being removes an id whose heir has spoken, the key held
+and the key vouched for, with the open and offered edge keys, are what let
+the door open her ask and say `removed` to the one party who can sign as
+them, and silence to everyone else. A heir removed
+before it spoke leaves nothing: the door never bound it, its secret is in
+an invitation anyone may hold, and a knock with it is a stranger's. Nothing
+else survives a removal. How long a door keeps those keys is the ward's own,
+and the cost of a short memory is one thing: the holder of a key past it
+hears silence where she would have heard `removed`, which is what every
+stranger hears and tells her nothing she can act on.
 
-- `{ id }`: her own id for the occupant at the door, the one she minted when
-  she invited her.
-- `{}`: she is the public being of her ward, and that is how she knows.
-- `{ id: 'OWNER' }`: the arrival came on the ward's ask pointer, from her
-  owner.
+Every signing key in a relation was minted by one side and its secret never
+left that side, except the heir, which the inviter gives away and which
+dies the first time it speaks. Every edge key but the zero one is computed
+by both ends, the first from a secret only the lock could open and each
+after from the one before and a reply only they could open, and is never
+sent. No key
+serves two relations. No key outlives its relation.
 
-`OWNER` and `PUBLIC` are reserved words: invite and take refuse them, so no
-occupant can ever wear either name. A kit reserves more, because a relation
-is written in two places, the ward's keys and her record, and a name either
-of them cannot hold is a relation half made and a throw where the table above
-promises a null. Which names those are is that kit's, since an id never
-crosses a door and no far ward can tell. Where the refusal happens is Quo's:
-at the mint and at the take, where every other refusal is, and never at the
-write.
+### The count
 
-## Silence, the words, error
+Every ask on a relation carries the next number in one unbroken count for
+that relation, starting at one, and the door honours each number once. The
+number rides inside the signed payload, so bytes caught on the road carry
+the number they were sent under and cannot be renumbered without breaking
+the signature. A caller who means to ask again asks again under the next
+number and is heard. Retry and fire-and-forget stay hers to build. Only the
+accident and the interception are refused.
 
-Three kinds of answer to "no object came back", and only three. Everything in
-Quo that can go wrong ends in one of them, and a being who knows the three
-never needs a fourth.
+The door keeps the highest number honoured, the **mark**, and which numbers
+below it are spent, out to a span of sixty-four. With the mark `m` and an
+arriving number `n`: `n > m` is honoured and `n` becomes the mark; `n = m`
+is refused; `m - 64 < n < m` is honoured once when `n` is not spent and
+refused when it is; `n <= m - 64` is refused. With a mark of one hundred,
+thirty-seven is honourable and thirty-six is refused, and the door holds
+sixty-four numbers, the mark and the sixty-three under it. The width is
+Quo's and not a ward's because a caller cannot tell two doors apart by
+anything but their answers, and a door that honoured further back would
+answer where another refuses.
 
-```
-error       an object. hers.             { error: ... }, or any shape her output schema declares.
-silence     the ward's silence.          bytes came back, or would have, and said nothing.
-                                         it is what a stranger hears, and what she hears when
-                                         the far being chose to say nothing.
-a word      the ward's word.             one of nine, said only to someone the ward can name,
-                                         and never to a stranger: why no object came.
-```
+The count carries over from the knock into the standing at take. Her side
+keeps the number it spoke under whether or not a reply came back, because a
+lost reply is a door that has already honoured the number, and offering it
+twice would silence the relation. A number spent on an ask that never left
+leaves a gap, and the gap is harmless: the door honours any number above
+its mark.
 
-- An **error** is an ordinary answer. Quo never reads it, never makes it,
-  and never treats it apart from any other object. The owner's asks answer
-  error objects for what they refuse, and they are hers to read like any
-  object.
-- **Silence** names no reason, by law. It is what the door says to bytes it
-  cannot admit, so that a stranger learns nothing, and what a being says
-  when she chooses to say nothing. It is not blindly retryable: the far
-  being may have done the work and the answer was lost.
-- **A word** names the reason. It is said to a key the door has bound, sealed
-  to that key's lid, or by her own ward to her, in process. Nobody else ever
-  hears one. A word is not an object: it carries nothing but its name, a
-  being cannot make one, and one that comes out of a being is read as her
-  having thrown.
+A door that forgets what it honoured honours it again. The mark and the
+spent numbers are part of what a ward is, and a partition put back to an
+earlier moment is a door that answers a repeated ask as new.
 
-The nine words, and who says them:
+### The allowance
 
-```
-the door, to a key it has bound, on the wire as { quo: word }
-  removed        the relation this key spoke for was removed by the being who invited it
-  absent         the being who invited it did not come back this run; her cells wait
-  unannounced    the knock announced no key of her own, so it bound nothing
-  repeated       the number was already honoured, or is at or below the span
-  threw          she threw, or answered a shape that is not hers to make
+Every ask carries what it may still spend: `time`, in milliseconds, inside
+the signed payload, so a budget caught on the road cannot be widened. It is
+a duration, counted from the arrival, and never a moment on any clock, so
+two wards need share no clock to agree on it. The receiving door reads it
+before anything is done under it, and a payload whose `time` is not a whole
+number above zero is malformed.
 
-her own ward, to her, and never on the wire
-  unreached      no far door was reached. nothing is known to have been delivered.
-  late           the wait ran out. the far door may have heard and be working still.
-  invitation     the invitation is not one. nothing was sent.
-  dropped        she dropped the standing, and asked on what she held. nothing was sent.
-```
+Time is the only thing an ask measures: no count of doors, no count of
+bytes, no count of tries. Each ask is bounded on its own, and the time an
+arriving ask has left does not bound the asks a being makes while
+answering it. What the allowance is for is that every wait ends. A cycle of
+legal asks, A asking B, B answering asks A, A answering asks B on the
+relation the first ask still holds, would otherwise produce a wait that is
+not an object, not silence and not nothing. The innermost wait gives up,
+and the ask ends.
 
-- **Unreached** is safe to retry: nothing is known to have been delivered.
-  In one case the far ward heard and died before it could answer, and the
-  wire says nothing about it; asking again asks under the next number and
-  is heard, so the retry is safe all the same. See Closed.
-- **Late** is not unreached, and the difference is the whole reason there are
-  two words: a bound that expired promises nothing about delivery.
-- **Removed**, **absent**, **unannounced** and **repeated** are refusals: the
-  ask reached no being and nothing was written. They are said only because
-  the key that asked has already proven who it is, so a reason to it is an
-  oracle to nobody. **Threw** is a choice: she was reached, and the number is
-  spent.
+How wide a ward's default and ceiling are is that ward's own, and no far
+door can tell one ward's from another's. Budget is granted by a ward and
+never minted by a being.
 
-Who says what. A being says objects and silence, never a word: the shape is
-the ward's, and a ward that sees one come out of a being answers `threw`. A
-ward says all three to its own being, and on the wire objects, silence and
-the five door words, each sealed to the lid of the key that asked; the four
-ward words never cross, they are her own ward's and are said in process. A
-harbor says nothing at all; it returns bytes or nothing, and does not know
-any of these words. What it learns from an arrival is one bit, `heard`,
-beside the bytes the door hands it: whether a key the door holds spoke. The
-owner hears objects: a silence a being met is `{ error: 'silence' }` and a
-word is `{ error: word }`, because the owner is piloting and an object is
-what a shell can print. The ask pointer answers the value silence only when
-the ward itself threw.
+### The public being
 
-### What her ward says to her
+A ward may have one public being and no more. Arrivals for nobody, `to`
+null, reach her. She is asked by strangers, and she can tell. She may
+invite, and an occupant of hers arrives named while strangers still arrive
+as nobody.
 
-Before or after the wire, her own ward answers on its own in five cases,
-and each says what it is.
+She is reached without a heir, so the door keeps nothing for whoever asked:
+no key it vouched for, and no count. The signature is checked under
+whatever key `by` names, and `by`, `next` and `seq` are required of her ask
+as of every other, and honoured by nobody. A kit author who goes looking
+for the property behind this signature will not find one: the payload has
+one shape and the door has one path, and that is the whole reason. The same
+sealed bytes presented twice are delivered twice. A count per stranger
+would be memory a stranger chooses the size of, which is what the span
+exists to refuse.
 
-```
-S1  the invitation is not one         a shape that is not a ward pk, a heir with no secret, a secret with no heir.
-                                      nothing is sent. the word is `invitation`. nothing else is read: a field
-                                      beside the three is ignored, and a secret that is not the heir's is sent
-                                      and meets D6 at the far door.
-S2  the standing is gone              she held a standing, dropped it, and asked on what she held.
-                                      nothing is sent. an ask issued while it stood is answered. the word is `dropped`.
-S3  the wait ran out                  the ask's time was spent and no reply was read.
-                                      what comes back late is not read. the number is spent.
-                                      an ask still waiting at its lane when the wait ran out is never sent. the word is `late`.
-S4  the reply is not one              bytes came back over the size, or that do not open, or are not signed by the ward they
-                                      were sent to, or are none of the three reply shapes. the number is spent.
-                                      not Quo's bytes: silence.
-S5  the far door answered             silence, or a word, exactly as the door said it.
-```
+So her answer must be safe to repeat, and that is her obligation and not a
+gap at the door. Anything that must happen once lives behind an invitation,
+where there is a heir and a count. A stranger hears silence for whatever
+she then does: her choices are hers and her insides are not a stranger's to
+read. A ward without a public being answers arrivals for nobody with
+silence. A standing taken on `{ ward }` alone has no heir and never rotates.
 
-And unreached in two: `U1` the args are not one object of values, or could
-not be sealed, or the method is neither a word nor absent, so nothing left.
-That last is the same rule and the same reason: a payload is written as JSON,
-which drops a field it cannot write, so a method that is not a word would
-arrive as no method at all, and no method at all is the empty ask. She would
-have asked for work, been handed a blueprint, and spent a number on it. What
-a ward cannot send it does not send;
-`U2` the harbor returned nothing, or threw, so no door was reached. The number is
-taken all the same, and the gap it leaves in the count is harmless: the door
-honours any number above its mark.
-
-S4 is strict, and strict is a price paid on purpose. A reply carries `seen`
-always, and a reply whose `seen` is neither a digest nor null is none of the
-three shapes; so is a reply with any field beside its shape's, and an
-`object` that is not a value, nested past sixty-four or a number the value
-rule refuses, since what crosses is held to that rule in both directions.
-So an answer a far being really gave is read as silence and the
-number is spent with it. The alternative is to read the object and drop the
-field, and then two kits disagree about whether an answer arrived: one hands
-her an object, the other hands her silence, and silence is not blindly
-retryable. That is the one disagreement Quo cannot afford, and it is worth
-losing an answer from a kit that writes one field wrong. A kit that writes it
-wrong is a kit the vectors catch before it ever speaks to anyone.
-
-### What the door says
+### Judgment
 
 The door judges thirteen cases, in this order, and the first case met is
 the answer. The first seven are strangers: bytes the door cannot admit, met
-with one silence whatever the case, and nothing written. The next three are
-refusals to a key the door has bound: still nothing written, but a word,
-because the asker has proven who it is. The last three are choices: the ask
-reached her, so the number is spent and the keys are rotated, and what she
-wrote in her cells is hers.
+with one silence and nothing written. The next three are refusals to a key
+the door has bound: still nothing written, but a word, because the asker
+has proven who it is. The last three are choices: the ask reached her, so
+the number is spent and the keys rotate, and what she wrote in her cells is
+hers.
 
 ```
-strangers: silence, nothing written, heard false
-D1   the box does not open           wrong padlock, garbage, too short, over the size. the reply is a silence
-                                     sealed to the lid: the first thirty-two bytes of what arrived when there
-                                     are that many, whatever they are, and a key nobody holds when there are
-                                     not. a lid that will not take a seal, a small-order point among them,
-                                     is answered the same way, to a key nobody holds. a key nobody holds is
-                                     thirty-two bytes drawn from random and taken as a lid, and when that
-                                     will not take a seal either, the public key of thirty-two more. those
-                                     are drawn before the reply's own ephemeral key.
-                                     too short is anything that does not open, or opens to sixty-four bytes
-                                     or fewer, since those hold no payload beside a signature. a payload
-                                     that opens and is not JSON text by the value rule, not UTF-8, a
-                                     duplicate key, nested past sixty-four, is a box that does not open.
-D2   the payload is malformed        to, by or next not 64 lowercase hex where a hex is owed, method not a
-                                     string, args present and not one object of values, seq not a whole
-                                     number from one, time not a whole number above zero, hops not a whole
-                                     number or at zero. to and next may be null; absent is not null, and a
-                                     payload missing a field it owes is malformed like any other. method and
-                                     args may be absent and never null. a field the payload does not name
-                                     is not read, and absent args are handed to her as the empty object.
+strangers: silence, nothing written
+D1   the box does not open           wrong padlock, garbage, over the size, a head that does not open, a
+                                     fresh heir's box too short for a ciphertext, a body that opens under
+                                     no edge key the door takes for the head's heir,
+                                     or a body of sixty-four bytes or fewer, which hold no payload beside a
+                                     signature. a payload that opens and is not UTF-8, not JSON, has a
+                                     duplicate key, nests past sixty-six, or is not one object, is a box
+                                     that does not open.
+D2   the payload is malformed        to, by or next not 64 lowercase hex where a hex is owed, to not the
+                                     head (null for a zero head, the heir the head names otherwise), method
+                                     not a string, args present and not one object of values, seq not a
+                                     whole number from one, time not a whole number above zero, a field
+                                     owed and absent.
 D3   for nobody, and nobody is home  no public being on this ward, or one that did not come back this run.
 D4   for nobody, signature fails     the payload names a key it was not signed with.
-D5   the heir is not held            never minted here, and not one she removed either.
-D6   the key is not admitted         not the key held for the heir, and not the key it announced. a
-                                     forged key, an unannounced key, a heir already spent. a heir she
-                                     removed, under a key that was not the one she removed.
-D7   signature fails                 under an admitted key, or under the key held for a heir she removed.
-refusals to a bound key: a word, nothing written, heard true
-D8   she is not there                `removed`: the id was removed and this is a key it held when it went,
-                                     kept under `gone`, which names no being, so nothing more is asked.
+D5   the heir is not held            never minted here, or removed before it spoke.
+D6   the key is not admitted         not the key held, not the key vouched for, not a key held or vouched
+                                     for when the id was removed. a forged key, an unannounced key, a heir
+                                     already spent, a heir she removed under a key the door did not keep,
+                                     an edge key a racing arrival replaced between opening and writing.
+D7   signature fails                 under an admitted key, or under a key kept for a heir she removed.
+refusals to a bound key: a word, nothing written
+D8   she is not there                `removed`: the id was removed after its heir spoke, and this is a key
+                                     held or vouched for when it went.
                                      for a heir still held: `absent`, the being did not come back this run,
                                      and then `removed`, her occupant record is gone. absent is met first
                                      there, since the record is in her cells and they are not read while
                                      she is away.
-D9   a knock announces nothing       `unannounced`: the heir is fresh and next is null, or is the heir
-                                     itself, which is no key of her own. it binds nothing.
+D9   a knock announces nothing       `unannounced`: the heir is fresh and next is null or the heir itself.
 D10  the number is refused           `repeated`: already honoured, or at or below the span.
-choices: the number spent, the keys rotated, heard true
+choices: the number spent, the keys rotated
 D11  she threw                       `threw`
-D12  she answered silence            on a named ask, or on the empty ask. nothing at all is silence too.
-D13  she answered a non-value        `threw`: a word, or anything her language holds that is not a value. none is hers to make.
+D12  she answered silence            on a named ask or on the empty ask. nothing at all is silence too.
+D13  she answered a non-value        `threw`: a word, or anything her language holds that is not a value, or
+                                     an object whose reply would be above the size.
 ```
 
-D1 and D2 are one function and then the next, in that order, and the line
-between them is here so that two kits draw it in one place. D1 asks whether
-the bytes yield a payload at all: the box opens under the ward's padlock, it
-opens to more than sixty-four bytes, what stands before the signature is
-UTF-8, that text is JSON the value rule admits, with no duplicate key and
-nested no deeper than the bound, and the value it names is one object. A
-payload that is a JSON array, a string or a number is no payload, and falls
-here with the rest. Short of all of that, nothing of the payload is read,
-because there is no payload to read. D2 asks the fields of that object, one
-at a time, and nothing else. What a stranger can see of the boundary is
-nothing: both are one silence of the same length, sealed to the same lid,
-with nothing written either way, so a kit that draws the line elsewhere
-answers alike and a kit that draws it here answers alike to itself.
+D1 and D2 are one function and then the next, and the line between them is
+drawn here so that two kits draw it in one place. D1 asks whether the bytes
+yield a payload at all. D2 asks the fields of that payload, one at a time.
+A stranger sees nothing of the boundary, because both are one silence of
+the same length sealed to the same lid with nothing written either way.
 
 The signature is verified before anything is written and before any word is
 said, so a stranger cannot burn a number she could not sign for and cannot
-hear a word she could not sign for. The public being is asked by strangers
-only, and a stranger hears silence for whatever she then does: her choices
-are hers, and her insides are not a stranger's to read.
+hear a word she could not sign for. Admission is read again after the
+signature is checked, with the edge key the body opened under, because a
+door judges arrivals concurrently and a knock that raced this one may have
+spent the heir or moved its edge keys in between. Only then is anything
+said or written.
 
-A removed relation leaves the door one thing: the keys it held for that
-heir when the id went, kept apart from the heirs under `gone` in the
-partition, bounded, oldest out. That is what lets the door say `removed` to
-the one party who can sign as those keys, and silence to everyone else.
-Nothing else survives a removal.
+A **throw** is an answer that ended without one: whatever a language calls
+the way a call fails instead of returning. A word coming out of a being is
+a throw, since no being may make one. An error object she deliberately
+returns is not a throw: it is an ordinary answer, held to the value rule,
+and Quo never reads it.
+
+On every answered named ask, the door runs her describe for that asker in
+process, hashes it, and puts the digest beside the object as `seen`. A
+describe that throws or falls silent costs the digest and nothing else. On
+the empty ask the describe is her answer and is judged as one: a throw is
+`threw`, silence is silence, and a blueprint is an object whose `seen` is
+null, and her side hashes what came.
 
 ### The law of one silence
 
-1. Every stranger's case is one reply: `{ silence: true }`, sealed to the
-   lid the ask came with, signed by the ward key. Same bytes, same length.
-   A stranger cannot tell one refusal from another, nor any of them from a
-   being who chose to say nothing.
-   The door equalizes the bytes and not the time it took to write them, and
-   the seven cases are not alike in time: two of them verify a signature and
-   five refuse before they would. A heir pk rides in the clear, so whoever
-   holds a copy of an invitation can time a knock signed with nothing and
-   learn whether that invitation is still unspent. What that buys them is
-   what knocking with the invitation would have told them anyway, and
-   knocking spends it, which is why the door does not pay for a signature it
-   has no reason to check. What is equal is what the door says and what it
-   writes, and those are the two a stranger could otherwise use. A word, to a
-   key the door has bound, is another length, and may be: whoever hears it
-   has already proven who they are.
+1. Every stranger's case is one reply, `{ silence: true }`, sealed to the
+   lid the ask came with and signed by the ward key. Same bytes, same
+   length. A stranger cannot tell one refusal from another, nor any of them
+   from a being who chose to say nothing. The door equalizes the bytes and
+   not the time it took to write them: a fresh heir costs a
+   decapsulation, a spent heir up to two edge keys tried, two of the seven
+   cases verify a signature and five refuse before they would. So timing
+   tells a stranger only about a heir she names, and she names one only by
+   holding its invitation: whether it is unspent, which knocking would have
+   told her anyway, and whether a spent one was spoken on or removed before
+   it spoke. A stranger with no invitation names no heir and learns
+   nothing. How far a door evens its time is the kit's. A word, to a bound
+   key, is another length and may be, because whoever hears it has already
+   proven who they are.
 2. A refusal writes nothing. No number, no key, no heir, no cell, no bind.
    The same bytes presented again meet the same refusal, and a stranger who
-   knocks a thousand times leaves no mark. This holds for the three
-   refusals a bound key hears just the same: a word costs nothing.
+   knocks a thousand times leaves no mark. This holds for the three refusals
+   a bound key hears just the same.
 3. A choice writes what a heard ask writes. The number is spent and the keys
    rotate, so the relation goes on: the next ask on it is answered, and a
    silence or a `threw` never kills a standing.
 4. Silence and a word leave the caller's record as it was. A silent named
-   answer leaves `seen` untouched; a silent empty ask leaves `blueprint` and
-   `digest` untouched; a word moves neither, and her keys do not rotate on
-   one.
-5. Her ward never confuses her. Silence, a word and unreached are told apart
-   always, and by nothing else: silence is bytes the far ward wrote and
-   chose to say nothing with; a word is a reason, from the far door or her
-   own ward; unreached is the wire's nothing. A ward never answers nothing,
-   so that nothing always means unreached.
-6. Nobody enforces what a being does with silence or a word. Each is one
-   value she compares against, and a ward hands them to her unchanged.
+   answer moves no `seen`. A silent empty ask moves no blueprint and no
+   digest. A word moves neither, and her keys do not rotate on one.
+5. Silence, a word and nothing are told apart always. Silence is bytes the
+   far ward wrote and chose to say nothing with. A word is a reason. Nothing
+   is not delivered. A ward never answers nothing to its own being, so that
+   nothing always means not delivered.
+6. Nobody enforces what a being does with silence or a word.
 
-## Words and values
+### The blueprint, the digest and `seen`
 
-### Values
+These three are one mechanism and it is on the wire: a being learns what a
+standing can be asked, and learns when that changed, without a second
+round trip. The blueprint is what she is told by the empty ask. The digest
+is a hash of it that her ward computes on her side. `seen` is the digest
+the far door computes on its side and puts in every answered named reply.
+The two are compared, so two kits in two languages must hash one blueprint
+to one digest, and that is why the hash rule is Quo's and not a kit's. A
+kit that hashed otherwise would make every standing between the two wards
+refresh on every ask.
 
-Everything that crosses an edge is I-JSON (RFC 7493): args, answer,
-blueprint, invitation, and whatever she caches from them. Strings are valid
-Unicode, which is text and not code units: a surrogate stands in a pair or it
-is no string, since a lone one is a character nobody has and no encoding on a
-wire can carry. Numbers must be representable as IEEE doubles, so integers
-are exact up to 2^53, and minus zero is not one of them. Larger integers and
-exact decimals travel as strings, with a schema format saying so. Bytes are
-base64 strings, and which base64 is nobody's business here: no ward decodes
-one, a string crosses as the string it is, and the two beings at the ends of
-a relation agree on the spelling the way they agree on everything else in
-their args. Nothing else is a value: no dates, no references, no
-functions, no native types. An id or a standing is never a value.
-
-Every one of those is a rule about the JSON text, not about what a language
-happens to parse it into, because a language is where two kits stop agreeing.
-A number is whole when the text names an integer, so `1` and `1.0` and `1e0`
-are one whole number and a kit that reads the first as an integer and the
-second as a fraction has invented a distinction no wire carries. A number is
-minus zero when the text is a negative zero, `-0` or `-0.0` alike, and both
-are refused, since JSON writes minus zero as zero and reads it back as zero,
-so a harbor keeping objects would hand her a sign a harbor writing bytes
-would not. A number is outside the doubles in three ways, and each is
-refused. Text that names a whole number is refused unless that number is
-exactly a double, or the text is how ECMAScript writes a double:
-`9007199254740993` and `9007199254740993.0` are refused, since one kit
-keeps them exactly and another rounds, while `1e21`, `2^60` written out and
-`1e+23` stand, since the last is the spelling every writer gives the double
-nearest it and a kit must read back what it writes. Text that names a
-fraction is the double nearest it, as every reader of JSON takes `0.1`.
-Text past the largest double, or naming a value other than zero that rounds
-to zero, `1e-400` among them, is refused. A boolean is never a number,
-however a language files it. And an object has no duplicate keys: two of
-one name is not one object, it is text two kits read differently, so it is
-refused where it is read and never quietly resolved to the last. Bytes that
-are not UTF-8 are no JSON text at all, and are refused rather than mended.
-Noncharacters are text, and stand, where I-JSON would refuse them: they
-cross any encoding unchanged, so no kit gives back other than it was given.
-
-The two above are the shape of every rule here: a value is a value when every
-harbor and every kit gives back what was put in. Anything a harbor keeping
-objects would preserve and a harbor writing JSON would lose is refused where
-it is written, because the alternative is a harbor that lies to her about
-which harbor she is standing in.
-
-Args are held to the same rule before they are sealed: an ask whose args
-are not one object of values is unreached, because nothing left. Her answer
-is held to it at the door: a shape that is not a value is `threw` to a bound
-key and silence to a stranger, so nothing crosses altered. Cells hold values and
-refuse anything else at the moment of writing, in her own frame. Anything
-else is whatever her language holds that this chapter does not name: a thing
-with behaviour rather than shape, a thing that points back at itself, a
-number that is not one, a time, a set, a table that is not a plain object.
-Which things those are is her language's and never Quo's, and one line
-decides every one of them: if a harbor writing this ward to JSON and reading
-it back would not hand her the same thing, it is not a value.
-The refusal is a throw where she wrote it, which her ward turns into the
-silence it turns every throw into. She has not answered, and
-nothing was written down that a harbor would later have to lie about. This
-holds all the way down: a container read through her cells is part of her
-cells.
-
-### Silence and the words
-
-Two of the three kinds of "no object came back". The chapter "Silence, the
-words, error" is the whole of them; here only the values. Silence is one
-distinguished value. Null is an answer. A word is a second kind of
-distinguished value, her ward's own, nine of them, `unreached` among them.
-None is an object, and none carries anything but its name. A kit spells each
-however its language spells one value standing for neither an object nor an
-absence, and the spelling is owed to nobody outside that kit.
-
-### Blueprint, schema, digest
-
-Nothing here is Quo's invention. Four standards, adopted whole, so that two
-wards in two languages always read one blueprint the same way.
+A being's blueprint is the shape of an MCP tool list plus notes.
 
 ```
 blueprint
@@ -644,1509 +722,446 @@ blueprint
   notes  any JSON value
 ```
 
-The blueprint is the shape of an MCP tool list, plus notes. The schema is
-JSON Schema draft 2020-12, the one MCP uses; typed languages generate from
-it, untyped languages ignore it, and Quo writes none of it. Args are one JSON
-object with named fields, as MCP passes arguments.
+The schema is JSON Schema draft 2020-12. Quo writes none of it and reads
+none of it. Args are one JSON object with named fields.
 
-The digest is SHA-256, as hex, over the JCS (RFC 8785) canonical
-serialization of the blueprint. Same bytes from every language. This is law:
-two wards in two languages always hash one blueprint to one digest. A ward
-that cannot do this is not a ward. Because only values reach a digest, a key
-holding what her language holds and JSON does not is dropped before hashing
-and an array slot holding one is null, which is what crossing an edge does
-to them anyway. A describe that JSON can write but the value rule refuses,
-nested past sixty-four or holding a number outside the doubles, is not
-mended into one: it costs the digest, as a describe that throws does. The
-digest is written in lowercase hex.
+The digest is SHA-256, as lowercase hex, over the JCS (RFC 8785) canonical
+serialization of the blueprint. Two wards in two languages hash one
+blueprint to one digest, and a ward that cannot do this is not a ward. Two
+places in RFC 8785 are where languages part. Keys sort by UTF-16 code unit,
+not by code point and not by byte, so `U+1F600` sorts before `U+FB33`.
+Numbers are written as ECMAScript writes them, `1e+21` and `1e-7` and
+`0.3333333333333333`, with a negative zero written `0`. A describe that JSON
+can write but the value rule refuses is not mended into one: it costs the
+digest, as a describe that throws does.
 
-Two places in RFC 8785 are where languages part, and a kit is held to both by
-`vectors/framing.json`. Keys sort by **UTF-16 code unit**, not by code point
-and not by byte, so an astral character sorts before one in the surrogate
-range: `U+1F600` comes before `U+FB33`, which is the reverse of what a
-language sorting code points gives. Numbers are written as ECMAScript writes
-them, `1e+21` and `1e-7` and `0.3333333333333333`, with a negative zero
-written `0`. A kit that reproduces every ASCII vector and neither of these
-hashes one blueprint to two digests, and every standing between the two wards
-refreshes on every ask.
+A blueprint is read as one before it is kept as one: an object with `notes`
+present, whatever it holds, and `asks` an array, each entry an object with
+a string `name` and an `input` that is an object. Nothing else is required
+of it, and when it is one the whole value is kept, fields this document
+does not name included. A side that broke on a far ward's answer would be
+one kit made wrong by another. What is not one is kept as no blueprint, and
+its digest is still the digest of what came.
 
-Capability and state are two axes, never mixed.
+Capability and state are two axes and never mixed. The blueprint is what
+she can be asked, hashed into the digest and learned by the empty ask. An
+answer is what she says, never hashed and never in the blueprint. A digest
+change means one thing: her interface changed and the cached blueprint is
+wrong. A being who puts state in her notes makes every standing refresh for
+nothing, and that cost is hers.
+
+## 4. The stance, inward
+
+What a being is handed at birth and what she owes. This is meaning, never
+a language's spelling. A kit spells it however its language spells things,
+and that is the whole reason it is meaning here: a stance is spelled by a
+kit, and nothing on the wire observes the spelling.
+
+**She is handed** her cells, her standings, and six calls. Nothing more is
+ever offered and nothing here may be missing.
+
+- **Cells.** Her state, values only. A write of a non-value is refused
+  where she wrote it, in her own frame. Her ward keeps her cells and her
+  two records, and a restart hands her the same cells again. What a restart
+  is, she cannot tell from birth.
+- **Invite.** She mints an id in her own time, hands notes for it if she
+  wants any, and asks for an invitation. The occupant record exists from
+  that moment, holding those notes, and the invitation is hers to give
+  away. It refuses an id that
+  already names a record, occupant or standing, since the two are one
+  namespace.
+- **Remove.** An id, occupant or standing, goes. Removing what is not there
+  is nothing. Her occupant hears `removed` from then on, and she hears
+  nothing, ever, about a standing that walked away from her. A relation
+  runs one way, from standing to occupant, so Quo names no leave and no
+  event: a being who wants to say she left, or anything else happened, asks
+  it through a standing she holds, as a method the far being offers.
+- **Knock.** An ask carrying an invitation. Her ward seals it, and the far
+  door binds the arrival to the id the inviter minted. It answers an
+  object, silence, or a word.
+- **Take.** After an answered knock, she keeps the far being as a standing
+  under an id she mints. That is the only moment a standing is born. Take
+  before a knock, or after a silent one, births nothing. Take consumes: the
+  invitation names the standing from then on and nothing else, so it is
+  exactly as alive as the standing is. Take waits its turn on the
+  relation's line, because a relation has one line of keys and one count.
+- **Ask.** Method and args to a standing, with an allowance if she wants
+  one. An object, silence, or a word comes back. The empty ask, no method,
+  is answered with the far being's blueprint. Every ask she makes is a new
+  call.
+- **Boot.** A being may make a being of her own ward, by class name and
+  under a key she chooses. The one made has empty cells and no relation but
+  the one her maker named, and that one is made the way all of them are:
+  invited, knocked and taken. Which end invites and which ids are named is
+  the kit's. A boot whose relation could not be made makes nobody.
+
+**She is asked** through one method, her answer, and the ward calls it
+with the asker and the ask. The asker has three shapes and no fourth. Her
+own id for the occupant at the door. Nobody, which is how the public being
+knows she is public. The root, which is the ward speaking to her on behalf
+of whoever holds its unsealed ask. Nothing else ever reaches her.
+
+**The ward is a being to its root** and answers it as one: the empty ask
+is its describe, and what it can be asked is learned there, as any being's
+is. Which asks those are, and their shapes, is the kit's. A ward piloted
+from another ward is piloted by ordinary asks on a relation, and what those
+asks are named is a matter between the two kits and not a promise of Quo.
+
+**What she owes.**
+
+1. Args are one object of values, and her answer is a value or silence. An
+   error is an ordinary object she declares in her output schema. She never
+   throws outward: a throw is caught by her ward and is `threw` to a bound
+   key and silence to a stranger.
+2. The empty ask is hers and must be safe to repeat. Who gets what
+   blueprint is her decision, per asker. Her ward may ask it at any time.
+3. A standing's digest arrives with every answer as `seen`. She compares it
+   to the one she holds and refreshes by the empty ask if she wants. The
+   digest is of what she was told, not of who the far being is: one being,
+   many askers, many digests, all true.
+4. An occupant has no digest and cannot be asked. To reach an occupant,
+   hold a standing at her: she gave you one or she did not.
+5. Her cells are hers to guard across every point her language may leave
+   her answer and come back. Her ward adds no serialisation of its own, and
+   two asks may be inside her at once.
+6. A call is delivered once by accident never, and what she asks is always
+   a new call. The public being is the exception: she is reached with no
+   count, and her answer must be safe to repeat.
+7. A silence she meets is not blindly retryable, because the far being may
+   have done the work and the answer was lost. Nothing is safe to retry,
+   because nothing was delivered. A wait that ran out promises neither.
+
+**What her ward tells her**, and never a stranger. Three kinds of "no
+object came back", and only three: an error, which is her object; silence,
+which names no reason; and a word, which names one. The five door words
+reach her exactly as the far door said them. Four more are her own ward's,
+said in process and never on the wire.
 
 ```
-capability   what she can be asked.   blueprint.  changes rarely.
-             hashed into the digest.  learned by the empty ask.
-state        what she answers.        answers only. may change every ask.
-             never hashed.            never in the blueprint.
+unreached    no far door was reached. nothing is known to have been delivered. safe to ask again.
+late         the wait ran out. the far door may have heard and be working still. what comes back late is not read.
+invitation   the invitation is not one. nothing was sent.
+dropped      she dropped the standing and asked on what she held. nothing was sent.
 ```
 
-A digest change means one thing: her interface changed and the cached
-blueprint is wrong. Notes in the blueprint are about the interface. A being
-that puts state there makes every standing refresh for nothing, and that cost
-is hers.
+An ask whose args are not one object of values, or whose method is not a
+string, is unreached, because nothing left: a payload is written as JSON,
+and a method that could not be written would arrive as the empty ask and
+spend a number on a blueprint she did not want. An ask the carrier returned
+nothing for is unreached, and the number is spent all the same.
 
-What follows: a being's describe is an MCP tool list with no translation.
-Whoever holds a ward's ask can put an MCP server in front of any being of
-it, and a being's class may wrap an MCP server; neither is a ward function.
-Models are occupants like anyone else. What stays Quo's: silence, unreached,
-ids, invitations, knock and take, the digest rule. MCP is the description
-and value layer. Quo is the relation layer.
+**Ids.** An id is minted by the being, bound by the ward, permanent, and
+never crosses the door. Her id for you and your id for her are unrelated.
+One id names one record. A kit reserves whatever names its own spelling of
+the stance would collide with, and refuses them at invite and at take,
+never at the write. Which names those are is the kit's, since no far ward
+can tell.
 
-### Ids
+**One relation, one line.** Every send on one relation waits for the one
+before it, because the rotation is a conversation: a send reads the key
+that speaks now and announces the next, and two sends interleaving would
+read each other's half-written keys. Lines are per relation, so beings
+still ask concurrently. A line is released by the allowance and by nothing
+else: an ask that never comes back holds its line, and a kit that bounds
+where a being is waiting and not where the line is held has a relation that
+one quiet far side closes for good.
 
-An id is minted by the being, bound by the ward, permanent, and never crosses
-the door. It is any string, the empty one included. Her id for you and your
-id for her are unrelated. One id names one record, and standings and
-occupants are one namespace: invite refuses an id a standing holds, take
-refuses an id an occupant holds.
+## 5. The ground, downward
 
-Two words are the ward's and no being may mint them: `OWNER` and `PUBLIC`,
-the reserved askers of the ward-to-being edge. The ward speaks at every
-being's door as `{ id: 'OWNER' }` when it runs her describe for its owner,
-and an occupant wearing that name would be two parties with one face.
-`PUBLIC` guards nothing today, because a public asker is `{}` and carries no
-id, and it is claimed now while claiming it is free.
+What a harbor hands a ward and what it owes. Meaning only: what each thing
+is, is Quo's, and how a kit holds them together is not.
 
-A kit refuses more names than those two, wherever its own spelling of the
-stance would collide with an id: a standing under a name that spelling has
-already taken would be unreachable, and invite and take refuse it like the
-ward's words. Which names collide is that kit's, because an id never crosses
-a door and a kit that spells the stance another way has no collision to
-refuse.
+- **The seed.** Thirty-two bytes, or what is hashed to them. The ward
+  derives its pk from it and from nothing else.
+- **The partition.** The ward's state at one moment, as values, opaque to
+  the harbor. Everything durable a ward has is in it, every secret
+  included, the lock among them, and nothing in it is ever in a being's
+  cells. Between one run
+  and the next the ward is this record, and standing it again on any
+  harbor is standing the same ward.
+- **Instantiate.** A class name and a stance in, the being or nothing out.
+  A name the harbor does not hold is nothing, and that boot makes nobody. A
+  class that throws while it is made is a being who threw at birth: she is
+  absent this run, her cells wait, and her door says `absent` to the keys it
+  bound and silence to strangers.
+- **Random.** A count in, that many bytes of entropy out. Every key a ward
+  mints is drawn from it, the lock and every `m` included.
+- **The carrier.** Bytes to a ward key in, bytes or nothing out, and nothing
+  means not delivered.
 
-### Cells
+The ward returns its door, sealed bytes in and sealed bytes out, and its
+unsealed ask, method and args in and a value or silence out. The unsealed
+ask is the one unsealed ask in Quo. Judgment, catching and the three
+answers are not skipped on it: a throw inside is silence. Whoever holds it
+is the ward's root, and the ward is a being to its root exactly as it is to
+anyone.
 
-Cells are I-JSON values. The ward may persist them. A restart is silent: she
-is constructed again with the same cells. Three keys at their root are the
-ward's, `standings`, `occupants` and `class`, and a write of hers to them is
-refused where she wrote it, like a non-value, and removing one is a write to
-it. A value nested past sixty-four levels is refused the same way, wherever
-it crosses and not in cells alone. The bound is arithmetic and is written as
-arithmetic, since a sentence about a boundary is a sentence two kits read two
-ways. A level is a container, an object or an array, and a scalar is none.
-The depth of a value is the greatest number of containers on any path from
-that value inward, counting the value itself when it is one: a number is
-depth zero, the empty array is depth one, an array holding an array is depth
-two. A value of depth sixty-four stands and one of depth sixty-five is
-refused, so sixty-four nested arrays are a value and sixty-five are not. It
-is counted from the value written and never from the root it is written
-under, so a value that stands on its own stands wherever it is put: a value
-of depth sixty-four written into a cell that already sits deep is a value,
-and what is checked is never the sum of the two. That bound
-is Quo's because a far ward
-reads what a near one wrote: a kit with a deeper stack still refuses at
-sixty-four, or two kits disagree about which blueprint is a value. A kit
-refuses beside it whatever its own runtime writes one way and reads another,
-and those are its own.
+**What a harbor owes** is stated as costs, because Quo cannot see a harbor.
+
+- The carrier answers nothing only where it knows nothing was delivered.
+  A carrier that sent the bytes and then gave up on its own patience must
+  answer nothing at all, and the ward's allowance ends the ask as `late`. A
+  carrier that answers nothing after sending has turned a `late` into an
+  `unreached`, and a being who then asks again has asked twice.
+- A harbor that keeps a partition saves in the order it was told. Whether
+  what was written is kept is the one thing a ward may learn about storage,
+  once, after the being has answered and before the reply is sealed, and it
+  learns yes or no and never a reason. The edge key of that reply is among
+  what was written, so the reply's ephemeral key is drawn before the save.
+  A door that says yes to what was never kept is the worse fault:
+  everything written to that being afterwards is lost and every door keeps
+  answering success. A no is that arrival's own
+  failure, said as a throw is said, `threw` to a bound key and silence to a
+  stranger, and a full disk is not a reason the far side may hear.
+- A harbor that puts a partition back to an earlier moment puts back a
+  being's cells and never what her relations stand on. Her keys, signing and
+  edge, rotate when a reply opens and the far door's when it honours, so
+  the two move at different moments. Stand either at an earlier moment and
+  it speaks under a key the other will not admit, with no way back. A
+  relation cannot be put back, only broken. The count needs no such care: a
+  door honours any unseen number in its span, and two counts find each
+  other again on their own.
+- The harbor learns one bit from each arrival beside the bytes: whether a
+  key the door holds spoke. It never learns a reason. A ward key that only
+  ever brings strangers' bytes is the harbor's to rate or refuse, and Quo
+  says nothing about how.
+
+## 6. The reference carrier, Quo over TCP
+
+The door names no carrier. This chapter is the one carrier Quo publishes,
+so that two kits that have never met can reach each other's doors. A kit
+that speaks the door and this carrier talks to every other kit that does.
+Any other carrier, a request, a held socket, a push, a queue, a link
+between planets, is a kit's own.
+
+It adds nothing to the door. The carrier in chapter 5 is one sentence:
+bytes to a ward key in, bytes or nothing out, and nothing means not
+delivered. Everything below is how that sentence is spelled on a TCP
+stream.
+
+### The line
+
+A harbor that listens holds a TCP address, a host and a port, and stands
+wards behind it. A kit that dials opens a connection to that address and
+asks on it. The dialer asks and the listener answers. A connection carries
+many asks, in flight at once, and either side may close it at any time.
+A ward that cannot be dialed is reached however its implementer chooses, a
+held socket, an upgraded request, a push that wakes it to dial, and asks
+flowing back on a line the ward opened are that implementer's carrier.
+
+How a dialer learns which address stands a ward is outside this chapter
+and outside Quo. An invitation carries no route, so the address comes by
+whatever means the two parties already share. Quo names no port: an
+address is whatever reaches the listener, an IP or a name, with a port or
+behind whatever forwards one to it.
+
+The carrier adds no encryption and no authentication of its own, because
+the box is already sealed and signed. The frames are the same bytes on any
+reliable stream that reaches the listener: plain TCP, or TCP inside TLS or
+a tunnel so that a proxy can route it by name or a firewall lets it pass.
+Whether a stream is wrapped, and in what, is the harbor's choice and each
+implementer's, and the frames never see it. Quo requires none and forbids
+none.
+
+The line does not greet. The first bytes a dialer sends are its first
+frame: an ask to the public being or an ask through a standing, and the
+door judges it like every other.
+
+### The frame
+
+The stream is a sequence of frames. Each frame is a length and then a body.
 
 ```
-cells
-  standings: { id: { id, digest, blueprint, seen } }   ward writes all four
-  occupants: { id: { id, notes } }                     ward writes id, she writes notes
-  class                                                ward writes it at boot, so a restart finds her
-  anything else                                        hers
+frame   = length (4, big-endian) || body
+body    = kind (1) || id (4, big-endian) || rest
 ```
 
-`standings` and `occupants` stand as empty objects from her birth. A standing
-is born at take with `digest`, `blueprint` and `seen` all null, and an
-occupant invited with no notes has the empty object for them.
-
-- `digest` is the hash of the blueprint she last fetched by the empty ask.
-  It is over what came back, whatever that was.
-- `blueprint` is that blueprint, and only if it is one. A far describe is
-  somebody else's code and may answer any value at all; the ward reads it as
-  a blueprint before writing it as one, and writes `null` when it is not. A
-  blueprint is an object with `notes` present, whatever they hold, and
-  `asks` an array, each entry an object with a string `name` and an `input`
-  that is an object; nothing else is required of it, and when it is one the
-  whole value is written, fields this document does not name included. A
-  side walks `asks` by name, and a side that broke on a far ward's answer
-  would be one kit made wrong by another. The answer itself still goes to
-  whoever asked, unread.
-- `seen` is the digest her ward last saw arrive with an answer. A silent
-  refresh leaves it untouched, and so does an answered empty ask, whose
-  reply carries no digest.
-- `notes` is hers. Quo never reads it. Tier, expiry, kinship between an
-  occupant and a standing that are the same far being: all hers. `invite`
-  may seed it, which is how an inviter says the terms it mints under, and
-  after that it is written by nobody but her. The owner's `invite` passes
-  what it was given straight through; the ward reads none of it. What is
-  seeded is values and is kept as a copy, all the way down: notes that were
-  not values would be a record no harbor could write back, and notes shared
-  with whoever seeded them would be a hand inside her cells that writes
-  without the ward being told, so a restart would bring back something she
-  never read. Notes that are not values are no invitation.
-
-## Relations
-
-### How a relation is born
-
-There is one way in and one way back.
-
-1. She wants B as an occupant. She mints an id, in her own time, and asks
-   her ward for an invitation for it. The occupant record exists from that
-   moment. The invitation is a value: it goes by mail, paper, or inside the
-   args of some other ask. Quo does not care how.
-2. B consumes it by knocking: an ask carrying the invitation. B's ward
-   seals it and hands it to its harbor's carry, and her ward, which
-   recognises its own seal, and binds the
-   arrival to the id she minted. From now on every ask from B arrives as
-   that id. The first such ask is how she learns the invitation was
-   consumed. Whether it is still welcome is hers: expiry, one use, anything,
-   lives in her notes.
-3. If she answered, B may take her as a standing, minting B's own id for
-   her. That is the only moment a standing is born. Take binds B's side
-   only; the knock bound hers. Take before a knock, or after a silent one,
-   births nothing. B may also knock, say hello, and never call again. She
-   keeps B as an occupant until she decides otherwise. She never learns that
-   B walked away.
-4. B wants her to reach back? B mints an id, makes an invitation, and puts
-   it in the args. She knocks it and takes B if she wants. Two invitations,
-   two relations, each chosen by its owner.
-
-She is always the initiator. Nobody becomes her occupant unless she invited
-them. Nobody becomes her standing unless she knocked and chose to take, or
-her owner knocked for her.
-
-### What take does
-
-Take consumes. Until take the relation lives in a knock record, under the far
-ward and the heir; from take it lives in the standing, under her id, and
-never in both. Take copies the keys and the count the knock left, deletes the
-knock record, and the invitation is spent for her: knocking it again is an
-ask on the standing, and taking it again births nothing.
-
-Take waits, because a relation has one line of keys and one count, and every
-word spoken for it goes in order. Taken out of that order it would read
-between a knock's send and its answer, and the standing would be born holding
-a number the far door has already honoured and a key it has already rotated
-past. So take goes in the line with the rest.
-
-### One relation, one lane
-
-Every send on one relation waits for the one before it. The rotation is a
-conversation: a send reads the key that speaks now, announces the next, and
-moves once the far door has answered, and two sends interleaving on one
-relation would read each other's half-written keys. Lanes are per relation:
-beings still ask concurrently, and a slow relation never holds up another.
-Before take the lane is the invitation's; after take it is the standing's,
-and a knock on a taken invitation joins the standing's lane.
-
-The standing an ask sends on is taken when she calls, not when the lane
-reaches her: an ask issued while the standing stood is answered even if she
-drops it in the next line. The keys inside it are read when the lane reaches
-her, so an ask queued behind another signs with the key the one before it
-moved to. An ask on a standing she has already dropped is
-the word `dropped`, and nothing is sent. A knock on the invitation it was
-born on, after take and a drop, is a knock as a heir the far door has already
-spent, so bytes leave and the door's silence comes back: after take the
-invitation names the standing and nothing else, so it is exactly as alive as
-the standing is.
-
-A lane is released by the bound and by nothing else. An ask that never comes
-back holds its relation's lane, and every later ask on that relation waits
-behind it, so the bound ends an occupancy and not only a wait. A kit that
-bounds where a being is waiting, and not where the lane is held, has a
-relation that one quiet far side closes for good.
-
-### The public being
-
-A ward may have one public being, and no more. She is an ordinary being,
-booted by the owner and then marked public by the owner's `public` ask.
-Arrivals for no heir reach her. Her
-asker is `{}`: she is asked by anyone, and she can tell. She may hold
-standings. She may invite, and an occupant of hers arrives named while
-strangers still arrive as `{}`. A ward without a public being answers
-arrivals for no heir with silence.
-
-An invitation to her is `{ ward }` alone. One with a secret and no heir is
-not an invitation. She may be taken as a standing on that invitation, and
-such a standing has no heir and never rotates.
-
-The signature is checked here for no property, and the check is kept anyway.
-Whoever asks chose that key a moment ago, the box is already authenticated to
-the ward's padlock, and the door binds nothing, so nothing is proven by it and
-nothing would be lost by dropping it. It stays because the payload has one
-shape and the door has one path: `by`, `next` and `seq` are required of her
-ask as of every other, and honoured by nobody. A kit author who goes looking
-for the property behind this signature will not find one, and is not missing
-anything.
-
-She is reached without a heir, so the door keeps nothing for whoever asked:
-no key it vouched for, and no count. The bit beside her reply is `heard`
-false, as it is for every stranger: no key this door holds spoke. She is the
-one place a stranger is answered by design, so she is the one place the
-harbor's rating must still see a stranger arrive. A harbor that saves before
-its reply goes out follows the ward writing, never the bit, since a public
-being writes in her cells like anyone. The signature is still checked, under
-whatever key signed. Once-only delivery does not reach her: the same sealed
-bytes presented twice are delivered twice, and the number the payload carries
-is required and honoured by nobody. A count per voice would be memory a
-stranger chooses the size of, which is the thing the span exists to refuse.
-
-So her answer must be safe to repeat. This is her obligation, not a gap at
-the door. Anything that must happen once lives behind an invitation, where
-there is a heir and a count.
-
-Nothing else about her is different. Her cells, her standings and what she
-keeps are hers, exactly as they are for every being, and Quo has no say in
-them: she may hold a board every stranger plays on, a catalogue, a queue, or
-nothing at all. She is an ordinary being who chose to describe herself to
-strangers and to answer them, and that choice is the whole of what makes her
-public. A stranger who keeps knocking is the harbor's, never hers and never
-the door's.
-
-### How a relation crosses wards
-
-1. She mints an id. Her ward mints a heir for it, keeps the pk, and hands
-   her an invitation: her ward's pk, the heir pk, the heir secret. A value.
-   It goes anywhere. Rotation one.
-2. The invitation is consumed by an ask at some ward, and that ask names a
-   being there. Either B holds it, because a standing put it in her args,
-   and B knocks. Or an owner holds it, because it came by mail, and the
-   owner's ask knocks for a being of theirs, new or existing. There is no
-   third way, because a relation cannot end in thin air.
-3. B's ward mints her own key, signs the knock with the heir secret,
-   announces her key inside, seals the box to her ward's padlock, and
-   hands it to carry for the ward pk. No relation between the two wards is needed,
-   ever. Her ward opens its own box, admits the heir, verifies, binds the
-   id to B's key, and hands her the arrival as the id she minted. The heir
-   is spent. Rotation two.
-4. B's ward remembers the knock was answered, and lets B take. From then on
-   every ask from B on that standing is signed by her current key, announces
-   her next, and is sealed to the same padlock. Every answer rotates her.
-5. Same ward: her ward recognises its own pk and delivers without the
-   harbor. Same harbor: the harbor finds the pk in its own map and calls the
-   other door. Two harbors: the wire. The ward's code has one branch between
-   these, and the being has none. A same-ward knock is sealed, signed, and
-   judged exactly like a far one.
-
-## The door
-
-### Keys
-
-One 32-byte seed is one key. A being's key signs and never seals. The ward's
-key does both: an Ed25519 pair to sign replies, an X25519 padlock every ask
-is sealed to. Beings never own a padlock.
-
-- **The ward key** comes from the seed. Its pk on the wire is the signing pk
-  then the padlock, 128 hex, and it routes. Two curves, and each secret is
-  HKDF-SHA-256 of the seed under its own label, `quo-ward-sign` and
-  `quo-ward-seal`, empty salt, the seed as the input keying material, 32
-  bytes out. The first thirty-two bytes are the Ed25519 private key as
-  RFC 8032 names it, the seed that key is expanded from; the second are the
-  X25519 scalar as RFC 7748 takes it, clamped by the function and not
-  before. Fed the seed straight the two
-  scalars would still differ, because Ed25519 hashes what it is given and
-  X25519 clamps it raw, but that is an accident of the two designs and no
-  separation: one secret would be doing two jobs with nothing said about it,
-  and a second kit would have to reproduce a construction nobody named. A
-  seed handed in as bytes of the key length is the seed; anything else, text
-  or bytes of another length, is SHA-256 first, so a thirty-two character
-  name is a name and not a key for being the right size.
-  `vectors/framing.json` pins it.
-- **The heir** is the key the inviting ward mints at invite, for one id. It
-  keeps the heir's pk beside the id and gives the secret away. The
-  invitation IS the heir: ward pk, heir pk, heir secret. Rotation one: the
-  occupant already has a key, and the inviter chose it.
-- **Her own key** is what the knocker mints at knock. She signs the knock
-  with the heir and announces her own key in it. The door binds the id to
-  her key and the heir dies as it speaks. Rotation two: from now on she
-  signs with a key the inviter never held. A knock that announces nothing,
-  or announces the heir itself, binds nothing.
-- **Next.** Every ask she sends announces the key she will sign with next.
-  The door holds two pks for her: the one that may speak now, and the one
-  it vouched for. Whichever speaks first wins, and the other dies. There is
-  no rotate call: every honoured ask rotates, and a lost reply strands
-  nobody.
-
-  The door's own move is written as arithmetic, because a sentence about a
-  rotation is a sentence two kits read two ways and a relation that then dies
-  over one key. It moves on an honoured ask and on nothing else, and the
-  fresh heir is one case and every ask after it the other.
-
-  On a fresh heir, the honoured ask is a knock, and it announced a key or it
-  was `unannounced` and never reached here. The key it announced becomes the
-  key held, the heir dies as it speaks and is held by nobody, and nothing is
-  vouched for.
-
-  On a heir already spent, the key that signed becomes the key held, whichever
-  of the two was admitted, and the other is forgotten. The key the ask
-  announced becomes the key vouched for. An ask that announces nothing moves
-  the first and leaves the second exactly as it stood, holding whatever key it
-  held.
-
-  So the key held for a heir is the key that last spoke, and a door that kept
-  the first one forever would refuse the caller the moment she signed with the
-  key she announced.
-
-  Her side moves to the announced key only when an object came
-  back: not on silence, not on `threw`, and not on any other word. The door
-  has moved on every choice and on none of its refusals, and it admits both
-  keys, so a side that stays behind is always heard and a side that moved
-  on a refusal would be refused for good.
-
-The knock is the one place where both sides cannot be brought back into
-agreement by that rule alone. If the reply to the first knock is lost, the
-door has spent the heir and rotated to the key she announced, and she does
-not know it: knocking as the heir again would be refused for good. She cannot
-learn which case she is in, so she asks, and the asking tells her. She sends
-under her own key first. If the door heard, that is the key it admits and she
-is answered. If it did not, the key means nothing there and the ask is
-refused; a refusal at a door writes nothing, so the heir is untouched and she
-knocks as the heir, as she would have. One extra round trip, in the one case
-where a reply was lost. It gives a stranger nothing: whoever holds the
-invitation could always knock as the heir, and her own key is admitted only
-where the door already bound it to her.
-
-Three keys per relation over its life, one rule at the door: the key I hold
-for you may speak, and so may the key it announced last time, and each
-number once.
-
-A send that announces nothing leaves the spare standing, holding the key it
-already held, and it is never cleared to nothing: a third ask signed with
-that key is admitted exactly as the second would have been. Every ask announces
-its next but a public one, which holds no heir and is one key for life, so
-this is a foreign kit's send and not this one's; and a caller who skipped an
-announcement still holds the key she announced before it. The door forgets no
-key it vouched for until another replaces it, and forgetting one here would
-meet that key with silence at the next ask and kill a healthy relation over a
-field. On a fresh heir the rule is the other one: nothing announced is
-`unannounced`, because there the announcement is what binds.
-
-Every key in a relation was minted by one side and its secret never left
-that side, except the heir, which the inviter gives away and which dies the
-first time it speaks. No key serves two relations. No key outlives its
-relation. A ward keeps a bounded list of the pks a being's side minted, and
-how long it is, is that ward's own: nothing in Quo reads the list, so a
-shorter one costs a shorter trail for whoever is looking at the ward, and a
-kit that keeps none holds the same ward.
-
-### The count
-
-Every ask she sends carries the next number in one unbroken count for that
-relation, starting at one, and the door honours each number once. The number
-rides inside the signed payload, so bytes caught on the road carry the number
-they were sent under: they cannot be renumbered without breaking her
-signature, and they are refused as themselves. A caller who means to ask
-again asks again, under the next number, and is heard. Retry and
-fire-and-forget stay hers to build; only the accident and the interception
-are refused.
-
-The door keeps the highest number honoured, the **mark**, and which numbers
-below it are spent, out to a span of sixty-four, because a door that
-remembered every number ever seen would be a door with unbounded memory.
-
-The span is arithmetic and is written as arithmetic, since a sentence about
-a boundary is a sentence two kits read two ways and a relation that then
-dies over one number. A number above the mark is honoured and becomes the
-mark. A number equal to the mark is refused. A number below it is honoured
-once when it is greater than the mark less sixty-four and has not been spent,
-and is refused when it is less than or equal to the mark less sixty-four.
-So with a mark of one hundred, thirty-seven is honourable and thirty-six is
-refused, and the door holds sixty-four numbers: the mark and the sixty-three
-under it. The width is this document's and not a ward's: a ward that
-honoured further back would answer where another refuses, and a caller
-cannot tell two doors apart by anything but their answers.
-
-The mark and the spent list are in
-the partition, because a door that forgets what it honoured honours it again
-after a restart.
-
-Her side keeps the number it spoke under whether or not a reply came back. A
-reply lost on the way back is a door that has already honoured the number,
-and offering it twice would silence the relation for good. The count carries
-over from the knock into the standing at take.
-
-### The allowance
-
-Every ask carries what it may still spend: **time**, in milliseconds. It
-rides inside the signed payload, so a budget caught on the road cannot be
-widened by whoever caught it.
-
-A being who says nothing gets her ward's default and never thinks about it.
-A being who wants to say so passes a third argument. What she is given is
-what she asked for held to what her ward allows: a number that is not a
-positive whole number falls to the default rather than refusing her, and one
-above the ceiling is the ceiling, silently, because the ceiling is not hers
-to know. Budget is granted by a ward, never minted by a being. How wide the
-default and the ceiling are is the ward's own, and no far door can tell one
-ward's from another's.
-
-They are two numbers and not one, because the third argument is for both
-directions. A being who knows her own work asks for less on the ask she wants
-back quickly, and for more on the one she knows is slow. A ceiling equal to
-the default would leave her only the narrowing half, and would give the ward
-no way to allow one long piece of work without making every ask that
-patient.
-
-The sender's wait has an end, and time is the only thing the ward measures:
-no count of doors, no count of bytes, no count of tries. The
-bound covers the whole of an ask, from the moment she calls: a relation that
-comes back round on itself is stopped at its own lane, before a byte is
-sealed, and a bound that watched only the wire would never see it. This is
-what makes three answers three. A wait that does not end is not an object,
-not silence and not unreached, and before the allowance a cycle of legal asks
-could produce one: A asks B, B answering asks A back, A answering asks B on
-the relation the first ask still holds. Now the innermost wait gives up, the
-word `late` unwinds outward, and the ask ends.
-
-**A wait that ran out is the word `late`, never silence and never
-unreached.** Unreached promises nothing was delivered and is safe to ask
-again. A bound that expired knows no such thing: the far door may have heard
-and be working still. What comes back late is not read.
-
-The harbor keeps a patience of its own, and the two never read each other.
-What a harbor hands back as nothing came back is unreached, and unreached
-says nothing was delivered: a harbor may answer it only where it knows the
-bytes never arrived, no reach for that pk, a socket that would not open, a
-link that is down. A harbor that sent them and then gave up knows no such
-thing, and must not answer at all; the ward's bound will ring, and that is
-`late`, which promises nothing. A harbor that throws has answered nothing
-in a louder voice, and the ward reads it as nothing: unreached. So a harbor
-may hold a shorter patience than the ward for its own reasons, a socket it
-wants back or a queue it will not grow, and whichever ends first ends the
-ask.
-
-The receiving door reads the allowance before anything is done under it. A
-payload whose time is not a whole number above zero is malformed, D2, and
-is refused as one. Nothing is spent and nothing rotates, because nothing
-was heard.
-
-Each ask is bounded on its own. The time an arriving call has left does not
-bound the asks a being makes while answering it, and an ask carries no count
-of doors; see Closed. Every wait still ends. How a kit bounds a wait, a
-timer, a thread or a deadline read between steps, is its own; that the wait
-ends at the bound with `late` is Quo's, in every language, a blocking one
-included.
-
-### Judgment
-
-Every arrival is judged by the door, and named by it or falls silent.
-
-1. Open the box with the ward's padlock. Read whether it is for a heir or
-   for nobody. Parse the payload and refuse any field of the wrong shape.
-2. For nobody: find the public being, verify the signature under the key the
-   payload names, and dispatch as `{}`. Nothing is written.
-3. For a heir: admit the signer if it is the key held for that heir or the
-   key that key announced, or the key held when she removed the id. Verify
-   the signature. Read admission again, since the door judges arrivals
-   concurrently and a knock that raced this one may have spent the heir
-   while the signature was checked. Only then say anything or write
-   anything: a removed
-   relation is `removed`, a being not back this run is `absent`, a knock
-   with no key is `unannounced`, a number already honoured is `repeated`,
-   and none of those writes. Else spend the number and settle the keys, so
-   a stranger cannot burn a number she could not sign for, and the same
-   bytes twice rotate nothing. Dispatch as `{ id }`.
-4. Catch every throw and answer `threw` to a bound key, silence at the
-   public being. Treat a word coming out of a being as a throw. A **throw**
-   is an answer that ended without one: whatever a language calls the way a
-   call fails instead of returning, an exception raised, an error returned
-   where a value was owed, a task that ended abandoned. The name is the
-   language's; the rule is that a being who did not answer has not answered,
-   and her ward says so in one word. An error object she deliberately
-   returns is not one: it is an ordinary answer, held to the value rule like
-   any other, and Quo never reads it. A language where failure is an
-   ordinary return value says which of the two a being meant the way it says
-   everything else about her shape, in her output schema; what she declared
-   as an answer is an answer, and what she did not is a throw.
-5. On every answered named ask, run her describe for that asker in process,
-   hash it, and put the digest next to the object in the reply. One trip. A
-   describe that throws or falls silent costs the digest and nothing else.
-   On the empty ask the reply carries no digest; her side hashes what came.
-6. Answer by the same call the ask came in on.
-
-A stranger is bytes the ward cannot admit, and every way of being one is
-listed, with a number, under "Silence, the words, error". The public being
-is the one door a stranger may walk through, and only because she chose it.
-
-### Inner and outer
-
-Inner: being keys, ids, cells, stances, doors, the bind table, every secret,
-every method, every arg, every answer. Nothing inner is ever readable in the
-bytes, and a kit proves it by reading every byte string that crossed.
-
-Outer: ward pks, heir pks, ephemeral pks, ciphertext. That is the whole of
-what the wire sees. The one value a being holds that is outer is the
-invitation, which she carries opaque and never opens.
-
-A far ward binds a heir to a pk, never to a being. Two far beings that talk
-to two beings of mine see two heirs and one ward pk, and two relations that
-share no key learn nothing from each other.
-
-### The wire
-
-Five algorithms, named once and never negotiated: Ed25519 signs, X25519
-agrees, SHA-256 hashes, AES-256-GCM encrypts, and the key and nonce it
-encrypts under are derived together by HKDF-SHA-256 under an empty salt and
-the label `quo-seal`. That
-label is the message cipher's and no other: HKDF appears twice in Quo,
-here from an agreement and again at the ward key from a seed, and the three
-labels, `quo-seal`, `quo-ward-sign`, `quo-ward-seal`, are three so that two
-derivations never answer to one name.
-
-The derivation, in full, because a kit that reproduces it by guess is a kit
-that does not. A label is HKDF's `info`, and it is the ASCII bytes of the
-name written here, with no length in front of it and no prefix: `quo-seal`
-is eight bytes. The salt is empty, which is the zero-length salt of RFC 5869
-and not a string. The input keying material at the message cipher is the
-thirty-two byte X25519 agreement as it stands, and nothing is concatenated
-to it. Forty-four bytes come out in one call: the first thirty-two are the
-AES-256 key and the last twelve are the nonce, in that order. The nonce
-needs no randomness of its own, since the key beside it is fresh on every
-message. The tag is sixteen bytes and rides where AES-GCM puts it, at the
-end of the ciphertext.
-
-The additional authenticated data of every box is the ephemeral pk that box
-carries, the thirty-two bytes in front of its own ciphertext. A reply's is
-its own and never the lid it is sealed to: the reader of any box takes the
-bytes it opens and the bytes it authenticates from the same box, so a box is
-opened without knowing what answered what.
-
-A key is a seed and nothing is derived from it twice. The thirty-two bytes
-drawn for an ephemeral, and the thirty-two bytes of a heir secret, are the
-secret as they stand: no hash, no label, no second derivation. Only the
-ward's key is derived, because only the ward's one seed has two curves to
-serve.
-
-Verification is one rule, because two kits that verify differently answer
-one ask two ways. A signature is checked against the bytes exactly as they
-were received, never against a re-serialisation of what they parsed to, and
-a kit that canonicalises before verifying will refuse its own peers. It is
-RFC 8032's cofactorless check, `[s]B = R + [k]A`, and it refuses in four
-places and no others: a signature of any length but sixty-four; an `s` at or
-above the group order; an `R` whose bytes are not the bytes the point it
-names encodes to, so `R` is compared as encoded; and a public key that is
-small-order in any spelling, the sign bit set on `x = 0` included, or whose
-y coordinate is not reduced, at or above the field's prime, since the field
-has room for that spelling and it names one of the same points. A public key
-with a torsion component that is not small-order verifies like any other,
-and so does a small-order `R`: only the key's holder can write either, and
-refusing them buys nothing a stranger can use. An all-zero agreement is
-refused: at a door it is a box that does not open, D1, and on a reply it is
-S4. SHA-256,
-AES-GCM and HKDF are everywhere; the two curves are recent, and a terrain
-without them is a terrain no ward runs on. `vectors/arithmetic.json` and
-`vectors/framing.json` hold fixed inputs and outputs so a kit in another
-language proves it agrees on the bytes.
+`length` counts the bytes of `body`. There are three kinds, and `rest`
+depends on the kind.
 
 ```
-ask on the wire     box     = ephemeral X25519 pk (32) || AES-GCM( payload || signature (64) )
-                              sealed to the ward padlock. nothing rides outside it.
-                    payload = JSON { to, by, next, seq, time, hops?, method?, args? }
-                              signed by `by`. to, by, next: 64 lowercase hex. to, next may be null.
-                              to names the heir, or null for the public being. seq is a whole
-                              number from one. args, when present, is one object of values.
-                              hops is reserved: a whole number, never below zero,
-                              refused at zero, and nothing sets it.
-reply on the wire   box     = ephemeral X25519 pk (32) || AES-GCM( reply || signature (64) )
-                              sealed to the ask's ephemeral pk, signed by the ward key
-                    reply   = JSON { object, seen } | { silence: true } | { quo: word }
-                              seen is always present: the digest, 64 hex, on a named ask that
-                              had one, and null otherwise, the empty ask included.
-                              word: removed | absent | unannounced | repeated | threw. only to a key the door bound.
+00  ask       rest = ward pk (64) || box         dialer to listener
+01  reply     rest = box                         listener to dialer
+02  nothing   rest = empty                       listener to dialer
 ```
 
-Nothing rides outside the box, and `to` is the reason to say so. A heir is
-the one name in a relation that never rotates, while the keys under it
-rotate on every ask. Outside the box it would be a handle on that relation
-that never changes: an intermediary carrying the bytes could tell one
-relation from another and follow it for as long as it lasts, and so could
-anyone who ever saw the invitation, which carries that same heir. What
-carries an ask to a ward is the ward pk, which a harbor holds itself and
-never reads from these bytes, so the door loses nothing by opening every ask
-with its own padlock and reading `to` after. What an intermediary still
-learns is the ward it is carrying to, and that is the price of being
-reachable.
-
-The sender keeps the ephemeral secret of the box until the reply comes and
-opens the reply with it. A reply that does not open, or is not signed by the
-ward it was sent to, is silence. Unreached never crosses: the wire's nothing
-is it.
-
-There is one size, and it is on the bytes: a door refuses the bytes of an ask
-above **one mebibyte**, and a sender refuses the bytes of a reply above the
-same, each before anything is opened. Refusing them is bytes that said
-nothing, which is already silence, so it is D1 at the door and S4 at the
-sender, and there is no tenth word and no case of its own. The number is one
-because breadth costs bytes: an ask with a thousand args, a blueprint with a
-thousand asks and a reply with a million-element list are all one box that is
-too big, and a second number for any of them would be a second thing two kits
-must agree on for nothing. What a being holds in her cells is not this
-number's business and not Quo's: only what crosses is bounded. One mebibyte
-because an ask is a message and not a file, and what is larger is asked for
-in pieces, by a being who knows how her own work divides.
-
-The hand to a kit in another language is two things, and they are of two
-kinds. `vectors/` is the byte-level hand: fixed inputs and outputs for
-everything a stranger can observe, in four areas. `arithmetic.json` is the
-primitives the seal rests on. `framing.json` is the ward pk, the digest, the
-signed body, the sealed shapes, the invitation and the knock.
-`wire.json` is the frames on a socket and the one request a door takes.
-`door.json` is the door's thirteen cases, each one an arrival: the bytes that
-come in, the bytes that go out, what those bytes open to where a hand holds
-the lid, and whether the ward wrote while judging, so `nothing written`
-is a value a kit checks and never a sentence it reads. A kit reproduces them
-or it is not this protocol. The conformance suite is the behavioural hand,
-and it is a checklist and not a harness: one ward is one runtime and one
-language, so the beings a suite is shown with run only in the ward its kit
-wrote, and a kit ports the suite and its beings and reads them beside its
-own. No kit
-drives a foreign ward through its door, and nothing is owed
-here before 1.0.0 that does: the door's thirteen cases and the vectors are
-what two kits meet on, and the suite is what each proves alone.
-
-### Vector mode
-
-`door.json` is replayed against a running kit by a program that holds no
-key and seals nothing: the verifier. It can, because every byte in those
-records that a stranger cannot compute is a byte of entropy, and the
-entropy is fixed. A kit **stands in vector mode** so that the verifier can
-put it in the state of one record, send that record's ask, and read the
-bytes and the digests that come back. The mode is a harness beside the
-door and never a change to the door: what the door does to an ask in
-vector mode is what it does to every ask.
-
-A kit in vector mode stands at one URL and answers the request reach
-there, `POST <url>/<pk>` with the sealed bytes as the body, exactly as any
-listener does. Beside it, and only in this mode, it answers two more:
-
-```
-POST <url>/stand      body  { case, name }          one record of door.json, by its two names
-                      200   { ward, before, ask }   the pk of the ward whose door judges,
-                                                    a digest of that ward's partition at the
-                                                    arrival, and the ask the kit's own hand
-                                                    seals for it
-GET  <url>/digest     200   { after }               a digest of the same ward's partition now
-```
-
-The digest is the kit's own. What it is taken over and how it is written is
-never read by anyone but the kit that made it, so a corpus carries no value
-for it and no kit reproduces another's. Only one thing about it is Quo's:
-two digests of the same ward differ when something was written between them
-and are equal when nothing was. That is the whole contract, and it is what
-lets the partition keep the freedoms it is given, the two bounded lists'
-lengths and a `minted` list a kit may keep empty, without a stranger's
-replay turning them into a shape everyone must copy.
-
-`ward` is 128 lowercase hex, `before` and `after` are strings, and `ask` is
-the sealed bytes in lowercase hex. A body that is not one record by its two
-names is answered nothing delivered, and the world the last good `stand`
-left stands. The suite header is read on the reach alone, since `stand` and
-`digest` are no reach. Each request is answered on its own, and a kit may
-close the connection after every answer.
-
-`stand` puts the kit's world in the record's state and leaves its stream
-where the record says. The world is the corpus's, because the `ask` a
-record returns was sealed in it: the keys that sign it, the numbers it
-carries and the ids its answers name are drawn and minted there, so a kit
-that builds another world seals other bytes. `door.json`'s note writes that
-world out whole, the harbors, the wards and beings, what each relation
-draws and in which order, and the hand that seals every ask the corpus
-carries, and a kit reads it there rather than recovering it from the bytes.
-How a kit's harness builds that world is its own. What the record itself
-carries is three things.
-
-The **ward** is the seed of the ward whose door judges, and it is that seed
-as text: `A`, `B`, `P`, each of them a name that is not thirty-two bytes and
-so is SHA-256'd to thirty-two, as every seed is. Same seed, same key,
-in any language.
-
-**`draws`** is how many words of the stream were spent before the arrival,
-the hand's sealing of the ask included. A kit that built the world as the
-note writes it arrives there on its own, and `draws` is what it checks
-itself against; the door then draws the reply's ephemeral key from the same
-bytes this corpus drew it from.
-
-**`blueprint`** is on the one record whose reply carries `seen`, and is the
-shape that digest is taken over. A being's shape reaches the wire in that
-one place and nowhere else in this corpus, so a kit stands a being who
-answers exactly that to the empty ask and the bytes are these bytes. Every
-other record is the door alone, and needs no being of any particular shape.
-
-So the reply is the record's reply or the kit is not this
-protocol. `ask` is returned because the kit's hand sealed it on the way,
-and a hand that seals the record's own bytes is proven before its door
-is. `digest` reads the ward the last `stand` chose, and before any `stand`
-both answer nothing delivered.
-
-The verifier's round on one record is four steps and no key: `stand`, and
-`ask` is the record's; the record's `ask` posted to `<url>/<ward>`, and the
-body is the record's `reply` byte for byte; `digest`; and `wrote`, whether
-the two digests differ, is the record's. What it does not check is what a
-stranger cannot see: `opens` needs the hand's secret, `heard` is the door's
-word to its harbor, and a digest's value is the kit's own, so all three are
-the kit's tests to keep. A record is replayed on its own and in any order, since
-each `stand` is a fresh world.
-
-A tab is a verifier too, and a tab runs in a stranger's origin, so a kit in
-vector mode answers every origin: `access-control-allow-origin: *` on all
-three routes, and an `OPTIONS` answered with the methods and the headers
-the reach and the harness use. A kit that answers only its own origin
-passes from a shell and fails from every browser, which is a fault in the
-stand and says nothing about the door.
-
-The mode is stood by a hand and never by a harbor a world runs on. Its
-entropy is a written-down stream, so a ward in it is a ward whose every key
-is known, and a harness that resets a partition on request is a harbor
-that keeps nothing. The stream is SplitMix64, sixteen lines in any language
-and written out here because a kit that reproduces it by recognising it is a
-kit that guessed. The state is sixty-four bits and starts at the seed the
-corpus names. Every draw adds the golden gamma `0x9e3779b97f4a7c15` to the
-state, takes that as `z`, and mixes twice: `z = (z xor (z >> 30)) *
-0xbf58476d1ce4e5b9`, then `z = (z xor (z >> 27)) * 0x94d049bb133111eb`, then
-`z = z xor (z >> 31)`. Every shift is logical, every add and multiply is
-modulo two to the sixty-four. The result is spent eight bytes at a time,
-least significant byte first, and a request for a count not a multiple of
-eight spends the head of a fresh draw and throws the rest away. The stream
-is reset at the head of every record, so a record is reproduced without
-running the ones before it.
-
-Nothing in the mode is reachable from a harbor that is
-not in it, and a kit that leaves the harness routes answering in an
-ordinary harbor has shipped a door anyone can reset.
-
-## The ward
-
-### What a ward is
-
-One process of its harbor. A being plus ward functions. It has one voice, the
-door, and every arrival at that door is judged by it and named by it or falls
-silent. It keeps every being it booted, builds every stance, mints every
-key, seals every ask that leaves, and unseals every one that arrives. Its
-beings trust it blindly. It trusts its harbor the same way.
-
-Only a ward moves. A being has no address of her own and never leaves the
-ward that booted her: her peers hold a standing at a ward pk, and what they
-trust is that ward's word about an id, never the being under it. So which
-beings share a ward is settled when they are booted, and a ward migrates
-whole, with everyone in it, or not at all. To move one being would be to ask
-every peer to trust a ward they never accepted, and asking that is what an
-invitation is.
-
-Its ward is itself. It boots itself as the first being in its own map, under
-its own pk, and its own stance is built by the same code that builds every
-being's. Its cells are its partition, all the way down.
-
-It owns nothing durable. It is three things, all in the harbor's hands:
-its seed, its partition, and the classes its beings are made of. The
-partition names each class and the harbor holds the bodies, so a ward is
-whole only where all three are, and a harbor that keeps one remembers where
-the other two came from. It writes as it runs and says so after every
-write, naming the row. That word is told and nothing comes back: it never
-decides what is kept, when, or in what order. It asks one question, once,
-at the end of an
-arrival, after the being has answered and before the answer is sealed:
-whether what was written is kept. That is the last moment anything can
-still be said, because a reply sealed to an asker's lid cannot be unsaid
-and only the ward can seal. A no is that arrival's own failure, said with
-the words a failed ask already has, and never a reason: what is wrong with
-this device is not the far side's to hear. A harbor that keeps nothing is
-asked nothing. Between one run and the next, a ward is nothing at all.
-
-One ward is one runtime and one language, and every being in it shares both.
-A harbor that wants two languages starts two wards at least. A ward names no
-runtime: what it stands on is the language and whatever the terrain hands it,
-and a kit that named one would be a ward that runs in one place.
-
-What a ward owes outward is its door, and the door is named here byte for
-byte. A kit proves the rest to itself, with a suite written in its own terms
-against the stance: which runtime it runs on, what it must open up to be
-tested, and how a chapter it cannot stand is skipped are that kit's own, and
-no second kit meets any of the three.
-
-### The partition
-
-Everything durable a ward has is here, every secret included, and nothing
-here is ever in a being's cells. Values only, so the harbor may persist it as
-it likes: as this process's objects, as a row, as a line of JSON on a disk. A
-reboot from its JSON is the same ward. A harbor that keeps it copies it
-through JSON and by no deeper copy its language offers: what the ward hands
-out is already values, behind the cells guard, and a copy that carries more
-than JSON does would carry a shape a reboot cannot give back.
-
-```
-partition
-  version   'pre-1.0.0'
-  beings    key -> her cells, with class
-  bind      key -> her bind table
-              standings   id -> { ward, heir | null, current, next, seq }     her keys for a standing
-              occupants   id -> heir pk
-              knocks      <ward>:<heir> | public:<ward> -> { current, next, spoke, sent, seq }   before take
-                          spoke: bytes came back once. sent: bytes went out once, answered or not
-                          bounded, oldest out, and one that answered outlives one that never did
-              answered    <ward>:<heir> | public:<ward> -> true                            knocked and answered
-              minted      the pks her side minted, bounded. nothing in the ward reads it: it is there to
-                          be looked at, and a kit that keeps the list empty holds the same ward
-  heirs     heir pk -> { being, id, current, announced, fresh, mark, spent }   the door's view of every occupant
-  gone      heir pk -> { current, announced }   the keys held when an id was removed, bounded, oldest out,
-                                                so their holder hears `removed` and nobody else a thing
-  public    the one public being's key, or null
-```
-
-A knock record is filed under the ward and the heir together, never the heir
-alone: an invitation carries the heir to whoever it is for, and anyone
-holding one could quote that heir back inside an invitation naming a ward of
-their own.
-
-Only take ends a knock record, so the list is bounded like `gone`: past the
-count the oldest go, and one that was answered outlives one that never was,
-since an answered knock is a relation she may still take. A being who knocks
-without ever taking keeps a fixed number of keys behind her, not one per
-invitation she ever met.
-
-How long each of the three bounded lists is, is the ward's own, and each says
-what a reader loses when it bites. A `gone` record past the count is a
-removed relation whose holder hears silence where she would have heard
-`removed`, which is what every stranger hears and tells her nothing she can
-act on. A knock record past the count is an invitation she cannot take, and
-she knocks again with it or asks for another. The `minted` list is looked at
-and never read, so its oldest entry going costs a name for a key already
-dead. None of the three is observable to a far ward as a number: a far side
-sees only that some old thing is unknown here, which is what it sees from a
-ward that booted onto a fresh partition.
-
-The version is one value and it does not move until 1.0.0. There is nobody
-holding a partition of another shape to tell apart: if the shape changes, a
-partition is thrown away, not migrated and not counted. A ward opening a
-version it cannot read throws at birth and does not boot. Birth is where a
-ward is allowed to be loud; silence is the door's word, for asks that were
-made, and no ask has been made yet.
-
-The version says which shape, and the ward reads the shape as well, once, at
-birth: every field above that the ward, the door or the heirs later act on
-without looking again. A partition this ward wrote is that shape by
-construction. One adopted from elsewhere was written by a hand, another kit,
-or a file that was cut short, and a `spent` that is not a list or a `mark`
-that is not a number is a door that honours every number, or one that
-rejects where it promised a word. A ward that meets one throws at birth with
-the path that failed, which names what is wrong to whoever is holding the
-file. A being's own cells are read no further than the two records the ward
-keeps in them: what she puts in her own is hers, of any shape JSON carries.
-
-What a ward can read is a list, `READS`, and today it has one member. The
-list and the step that carries an older partition forward exist before
-1.0.0 because after it there is nowhere to put them. A partition holds every
-secret and every relation a world has: the first shape change after the
-freeze cannot be answered by throwing it away, and a ward that meets a shape
-it has no step for refuses to boot with all of it still inside. Throwing a
-partition away is what a version means before 1.0.0, and carrying it forward
-is what it means after; the seam is cut now so the second is possible.
-
-### Restart
-
-A restart is silent because the ward cannot tell rebirth from birth. Birth
-is in one order: the ward as its own first being, then the box taken, then
-every being whose cells record a class constructed again, unasked, with the
-same cells, so a being who lends at her birth finds the box there.
-Relations and keys are intact on both sides; a knock answered before the
-restart can be taken after it; a door that restarts still refuses what it
-already honoured.
-
-A constructor that throws on a restart takes only herself down: she is
-absent this run, no door, so `absent` at her door to the keys she bound and
-silence to strangers, and her cells sit untouched waiting for the run that
-can read them. The ward is up and so is everyone
-else. Her row is hers while she is absent: the owner sees her as absent, no
-class boots under her key, and the owner may unboot her. A class the harbor
-does not hold this run is the same absence, and so is a
-class the harbor holds at a body the cells were not written for: which body
-a ward reboots on is the harbor's decision, and a ward cannot tell an old
-one from a new one. Loss of the partition is loss of every relation,
-announced to nobody.
-
-### The owner
-
-The owner is a role, not an identity, and it has a root. The root owner is
-whoever holds the ward's ask pointer. The harbor hands that pointer to one
-holder, by the device's rules: a shell, a UI, a socket only the device's
-user can read. Lose the pointer, lose the root; there is no recovery inside
-Quo.
-
-Every other owner is an occupant of the ward itself. The ward is a being of
-its own map, and the root may invite on it like on any being; whoever knocks
-with that invitation is an owner, reached through the door, named by the id
-the root chose, counted and rotated like any relation, and removed like any
-occupant. That is how a ward is piloted from another device: the piloting
-ward holds a standing at it, and every owner ask is a sealed ask. Only the
-root may invite on the ward: an owner at the door asking to is refused, so
-a carried key pilots and never hands piloting on. Ownership moves by the
-root inviting one owner and removing another, and a migrated ward carries
-its owners in its bind table, so the harbor that receives it does not
-become one.
-
-The root is not an occupant. It holds no heir, no key, no invitation. The
-ward names every arrival on the ask `{ id: 'OWNER' }`, the third asker of the
-ward-to-being edge, and answers it as such; an owner at the door arrives as
-her id. What an owner can do is reach into a being from outside, which no
-being can: mark the public being, place a relation into a being of the
-ward, take one out of her, take her out of the ward, and ask her. Boot it
-shares with every being of the ward. The ward is a being to her owner: the
-empty ask is her describe,
-and each ask in it carries a description and an input naming its fields, as
-a being's asks do, so that a side renders the owner's asks the way it
-renders anyone's and holds no list of its own.
-
-```
-ask()                                    -> { asks: [boot, public, invite, knock, remove, unboot, ask],
-                                              notes: { pk, beings: { key: { class, public, digest, absent? } } } }
-ask('boot',   { key, class })            -> { booted: key } | { error }
-ask('public', { key })                   -> { public: key } | { error }
-ask('invite', { being, id, notes? })     -> invitation | null | { error }
-ask('knock',  { being | { boot: class, key },
-                id, invitation, method?, args?, wanted? })
-                                         -> { taken: id | null, answer } | { error: 'silence' | 'unreached' | ... }
-ask('remove', { being, id })             -> { removed: id } | { error }
-ask('unboot', { being })                 -> { unbooted: key, removed: [id, ...] } | { error }
-ask('ask',    { being?, method?, args?, wanted? })
-                                         -> her object | { error: 'silence' | 'threw' | 'late' | ... }
-anything else                            -> { error: 'unknown ask' }
-```
-
-- The owner is a caller like any other: `wanted` says what its knock or its
-  ask may spend, and saying nothing is the ward's default, exactly as for a
-  being.
-- The describe runs every being's own describe as `OWNER` and hashes it; a
-  being that throws or falls silent there shows a null digest. A being
-  absent this run is listed with a null digest and `absent: true`.
-- Boot refuses a key that has a row in the partition, booted this run or
-  absent, and a class the harbor does not know; a boot that made nobody
-  leaves the partition as it found it. A throw at birth is that boot's
-  error, `{ error: 'threw at birth' }`, and nothing half-lives; a being's
-  own boot answers null for it.
-- Public marks a being already booted as the ward's one public being. It
-  refuses a key not booted, the ward's own pk, and a second public being
-  while one stands, since marking a second would leave the first holding
-  every relation she had, reachable by nobody at the bare pk and told by
-  nobody she was replaced. Marking the one already public again is
-  answered, and changes nothing. A public being absent this run is
-  reachable by nobody already, so the mark may move to another. A null key
-  takes the mark off: the being stays booted with every relation she holds,
-  and the ward answers arrivals for no heir with silence as one that never
-  had a public being does. Retiring her is not destroying her, and the mark
-  is free for another.
-- Invite on the ward's own pk mints an owner, and only the root may ask it:
-  from the door it is answered as an invite on nobody. The ward has
-  occupants, its owners, and one standing, at the box, taken at birth and
-  kept in its partition like any relation. A knock for the ward itself is
-  still a knock for nobody, because the ward asks nobody anything but its
-  box.
-- The owner's knock is a being's knock made for her. The ward knocks under a
-  key it mints for her, and if answered, takes under the id the owner gave
-  and writes the standing into her cells. She finds it there. Her owner
-  chose her class and her cells at boot; her owner may choose a relation for
-  her too. The boot form names a being new or existing: a key already booted
-  is a being of theirs, not a class that failed.
-- **Unboot is the inverse of boot, and the only way a being leaves a ward.**
-  Every relation she holds goes with her, by the same calls she would have
-  used herself, so an occupant of hers hears `removed` from the keys her door
-  kept rather than meeting a being who is not there; the owner is told which
-  ids went. Her cells and her bind table go too, because a row naming a being
-  no door holds would boot her again on the next restart. If she was the
-  public being the mark goes with her, and the ward answers arrivals for no
-  heir with silence as one that never had a public being does. The ward
-  itself is refused, for the reason knock is: it would be a ward deleting
-  itself from inside its own map, leaving its owners bound to a door that is
-  gone. An absent being is unbooted the same way: she has no stance to speak
-  for her, so the ward closes her heirs itself, and her occupants hear
-  `removed`.
-- The owner's remove is the mirror of its knock: a relation out of a being,
-  by id, and the id may be an occupant or a standing, since the two share
-  one namespace. The being's own remove says nothing; the owner hears
-  objects, so this one says what it removed, and that there was nothing when
-  there was nothing. Remove on the ward's own pk unseats an owner, and only
-  the root may ask it, for the reason only the root may invite one: from the
-  door it is answered as a remove on nobody. Ownership moves by the root
-  alone.
-- **The owner's ask is the third asker of the ward-to-being edge, filled in
-  by the ward.** It reaches into a being and asks her, which is strictly less
-  than unboot, and it is the only way to that asker: nothing outside the
-  ward names `OWNER`. She is judged as any arrival is, the three choices and
-  no others, and the wait is bounded like any other. She hears `threw` for a
-  throw, a word out of her, or a shape that is not hers to make, and the
-  owner hears each as an object. With no being named it is the public being,
-  asked as nobody, and unbound: a stranger's view, so a throw of hers is
-  silence, and a device serving her to strangers hears what a stranger hears
-  and no more. The ward itself is refused, and so is a name no being holds.
-
-The door is a ward function. It is not the ward's answer: it judges before
-anything is named, and a being's answer only ever receives named askers. The
-ask is the ward's answer, with the asker filled in as owner. Ward functions
-are on the object, and no stance and no standing reaches them.
-
-### Responsibilities, and not
-
-The ward:
-
-- Derives its pk from its seed and names itself outward by that and nothing
-  else. Mints every other key from the ground's random, one per side of one
-  relation.
-- Instantiates beings when the owner or a being of the ward asks, by class
-  name. It builds the stance, names the class, and receives the object from
-  the harbor's instantiate call. It never sees a class body, its own
-  included.
-- Keeps, per being, the cells, the standings and the occupants, in the
-  partition, and outside her cells the bind table. Never reads notes.
-- Mints a heir for every id a being mints, keeps its pk beside the id, and
-  hands her the invitation. Names every arrival signed by the key it holds
-  for that heir by the id she minted.
-- Seals every ask that leaves to the far ward's padlock, signed by the
-  standing's own key, announcing its next, carrying its count and its
-  allowance. Delivers to its own pk without the harbor. Hands every other
-  ward pk to carry. Bounds the wait.
-- Tells its own being the truth about her asks: an answer with its digest
-  written to seen, silence when bytes came back and said nothing, unreached
-  when nothing came back.
-- Runs her answers concurrently and never serializes her. Two different asks
-  may both be inside her answer at once, one paused, one running. Her cells
-  are hers to guard across every point her language may leave her and come
-  back: where a language suspends a call, that is the point, and where a
-  language runs two calls at once, every point is one. A ward tells her which
-  of the two she is in by being written in that language and no other, since
-  one ward is one runtime and one language. What Quo promises is only that
-  the ward adds no serialisation of its own; the guarding is hers.
-
-Not stressed with:
-
-- Where any pk lives. Sockets, URLs, DNS, containers, planets. It knows pks
-  and nothing under them. The wire, retries, or the directory.
-- Storage. It writes into its partition and does not know what medium that
-  is, whether it persists, or when.
-- Defending against its harbor. A ward that distrusts its harbor has no
-  move, so Quo gives it none. The harbor vouches, the ward trusts. A being
-  trusts her ward, a ward trusts its harbor, a harbor trusts its device. A
-  broken vouch is total and silent.
-- Deciding who may be an occupant. She invites; it binds and names.
-- Restarting a crashed being, retrying a silent ask, or noticing that a
-  standing walked away. A being learns about a standing by asking it, and
-  from nothing else. There is no estate. The far being is sovereign: she may
-  fall silent on the ask after the knock, and nobody is told.
-- Blacklists, rate limits, and what to do with a pk that keeps knocking with
-  garbage. The door says `heard` or not beside every reply; the rest is the
-  harbor's.
-
-## The harbor
-
-A harbor is what a device already has, offered to Quo: processes, storage, a
-network, entropy, a clock. It fits into a device carved up by its owner,
-users, containers, mounts, profiles, and asks for none of them. It judges
-nothing, holds no id, chooses no class, and is nobody outside its device.
-
-It makes every being of every ward it serves, because `instantiate` is in
-the ground and the ward calls it, and it keeps what it made. That is not
-knowing a being. It has her object and knows nothing about her: not what she
-answers, not who her occupants are, not which of her cells is a secret. It
-never reads a partition to decide anything, and it never hands one out
-except as the values a store keeps.
-
-The harbor:
-
-- Boots wards as processes, one seed each, and keeps each ward's partition:
-  saves it when the ward says it wrote, one save at a time per ward and in
-  the order it was told, so a being driven in process is kept the way one
-  reached through a door is. When the ward asks whether what it wrote is
-  kept, the harbor answers before the reply is sealed, and a save that
-  failed is that arrival's failure: a door that said yes to what was never
-  kept is the worse fault, because everything written to that being
-  afterwards is lost and every door keeps answering success. The failure
-  carries no reason. The door says what it says of any ask that did not
-  take, and a full disk is not a reason the far side may hear. A harbor
-  that keeps nothing is asked nothing and answers nothing.
-- Stands a ward whose save was refused at what is kept, in memory and in the
-  store together, so that a being's memory never runs ahead of the device and
-  a reload finds no half-done row. When it does that, and what its store owes
-  it to make the two agree, are the harbor's own: no ward and no far ward can
-  tell one device's answer from another's.
-- Puts back what a being wrote, and never what her relations are standing on:
-  her cells, and neither the keys she speaks under nor the door's heirs. A
-  relation cannot be put back, only broken. Her keys rotate when a reply
-  opens and the far door's when it honours, so the two move at different
-  moments and neither side holds the seed of a key it has moved past; stand
-  either one at an earlier moment and it speaks under a key the other will
-  not admit, with no way back. The count needs no such care, because a door
-  honours any unseen number inside its span and a caller's count climbs at
-  every attempt, so two counts find each other again on their own. What this
-  costs is that a being's keys may stand ahead of what the device kept, which
-  a restart can undo; ahead of the device is survivable and behind the far
-  side is not.
-- Holds the class bodies for its wards, and remembers for each ward where
-  its bodies came from, so that a restart is on the same bodies unless the
-  harbor decides otherwise. Constructs a being when a ward names a class
-  through the ground's instantiate, and never chooses a class itself. A
-  name it does not hold is null, and that boot fails. Whose code a ward
-  runs is no concern of the harbor: a ward of its owner's and a ward whose
-  bodies came from a stranger are hosted the same way.
-- Passes every ward the ground, once, at birth. Receives a door and an ask.
-  Hands the ask to exactly one holder, by the device's own rules. That
-  holder is the ward's owner.
-- Boots a ward of its own, when the device has anything to lend, and keeps
-  its ask pointer rather than handing it out, so it is that ward's root.
-  What the device can do lives there as beings, and one of them is the box's
-  own, holding a standing at each under the name it is lent as. Every ward
-  it hosts is handed one invitation on her in its ground, and a lend is an
-  ask on that standing, answered by the lent being's own invitation. Which
-  ward may have which name is the box's being's gate, and a stranger's ward
-  is lent nothing. Nothing else about that ward is special: it has a seed, a
-  partition, a door and beings, and every ask that reaches one of them is
-  sealed, counted and judged like any other. Those beings are where a world's
-  time comes from. A being runs only while she is answering, so every ask in
-  Quo is asked by a being or by an owner, and a world in which nobody holds a
-  clock, a line or a socket is a world where nothing happens that nobody
-  asked for. What a device has, one of its beings holds, and she begins
-  holding it at birth like anything else she does with her constructor.
-- Hands its own device's code the beings it made for a ward, by key, and the
-  keys it has. This is not a path around a door. The object is already in
-  that process, made there a moment ago by the harbor itself, and reaching
-  it is the device's own code calling its own object, the same reach a being
-  has on one she booted herself. Nothing of it crosses an edge, so there is
-  no door it could have passed instead. A key with no object is a being who
-  is not here this run. What the device does not get is the partition: it
-  holds every seed the ward has, and a side that wants to know which beings
-  there are, or which one is public, asks the ward through the ask pointer,
-  which is the only thing that answers for a ward anyway.
-- Keeps the map of ward pk to door for its own wards, and ward pk to reach
-  for foreign ones. Learns its own wards' pks by asking them. Learns foreign
-  pks however it likes.
-- Carries bytes to one ward pk and returns what came back, or nothing.
-  Copies bytes across, never references, even between two of its own
-  doors. Nothing means the bytes never arrived: no reach for that pk, a
-  socket that would not open, a link that is down. Once it has sent them it
-  never answers nothing on its own patience; it waits, and the ward's bound
-  ends the ask.
-- Receives bytes from the wire for a ward pk it holds, hands them to that
-  one door, and returns what the door returned. Beside the bytes the door
-  says whether a key it holds spoke; the harbor may count that per pk and
-  act on it, and learns nothing more.
-- Vouches: the seed stays secret, the partition is reached by this ward
-  alone, the ask reaches its root owner alone, the device is the harbor's
-  to defend. How is the device's business. Custody is this vouch: two
-  harbors booting one seed over one partition are two wards with one pk,
-  diverging in silence, and a harbor refuses to boot a ward another running
-  harbor holds, by whatever lease its device offers.
-
-Not stressed with:
-
-- Reading, altering, caching, or retrying bytes. It does not know the word
-  silence, and it never answers on a ward's behalf.
-- Fanning out, broadcasting, or forwarding to a pk other than the one it was
-  given. One pk is one ward is one door.
-- Choosing a class, deciding an id, reading the keys inside a relation,
-  minting an invitation on a ward it does not root, or acting on anything a
-  partition contains.
-- Judging anything. A ward judges its door. The harbor delivers to it.
-- Speaking Quo. It is nobody's occupant and holds no standing anywhere. The
-  harbor is not a ward and is nobody's.
-
-What a harbor on a device keeps is a ward's three parts under one name: the
-seed, the partition, and where the class bodies come from. Where it keeps
-them, what it asks of whatever keeps them, and what else it writes down
-beside them are the harbor's own, and nothing outside that device can tell
-one answer from another. A disk, a tab, an edge object and a process's own
-memory each hold a ward, and a ward cannot tell which of them it woke up in.
-
-Carrying bytes to a pk off the device is a **reach**: carry bytes to a pk,
-get bytes back or nothing. Two kinds, and no third:
-a **request**, one URL, the bytes posted to it with the pk as the last
-segment and the reply as the answer, listener to listener; and a
-**socket**, one held line used in
-both directions, opened by whichever side can dial, with a frame id
-matching each reply to its ask and one text frame in which a side announces
-the ward pks it holds. The framing on a socket is binary: an ask is the kind
-byte `00`, a four-byte id, the 64-byte pk and the bytes; a reply is the kind
-`01`, the id and the bytes; and nothing delivered is the kind `02` and the
-id alone. The id is big-endian and the asking side's own, one for its first
-ask on the line and unique among the asks it holds open there. A binary
-frame that is none of the three, an unknown kind, an ask too short to hold a
-pk or a nothing with bytes after its id, is not a frame and is dropped: it
-tells no side that nothing was delivered, so an ask waiting on its id ends at
-the ward's bound. The text frame is the JSON object
-`{"announce":[pk,...],"suite":1}`, read as JSON and in any key order, an
-absent `suite` read as this one.
-A request is posted with `content-type: application/octet-stream`, which no
-door reads. The reply is the body of a `200` of the same type. `404` is
-nothing delivered, and the listener answers it for a pk it holds no door
-for, a path that is not one pk in lowercase hex, and a suite it does not
-speak; the caller reads `404`, any other `4xx`, `502`, `503` and `504` as
-nothing delivered, and any other status as bytes sent and no answer, which
-the ward's bound ends. The suite header is compared as HTTP delivers it,
-with its outer whitespace gone. A kit
-holds either end of a line and never a listener: who accepts a socket is the
-terrain's business. A reach reads nothing; a
-harbor opens no box but its own probe's.
-Nothing comes back only where the reach knows nothing was delivered: no such
-pk at the far end, a connection that would not open or closed before it
-opened, a line already gone, a status from a request that says the listener
-did not take the bytes, refused on their face or with nobody behind the
-gateway. A
-reach that sent the bytes and lost the line after answers nothing at all,
-and the ward's bound ends the ask. The frames are pinned in
-`vectors/wire.json`, and every reach of every kind answers alike.
-
-A reach also carries the **wire suite**: which frames these are, and which
-five algorithms seal what they travel with. It is one number, it is not
-negotiated, and today it is 1. It rides where a line is opened and never on
-an ask: in the text frame a socket announces itself with, and as the header
-`quo-suite` on a request. So an ask is still bytes from the first one, with
-nothing in front of them to say what they are, and a line still learns
-before it carries anything whether the far side speaks what this side
-speaks. A side meeting a suite it does not know carries nothing for it and
-closes, naming the refusal on the way out with close code 4001; a
-request door meeting one answers nothing delivered. How long a side refused
-that way waits before asking again is its own, and a suite does not become
-speakable by asking sooner. Absent is this suite,
-because a caller older than the header is this one. Present and different is
-refused as it is written: the number is compared as it was sent, so a suite
-is one spelling and not a family of them.
-
-This is the only place a second suite could ever be told from the first.
-The five algorithms are named once and never negotiated, which is right: a
-choice offered on the wire is a choice a stranger can push. But named once
-is not the same as unnameable, and a kit that must one day seal differently
-has to be able to say so to a kit that cannot, or the day it arrives every
-world stops answering at once and none of them can say why. A silence names
-no reason, by law. This number is the reason, said before the silence.
-
-A harbor boots every ward it keeps, holds the map of ward pk to door for
-its own wards and the **directory**, pk to reach, for foreign ones,
-carries bytes to a pk and delivers bytes from the wire to one door. The
-directory is filled
-four ways, in this order: its own doors; a socket a dialer holds to it,
-bound once the door behind the dialer's claim has proved it, and unbound
-when the line closes; the claims of a listener this harbor dialed, proven
-the same way and reached through that line; and a hint, a pk at a URL. A
-hint never displaces a reach proven at a door. An
-announce names at most sixty-four pks, proven a few at a time, and is the
-newest word: a proof still in flight from an earlier announce on the same
-line binds nothing when it lands. A side announces when its line opens and
-again whenever the pks it holds change, so a ward booted, adopted or
-dropped is reachable on a line already in hand.
-
-An announce is a claim, and a claim binds nothing until proven: anyone who
-can reach a listener could otherwise name a pk that is not theirs and take
-its reachability, the one thing a rendezvous exists to give. The proof is
-the door as it already is. The harbor mints a lid and sends it down the
-line with noise after it, an ask for the claimed pk; that is a box that
-does not open, D1, and the door answers it with silence sealed to the lid
-and signed by the ward key. Only the holder of that seed writes that reply,
-the lid is fresh so nothing replays, and a box that does not open writes
-nothing at the ward. Each claimed pk is proven on its own, both ways: the
-listener proves the dialer's claims and the dialer the listener's. What a
-relay that genuinely reaches a ward elsewhere can still do is forward the
-probe and pass, and then it is a rendezvous for that ward like any other,
-able to drop and nothing more. This is the one box a harbor ever opens,
-the one it sealed itself, and it reads nothing from it but that it is the
-silence a door owes such a box, signed by the claimed key. One rule makes a
-**rendezvous** of
-any listener: bytes that arrive from the wire go to an own door or to a
-socket this harbor holds for that pk, and never onward by request. So a
-harbor that cannot be dialed is reached through one it dialed, by
-anyone who holds a hint that its pk is there. How many listeners a harbor
-dials, how long it waits before dialing again, what it does when the device
-it runs on wakes from sleep, and in what order it tries the lines it holds
-are its own and are no part of this document. A rendezvous is a listener and
-nothing more, so a ward is never reachable through one place by anything but
-its own choice.
-
-A ward is born by minting a seed under a name,
-leaves by being dropped, the partition written first, and arrives by
-being adopted, same seed, same pk. Adopting is the one path a partition
-written elsewhere takes, so it is where the ward's shape check is met: one
-that will not boot is not adopted, and the
-only copy is the one the caller is still holding.
-
-## The being
-
-### What a being is
-
-One ordinary object, in one language, with one voice. She has state, she can
-ask other beings, and other beings can ask her. She does not know where any
-of them are, and she cannot find out. She never touches a key, a wire, or a
-class. Her ward does all of that, and she trusts it blindly: what the ward
-names is true.
-
-She asks her standings by method and args and gets back an object, silence,
-or a word. She invites whom she wants, in her own time, and removes them
-when she decides. She knocks with invitations she was given and takes the
-ones she wants. She answers every ask her ward brings her with an object or
-silence; an error is an ordinary object, and she never throws outward. She
-describes herself, per asker, by answering the empty ask.
-
-Not stressed with: where anyone lives; crypto, keys, wire, storage, clocks,
-or the harbor; strangers, because nobody her ward cannot name reaches her;
-whether an occupant is a person, a model or a program.
-
-### Her obligations
-
-1. Args are one object. A throw is the word `threw` outside, to whoever the
-   door has bound, and silence to a stranger: the ward is in the middle of
-   every call and catches, always, in every language. An error is an object
-   her output schema declares.
-2. No lifecycle. Construction with the stance is birth. A restart is silent.
-3. The empty ask is hers. Who gets what blueprint is her decision. She obeys
-   the shape, never a content. The empty ask must be safe to repeat: her
-   ward may ask it at any time, and it changes nothing. Nobody enforces
-   this, in any language. It is her obligation alone.
-4. A standing's digest arrives with every answer, as seen. She compares it
-   to digest and refreshes by the empty ask if she wants. The digest is of
-   what she told you, not of who she is: one being, many askers, many
-   digests, all true.
-5. An occupant has no digest. She can only be observed, never asked. To
-   reach an occupant, hold a standing at her: she gave you one, or she did
-   not.
-6. Her cells are hers to guard across every point her language may leave her
-   answer and come back into it. Quo does not serialize her, because that
-   would narrow what can be built, and it promises her nothing about where
-   those points are: that is her language's and she knows it.
-7. A call is delivered once. Her ward, and the far ward, never let the same
-   call reach a being twice by accident. A repeat is intentional. What she
-   asks is always a new call. The one exception is the public being, who is
-   reached with no heir and no count: the same bytes reach her twice, and
-   her answer must be safe to repeat.
-8. A being may make a being of her own ward, by class name and under a key
-   she chooses, and holds no relation to her until one is invited and taken
-   like any other; the ward builds the stance and the harbor holds the
-   class, so she never touches either. Only the owner reaches into a being
-   from outside.
-9. Whatever her ward cannot name is not hers to worry about: what the ward
-   does with an arrival it cannot name is the ward's.
-
-### The raw shape
-
-A being is anything her language can construct with the stance and ask with
-`answer`. She needs no import from any kit, and a kit that could only make
-beings out of a base class of its own would be a kit standing between a
-being and her ward. So the value silence and the words are spelled where a
-being reaches them without one: a name her language's runtime already
-shares, which every kit of that language spells the same, or a value the
-stance hands her. Which is the kit's, and a kit writes it down.
-
-## Where the tree stands
-
-The only place this document may name a gap between itself and the tree.
-Each line is a debt to close, not a note to keep.
-The debt named under Open below is one such line.
-
-## Open
-
-Named, not decided.
-
-- **The empty-announce and depth-arithmetic rules are unverified against
-  Nervur.** The relation's move on a fresh heir and on an honoured ask
-  after it, the empty-announce leaving the spare key standing rather than
-  clearing it, and depth counted as containers-on-a-path rather than
-  counted from the root, are written as rules but `door.json` exercises
-  none of the last two and the first two only through the fresh-heir case.
-  Whether `packages/nervur` already answers them this way, or needs to
-  change, is unchecked; closing this needs new door records emitted from
-  the kit once it is checked, or a fix to the kit if it is not.
-
-### Closed
-
-Decided here, so that the answer is not rediscovered:
-
-- **Delivered, then died, is refused on repeat.** The far ward receives and
-  crashes, the wire says nothing, and the near ward calls it unreached.
-  No ward retries on its own, so a caller who asks again asks
-  under the next number and is heard. A repeated number is refused by every
-  door of this version, D10, and that is the whole answer: a repeated number
-  is only ever seen by the one door it was sent to, so a kit that one day
-  answers it from what the door already said interoperates with one that
-  refuses, the way one ward's ceiling never meets another's. The slot for the
-  reply that kit would keep is a field on the heir, and it costs two lines to
-  cut now and a partition shape to cut after 1.0.0.
-- **Hops is the door's half, and that half is whole.** An ask carries no
-  count of doors, so a chain of relays is bounded by time alone. `hops` is a
-  field of the ask, a whole number and never below zero, and a door refuses
-  an ask that arrives at zero; nothing sets it and nothing decrements it. It
-  is refused now because a count only bounds a chain if every door on it
-  refuses, and a door written after the count was invented cannot make the
-  doors before it enforce anything. The other half, a being's onward asks
-  inheriting a door's remaining time and a count, needs the ward to know
-  which arrival an onward ask belongs to, and it cannot learn that without
-  naming a runtime. If a relay chain ever needs it, the way in is a field on
-  the stance's `ask`, beside `wanted`, that a being who never sends it never
-  has to know about: an addition on the ward-to-being edge, and no byte on
-  the wire moves.
-- **An invitation carries no hint.** It is `ward`, and for a heir `heir` and
-  `secret`, and nothing else. Where a ward lives is the harbor's to know and
-  a relation's to not: a hint inside the value would put a route inside a
-  capability that beings hand around opaquely, and it would go stale while
-  the invitation stayed good. A link is the invitation next to a hint, two
-  values travelling together, and the hint goes to the directory while the
-  being receives the invitation as it receives every invitation.
-- **The owner does not set the allowance default or ceiling.** They are the
-  ward's own policy, never negotiated and never on the wire, and a far door
-  cannot tell one ward's ceiling from another's. A being who wants less than
-  the default says so with `wanted` on the ask, which is the whole of what a
-  being needs. An owner who wants another ceiling is asking for a different
-  ward.
-- **A leaked seed is a taken ward, and there is no succession.** The seed has
-  one custodian, the harbor, which vouches that it stays secret; a being
-  never touches it and no byte on the wire carries it. So it is lost only
-  where that vouch broke, and a broken vouch is total and silent. It is not
-  lost alone: a harbor keeps the seed and the partition under one name, and
-  the partition holds every relation's keys, so there is no event where the
-  address is taken and the relations are not. Nothing is left to succeed to.
-  A succession signed by the key that speaks now is signed as well by
-  whoever took it, and one that could not be forged would have to be
-  committed to in advance, in the invitation, which carries nothing. The
-  answer is a new ward, and every peer invited again as anyone is invited.
-  Lose the seed, lose the ward; there is no recovery inside Quo, and that is
-  the same sentence the root owner already hears.
-
-## Glossary
-
-- **being**: one ordinary object with one voice. Asks, answers, decides.
-- **stance**: the one object her ward hands her at birth. Cells and calls.
-- **cells**: her state. I-JSON values. Three keys are the ward's.
-- **standing**: a pointer she holds to another being, through which she asks.
-- **occupant**: a being she invited, whom her ward names when she asks.
-- **id**: her own permanent name for one relation. Never crosses the door.
-- **invitation**: a value her ward makes for an id she minted: its pk, a heir
-  pk, the heir secret. Or a ward pk alone, for its public being. Opaque to
-  her. Travels anywhere.
-- **heir**: the key her ward mints at invite for one id, and gives away.
-  Names the id outward. Dies the first time it speaks.
-- **next**: the key a standing announces on every ask, and signs with on the
-  next one.
-- **count**: the number every ask carries for its relation. Honoured once.
-- **allowance**: the time an ask may still spend. Inside the seal.
-- **owner**: the root, whoever holds a ward's unsealed ask; and every
-  occupant of the ward itself, whom only the root invites and only the root
-  removes. A role, not an identity.
-- **invite**: mint an id and get its invitation.
-- **knock**: an ask carrying an invitation. Binds the far side to the id.
-- **take**: keep an answered knock as a standing, under her own id.
-- **ask**: method and args to a standing. Object, silence, or a word back.
-- **answer**: her one function. Object or silence out.
-- **the empty ask**: ask with no method. Her answer to it is her blueprint.
-- **blueprint**: her interface as she chooses to show it to one asker.
-- **digest**: SHA-256 over the JCS of a blueprint. Per relation.
-- **seen**: the digest her ward last saw arrive with an answer.
-- **silence**: the far side said nothing, or the door would not admit the
-  bytes. Names no reason. Not retryable blindly.
-- **word**: the ward's reason, said only to a key the door has bound or by
-  her own ward to her. Nine: removed, absent, unannounced, repeated, threw,
-  unreached, late, invitation, dropped.
-- **unreached**: the word for no far door reached. Retryable.
-- **notes**: hers, inside every occupant record. Quo never reads it.
-- **partition**: the ward's files. Everything durable, every secret.
-- **size**: one mebibyte, on the bytes of an ask and on the bytes of a reply.
-  Read before anything is opened. Over it is silence, and never a word.
-- **lid**: the ephemeral X25519 pk an ask carries in front of its box. The
-  reply is sealed to it and to nothing else. One per ask, never reused.
-- **edge**: one of the two seams of Quo, harbor to ward and ward to being.
-  An object crosses once at birth, calls cross for the rest of the ward's
-  life, and nothing else crosses.
-- **ground**: the one object a harbor passes a ward. Nine things.
-- **box**: the device, as a ward its harbor roots and the beings in it. One
-  of them is the box's own being, and every ward the harbor hosts holds one
-  standing at her, taken at birth; the rest are the lent beings she names.
-- **lend**: a standing at one of the box's beings, by the name the box
-  knows it under, offered on the ward's standing at the box. The ward knocks
-  and takes it for her; she is handed the id and never the invitation.
-- **lent being**: a being of the box's ward, standing for one thing the
-  device can do. A lend is answered with an invitation she mints on herself,
-  and an offer that goes untaken she removes again. Nothing outside her ward
-  reaches her except through a lend.
-- **door**: the ward's one voice outward. Sealed bytes in, sealed bytes out.
+- The **ward pk** is the ward's public key as sixty-four raw bytes, the
+  signing pk then the padlock, the same key chapter 3 writes as 128 hex.
+  It is what the listener routes by, and it is never read from the box.
+- The **box** is the sealed bytes exactly as chapter 3 defines them, an
+  ask's on `00` and a reply's on `01`. The carrier never opens one.
+- The **id** is minted by the dialer, one per ask, and the listener copies
+  it onto the reply or the nothing that answers that ask. An id is unique
+  among the asks in flight on one connection. Replies arrive in any order.
+
+The largest body is 1,048,645 bytes: one kind byte, four id bytes,
+sixty-four pk bytes and a box of 1,048,576, the size of chapter 3. A
+length above 1,048,645, a length below five, a kind that is none of the
+three, an ask with fewer than sixty-four bytes after its id, and a nothing
+with bytes after its id are not frames. The side that reads one closes the
+connection, because nothing after it on the stream can be read. A frame
+of a kind the side does not read, a reply or a nothing at a listener, an
+ask at a dialer, is a frame: it is read, nothing is said to it, and the
+connection stands. A side judges what arrives and reacts to nothing, on
+the stream as at the door.
+
+The frame bound and the size meet on an ask: an ask's box is `length - 69`
+bytes, so a body of 1,048,645 carries a box of 1,048,576 and an ask's box
+above the size is never a frame. A reply's box is `length - 5` bytes, so a
+body of 1,048,645 carries a box of 1,048,640. A door never seals a reply
+above the size, so a reply that is no frame is never written. A reply's box
+above the size that is still a frame is carried to the asker, who refuses
+it as the size says, before anything is opened.
+
+### Nothing
+
+The listener sends `02` when it knows the ask was not delivered: it stands
+no ward under that pk, the ward is not running, or its harbor chose not to
+hand these bytes to the door. It never sends `02` after the door has taken
+the bytes, because nothing means not delivered and a door that heard the
+ask has answered it.
+
+A harbor that sheds load does it here, before the door. A door answers
+every arrival it takes, and the law of one silence makes that answer a
+sealed and signed reply even to bytes that cost their sender nothing, so
+the door is the dearest place to refuse. A listener may cap the bytes it
+holds in flight, rate a source, or answer `02` to what it will not carry,
+and the dialer hears `unreached`, which is safe to ask again. How is the
+harbor's.
+
+A connection that closes with asks in flight answers none of them. The
+dialer cannot know whether a door heard one, so this is the carrier's cost
+in chapter 5, spelled on a stream: an ask whose frame never left is
+`unreached` to the being, and an ask whose frame left is answered nothing
+at all and is ended by the allowance as `late`.
+
+### The empty ask
+
+Describe has no frame of its own. The empty ask is an ask like any other,
+sealed and framed as `00`, and its blueprint comes back as `01`.
+
+### What an observer sees
+
+Everything on the stream is frame lengths, kinds, ids, ward pks and sealed
+boxes. The ward pk is in the clear because it routes, and that is the price
+of being reachable that chapter 3 names. The id says which reply answers
+which ask and nothing more. A box's length says what chapter 3 says it
+says: the length of its payload.
+
+## 7. Costs
+
+Each is a consequence, said once. Quo enforces none of them.
+
+**Custody.** A ward is its seed and its partition, and both are in the
+harbor's hands. Two harbors running one seed over one partition are two
+wards with one name. Runs that write apart diverge in silence: each honours
+numbers the other has not seen and rotates keys the other does not hold. A
+peer's door meets the divergence on its relation and refuses it there, as
+a key it does not admit or a number it has already honoured. What the peer
+may do is refuse and remove, and nothing wider, because nothing wider is
+observable.
+
+**Divergence.** The same follows from any two copies of a ward that write
+apart, however they came to be. Nothing in the bytes says which copy is
+the ward. A relation, once diverged, is broken on both sides and is made
+again by invitation.
+
+**An open partition.** The partition holds every secret and every relation
+a ward has, under the seed's name. Whoever reads it holds every relation's
+keys and can speak as that ward on every one of them, with nothing on the
+wire to tell the two apart. It opens every ask to come on those relations
+and the asks sent under the edge keys it holds, and no ask sent before
+them. A careful harbor stores it sealed under a key derived from the seed,
+so that the seed is the one secret; that is a recommendation and not a
+rule, since nothing on the wire can tell whether it was followed.
+
+**A stolen seed without its partition** opens every head ever sealed to
+that ward, so it learns which heir each recorded ask named, and it opens
+every ask to the public being. It opens no knock and no other body, since
+the lock and every edge key are in the partition.
+
+**A broken curve.** Whoever records traffic and later solves X25519 opens
+every head and every reply, and every ask to the public being. On a
+relation it opens nothing sent after the knock unless ML-KEM-768 falls
+too. The signatures are Ed25519 alone, so a forger who solves the curve can
+speak where a door would admit her from then on, and never in the past.
+
+**Loss of the lock.** The lock is in the partition and in nothing else. A
+ward stood from its seed on an empty partition mints a new lock at its
+next invite, and every invitation it gave before carries a lock no door of
+it holds: those knocks do not open. Such a ward has lost its relations
+already and invites again.
+
+**Loss of a seed.** The seed and the partition travel under one name, so
+whoever took the seed took every relation with it, and nothing is left to
+succeed to. A succession the old key signs is signed as well by whoever
+took it. The answer is a new ward, every peer invited again. Lose the seed,
+lose the ward, with no recovery inside Quo. Loss of the partition alone is
+loss of every relation, announced to nobody.
+
+**A ward moved in pieces.** A being's peers hold a standing at a ward key,
+and what they trust is that ward's word about an id. A being moved alone
+would ask every peer to trust a ward they never accepted, and asking that
+is what an invitation is. So a ward migrates whole or not at all, and a
+ward that is moved by seed and partition is the same ward at the same name
+whatever harbor, whatever runtime and whatever kit stands it.
+
+## 8. What a stranger can observe
+
+A stranger can observe bytes in and bytes out, and nothing else. The
+vectors pin exactly that, so a kit in any language proves it agrees on the
+bytes without meeting another kit.
+
+- `vectors/arithmetic.json` pins the primitives the seal rests on: Ed25519,
+  X25519, ML-KEM-768, SHA-256, AES-256-GCM, HKDF-SHA-256, with fixed inputs
+  and outputs, the four verification refusals among them.
+- `vectors/framing.json` pins the ward pk from a seed, the digest of a
+  blueprint, including the two places RFC 8785 parts languages, the signed
+  body, the sealed shapes with their head and edge key, a lock from fixed
+  `d` and `z`, the knock's ciphertext and edge key, the invitation and the
+  knock.
+- `vectors/door.json` pins the door's thirteen cases, each one an arrival:
+  the bytes that come in, the bytes that go out, what those bytes open to
+  where a hand holds the lid, and whether the ward wrote while judging.
+  Nothing written is a value a kit checks and never a sentence it reads.
+- `vectors/tcp.json` pins the reference carrier's frames. The frames are
+  observable on the stream exactly as the door's bytes are, and they are
+  pinned the same way: the bytes that go onto the stream, the bytes that
+  come off it, and what is not a frame.
+
+A kit reproduces them or it is not this protocol.
+
+**What a carrier sees.** Whoever carries a box between two wards cannot
+open it and sees it anyway: the ward pk it routes by, when it passes and
+how long it is. The payload is sealed as written, so an ask's box is its
+payload's length plus one hundred and sixty bytes and a reply's its
+reply's plus one hundred and twelve, and a carrier can tell an empty ask
+from a named one, silence from an answer, a short answer from a long one.
+That is what a voice gives away to anyone in the room who cannot follow the
+words. A carrier cannot change a box's length, so hiding it is the
+writer's: a sender pads a payload and a door pads a reply with whitespace,
+to whatever sizes that kit chooses, and a door that pads keeps every
+stranger's silence one length. Hiding when bytes pass, by delays or cover,
+is a carrier's own. Neither is Quo's.
+
+**Fixed entropy.** Every byte in a door record that a stranger cannot
+compute is a byte of entropy, and the corpus fixes the entropy so that a
+verifier holding no key can replay the record and compare bytes. The stream
+it fixes, and how a kit is put in a record's state, are documented beside
+the vectors and are the harness, not the protocol. A door
+replayed this way is the door as it stands: what the door does to a corpus
+ask is what it does to every ask, and nothing of the harness is reachable
+from a harbor that is not in it.
+
+**What the vectors cannot pin**, because a stranger cannot see it: whether
+a reply opened, which is the sender's secret; the bit beside the bytes,
+which is the door's word to its harbor; and the value of a partition's
+digest, which is the kit's own. Only one thing about that digest is Quo's:
+two digests of the same ward differ when something was written between
+them and are equal when nothing was. Those three are each kit's own tests
+to keep. The conformance suite is that: a checklist written in a kit's own
+terms, ported by another kit and never shared with it.
+
+**What two kits meet on** is the door's thirteen cases, the reference
+carrier's frames and the vectors, and nothing else. No kit drives a foreign
+ward through its door.

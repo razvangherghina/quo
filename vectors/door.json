@@ -2,18 +2,84 @@
   "corpus": "quo",
   "encoding": "hex",
   "area": "door",
-  "note": "The door's thirteen cases as fixed bytes: what a ward answers to every arrival it will not answer, and what it writes while doing so. Each record is one arrival at one door: the ask exactly as it arrives, the reply exactly as it leaves, what that reply opens to where the hand holds the lid's secret, and whether the ward wrote while judging it, so `nothing written` is a value a kit checks and not a sentence it reads. No digest is here: what a kit takes one over is its own, and only the change is Quo's. Every random is fixed. Every byte of entropy any ward or the hand draws comes from one SplitMix64 stream seeded at 20250901: the state starts at the seed, each draw adds 0x9e3779b97f4a7c15, mixes with two xor-shift-multiplies, and the sixty-four bit result is spent eight bytes at a time, least significant byte first. A word is one draw. The stream is reset at the start of every record, so a record is reproduced without running the ones before it. The world every record stands in. Two memory harbors linked as a wire, drawing from the one stream: harbor a boots the ward seeded `A`, harbor b the wards seeded `B` and `P`, seeds as text. The owner boots `alice` of class `Caller` on A, `host` of class `Host` on B and `pub` of class `Host` on P, and makes `pub` P's public being; none of that draws. `Host` answers `hello` with `{hi: <the asker's id, or null>}`, `err` with `{error:'nope'}`, `nul` with null, `quiet` with silence, `boom` by throwing, `bad` with a word, `never` never, and shows every ask but `hidden`, each with the input `{type:'object'}`, under the notes `{}`. `Caller` answers `hi` with `{hi:true}`. Then host invites the id `alice`, drawing the heir secret (4 words); alice mints her own key (4), knocks with the invitation, method `hello`, args `{via:'knock'}`, seq 1, time 30000, no hops, announcing that key, under a lid her ward draws (4); B's door draws its reply's key (4); alice takes the standing as `host`. Every record starts from those 16 words. The hand seals every ask a record carries, as a ward would: the payload is `{by, next, seq, time, method, args}` with `to` in front, keys in that order, `by` the signer's pk, `next` null, `seq` counted from 1001 and reset with the stream, `time` 30000, `method` `hello`, `args` `{}`, a case's own fields written over those and `hops`, where a case sets it, last. It draws the signer's secret when a case names none (4), then the lid (4), and seals to B's padlock unless a case names another. A bound relation, which a record builds at most once, is host inviting `g1` (4), the hand drawing an own secret (4) and knocking as that heir with `next` its pk, seq 1001 (lid 4), and B's door answering (4). The cases: D1 wrong padlock signs with alice's heir secret, to her heir, sealed to the padlock of the ward seeded `other`. D1 noise is the byte 01, then 32 and 80 bytes drawn. D2 is a bound relation, signed with its own secret, to its heir, with `method` 7, `args` 7, `seq` 0, `time` -1, `by` `nope` or `hops` 0. D3 is to null on B. D4 is to null on P, `by` the pk of a being key drawn first (4). D5 is to the heir ff repeated 32 times. D6 is a bound relation's heir with a fresh signer. D7 is a bound relation, a fresh signer, `by` its own pk. D8 she is not there is a bound relation, then B reborn over its partition with only `Caller` held, signed with the own secret; D8 the record is not is a bound relation with its occupant deleted from host's cells. D9 a heir is host inviting `g1` and the hand signing with its secret, `next` null; D9 a bound key is a bound relation, the own secret, `next` null. D10 is `seq` 1, D11 `boom`, D12 `quiet`, D13 `bad`, each on a bound relation under its own secret. D1 noise is the one record whose reply nobody can open: the door seals it to the first thirty-two bytes of the noise, and no one holds a secret for those. That is the case, not a gap in it. A word to a bound key is a different length from a silence to a stranger, on purpose. The law of one silence equalizes what strangers see and nothing else, so every record of kind `silence` is one length and every record of kind `word` or `object` is not. `ward` is the seed of the ward whose door judged the arrival, as text, hashed to thirty-two bytes like any seed that is not already that. `state` says what that ward was in the middle of when it did. `draws` is how many words of the stream were spent before the arrival, the hand's included, and a kit that built the world above arrives there on its own. `blueprint`, on the one record whose reply carries `seen`, is the shape that digest is taken over: that is the only place in this corpus where a being's shape reaches the wire.",
+  "note": "The door's thirteen cases as fixed bytes, each record one arrival at one door: the ask as it arrives, the reply as it leaves, what the reply opens to where the hand holds the lid, and whether the ward wrote while judging it. Each record carries the story that puts a kit in its state, as `quo/vectors/HARNESS.md` section 7 says: a stand program started with `stand` beside `--listen` and `--entropy`, the steps of the world the record names, then its own steps, then its arrival. A `root` step is a request of the root channel, its `ward` the seed text of the ward it names. An `arrive` step is an ask box sent to that ward as one frame, and `reply` the box that came back, or null for a `02`. A `restart` step saves every ward, closes the program, and starts it again from those partitions with the classes it names, under the same entropy. Every byte a ward draws comes from the SplitMix64 stream of section 6 seeded at `entropy`, and every key the hand draws from its own stream at the same seed, restarted with every record. `kind` is silence, word, object or nothing. `opens` is null where nobody holds the lid. `blueprint`, on a record whose reply carries a seen, is the shape that digest is taken over.",
+  "entropy": "20250901",
+  "stand": [
+    "--ward",
+    "B",
+    "--ward",
+    "P",
+    "--class",
+    "Host"
+  ],
+  "worlds": {
+    "bound": {
+      "from": "home",
+      "steps": [
+        {
+          "root": {
+            "ward": "B",
+            "method": "invite",
+            "args": {
+              "being": "h",
+              "id": "g1"
+            }
+          }
+        },
+        {
+          "arrive": {
+            "ward": "B",
+            "ask": "3fe6a3ffe7e87e31a45d85c20219038b0c41ece3610794649458ee8511f8cb01dd8a30b7b35e5c63fc29e53d5902e4158e7e295addada5f26019708a8655179bb107a2c9c62005e631a137b99c84a9c085c53f35ff3201fd0edb2b4336e78c9a84aeff7c5561fb7e325c3ab8bda74b6aea059fb8848507c0a513e566256752020cd6f338d11240c720c2d900d47e05d4142b40993bfe663f28a545ed85a74380506da877a5f194ab9a6d8d5c89236ba206c11262bb5b67f9acfea8b370eadfce4d5f30ee51b8c634d6d3f62b180b621907dd7f63dcc38711e7828b54045726dbef58cf337748fb07b737f80ccc4cf690f64d81d893a6056e574a4fc5372cdc1c2a979ba84482785dec87588b66de0f11caa80477a169b23e09f53c82ce6a27878ae20eb033114b48ce7d1669866c7f2dcad2ec6c849acec62372aa4b8056e55e76f8a1e3a0d468e7e0d43927d78842461b798f97679231b367292f7ceea04f8c60b7e16780c31db7fe98051bd3e2105bf8af4417bf845ee96d2d91e3513d9101a3e9ea702dad5b58b4dad8ca870bebe57274f79607878555d9f6af64860dd244323c5ae52216122b450185f9abb55123857c357de33ccc6e4c1673f2acddefab209afac5ee056c5cde8c85701f5a9fff56b1e4cdcc63df50a292bf36f7aca8b4e9507fda2a29651b53eee7af684d5478ffbe9910b60023e131c30624d0b24853c9aeb4cef89ddeec32e4f791d86aff53cdbb59117251930368357cfc3aa57075f48cafc256528c7c27a5d09c48c35adf6d4ae95a59a9d530459537a9950598409d1d532fc1dcb3828452b1dc4114f26a5f817fdf62b2ad3830370f0b6c75f308eb8079577a504dc2939c7eaf5c039852c9f2a92f9e9bafad54dd7287a027e0886091f695537e324a0b7a759536015e3e2df229f99a7f9aad6e8f05b73430d100ef4b003975a4670fbc72e441a06efd7df6b2643c96061970e5e3181bfb146ffa11092e8ada9074e8902b28a511a2011afc9dd555f73f8a675958c7c4eda5d1169c7e746d0c4a0b0927d5b7c8a6809b0ebf9fcf698f4c85952e30498d5199bf213e62fe33ee0627ab33385226948d9dbd20656cd51e8cc44372c6732a13f5aa8bdea9c6ab01cb2474f7f7473d7fad370b3acfe78ef0f398afad646c1ce6fa77fb632793c0fbef6e28ad27e14ef6c47ec0d5cdd05418ab44cc48b539b290e907291687421b263df3d6a49d2867dc90633ec6fa275e619f4611c9a07d03c247e572c2e9e02d29aaed560339cee3f793077a3f4de68a4f62352d6f0bbc4b98d8c5b0db7a7e83dfa42d0c594dc0bb0e0a6c9000a9a8f49761cec047d460589eb8d413f411b91de7113c9a3b97af264ba7ed24bfc7a2b123c103288992641606712eef231d5036b9e6299f3f28dfdb102e24efb608735ec22ed438426ec7a9784abdf2f91f5a718c3403851f5ea39166ef369d3580cd0fe9836b02781b88421bc9cc0535b771dd6e28b8a062fdfa8000881014c05e79ef23682f92393e9c002ea7c609350c0f8f41425a22fea1ab45973321480d7e5da046fe195e13db1c7678fa38537e35a405597c7ccbf2d5653f0180d87d632d06d3f1f517fac1db96f5a439863efb8316e292e5aec36e3d883e71aad06d048c457eb0b88d8e29d7cef7f04ff957a67318add7d15aff9048daf52e654a3cd0c30ceaa61ced22ec274a7463393834f1b6aecc38a44c839ce47c80c763404ed12b777198b6c6c5ac5675bd0b2f993d4d11bae7373393b6a46d514936f93620d9f4db31f3a4d0c4e08a33d30f39dee25444db84a8e1c3afb39939a9f3f2ee402cbad3d67c5cdeeb8d9e48de6d6ebcc52c4a34d502208721950024b1d7e14912fd4cba1768158a0b32acd5cf386b0efadc36d86e865aeb49f2c05e46aca3f89efce0e3a35f2312494d4e580c7e5a5e925240b533f5883b7ce31db26c298644ca24e2d9f7edc526d65fff031ab86f157fb9b3e58fd589eca65f9c07d714d7517516457f2e7ad56f950be990c5d7b4570dee77de9c8f9c8a4e18b9b10f3556ccabe7d3a4f3ff5456c3b2ead2f74773ce1327ea356ee10a521b5234c8b3650221ccb8740c7b81ba0659171b07e6807f804b"
+          },
+          "reply": "6d15f8a77ba82868471941b0a0908fd5333f36b8d8c5eacb950900bedcef8e689287eee80d2e853bf13902387ea7709d57e7c9392ed02a01cb28f45198568bc485b11779a65c52c44dede87432b8518538c4540f74b7d5bb4cca34f164da19c0a8c227945a5fbb3d94f19b3c77781da85516ec8ef2ce870030bdc13c52cebccb01200056a8050761656f2d7547706b21e9d1ecb3065deb3092203e606014927f4daea3d792fc360632aa8a6e1c39f02a77f853e4abb69ea85f0fd550e46370c638a25b1818c350d803fe278ee2eefbba"
+        }
+      ]
+    },
+    "home": {
+      "from": null,
+      "steps": [
+        {
+          "root": {
+            "ward": "B",
+            "method": "boot",
+            "args": {
+              "key": "h",
+              "class": "Host"
+            }
+          }
+        },
+        {
+          "root": {
+            "ward": "P",
+            "method": "boot",
+            "args": {
+              "key": "p",
+              "class": "Host"
+            }
+          }
+        },
+        {
+          "root": {
+            "ward": "P",
+            "method": "public",
+            "args": {
+              "key": "p"
+            }
+          }
+        }
+      ]
+    }
+  },
   "vectors": [
     {
       "case": "D1",
-      "name": "wrong padlock",
-      "state": "a heir the door holds, sealed to another ward's padlock",
+      "name": "the wrong padlock",
+      "world": "bound",
+      "steps": [],
       "ward": "B",
+      "ask": "6d15f8a77ba82868471941b0a0908fd5333f36b8d8c5eacb950900bedcef8e682163e262eafb43e2caa78054d183efcbfd7bc8dcffe4b59d8ab1de7c66543ffd283602df8ecb33cb5b90ef28a033bd5b0a3124c69926dafff82c58b3c16c269743271ac4de96d7e04588c97a089d8f05b491586549414f1511ce8376bc17b543566d25639cfbdf4611c3dc8c1eccdf1ede6f638e1ae1d4436ec9499bdb11b6337c7feb1d8482fdd8edfe18ba3036c08cbcd14fccb0dd0285412a323241c55610e67307aaf31fc25636ab25b33811fefa042a055cba4736a51a24d023038ede0744466d6a2fea10557097467bbdb4f20f2cc121e35580c6004877f8dab4249489c54627a0250ae710d187d7c98f39371b492e22d4a5280a0805e4f0ebd175cacc0ccc6cb76afb1dfb16c748400d5b1594154c631407758fcffbdac842aa91e4d764fd1af5b8aa2dd8affe493b6070185b246b7b37a0b728986d5b4d7e055289ec0cdb",
+      "reply": "d1fc81101fc0d82fb5c7298d598aadd7146299554890bd22c140350d5efabd3adaa085b7dfa28d71627b98b5539def8bcf2b03699b61b9fa320966c72975cc4916bc94ee539d5d1e2fc6d78e13727886dab92436cf5676f4464e556fcf4b610dfee119dea13691ea8c85aba98fbee73dd2902d2a8e9b1c9d1e82c542f379323c",
       "kind": "silence",
-      "heard": false,
-      "draws": 20,
-      "ask": "d1fc81101fc0d82fb5c7298d598aadd7146299554890bd22c140350d5efabd3a17c7fe10142dec3537204579e051a006349247a4078cd3723d854b8ca07afd4a7b17fca2078eef5a624baa41381687774e11164b4a60ae5ecef6b93f6f793bc3445be287c45e83d8fd03e210637aeaa177a418ab6f21db665af8a03c7d2ccc390b3c90d8526a883f28acd478109f4b3691ad6f0e07d111fc1a2517899c3874219edf5f14b97801924296115153b18e9fdaf74ba9124e3e0ff2793189af09f25c6c0793f4241303b3ada7529eabb144c28c8545c7c8421d06cbb4fcdcdc18c682fd36462747cd6d1ae3f59de12b072d7357293f2e71c48af57bbecefb19df2439d99ae1233e20bf7d77fbc1dad12681913f2ee386c1fec9e836e3f1f5456ed4c53fb1dfff6a7689ab4929d46cd33532073eb545739b4efe216a1f46757c4ea0b1",
-      "reply": "84637ecbb7afd6785f3d54e8a1f8f03161d14cdadae513c3a0fd8524f8836220e2e9b1e962a94de7d12632b93c811f561f8cf7ab1071afe44abbd59d18272319624a3ad1c2630c1ea8f02f3364869642ed30f568d6885f42db8a68e14f77549098683dd5c826a5abf0c658eff571e2786d9f808bd613e4c7b580d1c19e933c6d",
       "opens": {
         "silence": true
       },
@@ -22,26 +88,24 @@
     {
       "case": "D1",
       "name": "noise",
-      "state": "bytes that are not a sealed ask at all",
+      "world": "home",
+      "steps": [],
       "ward": "B",
+      "ask": "01f7a39bc08c6f533487b56e78ed74d2e33c21ddddfbff5650d8e76b714009721e999b3aac601ce9442e734a23a32cb8a06187ca82e4a2227fff7c25afc2064cb9edea2734fb6b3ebeb902ce97ebc7bab5a25a6ea7393b8e2a14b1c8a809bdc371ae29191d525d1cf34f16fd755218937e",
+      "reply": "359517addfecd027809dad1e778c665eb4bcc1817aaedb47b5c21214938b06166f3df67c85cdadb6929e9526111a4c9126230808f15126c729595d8e4cc336319355732b6735c37b30078418037449a5e81ff5a06b8e88de95934e5b3553778c5ca2368ec7151d91d0170280b5cd487a30e75484add94d65dfce7adcc952445a",
       "kind": "silence",
-      "heard": false,
-      "draws": 30,
-      "ask": "01c0b7c9e315dc00c2913141db31df59a760f3cea15ad41d5c51eadb39d927b4035fe63be4f7794aa739a173fea2c4c0606717001e28c219b638bec66a9d299f9da2f1ef860034d7e23a6e203f8139996d912d084d4df8923d5745aa53cfce040b9b16cfb47ffb4dd79a9b391c116cd235",
-      "reply": "eea19c6ed20cc8562606ce2695bd54d5524a3b0cbf3a224fd5a944a920dba85440682158d87d5f046a69925d12015bac1416b51fe89e1fa7f10f69478f29234a0eda4ab1468d813c3f00562c2a740d187ecf7c11fb15857a3c8023fa991dbd59bd605dec985ae25631ce152bc3e2596e6e0481f78218ba2e27859d00dc3c0d8e",
       "opens": null,
       "wrote": false
     },
     {
       "case": "D2",
       "name": "method is not a string",
-      "state": "a bound key, one field of the wrong shape",
+      "world": "bound",
+      "steps": [],
       "ward": "B",
+      "ask": "6d15f8a77ba82868471941b0a0908fd5333f36b8d8c5eacb950900bedcef8e68ae3b0ea3e4612d82d74fc939163fe95a1f9041b43707a88a87ea0887fe5f0aae4d3701e6a969f95e47e9733e5d3c3b3e7a41ed2d7abd35cf94976abe83103a5e58d7a24a721a479d813724a49b7d3810b49926f40392381d43eef738f99674cf1999875ce08b1c9b1cb4c19923c13c5dd2519a8db75dafd1cf6a6a9ee4eff1e977abe91bd80e7d2155f00cc26ed5b039d71d0ec2f02b7d43f689c4716d462063ed10eca6cb2174686bd44d63894c5ad78c02926c0f30ddf96996fe89c57983a7531bbd833dff4fbb183309050d1bbefbfe3375089b1200cd56fa6b3bd59097bf85dca08b11cd7e894b257c356307fb6e48da289fd9077e22ecead5f3847fd82be47d00b03555ce8b8218abe8c10ae27fb658cb4db270eb9a0bea6da5ed95abb067f487a6968cc1a5d88b5687fdc0dbf3b61ff53ca7471fe9598f13d6",
+      "reply": "d1fc81101fc0d82fb5c7298d598aadd7146299554890bd22c140350d5efabd3adaa085b7dfa28d71627b98b5539def8bcf2b03699b61b9fa320966c72975cc4916bc94ee539d5d1e2fc6d78e13727886dab92436cf5676f4464e556fcf4b610dfee119dea13691ea8c85aba98fbee73dd2902d2a8e9b1c9d1e82c542f379323c",
       "kind": "silence",
-      "heard": false,
-      "draws": 36,
-      "ask": "3f43ed1fa30e3cfa3b4fd56b428e3d3c9f8561a11a6a20c76c38332f468ead0124c1b80f327342ce552b30a7ace0af22f5bb02737198288e8342a5bcfb41321c078f47c0f4c288681e134f1aa1c6262ce862b0a391196060d3107054933b5794d3c099133add19e1532fed4f8609cdd6f13d83d492606286e34bcccb6523b0f2d02188ccef483c4fd53283d8570ec0f837248276d7fe5fd7df0a361aded88bc98bc735b39b0adffd1410ac10acbb79fb0561f5a04e1990f3cedc9b13352805c8038b1b35f177345d075948a5a84e8878a41acb54aef478fe080923c1a58c639ddf51cda073d6ace5734b0dabebbca1ae8b0bacf1cfe3a555ddcc7d497c9deb4b89ebc5ff0bcc14ed95d0c73f5fc98456e9daca100b9e68bbd19caec646792e270abb88105bc93c34ea5c08f44a3ddd29d2f3c016cc6239e158fa",
-      "reply": "a8cf51bfc797db309b9d1d0ff388ab9681f00d6d96c4a32fc5c4f2c71b130a3402a74cfedc99744f293794909c6a1f57c8e4a787dbe3591c2f543539f1013d8a86f6810e7f24e485766763b2db3642dedf361f92900101a4e9a8cdded78fe397e952f7e7f446149cbb238ab3596b772ee9767b9f8d2ecb1dfa3ba33d75cad543",
       "opens": {
         "silence": true
       },
@@ -50,13 +114,12 @@
     {
       "case": "D2",
       "name": "args is not an object",
-      "state": "a bound key, one field of the wrong shape",
+      "world": "bound",
+      "steps": [],
       "ward": "B",
+      "ask": "6d15f8a77ba82868471941b0a0908fd5333f36b8d8c5eacb950900bedcef8e68ae3b0ea3e4612d82d74fc939163fe95a1f9041b43707a88a87ea0887fe5f0aae4d3701e6a969f95e47e9733e5d3c3b3e7a41ed2d7abd35cf94976abe83103a5e58d7a24a721a479d813724a49b7d3810b49926f40392381d43eef738f99674cf1999875ce08b1c9b1cb4c19923c13c5dd2519a8db75dafd1cf6a6a9ee4eff1e977abe91bd80e7d2155f00cc26ed5b039d71d0ec2f02b7d43f689c4716d462063ed10eca6cb2174686bd44d63894c5ad78c02926c0f30ddf96996fe89c57983a7531bbd833dff4fbb183309050d1bbefbfe3375089b1200cd56fa6b3bd59097bf85dca08b11cd7e894b256920c5416e4db9ca876299e8a9fb008af714f40421bcc5697478dd90ab6497ad6226618a5bf9f77b59f01036a281c4dd52528ad824e46cd070db2f32d32599e1ecc1f8e50a4af0d7fea1176c7a752c2141234a6dd6d302b11b3d60f6fd65d8cd64",
+      "reply": "d1fc81101fc0d82fb5c7298d598aadd7146299554890bd22c140350d5efabd3adaa085b7dfa28d71627b98b5539def8bcf2b03699b61b9fa320966c72975cc4916bc94ee539d5d1e2fc6d78e13727886dab92436cf5676f4464e556fcf4b610dfee119dea13691ea8c85aba98fbee73dd2902d2a8e9b1c9d1e82c542f379323c",
       "kind": "silence",
-      "heard": false,
-      "draws": 36,
-      "ask": "3f43ed1fa30e3cfa3b4fd56b428e3d3c9f8561a11a6a20c76c38332f468ead0124c1b80f327342ce552b30a7ace0af22f5bb02737198288e8342a5bcfb41321c078f47c0f4c288681e134f1aa1c6262ce862b0a391196060d3107054933b5794d3c099133add19e1532fed4f8609cdd6f13d83d492606286e34bcccb6523b0f2d02188ccef483c4fd53283d8570ec0f837248276d7fe5fd7df0a361aded88bc98bc735b39b0adffd1410ac10acbb79fb0561f5a04e1990f3cedc9b13352805c8038b1b35f177345d075948a5a84e8878a41acb54aef478fe080923c1a58c76d9985cd3a822d8b4ff7c51daef31e729c80716985e463fb7ba473e8e191954a84f44681e490edfc9f2998df9794c9136df18841541da782c9e49ccd859161e3d2ca93fdc1f5fa5160f8d578e54b2ee94318f415685278f49295cb4ea3da40eae",
-      "reply": "a8cf51bfc797db309b9d1d0ff388ab9681f00d6d96c4a32fc5c4f2c71b130a3402a74cfedc99744f293794909c6a1f57c8e4a787dbe3591c2f543539f1013d8a86f6810e7f24e485766763b2db3642dedf361f92900101a4e9a8cdded78fe397e952f7e7f446149cbb238ab3596b772ee9767b9f8d2ecb1dfa3ba33d75cad543",
       "opens": {
         "silence": true
       },
@@ -65,13 +128,12 @@
     {
       "case": "D2",
       "name": "seq is zero",
-      "state": "a bound key, one field of the wrong shape",
+      "world": "bound",
+      "steps": [],
       "ward": "B",
+      "ask": "6d15f8a77ba82868471941b0a0908fd5333f36b8d8c5eacb950900bedcef8e68ae3b0ea3e4612d82d74fc939163fe95a1f9041b43707a88a87ea0887fe5f0aae4d3701e6a969f95e47e9733e5d3c3b3e7a41ed2d7abd35cf94976abe83103a5e58d7a24a721a479d813724a49b7d3810b49926f40392381d43eef738f99674cf1999875ce08b1c9b1cb4c19923c13c5dd2519a8db75dafd1cf6a6a9ee4eff1e977abe91bd80e7d2155f00cc26ed5b039d71d0ec2f02b7d43f689c4716d462063ed10eca6cb2174686bd44d63894c5ad78c02926c0f30ddf96996fe89c57983a7531bbd833dff4fbb183309050d1bbefbfe33750a9b1200cd56fa6b3bd59097bf85dca08b11cd7e894b256920c5416e4db99bf189f1483c3d129b740d6995dc4aa3dbd403ad5a39f263aad158878c90b4ece3fda348392df5ff28178ec261e57ee5e680222bb69d66963a6ba599cc7fbec31964c73585421c47224de488056ba81040",
+      "reply": "d1fc81101fc0d82fb5c7298d598aadd7146299554890bd22c140350d5efabd3adaa085b7dfa28d71627b98b5539def8bcf2b03699b61b9fa320966c72975cc4916bc94ee539d5d1e2fc6d78e13727886dab92436cf5676f4464e556fcf4b610dfee119dea13691ea8c85aba98fbee73dd2902d2a8e9b1c9d1e82c542f379323c",
       "kind": "silence",
-      "heard": false,
-      "draws": 36,
-      "ask": "3f43ed1fa30e3cfa3b4fd56b428e3d3c9f8561a11a6a20c76c38332f468ead0124c1b80f327342ce552b30a7ace0af22f5bb02737198288e8342a5bcfb41321c078f47c0f4c288681e134f1aa1c6262ce862b0a391196060d3107054933b5794d3c099133add19e1532fed4f8609cdd6f13d83d492606286e34bcccb6523b0f2d02188ccef483c4fd53283d8570ec0f837248276d7fe5fd7df0a361aded88bc98bc735b39b0adffd1410ac10acbb79fb0561f5a04e1990f3cedc9b13352805c8038b1b34ed657218484803f2fe5c827ba406d909e7a27df418437687efd338dd921293e56186f1ed2c0cd2b0767052ead4c22c91120e7934a9e4a6846af69cfa849fba769e872443dfeaea6a42209de7ea7bf1b671312ed95d3d4b60024c2944b43d66c5cd8edd6a2398c6ff9f319ee5c5886d96111ad5b7d2216f8249",
-      "reply": "a8cf51bfc797db309b9d1d0ff388ab9681f00d6d96c4a32fc5c4f2c71b130a3402a74cfedc99744f293794909c6a1f57c8e4a787dbe3591c2f543539f1013d8a86f6810e7f24e485766763b2db3642dedf361f92900101a4e9a8cdded78fe397e952f7e7f446149cbb238ab3596b772ee9767b9f8d2ecb1dfa3ba33d75cad543",
       "opens": {
         "silence": true
       },
@@ -80,13 +142,26 @@
     {
       "case": "D2",
       "name": "time is negative",
-      "state": "a bound key, one field of the wrong shape",
+      "world": "bound",
+      "steps": [],
       "ward": "B",
+      "ask": "6d15f8a77ba82868471941b0a0908fd5333f36b8d8c5eacb950900bedcef8e68ae3b0ea3e4612d82d74fc939163fe95a1f9041b43707a88a87ea0887fe5f0aae4d3701e6a969f95e47e9733e5d3c3b3e7a41ed2d7abd35cf94976abe83103a5e58d7a24a721a479d813724a49b7d3810b49926f40392381d43eef738f99674cf1999875ce08b1c9b1cb4c19923c13c5dd2519a8db75dafd1cf6a6a9ee4eff1e977abe91bd80e7d2155f00cc26ed5b039d71d0ec2f02b7d43f689c4716d462063ed10eca6cb2174686bd44d63894c5ad78c02926c0f30ddf96996fe89c57983a7531bbd833dff4fbb183309050d1bbefbfe3375089b1200cd56fa6b3bc9918badc49bb9860ac133d74b772e24cc42205f2dd9e0179ae575b9256d7705cc6885eb9c7de48a512d417f83b3aa7f63a42d18f75c22edb6324f8981eb3a5a33c528d38143f377d881edbe3ceea025fc6dcb9a40ae97b0256cb15aed53fd93ddbc89b4",
+      "reply": "d1fc81101fc0d82fb5c7298d598aadd7146299554890bd22c140350d5efabd3adaa085b7dfa28d71627b98b5539def8bcf2b03699b61b9fa320966c72975cc4916bc94ee539d5d1e2fc6d78e13727886dab92436cf5676f4464e556fcf4b610dfee119dea13691ea8c85aba98fbee73dd2902d2a8e9b1c9d1e82c542f379323c",
       "kind": "silence",
-      "heard": false,
-      "draws": 36,
-      "ask": "3f43ed1fa30e3cfa3b4fd56b428e3d3c9f8561a11a6a20c76c38332f468ead0124c1b80f327342ce552b30a7ace0af22f5bb02737198288e8342a5bcfb41321c078f47c0f4c288681e134f1aa1c6262ce862b0a391196060d3107054933b5794d3c099133add19e1532fed4f8609cdd6f13d83d492606286e34bcccb6523b0f2d02188ccef483c4fd53283d8570ec0f837248276d7fe5fd7df0a361aded88bc98bc735b39b0adffd1410ac10acbb79fb0561f5a04e1990f3cedc9b13352805c8038b1b35f177345d075948a5a84e8866a506d909e7a27df418437687efd338dd921293e56186f1ed2c0cd2b076d82048d224068df7986c2df5654e7121a0262e0a5b71110a8401cd9845c8ff6d34128fa6767a47b43a9aeaf3a28f194a98860a2b870e25e8d404df48144b0e92c707111060764444fdbfe6cfe8d52dd5",
-      "reply": "a8cf51bfc797db309b9d1d0ff388ab9681f00d6d96c4a32fc5c4f2c71b130a3402a74cfedc99744f293794909c6a1f57c8e4a787dbe3591c2f543539f1013d8a86f6810e7f24e485766763b2db3642dedf361f92900101a4e9a8cdded78fe397e952f7e7f446149cbb238ab3596b772ee9767b9f8d2ecb1dfa3ba33d75cad543",
+      "opens": {
+        "silence": true
+      },
+      "wrote": false
+    },
+    {
+      "case": "D2",
+      "name": "args nested past sixty-four",
+      "world": "bound",
+      "steps": [],
+      "ward": "B",
+      "ask": "6d15f8a77ba82868471941b0a0908fd5333f36b8d8c5eacb950900bedcef8e68ae3b0ea3e4612d82d74fc939163fe95a1f9041b43707a88a87ea0887fe5f0aae4d3701e6a969f95e47e9733e5d3c3b3e7a41ed2d7abd35cf94976abe83103a5e58d7a24a721a479d813724a49b7d3810b49926f40392381d43eef738f99674cf1999875ce08b1c9b1cb4c19923c13c5dd2519a8db75dafd1cf6a6a9ee4eff1e977abe91bd80e7d2155f00cc26ed5b039d71d0ec2f02b7d43f689c4716d462063ed10eca6cb2174686bd44d63894c5ad78c02926c0f30ddf96996fe89c57983a7531bbd833dff4fbb183309050d1bbefbfe3375089b1200cd56fa6b3bd59097bf85dca08b11cd7e894b256920c5416e4db9ca876299e8a9fb00c6a8dfaacbf748bacd79e3906f144bf52ad55b9b26cf751e5fbb08b0af04a26dffa830dc79c077693d05258a04a8a102dc06d340005cc7d5493faad415fe6e268a120e7b2b4877e7743af5b82f947fd190694aec5dd008a5b82eaffb5aeaeefb2e838e39d7e392170fa13dfd7369e5902a78bc6980e632d77d1b535d679ecbeae488132c90b0a66f77078ba3410d62919112589eda75fc94166a721ee1804b7c0b46de3a89b66b69cf06bfb08b6bd7717c16735ac4b8fcad32fe0a00fb51ea3c11ec274d794af9c0af5995b4a0a81bc7402f3078789f10859b78",
+      "reply": "d1fc81101fc0d82fb5c7298d598aadd7146299554890bd22c140350d5efabd3adaa085b7dfa28d71627b98b5539def8bcf2b03699b61b9fa320966c72975cc4916bc94ee539d5d1e2fc6d78e13727886dab92436cf5676f4464e556fcf4b610dfee119dea13691ea8c85aba98fbee73dd2902d2a8e9b1c9d1e82c542f379323c",
+      "kind": "silence",
       "opens": {
         "silence": true
       },
@@ -95,13 +170,12 @@
     {
       "case": "D2",
       "name": "by is not a key",
-      "state": "a bound key, one field of the wrong shape",
+      "world": "bound",
+      "steps": [],
       "ward": "B",
+      "ask": "6d15f8a77ba82868471941b0a0908fd5333f36b8d8c5eacb950900bedcef8e68ae3b0ea3e4612d82d74fc939163fe95a1f9041b43707a88a87ea0887fe5f0aae4d3701e6a969f95e47e9733e5d3c3b3e7a41ed2d7abd35cf94976abe83103a5e58d7a24a721a479d813724a49b7d3810b49926f40392381d43eef738f99674cf1999875ce08b1c9b1cb4c19923c13c5dd2519a8db75dafd1cf6a6a9ee4eff1e12becbb0bc04e217319b04d9a3294ba679f0e4ec6b43a7548bb9f862c6617303cea11b8f285302c682a844135cf431e868c0dcb611a29c86f0c8a09049ee58c0a103530ec77fa016993369d35c577e6c332cec8f271d010393df4c5f5871e5e0f300b1a144cfccdf5db591a84a11bda1b7187c5d07280baee70b3fd1d468d96187c42d374428d",
+      "reply": "d1fc81101fc0d82fb5c7298d598aadd7146299554890bd22c140350d5efabd3adaa085b7dfa28d71627b98b5539def8bcf2b03699b61b9fa320966c72975cc4916bc94ee539d5d1e2fc6d78e13727886dab92436cf5676f4464e556fcf4b610dfee119dea13691ea8c85aba98fbee73dd2902d2a8e9b1c9d1e82c542f379323c",
       "kind": "silence",
-      "heard": false,
-      "draws": 36,
-      "ask": "3f43ed1fa30e3cfa3b4fd56b428e3d3c9f8561a11a6a20c76c38332f468ead0124c1b80f327342ce552b30a7ace0af22f5bb02737198288e8342a5bcfb41321c078f47c0f4c288681e134f1aa1c6262ce862b0a391196060d3107054933b5794d3c099133add19e1532fed4f8609cd81a87f82978e703cd1af5e88c66f32e9a99a659a90ae5b351ad235d2971643caf163308c76d7ac09d1971f6e4a988881cf9d982ebfc6508bf7520eba44bce53ffb1338e6b8c4535b70444541a3fa4bf589b8ff6961343d221866eede55bb7497d0ad205966d315a04d0207d9bf4baa822cbf5c5d0946fb86b2e8bb3e29168f025f052078b09dfc6556ea5542afebb2c0bdf5ef0056",
-      "reply": "a8cf51bfc797db309b9d1d0ff388ab9681f00d6d96c4a32fc5c4f2c71b130a3402a74cfedc99744f293794909c6a1f57c8e4a787dbe3591c2f543539f1013d8a86f6810e7f24e485766763b2db3642dedf361f92900101a4e9a8cdded78fe397e952f7e7f446149cbb238ab3596b772ee9767b9f8d2ecb1dfa3ba33d75cad543",
       "opens": {
         "silence": true
       },
@@ -109,29 +183,225 @@
     },
     {
       "case": "D2",
-      "name": "hops at zero",
-      "state": "a bound key, and a chain that has run out",
+      "name": "args nested sixty-four is answered, the payload sixty-six",
+      "world": "bound",
+      "steps": [],
       "ward": "B",
-      "kind": "silence",
-      "heard": false,
-      "draws": 36,
-      "ask": "3f43ed1fa30e3cfa3b4fd56b428e3d3c9f8561a11a6a20c76c38332f468ead0124c1b80f327342ce552b30a7ace0af22f5bb02737198288e8342a5bcfb41321c078f47c0f4c288681e134f1aa1c6262ce862b0a391196060d3107054933b5794d3c099133add19e1532fed4f8609cdd6f13d83d492606286e34bcccb6523b0f2d02188ccef483c4fd53283d8570ec0f837248276d7fe5fd7df0a361aded88bc98bc735b39b0adffd1410ac10acbb79fb0561f5a04e1990f3cedc9b13352805c8038b1b35f177345d075948a5a84e8878a41acb54aef478fe080923c1a58c76d9985cd3a822d8b4ff7c51daef31ab29c03b7882cf8d868ab1391fcaf6e8cf7ea3c990d262268ea4d28fe61810e87190c30f41d68644d3511cf3a58cab78a278cca9229a50fbbeb2fb0e6607face7ecd82419c65ff2baa6607094e06eb80acb728fb3bd6b628be45a4b9",
-      "reply": "a8cf51bfc797db309b9d1d0ff388ab9681f00d6d96c4a32fc5c4f2c71b130a3402a74cfedc99744f293794909c6a1f57c8e4a787dbe3591c2f543539f1013d8a86f6810e7f24e485766763b2db3642dedf361f92900101a4e9a8cdded78fe397e952f7e7f446149cbb238ab3596b772ee9767b9f8d2ecb1dfa3ba33d75cad543",
+      "ask": "6d15f8a77ba82868471941b0a0908fd5333f36b8d8c5eacb950900bedcef8e68ae3b0ea3e4612d82d74fc939163fe95a1f9041b43707a88a87ea0887fe5f0aae4d3701e6a969f95e47e9733e5d3c3b3e7a41ed2d7abd35cf94976abe83103a5e58d7a24a721a479d813724a49b7d3810b49926f40392381d43eef738f99674cf1999875ce08b1c9b1cb4c19923c13c5dd2519a8db75dafd1cf6a6a9ee4eff1e977abe91bd80e7d2155f00cc26ed5b039d71d0ec2f02b7d43f689c4716d462063ed10eca6cb2174686bd44d63894c5ad78c02926c0f30ddf96996fe89c57983a7531bbd833dff4fbb183309050d1bbefbfe3375089b1200cd56fa6b3bd59097bf85dca08b11cd7e894b256920c5416e4db9ca876299e8a9fb00c6a8dfaacbf748bacd79e3906f144bf52ad55b9b26cf751e5fbb08b0af04a26dffa830dc79c077693d05258a04a8a102dc06d340005cc7d5493faad415fe6e268a120e7b2b231ae7743af5b82f947fd190694aec5dd008a5b82eaffb5aeaeefb2e838e39d7e392170fa13dfd7369e5902a78bc6980e632d77d1b535d679ecbeae488132c90b0864f1a6b67446eab405a31759f45a63a4a109398667d45945bb2d46014b35acd9d8de690a7e886438e80742c73550740a995cb88b6e075e8b28d8576e58fac63a0d179a37633c9a7b12e1d4d22532d76d29d",
+      "reply": "d1fc81101fc0d82fb5c7298d598aadd7146299554890bd22c140350d5efabd3adaa099bcd9a280662563d9e34981a8ccd9aa8a40c17436bdaa59857cd6c161b3310f114f8806bd76bceb4e3c452788d2fd13fb288159f4a67664eb4241c064f775e1f7f6aec79c903e7b8bd202c50908199fa7de5d3d15c8a6c06a18f5489e5acf1d9f53318f5a04b43187ef436b8e413225d7aa2225b8569cda8f3d4c2428cf1fe9f40ea48d4396b839ce407eec3f1732d4b55cfa021faab9f530fed13032990da491834f5c919779b3ea88c66ad671",
+      "kind": "object",
       "opens": {
-        "silence": true
+        "object": {
+          "hi": "g1"
+        },
+        "seen": "cfea1223e72b1422797847c765ee171672f6fcfd492ca3e7810bb22d0796655a"
       },
-      "wrote": false
+      "wrote": true,
+      "blueprint": {
+        "asks": [
+          {
+            "name": "hello",
+            "description": "Answers who is asking.",
+            "input": {
+              "type": "object"
+            },
+            "output": {
+              "type": "object",
+              "properties": {
+                "hi": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "hi"
+              ],
+              "additionalProperties": false
+            }
+          },
+          {
+            "name": "echo",
+            "description": "Answers the args as they arrived.",
+            "input": {
+              "type": "object"
+            },
+            "output": {
+              "type": "object"
+            }
+          },
+          {
+            "name": "err",
+            "description": "Answers an error she declares.",
+            "input": {
+              "type": "object",
+              "properties": {},
+              "additionalProperties": false
+            },
+            "output": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "error"
+              ],
+              "additionalProperties": false
+            }
+          },
+          {
+            "name": "quiet",
+            "description": "Answers silence.",
+            "input": {
+              "type": "object",
+              "properties": {},
+              "additionalProperties": false
+            }
+          },
+          {
+            "name": "boom",
+            "description": "Throws.",
+            "input": {
+              "type": "object",
+              "properties": {},
+              "additionalProperties": false
+            }
+          },
+          {
+            "name": "bad",
+            "description": "Answers a word.",
+            "input": {
+              "type": "object",
+              "properties": {},
+              "additionalProperties": false
+            }
+          },
+          {
+            "name": "never",
+            "description": "Never answers.",
+            "input": {
+              "type": "object",
+              "properties": {},
+              "additionalProperties": false
+            }
+          },
+          {
+            "name": "slow",
+            "description": "Answers two thousand milliseconds after the ask reaches her.",
+            "input": {
+              "type": "object",
+              "properties": {},
+              "additionalProperties": false
+            },
+            "output": {
+              "type": "object",
+              "properties": {
+                "slow": {
+                  "const": true
+                }
+              },
+              "required": [
+                "slow"
+              ],
+              "additionalProperties": false
+            }
+          },
+          {
+            "name": "join",
+            "description": "Mints an occupant for the asker and answers the invitation.",
+            "input": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id"
+              ],
+              "additionalProperties": false
+            },
+            "output": {
+              "type": "object",
+              "properties": {
+                "ward": {
+                  "type": "string"
+                },
+                "heir": {
+                  "type": "string"
+                },
+                "secret": {
+                  "type": "string"
+                },
+                "lock": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "ward",
+                "heir",
+                "secret",
+                "lock"
+              ],
+              "additionalProperties": false
+            }
+          },
+          {
+            "name": "shape",
+            "description": "Sets which describe she gives from now on.",
+            "input": {
+              "type": "object",
+              "properties": {
+                "mode": {
+                  "enum": [
+                    "plain",
+                    "extra",
+                    "throws",
+                    "numeric",
+                    "field"
+                  ]
+                }
+              },
+              "required": [
+                "mode"
+              ],
+              "additionalProperties": false
+            },
+            "output": {
+              "type": "object",
+              "properties": {
+                "mode": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "mode"
+              ],
+              "additionalProperties": false
+            }
+          }
+        ],
+        "notes": {
+          "😀": "grin",
+          "דּ": "dalet",
+          "big": 1e+21,
+          "small": 1e-7,
+          "third": 0.3333333333333333
+        }
+      }
     },
     {
       "case": "D3",
-      "name": "for nobody, nobody home",
-      "state": "a ward with no public being",
+      "name": "for nobody, and nobody is home",
+      "world": "home",
+      "steps": [],
       "ward": "B",
+      "ask": "3fe6a3ffe7e87e31a45d85c20219038b0c41ece3610794649458ee8511f8cb0107424e42eba3345674074d2981d7a5fb4be1a4765626d1c11ed60e05be5656918868a1513eace5ad9c98415c54e8880561bab12376dd5c2a492391935dcec0923b1bd748adb0d5c4972fbd3790cc90f547409adfb4497c0e94b31b645ef5cfe9e08b3854c83d4fa58a96bdb6ef60f2e7000c99433fc44f518ba1e5c1e920f7c938fb2c35b3240b8923707f928fcb10e8b1371229f67cf9f3894083b1758d1a456de74e478017ba260433cc74cd6fa87b6935332a8a4e9d768073abe1d97c1ddec16c501356ad9405280eff6f208857fb4bde2c55e94366c22bf6713abe8dbb99341fd15fb172bbb3c40285872f13dc8c4b71b24e1f5364c5253bc2cf7f9f2b26fd782535",
+      "reply": "359517addfecd027809dad1e778c665eb4bcc1817aaedb47b5c21214938b061650ff84f470f6992cee519d6ae124613247028a8b6180ee352ef6a5ef829dd6ff9c336f6a9939e52f79bb42dac7a14f0a8be33c59a1d9d082e1a1832951ae4f713bcc37653a636d0be01e90dcb9b03cfa1eca31e716d5df609bbb1e7554e722ef",
       "kind": "silence",
-      "heard": false,
-      "draws": 24,
-      "ask": "84637ecbb7afd6785f3d54e8a1f8f03161d14cdadae513c3a0fd8524f8836220ba17e2a2e1fde39c1b7f215273348cf6d0e5e0bdf2045199fea841fcb99ae6842d14b40710c9e7f2a9ad106487cb41e16a1b8bc35ac660911cf7e35c3ae1c9a3e600dd40e8a85d32d1a78b05c185e12496169c6fefe493e9e631bf439f3314cb61ce8c5c2cf328ca15247763bed2a5c072e758578504aded3f75b8923939307aeb59eaf924a4e7ef1df23ad8eef50ad880b960185795b762f38b9bb7ea9629505c25296244b5665e9c0d1d9a2c1690c02d77c167882a2f1f9180ca8f2b11a37bbd263dc9fbff020b31812ca12b76930dfbb06e6ef00074ff05614bf62d14b22530d3",
-      "reply": "5f1426463a519ded7693446c34eb6751015d932d4d929557abf3ee32ecfdcc192baea2488556aacc13b62ccbb07b7888dc2af01a2a7e59152b9546b1e185e0c50b34a4c7e9665fc5592cdb61993f571bebc20a713c733b58acbd703408206c5a42f2b644ad19e79ce07ec8b51064c369635a3ce7353dc49a112788ef910aad10",
       "opens": {
         "silence": true
       },
@@ -140,13 +410,12 @@
     {
       "case": "D4",
       "name": "for nobody, the signature fails",
-      "state": "a ward with a public being, a body signed by another key",
+      "world": "home",
+      "steps": [],
       "ward": "P",
+      "ask": "33b198eb5c8630b2d2cb1bfe2396c26c588fe2a528c72177be65c3cb8b10ee7cc08d44b50bc60c001e972c15f974a58d098a610a4d303b309d0e81af7333f5fa615c1e62a487abd049a2f85bc825773250e2a453c9f0ef900e7e98e8309977bc6ae55d30b9d12bcb25d366865259b26b27fe7242fe242828381ef6ae567e953ed0fd668713a7a14fda01447253576cd6cec012c27f7bcb101e494a88966f2638051fb0987b2fcd95bcd844ac82e4294cbc0b8fdd0f50a3865bf4ac3fbcf9be76044b707863309582df168e307b10f907a903c5239085b3198eab6a0b5c30bc13eb3fa95395d9d251a4f94f940f8cc8a8a9b2820a04dcc4fd44da6f22f5524569097bafe06e96d7214f04386cffd86282f2e7081637715a1487166efe8d1569f1547230bf",
+      "reply": "359517addfecd027809dad1e778c665eb4bcc1817aaedb47b5c21214938b0616901c0f7746dbd51126cb93aa2685fdb9bc152650ed9abdf15bd703a0a28023f4ad36c91009c1af7060d746110116e682bf71b01d664bd21754c2d31649f0f303b2b8389c4b4587b8dd516f59874714eab6dd2517badab6067bd9e40995c1dea8",
       "kind": "silence",
-      "heard": false,
-      "draws": 28,
-      "ask": "5f1426463a519ded7693446c34eb6751015d932d4d929557abf3ee32ecfdcc19f7cb3d88928e737cc1502a253c5a301097cad7810345026dc168c010c0ae3e2e01ad94f6278407c1874cfea971c97e46d2adf623ca548ba6f972fcd20bdffa32b7a25faaf36f8f41053079df352547ca562be02c22e4ace975d9c4926e82152e0c24eb7de188b7ce11e81a2bed397363832c78ae09ad96e09e53b024eabf686c89ccb453cfb35fa368f46f31d321a67eb16a9c67788272def37a1dc55d6a5489d4aae9b132f446fffaa89d0e09f03f33e70cddfe1eb50e7254dd85821c9d3265d0c3362fb0499e7bde0a277b7d2021fd7aa970edc2cea02560bbaee91624d2f1d9ee",
-      "reply": "9f1bf06332529ed4df06d6000f037f02e2d822d0e8c6256842817e568383c372f50e74b15f3135af6b35a9b3776809dc400adf30b1fc380b2d77c40544424dd0fcb48c5808822b51a7260219bcda18d1321c626a71351958d941833ec7c62b9615a7120992ddddfeecc26276a833d3975021d2906a4ec771350770e925a01463",
       "opens": {
         "silence": true
       },
@@ -154,14 +423,48 @@
     },
     {
       "case": "D5",
-      "name": "a heir not held",
-      "state": "a heir this ward never minted",
+      "name": "a heir never minted here",
+      "world": "home",
+      "steps": [],
       "ward": "B",
+      "ask": "3fe6a3ffe7e87e31a45d85c20219038b0c41ece3610794649458ee8511f8cb01f8bdb1bd145ccba98bf8b2d67e285a04b41e5b89a9d92e3ee129f1fa41a9a96e46146245ef9c36ad0ef431b57d897fcc61bab12376dd10394329dbd759d184ce7f1b8219fce487c0c37eef6595c8c4a747149888e14e2f5bc0ec1c360ea7cfbbb4886803ca3f4bf0d995eee8ea34f0b400539a466cc01e1795bbb788a878e3ca6eee3725e92341ca357e7285d1935af8a663506af97ee7e89c1dd8e0318319106be606018f41fb2b5e6f8d7c8b32ab2e60392435de8293a7fa275b8676b6224ab91fb016009c12915c9d949cc3d5f0f12be351a04d03857f9d294118d894bf3b56c08cd1b1a388a98a94df3205e4d07690e5112c30eb6bd4d3381af37952d0bb8696f94c7740aa5a306cb5e458ac035aac9ae1b3a51b4633216f898369f5e7f0ea0bb013880d3dd036af713cc3997d94c96783faf71f7a9c8f062ab31de9064faf6d",
+      "reply": "359517addfecd027809dad1e778c665eb4bcc1817aaedb47b5c21214938b061650ff84f470f6992cee519d6ae124613247028a8b6180ee352ef6a5ef829dd6ff9c336f6a9939e52f79bb42dac7a14f0a8be33c59a1d9d082e1a1832951ae4f713bcc37653a636d0be01e90dcb9b03cfa1eca31e716d5df609bbb1e7554e722ef",
       "kind": "silence",
-      "heard": false,
-      "draws": 24,
-      "ask": "84637ecbb7afd6785f3d54e8a1f8f03161d14cdadae513c3a0fd8524f8836220ba17e2a2e1fdaf8f11756b16772bc8aa94b7b6b8a55b54cfaeaf14fcbdc8b7db2f10ea584098e5a7f7a91430809517e63f49db9c0d9660c64ca3e30b38bfc9a6b0518944b7ad0c26c9e1db1d87dcf276c5578174e2b1ddfcf76db302c4665c8b2a92cb4972f12098463a342fe7def3d67eed5951d305b7fd3421a8c2303e2277fb53b6f67ffdf1a70df22cdcacb15381d1e6acc757bf4535f4c28e1283269e8139b10710ecd0648e63ef3aa6536a694eb28ef6662d14d7f9492015e9ef85734c6e420dc0eef0fbe560d2bf4029fb5d379660b94644eed49986ea9ad9642fb391dd4fca23035ffef81a2e5543ccf5dd2f0991e9e97fed86d0d86fba15b2c2026f2a5b04c96212583a38c9b1870bcf40cd2b64ed6c706c2a2415513e255f10869d",
-      "reply": "5f1426463a519ded7693446c34eb6751015d932d4d929557abf3ee32ecfdcc192baea2488556aacc13b62ccbb07b7888dc2af01a2a7e59152b9546b1e185e0c50b34a4c7e9665fc5592cdb61993f571bebc20a713c733b58acbd703408206c5a42f2b644ad19e79ce07ec8b51064c369635a3ce7353dc49a112788ef910aad10",
+      "opens": {
+        "silence": true
+      },
+      "wrote": false
+    },
+    {
+      "case": "D5",
+      "name": "a heir removed before it spoke",
+      "world": "home",
+      "steps": [
+        {
+          "root": {
+            "ward": "B",
+            "method": "invite",
+            "args": {
+              "being": "h",
+              "id": "g1"
+            }
+          }
+        },
+        {
+          "root": {
+            "ward": "B",
+            "method": "remove",
+            "args": {
+              "being": "h",
+              "id": "g1"
+            }
+          }
+        }
+      ],
+      "ward": "B",
+      "ask": "3fe6a3ffe7e87e31a45d85c20219038b0c41ece3610794649458ee8511f8cb01dd8a30b7b35e5c63fc29e53d5902e4158e7e295addada5f26019708a8655179bb107a2c9c62005e631a137b99c84a9c061bab12376dd103b442c85865ad1d79d211b8049a2b1d49e9d2aec62cb9f96a51916cbdab64d2c5e93b31c680cf3cae5b0d66c52986a1ea1da90eeb9e96af0e15e05cf143b96191795bbb788a878e3c83cba3820b82746c8392c75d1db9409f2fa60066af47ce1b5c54ddbe066d24e1668ee045d8940ad76096f8c79db34fe20603977608cdec7acf2270bd071e3264ab91fb016009c1291108ecbc7d8c5b7f668f65fa50243c322967e0713dac5ba3848db8080f3ff81f99acbcb6b04ecde2a87fd7674e5060d209f14a84fcb7f5187f2c1a40e29040345bfede109d25d1c105a9d4cb54e8d48c791f5e9f10ed333c0772349b6e75ba8dbd90483c5f90a014b28ead46cb67d4e2ada0daa4abe5261decdd578a45f9795b7ffbb9478a73b61c3e928fea6229a177e4d3ca77e5648c8bcdea1fe1a3e55b4592a0c8d7e2ec6b221843df09bba47b026c073f09230659cd4",
+      "reply": "6d15f8a77ba82868471941b0a0908fd5333f36b8d8c5eacb950900bedcef8e689287f2e30b2e882cb621436e64bb37da4166401074c5a546537817ea67e2263ea20292d87dc7b2acdec071c664eda1d11f6e8b113ab857e97ce08adcea511c3a23c2c9bc55aeb647260fbb47fa03f39d7753bef13e7852f0632dbe4621ddbc15",
+      "kind": "silence",
       "opens": {
         "silence": true
       },
@@ -169,14 +472,42 @@
     },
     {
       "case": "D6",
-      "name": "a key not admitted",
-      "state": "a heir the door holds, a key nobody announced",
+      "name": "a key nobody announced",
+      "world": "bound",
+      "steps": [],
       "ward": "B",
+      "ask": "d1fc81101fc0d82fb5c7298d598aadd7146299554890bd22c140350d5efabd3a506baa270f430c2152ee989d896be6c0955cd4cc59b6fd639131a0d5c52571da1d99cc16bb1e7886c74be945d28db717d2ac9983311385cf1202f746d3f3662b54d88cc0c594d39eab88dc16443e9dafe5f1875d22adbae063fc542506035b46188f0587cf92f4d4f8399c60f812ea03883e5fe9f75fa827f76a2029576c930cbf455623b3ce751dc602b29dbb15177a302351d918864e1de6f6a30d11c7a417fa2f1eee96c25da5c62180cd64d33982965b428f05b898f549ce2526df880acb9f55eac4b7ba204483e57256a927535a08c341368eedc60869193df716e00a85e23efcd360ee69a3da8508e065817213b31145a8a7655f3c38e9ad8d8de4c5809a0b090fc43e936e9e7318b273249e878f2d325b38f3987c7b8df4683551a66b0214b99bd903e257d60fe666a1a8c3c84ebe88e14e0bd15d18cdd29a572f5d2359ae",
+      "reply": "d1fc81101fc0d82fb5c7298d598aadd7146299554890bd22c140350d5efabd3a2237647d2174cae57cf3be612acba97d718a6b41a959f01b33ffd8402e306100832f2546c8eca51167402e5594ff9074c724c4820e8430b4c791e5f05128904dfc02fb8498ede882cae768e2c6cfb4c564e0ae45defa8c8661f7872312d9e352",
       "kind": "silence",
-      "heard": false,
-      "draws": 40,
-      "ask": "a8cf51bfc797db309b9d1d0ff388ab9681f00d6d96c4a32fc5c4f2c71b130a34b31ba0403a808d63af3f5b706095ed7def0893fe00e2fc7c2aabe76cea0b61af4c594718fb40c235b6a35696800ea29d4d9277fcd470671c7bcc5e18c79f9aa5c0afcd7f83274ec57f1730594ac30b836507c76e4b814465a7c0e1085d834389bdc1caeca09ce3c77137a4f46b54982cdcfe313c35ac39d9f44efd792103b87ba4c808383ed50f77534c9e4d801160d5ca2fc87a91e007aed7993d25ce4255c89372e3b5be9aa263f2bb34bf0f1732d0c7ca6be29b5c2737a888f480b3e86e83dd1ce923fc5954409cfedb9727d6db42ef81e7a22d571dbbf7e66221e161fb37305c424ea1bcf03686fc0cac293144c507a27a15b1f949f4268e13bf918f2fb0a84b5866c4658aeea297519181c4301b349fb79224575ed898dbf9ceac9f724e",
-      "reply": "dd9a4e87c36a6c2db4a3d6b33bd5a9d471d2ac9410cc2596cb769cb57407125051baef6786856eb312eaea0b6709252f32a9ea831eadc8fcad6d1d031f01484c70dcfe83061a57e421d9321ab846aa33a213e89dd8f6aa116af8d5bb447abcd04f4edd8edf63bf2b6a606f9f21a72181ab5555a4cd13ce7cb5224077254972e8",
+      "opens": {
+        "silence": true
+      },
+      "wrote": false
+    },
+    {
+      "case": "D6",
+      "name": "a key forgotten when the key it vouched for spoke",
+      "world": "bound",
+      "steps": [
+        {
+          "arrive": {
+            "ward": "B",
+            "ask": "d1fc81101fc0d82fb5c7298d598aadd7146299554890bd22c140350d5efabd3a506baa270f430c2152ee989d896be6c0955cd4cc59b6fd639131a0d5c52571da1d99cc16bb1e7886c74be945d28db717d2ac9983311385cf1202f746d3f3662b54d88cc0c594d39eab88dc16443e9dafe5f1875d22adbae063fc542506035b46188f0587cf92f4d4f8399c60f812ea03883e5fe9f75fa827f76a2029576c935cee175021b295731f9054e1ceb817147c6c215ade1ad04d47e2f2f45c46c3a543f4784de9c4c259a2cb7c86cc36df39d9cb5e41d90ab892ac1c9f2021ded959cb9f55eac4b7ba2044cfa67c5fb43515064dd4196692fe8357614827fe1fb60dd0ff7ff48675e337f7cb8e12ee378e2e4fa00e0f24d14b3a8866ac0e3220f3a05e71972d51327128d3aff930a2d541d39009710591ac8d127cfd3fa47441b19a6d533c3b162e6bf29c932f993280cdf258f9612c68b4faeff22a4a8ea5b879448b0dc5a4e5259b0bc899ee92cdca7ea91d0fd10ceaebe0ea45a2da1cf4f2c0a9aabd852c02d9a0fc8dfa9ae62d24c8285667cb9dfe5252da26d22f1b5a889062c2"
+          },
+          "reply": "d1fc81101fc0d82fb5c7298d598aadd7146299554890bd22c140350d5efabd3a223778762774c7f23bebff3730d7ee3a670be268f34c7f5cabaf3bfbd184ccfaa49ca0e713774579f46db7e7c2aa6020e08e1b9c408bb2e6f7bb5bdddfa395b7770215ac971ce5f8781948994bb45af054fbd993ca9cb56a08886895843c412722cb5b7bf1698565657e233437b5a8dd26ca59ce1df82dc976edea5e9b02d72e442df20973e735e1fdf83d9def78abc3d914f36e410092a6bb6a10cb6bdd3d79122302c29ccdc5bc46ebdaa66e8ef622"
+        },
+        {
+          "arrive": {
+            "ward": "B",
+            "ask": "84637ecbb7afd6785f3d54e8a1f8f03161d14cdadae513c3a0fd8524f88362201bfde8389b3ae5dcff3da564c998ef22374e5df248b6469ab6060c15e3ad90b7a313b1b78ee7d7b7cdd316f7ddbb20dce1bfe0485032477d517349de26f91be0dac82a54b6b377678a9bcb1f969d35cefb510f838295fb8b0c17bf7144b4cd867417f5410b50c11c633eb7d90c6a8868774cbd1d2c99ec0f492736c42fb0ffea958b0253e1c27129227d2283e459dcce07a8d99cf6b5a052edc8cbdfc8279b80ae9a1768f76516c9dc1d044115191ed3f85d48dde61cdf1e95e014fe897a7fbb631b2ef5b6456280c162f32c6747906c1467c0ad66e5335777cfedfb366dfc7282b95e5c01d611b58c204eccab1d8ebdb97b032a60bbde1b87a080f72f00b8da1d922e6ce2ffdb90e1bded39b93cf5affcfbb3113fc4b637db187b00287ef0a8e6997fa3cee081d19cf6fda37afb759a004747e57f5f01d6ec8cf278cfbc3ab534f9"
+          },
+          "reply": "84637ecbb7afd6785f3d54e8a1f8f03161d14cdadae513c3a0fd8524f8836220276e8b38920eed2a753bfbaa37458823d26e3e8fc6b8809cde721780f6a3ec1f62fbe43a6103c88080b173d844f9189a2a6acad08e71a99230353e6cb8e85c95b1b4ca93a5f63b7fa3ba505609fad5c6014838b43256cb8e9a567f7f80a2c2e7d98498c4ac8e1f7a80a01a8f71370578569552025415d75fd457ed1fc844255ac6be0fc8f4aa10e6f7961be204fcdab3e6147d82ec08cf11658e7c25b3d4bd4909f56acac06f2474cce8478dad5b7838"
+        }
+      ],
+      "ward": "B",
+      "ask": "5f1426463a519ded7693446c34eb6751015d932d4d929557abf3ee32ecfdcc1924844fe607dc5395ba8d8530db28fd16f7acae108f03af437f7a6a7f945af9b0932f8311c4abbf1ae7652a9e06a7562331ebf7a69d11a03d621f0da8483f88cfce015a2e80daa8e04921379984b157c6ae8472143cd9c1cbbdc7b6910932d5da14bfd0c78b01c7afd6beafe36c90ec5271a527151800b8c8afcf1f09905d2adf35ac482278a3b180baf80d643930a2746916bdf6492c6784f442ebc681797a8ed751af94b5d57e0319b748b4133d04dcc6290bbfdb6361ecd1e732c220fff6feaab77de4bbdebc6f900f1afa9bc06ef52807995b0f83467e8f76d14253ce1d5769c47c7010f0f6bb4b373a973b514d32a48317aec5aabd58d91036b2fdc7c424a82f8b87c090498dfe0d415b94791760b0deffd0472966af8d10db106059a657618ec427e6ace3852b0248a3f1c041f2beabddbf0ceecb10882607d36cea4d89dd84",
+      "reply": "5f1426463a519ded7693446c34eb6751015d932d4d929557abf3ee32ecfdcc194a2ad71b34fde6ec85a8cd779fb10e2fd8c32e1955fa0f707da9c0e6d6a56c4e782280fc96b077c1636a9936e826db0fd8e80c965636fd3c26182050ec372698c0a14d67bebe5259bc6b900597534d77165876430d950f00fb5c4495bfa9f0f6",
+      "kind": "silence",
       "opens": {
         "silence": true
       },
@@ -185,13 +516,12 @@
     {
       "case": "D7",
       "name": "the signature fails under an admitted key",
-      "state": "a bound key named in by, a body signed by another",
+      "world": "bound",
+      "steps": [],
       "ward": "B",
+      "ask": "d1fc81101fc0d82fb5c7298d598aadd7146299554890bd22c140350d5efabd3a506baa270f430c2152ee989d896be6c0955cd4cc59b6fd639131a0d5c52571da1d99cc16bb1e7886c74be945d28db717d2ac9983311385cf1202f746d3f3662b54d88cc0c594d39eab88dc16443e9dafe5f1875d22adbae063fc542506035b46188f0587cf92f4d4f8399c60f812ea03883e5fe9f75fa827f76a2029576c935cee175021b295731f9054e1ceb817147c6c215ade1ad04d47e2f2f45c46c3a543f4784de9c4c259a2cb7c86cc36df39d9cb5e41d90ab892ac1c9f2021ded959cb9f55eac4b7ba204483e57256a927535a08c341368eedc60869193df716e00a85e23efcd360ee69a3da8508e065817213b3118f786efbeaf0e718be2ff0aa536b1b143ae11eacacaa1645444655988e86c0c9b0059a3c3640f236ec51fbb8fc03034b056e99598c8d6062a7fb388eec4c01bce39f23f0b127e298eec3588bbbe9d247",
+      "reply": "d1fc81101fc0d82fb5c7298d598aadd7146299554890bd22c140350d5efabd3a2237647d2174cae57cf3be612acba97d718a6b41a959f01b33ffd8402e306100832f2546c8eca51167402e5594ff9074c724c4820e8430b4c791e5f05128904dfc02fb8498ede882cae768e2c6cfb4c564e0ae45defa8c8661f7872312d9e352",
       "kind": "silence",
-      "heard": false,
-      "draws": 40,
-      "ask": "a8cf51bfc797db309b9d1d0ff388ab9681f00d6d96c4a32fc5c4f2c71b130a34b31ba0403a808d63af3f5b706095ed7def0893fe00e2fc7c2aabe76cea0b61af4c594718fb40c235b6a35696800ea29d4d9277fcd470671c7bcc5e18c79f9aa5c0afcd7f83274ec57f1730594ac30b826751c16b4a8b4735aa94b25e0cd5128fbfc3c8e1a1cfe0c57f64f2a16a5cc82ddca9333735fd67daa94dfb2a720dee7bf39a026a36d40774074a984ed11b65d5ca2fc87a91e007aed7993d25ce4255c89372e3b5be9aa263f2bb34bf0f1732d0c7ca6be29b5c2737a888f480b3e86e83dd1ce923fc5954409cfedb9727d6db424d264e8cdcbd7dc8e2b6af09e8f2d7c189cf2d1f3dfd05ffa99e48d7d8e1d79f89a11e15fef1a8124bf13cd07a1036b806f46f16e87ad790496b579ac490db131979d762571fe600cba5a04f6a695b9c",
-      "reply": "dd9a4e87c36a6c2db4a3d6b33bd5a9d471d2ac9410cc2596cb769cb57407125051baef6786856eb312eaea0b6709252f32a9ea831eadc8fcad6d1d031f01484c70dcfe83061a57e421d9321ab846aa33a213e89dd8f6aa116af8d5bb447abcd04f4edd8edf63bf2b6a606f9f21a72181ab5555a4cd13ce7cb5224077254972e8",
       "opens": {
         "silence": true
       },
@@ -199,14 +529,20 @@
     },
     {
       "case": "D8",
-      "name": "she is not there",
-      "state": "the ward restarted without her class: her heirs stand and she does not",
+      "name": "she did not come back this run",
+      "world": "bound",
+      "steps": [
+        {
+          "restart": [
+            "--class",
+            "Host=Stillborn"
+          ]
+        }
+      ],
       "ward": "B",
+      "ask": "6d15f8a77ba82868471941b0a0908fd5333f36b8d8c5eacb950900bedcef8e68ae3b0ea3e4612d82d74fc939163fe95a1f9041b43707a88a87ea0887fe5f0aae4d3701e6a969f95e47e9733e5d3c3b3e7a41ed2d7abd35cf94976abe83103a5e58d7a24a721a479d813724a49b7d3810b49926f40392381d43eef738f99674cf1999875ce08b1c9b1cb4c19923c13c5dd2519a8db75dafd1cf6a6a9ee4eff1e977abe91bd80e7d2155f00cc26ed5b039d71d0ec2f02b7d43f689c4716d462063ed10eca6cb2174686bd44d63894c5ad78c02926c0f30ddf96996fe89c57983a7531bbd833dff4fbb183309050d1bbefbfe3375089b1200cd56fa6b3bd59097bf85dca08b11cd7e894b256920c5416e4db99b85b7af8ec027d7b2660bd7f7c1a31ac59fc6cea8b71f76b05ac3508c4e6b0033915609befaaf3ecb4a9d9e13db3f24e66e2a906a554d0deda8fde6d853b2d41181256f7e28f783b83ba598c969f35f0e",
+      "reply": "359517addfecd027809dad1e778c665eb4bcc1817aaedb47b5c21214938b0616bb46c7f62271d56aa375f41ec47603d361f0af29977dcc7eef7784046d83e46b0a5cb4e29347efa6f0b90d2eca50ac2fc83d46e7d9def2fe70d221d1b4fe8df330f089cd624dfefb6cc0e4a88d9db91e0370d9ca9087f6e05399a81e5395502c",
       "kind": "word",
-      "heard": true,
-      "draws": 36,
-      "ask": "3f43ed1fa30e3cfa3b4fd56b428e3d3c9f8561a11a6a20c76c38332f468ead0124c1b80f327342ce552b30a7ace0af22f5bb02737198288e8342a5bcfb41321c078f47c0f4c288681e134f1aa1c6262ce862b0a391196060d3107054933b5794d3c099133add19e1532fed4f8609cdd6f13d83d492606286e34bcccb6523b0f2d02188ccef483c4fd53283d8570ec0f837248276d7fe5fd7df0a361aded88bc98bc735b39b0adffd1410ac10acbb79fb0561f5a04e1990f3cedc9b13352805c8038b1b35f177345d075948a5a84e8878a41acb54aef478fe080923c1a58c76d9985cd3a822d8b4ff7c51daef31ab2991225bfd71f871729fd0e6ec4fdc6d81cc0db739af5c768653bb2757b20dce0d210bbbacacb37779203717be35a85f937a266cbb9f563ef35ab6dfb2aa268b825f3f1d5ec5cc1a4e2bc03299c34149b180",
-      "reply": "a8cf51bfc797db309b9d1d0ff388ab9681f00d6d96c4a32fc5c4f2c71b130a3402a74ee2dfde200e2d77dd81806b5857962be84b5f5ea9ae2269c130e34a982b092497eff71240c78d9f4243ffaeefee8ed1395c86967eb52afca50ad2961faed3128213064c18dbe4c718168d6bc7232fb160ed9a0e931020807b7669b4e7e9",
       "opens": {
         "quo": "absent"
       },
@@ -214,14 +550,62 @@
     },
     {
       "case": "D8",
-      "name": "she is there and the record is not",
-      "state": "the being is booted and the occupant her heir was opened for is gone",
+      "name": "the id was removed after its heir spoke",
+      "world": "bound",
+      "steps": [
+        {
+          "root": {
+            "ward": "B",
+            "method": "remove",
+            "args": {
+              "being": "h",
+              "id": "g1"
+            }
+          }
+        }
+      ],
       "ward": "B",
+      "ask": "6d15f8a77ba82868471941b0a0908fd5333f36b8d8c5eacb950900bedcef8e68ae3b0ea3e4612d82d74fc939163fe95a1f9041b43707a88a87ea0887fe5f0aae4d3701e6a969f95e47e9733e5d3c3b3e7a41ed2d7abd35cf94976abe83103a5e58d7a24a721a479d813724a49b7d3810b49926f40392381d43eef738f99674cf1999875ce08b1c9b1cb4c19923c13c5dd2519a8db75dafd1cf6a6a9ee4eff1e977abe91bd80e7d2155f00cc26ed5b039d71d0ec2f02b7d43f689c4716d462063ed10eca6cb2174686bd44d63894c5ad78c02926c0f30ddf96996fe89c57983a7531bbd833dff4fbb183309050d1bbefbfe3375089b1200cd56fa6b3bd59097bf85dca08b11cd7e894b256920c5416e4db99b85b7af8ec027d7b2660bd7f7c1a31ac59fc6cea8b71f76b05ac3508c4e6b0033915609befaaf3ecb4a9d9e13db3f24e66e2a906a554d0deda8fde6d853b2d41181256f7e28f783b83ba598c969f35f0e",
+      "reply": "d1fc81101fc0d82fb5c7298d598aadd7146299554890bd22c140350d5efabd3adaa087abdce5d930753ccfae578deed486d2e99757fd4da59ae071e6a5bb4763424af3fdc061e270e0098c1e1ffbe04f080cfe1ef2f668172812f3f0f15cb5c44933e58a206a1ffc510120683b140454229042c75c3984fc62a9b65ded64431ddc",
       "kind": "word",
-      "heard": true,
-      "draws": 36,
-      "ask": "3f43ed1fa30e3cfa3b4fd56b428e3d3c9f8561a11a6a20c76c38332f468ead0124c1b80f327342ce552b30a7ace0af22f5bb02737198288e8342a5bcfb41321c078f47c0f4c288681e134f1aa1c6262ce862b0a391196060d3107054933b5794d3c099133add19e1532fed4f8609cdd6f13d83d492606286e34bcccb6523b0f2d02188ccef483c4fd53283d8570ec0f837248276d7fe5fd7df0a361aded88bc98bc735b39b0adffd1410ac10acbb79fb0561f5a04e1990f3cedc9b13352805c8038b1b35f177345d075948a5a84e8878a41acb54aef478fe080923c1a58c76d9985cd3a822d8b4ff7c51daef31ab2991225bfd71f871729fd0e6ec4fdc6d81cc0db739af5c768653bb2757b20dce0d210bbbacacb37779203717be35a85f937a266cbb9f563ef35ab6dfb2aa268b825f3f1d5ec5cc1a4e2bc03299c34149b180",
-      "reply": "a8cf51bfc797db309b9d1d0ff388ab9681f00d6d96c4a32fc5c4f2c71b130a3402a74ee2dfde200e3e70c38b987a1e08811d4d79177fad4387bd22187dcfb6a0d200e61decd85bebb9a83822d7bfda170d83c5baada11f4787f46b41e998375e5e800bb3751a9a8a66a70172edc19447a3975841b33edd84d64f66952b6d0582c5",
+      "opens": {
+        "quo": "removed"
+      },
+      "wrote": false
+    },
+    {
+      "case": "D8",
+      "name": "she is there and her occupant record is not",
+      "world": "bound",
+      "steps": [
+        {
+          "root": {
+            "ward": "B",
+            "method": "stop"
+          }
+        },
+        {
+          "root": {
+            "ward": "B",
+            "method": "forget",
+            "args": {
+              "being": "h",
+              "id": "g1"
+            }
+          }
+        },
+        {
+          "root": {
+            "ward": "B",
+            "method": "stand",
+            "args": {}
+          }
+        }
+      ],
+      "ward": "B",
+      "ask": "6d15f8a77ba82868471941b0a0908fd5333f36b8d8c5eacb950900bedcef8e68ae3b0ea3e4612d82d74fc939163fe95a1f9041b43707a88a87ea0887fe5f0aae4d3701e6a969f95e47e9733e5d3c3b3e7a41ed2d7abd35cf94976abe83103a5e58d7a24a721a479d813724a49b7d3810b49926f40392381d43eef738f99674cf1999875ce08b1c9b1cb4c19923c13c5dd2519a8db75dafd1cf6a6a9ee4eff1e977abe91bd80e7d2155f00cc26ed5b039d71d0ec2f02b7d43f689c4716d462063ed10eca6cb2174686bd44d63894c5ad78c02926c0f30ddf96996fe89c57983a7531bbd833dff4fbb183309050d1bbefbfe3375089b1200cd56fa6b3bd59097bf85dca08b11cd7e894b256920c5416e4db99b85b7af8ec027d7b2660bd7f7c1a31ac59fc6cea8b71f76b05ac3508c4e6b0033915609befaaf3ecb4a9d9e13db3f24e66e2a906a554d0deda8fde6d853b2d41181256f7e28f783b83ba598c969f35f0e",
+      "reply": "d1fc81101fc0d82fb5c7298d598aadd7146299554890bd22c140350d5efabd3adaa087abdce5d930753ccfae578deed486d2e99757fd4da59ae071e6a5bb4763424af3fdc061e270e0098c1e1ffbe04f080cfe1ef2f668172812f3f0f15cb5c44933e58a206a1ffc510120683b140454229042c75c3984fc62a9b65ded64431ddc",
+      "kind": "word",
       "opens": {
         "quo": "removed"
       },
@@ -229,14 +613,24 @@
     },
     {
       "case": "D9",
-      "name": "a heir that announces nothing",
-      "state": "a fresh heir, and no next in the body",
+      "name": "a knock that announces nothing",
+      "world": "home",
+      "steps": [
+        {
+          "root": {
+            "ward": "B",
+            "method": "invite",
+            "args": {
+              "being": "h",
+              "id": "g1"
+            }
+          }
+        }
+      ],
       "ward": "B",
+      "ask": "359517addfecd027809dad1e778c665eb4bcc1817aaedb47b5c21214938b06160e983b992a710e91de83f57eaaf4e63c87deaf3d5357cb7bce54a9a6d36da228713e4521d8ff9728ae47f612b3fcaab55f140470ac96055702da727fcea897c89700f8779082c937e20311a547867e0e4b7673b51d938a67b0510e1989635350147309e9430a5596d1ef932ce2f29106caf5a12fa894ee1d65325c33de6e8d178acdcce1db0f5df2e42b0a308bdd7fb993b90838b7a7e9b8f2ea45c1183af9c6893c7924e5a01e728c854b49d94572c66e24a9fe2e798b7c1f5f536eb45eb5d25bfb2183630c0e389de5ac72724b671521d4a7febba56a49944baf5452aa0a54207e2ffebaac3968ccf2de2e00a72a266f7534eeda4a17c6db7f11fb3aa34cfe88c2fe54408a35f9c82c19efad34499e2c2ceb05dfa68bf87cd1beb7dac2f6554c615fa0bc2a4cbc04a48533da6539ac1bb390a32aa560fef18d05a982f7bd60bcd398275d7be5439f138f33c6127047ffbd75f7929c576c6a39b3f2d338edf75d8924da594c491ed605a38018652ffc901af558c2bbb8c93a9719575cc021708e150e79d25f7bc6edea777af7326d05a9a4d6f873df87617eba3a3ccb65252ff62962de5d4534b7c6db48f4b1726a2667c3608e833b57a99ad2eebc585d96090f6593a3ef2a3cc60c25e1208253271f26ada2fff7cbcce2f704c21d169ba630e04626f1f1f7f1bfe37f094cdd2ed96c0a4b4aaed6167d403ca4e949af66bbcae5c978a93dc5b7c5953eeb7e40fae2e60c6b3e29b4edc660cdb2218cc21cf3215026bb317d072401d6e417743d5cb512994af4c4e176accd67cb9aa2105f436b078cf601b6b59dfbdae8a4643b853183aac096cb3fbaf90a36ef58a063979fff901ca9a9f782a1429b7b57c9c0254fd32e8a0ee05531164ba76e61a4071675a5378bb75d9cddb60e4358b9ba2343593130759479d972bb6e36a0e9b6256e021c093a03b4f6ec2103fccb6055595604118d2a9422252bd84ea4f5dfb3e998e950ad58a25b7262d5fad427abf8697312abecf3ebf651a6146a8bf87af2adc9b472614dcb11be1aff0b23eb2cf758d1b74cafe470d1cc08c9b6ff3c7f731a206cf45c1cace7a87170a8c2a62b3d2b8f9b6400282632eddd4c5327824d3ecb8d7e9f794233a8157b05f04907b20ec6f865ee28bf57c5bbd29d9a4ca3707c00521ad59acf56390c76129b473c7c2614a554a143830a23051a99ee9ce9182ded0bc59c184f38bf18032a35057bd07e108797210f05c8b02776da67a87491568f0e05c5e5d5915e1d117f27a8077d91c1a4c43351510acb8ca3c32273d8453383792bfacd9fe3cd0f914e9c02701df6a3fa4c07f6525b72b5fa549cb4483fa5b1fd44fb0a0946e30887dc03aad3f83bcef0fa36e24008c143fa0a6db9f60f2899d0e8d49993abedac1fc8877c1f684ad4b2a7c96c7c55b78189ed0bb9a93777d5b9b473eaa2eff699d77a8307dd9856f54d5391031a1c62fa51b45601fda6a356be3ddaf44ae304dcbdccf36df6abcc0abb838263c5f57cb083b7ed0a8e1f0fdd50c4acf63c0c741ab3718fed80c44661d202190c64f9a89b1183c26d57fce7c24937b05e366f26fe0f2c94191f8002543b9c35b2f38dd54df444c327deec94d5f5c35f0c9a9efbb8c0219ab1eee634f5269b0d228c27e1a9687773e74bf01c5072b9bcb60fa5ad15c77db4ffe3e865484caaf4122bd7bfa21fc60139219cfbc47967acdef56e7ff32c0df611123fa67e96f1318d7557d3599ea8553efa916fbb094279ca0ddf30189dc18bc6cf8f205f695c1d5484ec5baf9a69407abf3cc836668567583999239f294111ebdfe2cfaa575339e8980662040b2bf45d67ac7994846a0741ef72d9729c11f1184510eeaca1aa2b05bf81d09adadb936b83d2360affb23864b8213efd74f4a6975120b230c7ab27da907a77fbd2089d78d22e65ec378f1a585540aeb0f7c6334f557a72a023ae56fe3613ba2194513739ce4bc0ab65f87fd311",
+      "reply": "6d15f8a77ba82868471941b0a0908fd5333f36b8d8c5eacb950900bedcef8e68bb46c7f62271d56ab779e615c46d54c068bc3ccc497d8701fbedbc7dc7103c4d92374e27d98d1f05399fb1aad57186db78c1f683250da69f6fead1d8e5a51908b282f6ac870631156268c3583f0118984c9bf2b9b040abd255d056ff6652346588c2505bb6",
       "kind": "word",
-      "heard": true,
-      "draws": 24,
-      "ask": "84637ecbb7afd6785f3d54e8a1f8f03161d14cdadae513c3a0fd8524f8836220ba17e2a2e1fdafdd47703c49727d98adc1b7b2eaf40456cbf0f044adbf9de9df2b44ed06169fb0f5a7f6436080c247b23f1ed9c20d93369718a7bc0e69ef9ba4e4568b41e0ad0926c9e1db1d87dcf276c5578174e2b1ddfcf76db302c4665c8b2a92cb4972f12098463a342fe7def3d67eed5951d305b7fd3421a8c2303e2277fb53b6f67ffdf1a70df22cdcacb15381d1e6acc757bf4535f4c28e1283269e8139b10710ecd0648e63ef3aa6536a694eb28ef6662d14d7f9492015e9ef85734c6e420dc0eef0fbe560d2bf4029fb5d37e38972cbf17e9d9b7809b4d4200ad6098aba8fca967288509acc3c22056a7cef0da21ab8ac7fa279061d5b824464a21b63704485aead00bca83c724e4999b7c247130a027532de913cdd64ebf9b0ce3c",
-      "reply": "5f1426463a519ded7693446c34eb6751015d932d4d929557abf3ee32ecfdcc192baea0548611fe8d03fa77d1ac61689b8ba92c3370c3e2d832328ac1595d9d421c8d48e32b9a0b246bf24614a286d0df0ad99cdbd637102870d1e8e95c620498fac0bcd1ba582435b1327de076f8d2e22679b9c1e0a1e14527e1bed1941a6f582141b7b5b5",
       "opens": {
         "quo": "unannounced"
       },
@@ -244,94 +638,506 @@
     },
     {
       "case": "D9",
-      "name": "a bound key that announces nothing",
-      "state": "a key the door already vouched for, and no next in the body",
+      "name": "a knock that announces the heir itself",
+      "world": "home",
+      "steps": [
+        {
+          "root": {
+            "ward": "B",
+            "method": "invite",
+            "args": {
+              "being": "h",
+              "id": "g1"
+            }
+          }
+        }
+      ],
       "ward": "B",
+      "ask": "359517addfecd027809dad1e778c665eb4bcc1817aaedb47b5c21214938b06160e983b992a710e91de83f57eaaf4e63c87deaf3d5357cb7bce54a9a6d36da228713e4521d8ff9728ae47f612b3fcaab55f140470ac96055702da727fcea897c89700f8779082c937e20311a547867e0e4b7673b51d938a67b0510e1989635350147309e9430a5596d1ef932ce2f29106caf5a12fa894ee1d65325c33de6e8d178acdcce1db0f5df2e42b0a308bdd7fb993b90838b7a7e9b8f2ea45c1183af9c6893c7924e5a01e728c854b49d94572c66e24a9fe2e798b7c1f5f536eb45eb5d25bfb2183630c0e389de5ac72724b671521d4a7febba56a49944baf5452aa0a54207e2ffebaac3968ccf2de2e00a72a266f7534eeda4a17c6db7f11fb3aa34cfe88c2fe54408a35f9c82c19efad34499e2c2ceb05dfa68bf87cd1beb7dac2f6554c615fa0bc2a4cbc04a48533da6539ac1bb390a32aa560fef18d05a982f7bd60bcd398275d7be5439f138f33c6127047ffbd75f7929c576c6a39b3f2d338edf75d8924da594c491ed605a38018652ffc901af558c2bbb8c93a9719575cc021708e150e79d25f7bc6edea777af7326d05a9a4d6f873df87617eba3a3ccb65252ff62962de5d4534b7c6db48f4b1726a2667c3608e833b57a99ad2eebc585d96090f6593a3ef2a3cc60c25e1208253271f26ada2fff7cbcce2f704c21d169ba630e04626f1f1f7f1bfe37f094cdd2ed96c0a4b4aaed6167d403ca4e949af66bbcae5c978a93dc5b7c5953eeb7e40fae2e60c6b3e29b4edc660cdb2218cc21cf3215026bb317d072401d6e417743d5cb512994af4c4e176accd67cb9aa2105f436b078cf601b6b59dfbdae8a4643b853183aac096cb3fbaf90a36ef58a063979fff901ca9a9f782a1429b7b57c9c0254fd32e8a0ee05531164ba76e61a4071675a5378bb75d9cddb60e4358b9ba2343593130759479d972bb6e36a0e9b6256e021c093a03b4f6ec2103fccb6055595604118d2a9422252bd84ea4f5dfb3e998e950ad58a25b7262d5fad427abf8697312abecf3ebf651a6146a8bf87af2adc9b472614dcb11be1aff0b23eb2cf758d1b74cafe470d1cc08c9b6ff3c7f731a206cf45c1cace7a87170a8c2a62b3d2b8f9b6400282632eddd4c5327824d3ecb8d7e9f794233a8157b05f04907b20ec6f865ee28bf57c5bbd29d9a4ca3707c00521ad59acf56390c76129b473c7c2614a554a143830a23051a99ee9ce9182ded0bc59c184f38bf18032a35057bd07e108797210f05c8b02776da67a87491568f0e05c5e5d5915e1d117f27a8077d91c1a4c43351510acb8ca3c32273d8453383792bfacd9fe3cd0f914e9c02701df6a3fa4c07f6525b72b5fa549cb4483fa5b1fd44fb0a0946e30887dc03aad3f83bcef0fa36e24008c143fa0a6db9f60f2899d0e8d49993abedac1fc8877c1f684ad4b2a7c96c7c55b78189ed0bb9a93777d5b9b473eaa2eff699d77a8307dd9856f54d5391031a1c62fa51b45601fda6a356be3ddaf44ae304dcbdccf36df6abcc0abb838263c5f57cb083b7ed0a8e1f0fdd50c4acf63c0c741ab3718fed80c44661d202190c64f9a89b1183c26d57fce7c24937b05e366f26fe0f2c94191f8002543b9c35b2f38dd54df444c327deec94d5f5c35f0c9a9efbb8c0219ab1eee634f5269b0d228c27e1a9687773e74bf01c5072b9bcb60fa5ad15c77db4ffe3e865484caaf4122bd7bfa21fc60139219cfbc47967acdef56e7ff32c0df611123fa67e96f1318d7557d3599ea8553efa916fbb094279ca0ddf30189dc18bc6cf8f205f695c1d5484ec5baf9a69407abf3cc836668567583999239f294111a7ceefc0be42453aac8f04354c1f67ae053ab671c0d5620659a927d833c04ff05f1c07bfaff5a27644faa75eea465abaff4788358ea491564c9df2b748707112f0d32a834b2a9aa479fb073b560f8b46be7bd4f929c7a6a5784beb6d6db7e0042c0c4bfd3a9f248483c18216b24e07316772f763fb1ecf2ea489449041674b0e053211eec615f7d90a4329d2bc5f2e7bf0662371cd1eef94f4af76225732e0c433a02466687d3b6174ed19120d8d1575ecdd53a710eba8d6",
+      "reply": "6d15f8a77ba82868471941b0a0908fd5333f36b8d8c5eacb950900bedcef8e68bb46c7f62271d56ab779e615c46d54c068bc3ccc497d8701fbedbc7dc7103c4d92374e27d98d1f05399fb1aad57186db78c1f683250da69f6fead1d8e5a51908b282f6ac870631156268c3583f0118984c9bf2b9b040abd255d056ff6652346588c2505bb6",
+      "kind": "word",
+      "opens": {
+        "quo": "unannounced"
+      },
+      "wrote": false
+    },
+    {
+      "case": "D9",
+      "name": "a bound key that announces nothing is answered",
+      "world": "bound",
+      "steps": [],
+      "ward": "B",
+      "ask": "6d15f8a77ba82868471941b0a0908fd5333f36b8d8c5eacb950900bedcef8e68ae3b0ea3e4612d82d74fc939163fe95a1f9041b43707a88a87ea0887fe5f0aae4d3701e6a969f95e47e9733e5d3c3b3e7a41ed2d7abd35cf94976abe83103a5e58d7a24a721a479d813724a49b7d3810b49926f40392381d43eef738f99674cf1999875ce08b1c9b1cb4c19923c13c5dd2519a8db75dafd1cf6a6a9ee4eff1e977abe91bd80e7d2155f00cc26ed5b039d71d0ec2f02b7d43f689c4716d462063ed10eca6cb2174686bd44d63894c5ad78c02926c0f30ddf96996fe89c57983a7531bbd833dff4fbb183309050d1bbefbfe3375089b1200cd56fa6b3bd59097bf85dca08b11cd7e894b256920c5416e4db99b85b7af8ec027d7b2660bd7f7c1a31ac59fc6cea8b71f76b05ac3508c4e6b0033915609befaaf3ecb4a9d9e13db3f24e66e2a906a554d0deda8fde6d853b2d41181256f7e28f783b83ba598c969f35f0e",
+      "reply": "d1fc81101fc0d82fb5c7298d598aadd7146299554890bd22c140350d5efabd3adaa099bcd9a280662563d9e34981a8ccd9aa8a40c17436bdaa59857cd6c161b3310f114f8806bd76bceb4e3c452788d2fd13fb288159f4a67664eb4241c064f775e1f7f6aec79c903e7b8bd202c50908199fa7de5d3d15c8a6c06a18f5489e5acf1d9f53318f5a04b43187ef436b8e413225d7aa2225b8569cda8f3d4c2428cf1fe9f40ea48d4396b839ce407eec3f1732d4b55cfa021faab9f530fed13032990da491834f5c919779b3ea88c66ad671",
       "kind": "object",
-      "heard": true,
-      "draws": 36,
-      "ask": "3f43ed1fa30e3cfa3b4fd56b428e3d3c9f8561a11a6a20c76c38332f468ead0124c1b80f327342ce552b30a7ace0af22f5bb02737198288e8342a5bcfb41321c078f47c0f4c288681e134f1aa1c6262ce862b0a391196060d3107054933b5794d3c099133add19e1532fed4f8609cdd6f13d83d492606286e34bcccb6523b0f2d02188ccef483c4fd53283d8570ec0f837248276d7fe5fd7df0a361aded88bc98bc735b39b0adffd1410ac10acbb79fb0561f5a04e1990f3cedc9b13352805c8038b1b35f177345d075948a5a84e8878a41acb54aef478fe080923c1a58c76d9985cd3a822d8b4ff7c51daef31ab2991225bfd71f871729fd0e6ec4fdc6d81cc0db739af5c768653bb2757b20dce0d210bbbacacb37779203717be35a85f937a266cbb9f563ef35ab6dfb2aa268b825f3f1d5ec5cc1a4e2bc03299c34149b180",
-      "reply": "a8cf51bfc797db309b9d1d0ff388ab9681f00d6d96c4a32fc5c4f2c71b130a3402a750f5da9979586e2fd5c686765810de652eae81f6d65bb704d6820eb59123f51202a9f7b952bfe24eaa05da66b584ad9697dd8c5f86f18e8124a50d54b06a30061bc9a8e219ec0dd8fac9d312991f9b5c12240d44f14f84d6bb8fa3daf822b9dbc48ca9552a86d8bf1b12a22468ca6fcd43192b26040e9b78b8b7a17532c7c9775ce18a7c26b0a3f8af2d65b15682c82cb3a804c77072bbe1a14562af60fdfe99204e7cab5271fbf3edeb1d3ffc71",
       "opens": {
         "object": {
           "hi": "g1"
         },
-        "seen": "b51674a53e5fa1e707b2cf1f322ffaefa54bde51436f12b5853741570771618f"
+        "seen": "cfea1223e72b1422797847c765ee171672f6fcfd492ca3e7810bb22d0796655a"
       },
+      "wrote": true,
       "blueprint": {
         "asks": [
           {
             "name": "hello",
+            "description": "Answers who is asking.",
             "input": {
+              "type": "object"
+            },
+            "output": {
+              "type": "object",
+              "properties": {
+                "hi": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "hi"
+              ],
+              "additionalProperties": false
+            }
+          },
+          {
+            "name": "echo",
+            "description": "Answers the args as they arrived.",
+            "input": {
+              "type": "object"
+            },
+            "output": {
               "type": "object"
             }
           },
           {
             "name": "err",
+            "description": "Answers an error she declares.",
             "input": {
-              "type": "object"
-            }
-          },
-          {
-            "name": "nul",
-            "input": {
-              "type": "object"
+              "type": "object",
+              "properties": {},
+              "additionalProperties": false
+            },
+            "output": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "error"
+              ],
+              "additionalProperties": false
             }
           },
           {
             "name": "quiet",
+            "description": "Answers silence.",
             "input": {
-              "type": "object"
+              "type": "object",
+              "properties": {},
+              "additionalProperties": false
             }
           },
           {
             "name": "boom",
+            "description": "Throws.",
             "input": {
-              "type": "object"
+              "type": "object",
+              "properties": {},
+              "additionalProperties": false
             }
           },
           {
             "name": "bad",
+            "description": "Answers a word.",
             "input": {
-              "type": "object"
+              "type": "object",
+              "properties": {},
+              "additionalProperties": false
             }
           },
           {
             "name": "never",
+            "description": "Never answers.",
             "input": {
-              "type": "object"
+              "type": "object",
+              "properties": {},
+              "additionalProperties": false
+            }
+          },
+          {
+            "name": "slow",
+            "description": "Answers two thousand milliseconds after the ask reaches her.",
+            "input": {
+              "type": "object",
+              "properties": {},
+              "additionalProperties": false
+            },
+            "output": {
+              "type": "object",
+              "properties": {
+                "slow": {
+                  "const": true
+                }
+              },
+              "required": [
+                "slow"
+              ],
+              "additionalProperties": false
+            }
+          },
+          {
+            "name": "join",
+            "description": "Mints an occupant for the asker and answers the invitation.",
+            "input": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id"
+              ],
+              "additionalProperties": false
+            },
+            "output": {
+              "type": "object",
+              "properties": {
+                "ward": {
+                  "type": "string"
+                },
+                "heir": {
+                  "type": "string"
+                },
+                "secret": {
+                  "type": "string"
+                },
+                "lock": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "ward",
+                "heir",
+                "secret",
+                "lock"
+              ],
+              "additionalProperties": false
+            }
+          },
+          {
+            "name": "shape",
+            "description": "Sets which describe she gives from now on.",
+            "input": {
+              "type": "object",
+              "properties": {
+                "mode": {
+                  "enum": [
+                    "plain",
+                    "extra",
+                    "throws",
+                    "numeric",
+                    "field"
+                  ]
+                }
+              },
+              "required": [
+                "mode"
+              ],
+              "additionalProperties": false
+            },
+            "output": {
+              "type": "object",
+              "properties": {
+                "mode": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "mode"
+              ],
+              "additionalProperties": false
             }
           }
         ],
-        "notes": {}
-      },
-      "wrote": true
+        "notes": {
+          "😀": "grin",
+          "דּ": "dalet",
+          "big": 1e+21,
+          "small": 1e-7,
+          "third": 0.3333333333333333
+        }
+      }
     },
     {
       "case": "D10",
-      "name": "a number already spent",
-      "state": "a bound key, a seq at or below the mark",
+      "name": "a number already honoured",
+      "world": "bound",
+      "steps": [],
       "ward": "B",
+      "ask": "6d15f8a77ba82868471941b0a0908fd5333f36b8d8c5eacb950900bedcef8e68ae3b0ea3e4612d82d74fc939163fe95a1f9041b43707a88a87ea0887fe5f0aae4d3701e6a969f95e47e9733e5d3c3b3e7a41ed2d7abd35cf94976abe83103a5e58d7a24a721a479d813724a49b7d3810b49926f40392381d43eef738f99674cf1999875ce08b1c9b1cb4c19923c13c5dd2519a8db75dafd1cf6a6a9ee4eff1e977abe91bd80e7d2155f00cc26ed5b039d71d0ec2f02b7d43f689c4716d462063ed10eca6cb2174686bd44d63894c5ad78c02926c0f30ddf96996fe89c57983a7531bbd833dff4fbb183309050d1bbefbfe33750b9b1200cd56fa6b3bd59097bf85dca08b11cd7e894b256920c5416e4db99bb101cf6282ef8f9e9e02b4a7c27d04e8912f022f57e2bdb5b45ef35d83c2a89de106219ae993bb8bd47281c049606e574da3f9335c28be0e46db85aab0904410eea0b45d07a5fac423a333611c36b39c",
+      "reply": "d1fc81101fc0d82fb5c7298d598aadd7146299554890bd22c140350d5efabd3adaa087abdce5d930753cd2a4409cef92d9b067331091725fef60ac0f9dc3203ef082ce50879f46e68fced75f2a0916322b751d4037323b5e472970412b39f2937c1ef62843845cd93747d90d90771b227cf1fa121d7ef13539f00e19d4edfdc0a45b",
       "kind": "word",
-      "heard": true,
-      "draws": 36,
-      "ask": "3f43ed1fa30e3cfa3b4fd56b428e3d3c9f8561a11a6a20c76c38332f468ead0124c1b80f327342ce552b30a7ace0af22f5bb02737198288e8342a5bcfb41321c078f47c0f4c288681e134f1aa1c6262ce862b0a391196060d3107054933b5794d3c099133add19e1532fed4f8609cdd6f13d83d492606286e34bcccb6523b0f2d02188ccef483c4fd53283d8570ec0f837248276d7fe5fd7df0a361aded88bc98bc735b39b0adffd1410ac10acbb79fb0561f5a04e1990f3cedc9b13352805c8038b1b35ed657218484803f2fe5c827ba406d909e7a27df418437687efd338dd921293e56186f1ed2c0cd2b07648aacadc56034e397a15c8399fed53930390d4119cdd52312169f1ece0b84c02aaa408ccdd1acb079879ea0f2d2ebb15a15394e7a0e22ded4fe77d6879f23a982d28bef4aee07a2241e7fab279af3254",
-      "reply": "a8cf51bfc797db309b9d1d0ff388ab9681f00d6d96c4a32fc5c4f2c71b130a3402a74ee2dfde200e3e70de818f6b1f4ede7fc3dd501392b9f23dfff145b7d1fd60c8dbb0ab26ff7dd66f6363e24d2c6a2efa26e468654c0ee8cfe8f033fd70096bad181116f4d9af00e1f81746a28b31fd67038b4536107326ff221138148bc59727",
       "opens": {
         "quo": "repeated"
       },
       "wrote": false
     },
     {
+      "case": "D10",
+      "name": "a number at the span",
+      "world": "bound",
+      "steps": [
+        {
+          "arrive": {
+            "ward": "B",
+            "ask": "6d15f8a77ba82868471941b0a0908fd5333f36b8d8c5eacb950900bedcef8e68ae3b0ea3e4612d82d74fc939163fe95a1f9041b43707a88a87ea0887fe5f0aae4d3701e6a969f95e47e9733e5d3c3b3e7a41ed2d7abd35cf94976abe83103a5e58d7a24a721a479d813724a49b7d3810b49926f40392381d43eef738f99674cf1999875ce08b1c9b1cb4c19923c13c5dd2519a8db75dafd1cf6a6a9ee4eff1e977abe91bd80e7d2155f00cc26ed5b039d71d0ec2f02b7d43f689c4716d462063ed10eca6cb2174686bd44d63894c5ad78c02926c0f30ddf96996fe89c57983a7531bbd833dff4fbb183309050d1bbefbfe33750d871c56d052f22c23de9197bf99d2ef8300d179820d3d716ac8486e4ef4c4d82235000a8c49c113d36919f2beadb7f877b7b203f2998b2aa12c1828b0697f8476db40066ea33fcf0806f516a7a3b1c2fe89dd3dfbe767cf6ad1d1400401d46a9d445bfb0e3b64427827df7080d87b96"
+          },
+          "reply": "d1fc81101fc0d82fb5c7298d598aadd7146299554890bd22c140350d5efabd3adaa099bcd9a280662563d9e34981a8ccd9aa8a40c17436bdaa59857cd6c161b3310f114f8806bd76bceb4e3c452788d2fd13fb288159f4a67664eb4241c064f775e1f7f6aec79c903e7b8bd202c50908199fa7de5d3d15c8a6c06a18f5489e5acf1d9f53318f5a04b43187ef436b8e413225d7aa2225b8569cda8f3d4c2428cf1fe9f40ea48d4396b839ce407eec3f1732d4b55cfa021faab9f530fed13032990da491834f5c919779b3ea88c66ad671"
+        }
+      ],
+      "ward": "B",
+      "ask": "d1fc81101fc0d82fb5c7298d598aadd7146299554890bd22c140350d5efabd3a506baa270f430c2152ee989d896be6c0955cd4cc59b6fd639131a0d5c52571da1d99cc16bb1e7886c74be945d28db717e45b253edadd40f9bc6e01129ae2195af06a72bdb23af047994016cea33978aee7cde45d2a4adec8dd48c1e3e9da54ad381a6018fd37178043450c3ee9b5ec94be4e1d409bfea5f1014642ef97ea98e4be2ce6bea2213d0c108590774254886362eb099984a38e9e10f68a1e7abf5e90b6be3e18819b36c374f0a45c71e1dafac9c53a3de131d3f9108b34a34b7a728aebefa0f96338ede20dfaee7a5cfc8a178ccd54d55857865f379d61d8a805f4b8feca2cc3e1faa9f2aed037bbee6ffb1513138ad20edf4069263d49ed8db4382df411939f68acf4df1927a838c01812aaa216360b5075446151874840655517302f6a5df65e961dd5664ab9f15b3b175711039a7973895257032a8f64c17c44515357",
+      "reply": "84637ecbb7afd6785f3d54e8a1f8f03161d14cdadae513c3a0fd8524f8836220e2e9b3f561ee19a6c66178a82f801f4f091793f19b81644197d21f55ac91cf6e8474606f166117e608f82fe25dfdf8f61cfccc1e2eec12e8daed4dcfab05c70e1a97d2232a9468984b042a4beab81e6768a6d9de3a017318a40878e5782b3ec335e6",
+      "kind": "word",
+      "opens": {
+        "quo": "repeated"
+      },
+      "wrote": false
+    },
+    {
+      "case": "D10",
+      "name": "a number inside the span, not yet spent",
+      "world": "bound",
+      "steps": [
+        {
+          "arrive": {
+            "ward": "B",
+            "ask": "6d15f8a77ba82868471941b0a0908fd5333f36b8d8c5eacb950900bedcef8e68ae3b0ea3e4612d82d74fc939163fe95a1f9041b43707a88a87ea0887fe5f0aae4d3701e6a969f95e47e9733e5d3c3b3e7a41ed2d7abd35cf94976abe83103a5e58d7a24a721a479d813724a49b7d3810b49926f40392381d43eef738f99674cf1999875ce08b1c9b1cb4c19923c13c5dd2519a8db75dafd1cf6a6a9ee4eff1e977abe91bd80e7d2155f00cc26ed5b039d71d0ec2f02b7d43f689c4716d462063ed10eca6cb2174686bd44d63894c5ad78c02926c0f30ddf96996fe89c57983a7531bbd833dff4fbb183309050d1bbefbfe33750d871c56d052f22c23de9197bf99d2ef8300d179820d3d716ac8486e4ef4c4d82235000a8c49c113d36919f2beadb7f877b7b203f2998b2aa12c1828b0697f8476db40066ea33fcf0806f516a7a3b1c2fe89dd3dfbe767cf6ad1d1400401d46a9d445bfb0e3b64427827df7080d87b96"
+          },
+          "reply": "d1fc81101fc0d82fb5c7298d598aadd7146299554890bd22c140350d5efabd3adaa099bcd9a280662563d9e34981a8ccd9aa8a40c17436bdaa59857cd6c161b3310f114f8806bd76bceb4e3c452788d2fd13fb288159f4a67664eb4241c064f775e1f7f6aec79c903e7b8bd202c50908199fa7de5d3d15c8a6c06a18f5489e5acf1d9f53318f5a04b43187ef436b8e413225d7aa2225b8569cda8f3d4c2428cf1fe9f40ea48d4396b839ce407eec3f1732d4b55cfa021faab9f530fed13032990da491834f5c919779b3ea88c66ad671"
+        }
+      ],
+      "ward": "B",
+      "ask": "d1fc81101fc0d82fb5c7298d598aadd7146299554890bd22c140350d5efabd3a506baa270f430c2152ee989d896be6c0955cd4cc59b6fd639131a0d5c52571da1d99cc16bb1e7886c74be945d28db717e45b253edadd40f9bc6e01129ae2195af06a72bdb23af047994016cea33978aee7cde45d2a4adec8dd48c1e3e9da54ad381a6018fd37178043450c3ee9b5ec94be4e1d409bfea5f1014642ef97ea98e4be2ce6bea2213d0c108590774254886362eb099984a38e9e10f68a1e7abf5e90b6be3e18819b36c374f0a45c71e1dafac9c53a3de131d3f9108b34a34b7a728aebefa0f96338ede20dfaee7a5cfc8a178ccd54d45857865f379d61d8a805f4b8feca2cc3e1faa9f2aed037bbee6ffb151313e0149550bb5e381be42ab2f09da4ea0791e5b4bd7aac2bcc6e22d7b66114e128ad709fee229721c30bbc085a37ede19fc438d5ab9e49909bc73b930e9858ce065db6e42300920ce893899a23eae60309",
+      "reply": "84637ecbb7afd6785f3d54e8a1f8f03161d14cdadae513c3a0fd8524f8836220e2e9ade264a940f0963e73ef269d5811090d7e824a6420a3d2eb3626e7938ee345f9bf7019f8ec763bddb68132d36616ca9a2a769887dd10eba0d6ccc1fc516a1368d3fdc7d7a8d142387894780a0c4d0dc8090c59d02147df97fd382cc742e0b4b64a2dbc47c0ba17d4aca35e7dc1bbef1f8c9bf6984d25f247db90e88273c2591e204b2cfc211a97db1721cd5822bda219d78b7b9b84e6d0bcf90e7e771bcd445fc747fbb95da62e9cfdff7ffcbbf7",
+      "kind": "object",
+      "opens": {
+        "object": {
+          "hi": "g1"
+        },
+        "seen": "cfea1223e72b1422797847c765ee171672f6fcfd492ca3e7810bb22d0796655a"
+      },
+      "wrote": true,
+      "blueprint": {
+        "asks": [
+          {
+            "name": "hello",
+            "description": "Answers who is asking.",
+            "input": {
+              "type": "object"
+            },
+            "output": {
+              "type": "object",
+              "properties": {
+                "hi": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "hi"
+              ],
+              "additionalProperties": false
+            }
+          },
+          {
+            "name": "echo",
+            "description": "Answers the args as they arrived.",
+            "input": {
+              "type": "object"
+            },
+            "output": {
+              "type": "object"
+            }
+          },
+          {
+            "name": "err",
+            "description": "Answers an error she declares.",
+            "input": {
+              "type": "object",
+              "properties": {},
+              "additionalProperties": false
+            },
+            "output": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "error"
+              ],
+              "additionalProperties": false
+            }
+          },
+          {
+            "name": "quiet",
+            "description": "Answers silence.",
+            "input": {
+              "type": "object",
+              "properties": {},
+              "additionalProperties": false
+            }
+          },
+          {
+            "name": "boom",
+            "description": "Throws.",
+            "input": {
+              "type": "object",
+              "properties": {},
+              "additionalProperties": false
+            }
+          },
+          {
+            "name": "bad",
+            "description": "Answers a word.",
+            "input": {
+              "type": "object",
+              "properties": {},
+              "additionalProperties": false
+            }
+          },
+          {
+            "name": "never",
+            "description": "Never answers.",
+            "input": {
+              "type": "object",
+              "properties": {},
+              "additionalProperties": false
+            }
+          },
+          {
+            "name": "slow",
+            "description": "Answers two thousand milliseconds after the ask reaches her.",
+            "input": {
+              "type": "object",
+              "properties": {},
+              "additionalProperties": false
+            },
+            "output": {
+              "type": "object",
+              "properties": {
+                "slow": {
+                  "const": true
+                }
+              },
+              "required": [
+                "slow"
+              ],
+              "additionalProperties": false
+            }
+          },
+          {
+            "name": "join",
+            "description": "Mints an occupant for the asker and answers the invitation.",
+            "input": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id"
+              ],
+              "additionalProperties": false
+            },
+            "output": {
+              "type": "object",
+              "properties": {
+                "ward": {
+                  "type": "string"
+                },
+                "heir": {
+                  "type": "string"
+                },
+                "secret": {
+                  "type": "string"
+                },
+                "lock": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "ward",
+                "heir",
+                "secret",
+                "lock"
+              ],
+              "additionalProperties": false
+            }
+          },
+          {
+            "name": "shape",
+            "description": "Sets which describe she gives from now on.",
+            "input": {
+              "type": "object",
+              "properties": {
+                "mode": {
+                  "enum": [
+                    "plain",
+                    "extra",
+                    "throws",
+                    "numeric",
+                    "field"
+                  ]
+                }
+              },
+              "required": [
+                "mode"
+              ],
+              "additionalProperties": false
+            },
+            "output": {
+              "type": "object",
+              "properties": {
+                "mode": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "mode"
+              ],
+              "additionalProperties": false
+            }
+          }
+        ],
+        "notes": {
+          "😀": "grin",
+          "דּ": "dalet",
+          "big": 1e+21,
+          "small": 1e-7,
+          "third": 0.3333333333333333
+        }
+      }
+    },
+    {
       "case": "D11",
       "name": "she threw",
-      "state": "a bound key on an ask that raises",
+      "world": "bound",
+      "steps": [],
       "ward": "B",
+      "ask": "6d15f8a77ba82868471941b0a0908fd5333f36b8d8c5eacb950900bedcef8e68ae3b0ea3e4612d82d74fc939163fe95a1f9041b43707a88a87ea0887fe5f0aae4d3701e6a969f95e47e9733e5d3c3b3e7a41ed2d7abd35cf94976abe83103a5e58d7a24a721a479d813724a49b7d3810b49926f40392381d43eef738f99674cf1999875ce08b1c9b1cb4c19923c13c5dd2519a8db75dafd1cf6a6a9ee4eff1e977abe91bd80e7d2155f00cc26ed5b039d71d0ec2f02b7d43f689c4716d462063ed10eca6cb2174686bd44d63894c5ad78c02926c0f30ddf96996fe89c57983a7531bbd833dff4fbb183309050d1bbefbfe3375089b1200cd56fa6b3bd59097bf85dca08b11cd7e894b25692acf426f00e6f75c8cfebfd5f9bec893c28bc7dad47b12c6d19a4f65face487e38ed34106574b367913dbaee4312e1aeda8b033e88103e2aaf71368171766fbbd162435d1c83d713c3907a09ce86be644a031a4193a5",
+      "reply": "d1fc81101fc0d82fb5c7298d598aadd7146299554890bd22c140350d5efabd3adaa087abdce5d9307331d0a456caf729aabf81fe2a2cbea15c94ed635a8d186ecddaade6dd6189a5b966eb2ca73268ff39e528b68e4c0e17fc97005fd2f616f1ffe00d44c3d6a994e51f7e4e874a3e254f7414793bb55b949ac28bdbbb98a9",
       "kind": "word",
-      "heard": true,
-      "draws": 36,
-      "ask": "3f43ed1fa30e3cfa3b4fd56b428e3d3c9f8561a11a6a20c76c38332f468ead0124c1b80f327342ce552b30a7ace0af22f5bb02737198288e8342a5bcfb41321c078f47c0f4c288681e134f1aa1c6262ce862b0a391196060d3107054933b5794d3c099133add19e1532fed4f8609cdd6f13d83d492606286e34bcccb6523b0f2d02188ccef483c4fd53283d8570ec0f837248276d7fe5fd7df0a361aded88bc98bc735b39b0adffd1410ac10acbb79fb0561f5a04e1990f3cedc9b13352805c8038b1b35f177345d075948a5a84e8878a41acb54aef478fe080923c1a58c76d3925fd2e52cd6f7ec69458bf770ad295d490ae9cb2baaeb0e491098845f38d60f1801811937181f651667622b8f02054378fb442a71e81bf80b4255a068975b7f6a0e95bb906d7ced6000349b06859a29f516bd2070aec3d53bc9c42747cf62",
-      "reply": "a8cf51bfc797db309b9d1d0ff388ab9681f00d6d96c4a32fc5c4f2c71b130a3402a74ee2dfde200e387ddc81993d07f5ad7025106aae5e4741c9be9d82f9e9ad5d90b806f1d8303ee0c75f106f7652a73c6a1312d11b7947537198eeca32946be853e37d96a62ce2d2b95f54519faef2dc35227d4becd78da6cb5d940ca1e4",
       "opens": {
         "quo": "threw"
       },
@@ -339,14 +1145,13 @@
     },
     {
       "case": "D12",
-      "name": "she said silence",
-      "state": "a bound key on an ask that answers the value silence",
+      "name": "she answered silence",
+      "world": "bound",
+      "steps": [],
       "ward": "B",
+      "ask": "6d15f8a77ba82868471941b0a0908fd5333f36b8d8c5eacb950900bedcef8e68ae3b0ea3e4612d82d74fc939163fe95a1f9041b43707a88a87ea0887fe5f0aae4d3701e6a969f95e47e9733e5d3c3b3e7a41ed2d7abd35cf94976abe83103a5e58d7a24a721a479d813724a49b7d3810b49926f40392381d43eef738f99674cf1999875ce08b1c9b1cb4c19923c13c5dd2519a8db75dafd1cf6a6a9ee4eff1e977abe91bd80e7d2155f00cc26ed5b039d71d0ec2f02b7d43f689c4716d462063ed10eca6cb2174686bd44d63894c5ad78c02926c0f30ddf96996fe89c57983a7531bbd833dff4fbb183309050d1bbefbfe3375089b1200cd56fa6b3bd59097bf85dca08b11cd7e894b256939d5446756b99b1f50fe60d94d08e2062da7b37635c2d30fa1dacfcaa678f641d24990836c07aab20bb2a84efddcb5add5d4b8b67a8e8a0dfc2737b5b5ee7753177d60042b8c1c6a3c9f0abf58efdb97232f23d7bd53c5",
+      "reply": "d1fc81101fc0d82fb5c7298d598aadd7146299554890bd22c140350d5efabd3adaa085b7dfa28d71627b98b5539def8bcf2b03699b61b9fa320966c72975cc4916bc94ee539d5d1e2fc6d78e13727886dab92436cf5676f4464e556fcf4b610dfee119dea13691ea8c85aba98fbee73dd2902d2a8e9b1c9d1e82c542f379323c",
       "kind": "silence",
-      "heard": true,
-      "draws": 36,
-      "ask": "3f43ed1fa30e3cfa3b4fd56b428e3d3c9f8561a11a6a20c76c38332f468ead0124c1b80f327342ce552b30a7ace0af22f5bb02737198288e8342a5bcfb41321c078f47c0f4c288681e134f1aa1c6262ce862b0a391196060d3107054933b5794d3c099133add19e1532fed4f8609cdd6f13d83d492606286e34bcccb6523b0f2d02188ccef483c4fd53283d8570ec0f837248276d7fe5fd7df0a361aded88bc98bc735b39b0adffd1410ac10acbb79fb0561f5a04e1990f3cedc9b13352805c8038b1b35f177345d075948a5a84e8878a41acb54aef478fe080923c1a58c76c08859dab322d8b4ff7c51daef31ab29915344dccc90cf697d08ea0b2bb00e6776c286ab75b4da33844f177a096a0d955fb83096bbb748bb099b0eb1b1f6ae519aa3f1d93795c190ecee293e03ec3ef159bd0ce64ea70728540a68ed570e031c24",
-      "reply": "a8cf51bfc797db309b9d1d0ff388ab9681f00d6d96c4a32fc5c4f2c71b130a3402a74cfedc99744f293794909c6a1f57c8e4a787dbe3591c2f543539f1013d8a86f6810e7f24e485766763b2db3642dedf361f92900101a4e9a8cdded78fe397e952f7e7f446149cbb238ab3596b772ee9767b9f8d2ecb1dfa3ba33d75cad543",
       "opens": {
         "silence": true
       },
@@ -354,14 +1159,27 @@
     },
     {
       "case": "D13",
-      "name": "a word out of her",
-      "state": "a bound key on an ask that returns a shape only a ward may make",
+      "name": "she answered a word",
+      "world": "bound",
+      "steps": [],
       "ward": "B",
+      "ask": "6d15f8a77ba82868471941b0a0908fd5333f36b8d8c5eacb950900bedcef8e68ae3b0ea3e4612d82d74fc939163fe95a1f9041b43707a88a87ea0887fe5f0aae4d3701e6a969f95e47e9733e5d3c3b3e7a41ed2d7abd35cf94976abe83103a5e58d7a24a721a479d813724a49b7d3810b49926f40392381d43eef738f99674cf1999875ce08b1c9b1cb4c19923c13c5dd2519a8db75dafd1cf6a6a9ee4eff1e977abe91bd80e7d2155f00cc26ed5b039d71d0ec2f02b7d43f689c4716d462063ed10eca6cb2174686bd44d63894c5ad78c02926c0f30ddf96996fe89c57983a7531bbd833dff4fbb183309050d1bbefbfe3375089b1200cd56fa6b3bd59097bf85dca08b11cd7e894b25692ac149205fa1e15bb43862b46dbf3d8f081b220c20e2e554bbf18113bced683d41a9bb052835b5918d51be216c5d89e6cf2cb4de3bee3776e1736fe3577542e70a7d9a16978b47aa2eab0cd36bf280a6425eea3155",
+      "reply": "d1fc81101fc0d82fb5c7298d598aadd7146299554890bd22c140350d5efabd3adaa087abdce5d9307331d0a456caf729aabf81fe2a2cbea15c94ed635a8d186ecddaade6dd6189a5b966eb2ca73268ff39e528b68e4c0e17fc97005fd2f616f1ffe00d44c3d6a994e51f7e4e874a3e254f7414793bb55b949ac28bdbbb98a9",
       "kind": "word",
-      "heard": true,
-      "draws": 36,
-      "ask": "3f43ed1fa30e3cfa3b4fd56b428e3d3c9f8561a11a6a20c76c38332f468ead0124c1b80f327342ce552b30a7ace0af22f5bb02737198288e8342a5bcfb41321c078f47c0f4c288681e134f1aa1c6262ce862b0a391196060d3107054933b5794d3c099133add19e1532fed4f8609cdd6f13d83d492606286e34bcccb6523b0f2d02188ccef483c4fd53283d8570ec0f837248276d7fe5fd7df0a361aded88bc98bc735b39b0adffd1410ac10acbb79fb0561f5a04e1990f3cedc9b13352805c8038b1b35f177345d075948a5a84e8878a41acb54aef478fe080923c1a58c76d39c549deb2295e4f97d1493b676adbc9ac462bc76aeca060a3dfb5b547dde4b43504507eaceb2ea2829389ec62c359df96cf6e0fbf0c5edb96ffc5f254994cce731764d7cf5adc66ef71afb41b3d29788ef4b6c2803ae9627306220e5ffeb",
-      "reply": "a8cf51bfc797db309b9d1d0ff388ab9681f00d6d96c4a32fc5c4f2c71b130a3402a74ee2dfde200e387ddc81993d07f5ad7025106aae5e4741c9be9d82f9e9ad5d90b806f1d8303ee0c75f106f7652a73c6a1312d11b7947537198eeca32946be853e37d96a62ce2d2b95f54519faef2dc35227d4becd78da6cb5d940ca1e4",
+      "opens": {
+        "quo": "threw"
+      },
+      "wrote": true
+    },
+    {
+      "case": "D13",
+      "name": "her answer is above the size",
+      "world": "bound",
+      "steps": [],
+      "ward": "B",
+      "ask": "6d15f8a77ba82868471941b0a0908fd5333f36b8d8c5eacb950900bedcef8e68ae3b0ea3e4612d82d74fc939163fe95a1f9041b43707a88a87ea0887fe5f0aae4d3701e6a969f95e47e9733e5d3c3b3e7a41ed2d7abd35cf94976abe83103a5e58d7a24a721a479d813724a49b7d3810b49926f40392381d43eef738f99674cf1999875ce08b1c9b1cb4c19923c13c5dd2519a8db75dafd1cf6a6a9ee4eff1e977abe91bd80e7d2155f00cc26ed5b039d71d0ec2f02b7d43f689c4716d462063ed10eca6cb2174686bd44d63894c5ad78c02926c0f30ddf96996fe89c57983a7531bbd833dff4fbb183309050d1bbefbfe3375089b1200cd56fa6b3bd59097bf85dca08b11cd7e894b256920d54a6700e60613017fd2f237a3c4b6d96d2e0551bb96c83fa3267fd7d441a0857aeb451aa137b8c7ae592b3ab6d20d2de2cb656c57699e35c683d2e2554a0ea0da9076ea8888d8a2497894fc17e8e4364d9a25c8db",
+      "reply": "d1fc81101fc0d82fb5c7298d598aadd7146299554890bd22c140350d5efabd3adaa087abdce5d9307331d0a456caf729aabf81fe2a2cbea15c94ed635a8d186ecddaade6dd6189a5b966eb2ca73268ff39e528b68e4c0e17fc97005fd2f616f1ffe00d44c3d6a994e51f7e4e874a3e254f7414793bb55b949ac28bdbbb98a9",
+      "kind": "word",
       "opens": {
         "quo": "threw"
       },

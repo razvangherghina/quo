@@ -1,0 +1,216 @@
+{
+  "corpus": "quo",
+  "encoding": "hex",
+  "area": "tcp",
+  "note": "The frames of the reference carrier, Quo over TCP, one frame to a record, and what the side that reads it makes of it. A frame is length (4, big-endian) || kind (1) || id (4, big-endian) || rest: an ask 00 carries the ward pk and a box, a reply 01 a box, a nothing 02 nothing. The carrier never opens a box, so every box here is opaque bytes of one repeated value and no entropy is spent. The ward pk is the one of the ward pk record of framing.json. frame is the bytes that go onto the stream, hex; where fill is present, frame is followed on the stream by fill.count bytes each of the value fill.byte, so the largest bodies are written by length and stay readable. at is the side that reads the bytes, listener or dialer. length is the body's length as the four bytes say it, kind the first byte of the body where there is one. On a frame, id is the id the four bytes say, ward the 128 hex pk on an ask, box the length of the box, length - 69 on an ask and length - 5 on a reply. frame? is whether the bytes are a frame. closed is whether the side that read them closes the connection: every bytes that are not a frame close it, and no frame does. carried is whether the side carries what the frame holds: the listener carries an ask's box to the door, the dialer carries a reply's box, or nothing, to the ask whose id it copies; a reply or a nothing at a listener and an ask at a dialer are read, nothing is said to them, and nothing is carried. The largest body is 1,048,645 bytes: on an ask it carries a box of 1,048,576, the size, and an ask whose box is above the size has a length above the bound and is never a frame; on a reply it carries a box of 1,048,640, above the size, and it is a frame carried to the sender, who refuses it as the size says before anything is opened. The reply and the nothing that answer the first ask copy its id 1.",
+  "vectors": [
+    {
+      "name": "an ask, id 1, at the listener",
+      "at": "listener",
+      "frame": "0000006d00000000016d773f8156c80eb9f34d0734e889d824a0d0515f527b853771208ef1ed3feb281fc3da3532de3b20deafd145e30c3de979917e96c22f6c3113a731379eeb3200a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0",
+      "length": 109,
+      "kind": "00",
+      "id": 1,
+      "ward": "6d773f8156c80eb9f34d0734e889d824a0d0515f527b853771208ef1ed3feb281fc3da3532de3b20deafd145e30c3de979917e96c22f6c3113a731379eeb3200",
+      "box": 40,
+      "frame?": true,
+      "closed": false,
+      "carried": true
+    },
+    {
+      "name": "the reply that answers it, the id copied",
+      "at": "dialer",
+      "frame": "0000001d0100000001b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
+      "length": 29,
+      "kind": "01",
+      "id": 1,
+      "box": 24,
+      "frame?": true,
+      "closed": false,
+      "carried": true
+    },
+    {
+      "name": "the nothing that answers it, the id copied",
+      "at": "dialer",
+      "frame": "000000050200000001",
+      "length": 5,
+      "kind": "02",
+      "id": 1,
+      "box": 0,
+      "frame?": true,
+      "closed": false,
+      "carried": true
+    },
+    {
+      "name": "an ask with sixty-four bytes after its id, an empty box",
+      "at": "listener",
+      "frame": "0000004500fffffffe6d773f8156c80eb9f34d0734e889d824a0d0515f527b853771208ef1ed3feb281fc3da3532de3b20deafd145e30c3de979917e96c22f6c3113a731379eeb3200",
+      "length": 69,
+      "kind": "00",
+      "id": 4294967294,
+      "ward": "6d773f8156c80eb9f34d0734e889d824a0d0515f527b853771208ef1ed3feb281fc3da3532de3b20deafd145e30c3de979917e96c22f6c3113a731379eeb3200",
+      "box": 0,
+      "frame?": true,
+      "closed": false,
+      "carried": true
+    },
+    {
+      "name": "a reply with an empty box",
+      "at": "dialer",
+      "frame": "000000050100000007",
+      "length": 5,
+      "kind": "01",
+      "id": 7,
+      "box": 0,
+      "frame?": true,
+      "closed": false,
+      "carried": true
+    },
+    {
+      "name": "the largest body, an ask with a box of the size",
+      "at": "listener",
+      "frame": "0010004500000000026d773f8156c80eb9f34d0734e889d824a0d0515f527b853771208ef1ed3feb281fc3da3532de3b20deafd145e30c3de979917e96c22f6c3113a731379eeb3200",
+      "fill": { "byte": "a1", "count": 1048576 },
+      "length": 1048645,
+      "kind": "00",
+      "id": 2,
+      "ward": "6d773f8156c80eb9f34d0734e889d824a0d0515f527b853771208ef1ed3feb281fc3da3532de3b20deafd145e30c3de979917e96c22f6c3113a731379eeb3200",
+      "box": 1048576,
+      "frame?": true,
+      "closed": false,
+      "carried": true
+    },
+    {
+      "name": "the largest body, a reply with a box above the size, carried to the sender",
+      "at": "dialer",
+      "frame": "001000450100000003",
+      "fill": { "byte": "b1", "count": 1048640 },
+      "length": 1048645,
+      "kind": "01",
+      "id": 3,
+      "box": 1048640,
+      "frame?": true,
+      "closed": false,
+      "carried": true
+    },
+    {
+      "name": "a reply at a listener, a kind it does not read",
+      "at": "listener",
+      "frame": "0000001d0100000004b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
+      "length": 29,
+      "kind": "01",
+      "id": 4,
+      "box": 24,
+      "frame?": true,
+      "closed": false,
+      "carried": false
+    },
+    {
+      "name": "a nothing at a listener, a kind it does not read",
+      "at": "listener",
+      "frame": "000000050200000005",
+      "length": 5,
+      "kind": "02",
+      "id": 5,
+      "box": 0,
+      "frame?": true,
+      "closed": false,
+      "carried": false
+    },
+    {
+      "name": "an ask at a dialer, a kind it does not read",
+      "at": "dialer",
+      "frame": "0000006d00000000066d773f8156c80eb9f34d0734e889d824a0d0515f527b853771208ef1ed3feb281fc3da3532de3b20deafd145e30c3de979917e96c22f6c3113a731379eeb3200a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0",
+      "length": 109,
+      "kind": "00",
+      "id": 6,
+      "ward": "6d773f8156c80eb9f34d0734e889d824a0d0515f527b853771208ef1ed3feb281fc3da3532de3b20deafd145e30c3de979917e96c22f6c3113a731379eeb3200",
+      "box": 40,
+      "frame?": true,
+      "closed": false,
+      "carried": false
+    },
+    {
+      "name": "a length above the largest body, an ask whose box is above the size",
+      "at": "listener",
+      "frame": "0010004600000000086d773f8156c80eb9f34d0734e889d824a0d0515f527b853771208ef1ed3feb281fc3da3532de3b20deafd145e30c3de979917e96c22f6c3113a731379eeb3200",
+      "fill": { "byte": "a2", "count": 1048577 },
+      "length": 1048646,
+      "kind": "00",
+      "frame?": false,
+      "closed": true
+    },
+    {
+      "name": "a length above the largest body, a reply",
+      "at": "dialer",
+      "frame": "001000460100000009",
+      "fill": { "byte": "b2", "count": 1048641 },
+      "length": 1048646,
+      "kind": "01",
+      "frame?": false,
+      "closed": true
+    },
+    {
+      "name": "a length of four",
+      "at": "listener",
+      "frame": "0000000400000000",
+      "length": 4,
+      "kind": "00",
+      "frame?": false,
+      "closed": true
+    },
+    {
+      "name": "a length of zero",
+      "at": "dialer",
+      "frame": "00000000",
+      "length": 0,
+      "frame?": false,
+      "closed": true
+    },
+    {
+      "name": "a kind that is none of the three",
+      "at": "listener",
+      "frame": "00000005030000000a",
+      "length": 5,
+      "kind": "03",
+      "frame?": false,
+      "closed": true
+    },
+    {
+      "name": "a kind that is none of the three, at a dialer",
+      "at": "dialer",
+      "frame": "0000001dff0000000bb0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
+      "length": 29,
+      "kind": "ff",
+      "frame?": false,
+      "closed": true
+    },
+    {
+      "name": "an ask with sixty-three bytes after its id",
+      "at": "listener",
+      "frame": "00000044000000000c6d773f8156c80eb9f34d0734e889d824a0d0515f527b853771208ef1ed3feb281fc3da3532de3b20deafd145e30c3de979917e96c22f6c3113a731379eeb32",
+      "length": 68,
+      "kind": "00",
+      "frame?": false,
+      "closed": true
+    },
+    {
+      "name": "an ask with nothing after its id",
+      "at": "listener",
+      "frame": "00000005000000000d",
+      "length": 5,
+      "kind": "00",
+      "frame?": false,
+      "closed": true
+    },
+    {
+      "name": "a nothing with one byte after its id",
+      "at": "dialer",
+      "frame": "00000006020000000e00",
+      "length": 6,
+      "kind": "02",
+      "frame?": false,
+      "closed": true
+    }
+  ]
+}

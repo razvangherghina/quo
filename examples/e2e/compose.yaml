@@ -1,0 +1,102 @@
+# The world of `SCENARIOS.md` "In containers": the JavaScript ward, the Rust
+# ward and the observer between them on one network, and `driver`, the same
+# suite `npm test` runs on loopback, inside that network. `src/docker-net.js`
+# says what changes and why; nothing in `src/` outside it and `world.js`
+# knows containers exist.
+#
+# `js` and `rust` mount their kit and harness read-only, so a harness edit
+# lands on the next `docker exec`. The Rust one compiles once at container
+# start into a volume of its own. `observer` mounts this folder to run
+# `docker/observer-server.js` over `src/observer.js`. Only `driver` is a
+# built image, for `docker-cli`; it mounts the repository read-only, since
+# its tests read `vectors/`, and the host's Docker socket, so `docker exec`
+# reaches `js` and `rust` from inside it.
+#
+# Run: `./run-docker.sh` in this folder, or by hand:
+#   docker compose up -d --build js rust observer
+#   docker compose run --rm --build driver
+#   docker compose down
+#
+# `partition-tmp` is mounted at `/tmp` on the driver and both wards, so a
+# partition file path the driver names in a `save`, `stand` or `copy` is the
+# same file the ward opens, `HARNESS.md` section 5.
+
+name: quo-e2e
+
+networks:
+  e2e: {}
+
+volumes:
+  cargo-registry: {}
+  rust-target: {}
+  partition-tmp: {}
+
+services:
+  js:
+    image: node:24-alpine
+    container_name: js
+    hostname: js
+    networks: [e2e]
+    volumes:
+      - ../js:/app:ro
+      - partition-tmp:/tmp
+    command: ["tail", "-f", "/dev/null"]
+
+  rust:
+    image: rust:1-slim-bookworm
+    container_name: rust
+    hostname: rust
+    networks: [e2e]
+    volumes:
+      - ../rust:/app:ro
+      - cargo-registry:/usr/local/cargo/registry
+      - rust-target:/target
+      - partition-tmp:/tmp
+    environment:
+      CARGO_TARGET_DIR: /target
+    working_dir: /app/harness
+    # Built once at start into `rust-target`; `docker exec` runs
+    # `/target/debug/stand`. The healthcheck is what `driver` waits on.
+    command: ["sh", "-c", "cargo build --bin stand && tail -f /dev/null"]
+    healthcheck:
+      test: ["CMD", "test", "-x", "/target/debug/stand"]
+      interval: 2s
+      timeout: 2s
+      retries: 300
+      start_period: 5s
+
+  observer:
+    image: node:24-alpine
+    container_name: observer
+    hostname: observer
+    networks: [e2e]
+    # `NET_ADMIN` is what `tc qdisc ... netem` on this container's interface
+    # needs, for a line that asks for packet-level delay or reordering.
+    cap_add: [NET_ADMIN]
+    volumes:
+      - .:/work:ro
+    working_dir: /work
+    command: ["node", "docker/observer-server.js"]
+
+  driver:
+    build:
+      context: .
+      dockerfile: docker/driver.Dockerfile
+    container_name: driver
+    hostname: driver
+    networks: [e2e]
+    depends_on:
+      js:
+        condition: service_started
+      rust:
+        condition: service_healthy
+      observer:
+        condition: service_started
+    volumes:
+      - ../..:/quo:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+      - partition-tmp:/tmp
+    working_dir: /quo/examples/e2e
+    environment:
+      E2E_DOCKER: "1"
+    command: ["npm", "test"]

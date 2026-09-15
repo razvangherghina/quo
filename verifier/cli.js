@@ -1,21 +1,23 @@
 #!/usr/bin/env node
 // SPDX-License-Identifier: Apache-2.0
-// The verifier from a shell. The same replay a page runs, against a kit
-// standing in vector mode at the URL given, reading the corpus beside this
-// file. The exit code is the verdict: zero when every record passes.
+// The verifier from a shell, against the stand program named after `--`,
+// reading the corpus beside this file. The exit code is the verdict: zero
+// when every record passes.
 //
-//   node verifier/cli.js http://127.0.0.1:8787
-//   node verifier/cli.js http://127.0.0.1:8787 path/to/door.json
-import { readFile } from 'node:fs/promises';
-import { verify, lines } from './verify.js';
+//   node verifier/cli.js -- node path/to/stand.js
+//   node verifier/cli.js -- path/to/stand
 
-const [url, path] = process.argv.slice(2);
-if (!url) {
-  console.error('usage: node verifier/cli.js <url of a kit in vector mode> [door.json]');
+import { readFile } from 'node:fs/promises';
+import { lines, verify } from './verify.js';
+
+const split = process.argv.indexOf('--');
+const command = split === -1 ? [] : process.argv.slice(split + 1);
+if (command.length === 0) {
+  process.stderr.write('usage: node verifier/cli.js -- <stand program and its arguments>\n');
   process.exit(2);
 }
-const corpus = JSON.parse(await readFile(path ?? new URL('../vectors/door.json', import.meta.url), 'utf8'));
-const report = await verify(url, corpus, { onRecord: (r) => console.log(lines({ records: [r], pass: 0, fail: 0, url })[0]) });
-console.log(lines(report).at(-1));
-for (const r of report.records) if (!r.ok) for (const l of lines({ ...report, records: [r] }).slice(1, -1)) console.log(l);
+const corpus = JSON.parse(await readFile(new URL('../vectors/door.json', import.meta.url), 'utf8'));
+const report = await verify(command, corpus, { onRecord: (r) => process.stdout.write(`${lines({ records: [r], pass: 0, fail: 0, command: '' })[0]}\n`) });
+for (const r of report.records) if (!r.ok) for (const l of lines({ ...report, records: [r] }).slice(1, -1)) process.stdout.write(`${l}\n`);
+process.stdout.write(`${lines(report).at(-1)}\n`);
 process.exit(report.fail === 0 ? 0 : 1);

@@ -1,0 +1,15 @@
+[package]
+name = "stand"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[[bin]]
+name = "stand"
+path = "src/main.rs"
+
+[dependencies]
+quo-kit = { path = ".." }
+
+[dev-dependencies]
+serde_json = "1"
