@@ -10,8 +10,16 @@
 
 import { bootHost, startStand } from './src/root-driver.js';
 import { createObserver } from './src/observer.js';
+import { createDockerObserver, resolveContainerAt } from './src/docker-net.js';
 import { askOn, digestOf, invite, knock, route, take } from './src/standing.js';
 import { randomBytes } from 'node:crypto';
+
+// Set only by `compose.yaml`'s own `driver` service: each stand is reached
+// by `docker exec` rather than spawned locally, and its reported address is
+// a container's own loopback, translated to its service name to be dialled
+// from here. `world.js` makes the same choice for the rest of the suite.
+const DOCKER = Boolean(process.env.E2E_DOCKER);
+const LISTEN_HOST = DOCKER ? '0.0.0.0' : '127.0.0.1';
 
 const short = (hex) => `${hex.slice(0, 8)}…`;
 const say = (line) => process.stdout.write(`${line}\n`);
@@ -33,9 +41,9 @@ function hold(claim, line) {
 
 // The Rust stand is started first: it may need building, and a build that
 // fails then leaves no JavaScript stand running behind it.
-const b = startStand('rust', ['--listen', '127.0.0.1:0', '--ward', 'B', '--class', 'Host']);
-const a = startStand('js', ['--listen', '127.0.0.1:0', '--ward', 'A', '--class', 'Host']);
-const observer = createObserver();
+const b = startStand('rust', ['--listen', `${LISTEN_HOST}:0`, '--ward', 'B', '--class', 'Host']);
+const a = startStand('js', ['--listen', `${LISTEN_HOST}:0`, '--ward', 'A', '--class', 'Host']);
+const observer = DOCKER ? createDockerObserver() : createObserver();
 let code = 0;
 
 try {
@@ -50,7 +58,7 @@ try {
   const invitation = await invite(a, wardA.pk, 'b');
   hold(invitation.ward === wardA.pk && invitation.heir, `invite: A's Host invites b, an invitation to ward ${short(invitation.ward)} for heir ${short(invitation.heir)}`);
 
-  const toA = await observer.forward('A', wardA.at);
+  const toA = await observer.forward('A', DOCKER ? resolveContainerAt('js', wardA.at) : wardA.at);
   await route(b, wardB.pk, wardA.pk, toA);
   hold(true, `route: B dials A at ${toA}, where the observer forwards every frame to A`);
 
