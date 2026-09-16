@@ -13,7 +13,7 @@ difference is the kit's, and Quo allows it.
 | --- | --- | --- | --- | --- |
 | `go/` | Go 1.27 | the standard library | `go build -o stand .` | `./stand` |
 | `zig/` | Zig 0.16 | the standard library and libc | `zig build` | `zig-out/bin/stand` |
-| `python/` | Python 3.9 | `cryptography` | none | `./stand` |
+| `python/` | Python 3.9 or later | `cryptography` | none | `./stand` |
 | `javascript/` | Node 24 | Node's own modules | none | `./stand` |
 | `rust/` | Rust | the algorithms' crates | `cargo build` | `target/debug/stand` |
 
