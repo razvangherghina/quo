@@ -24,20 +24,20 @@ side of the booth in this house, the other in a house you may never see. A
 booth to the next room and a booth to another planet look exactly the
 same.
 
-**Red booths.** A red booth faces outwards. The house builds it, fits its
-first lock, and gives its key to someone, any way it likes. The key can be
-copied a thousand times. Someone far away steps in there, and the house
-sees that the booth is occupied, and a key, never a name. The first one to
-step in with that key, and be answered, changes the lock to a key of their
-own that nobody else has ever seen. From that moment every copy of the
-first key is dead. The house can tear a red booth down.
+**Purple booths.** A purple booth faces outwards. The house builds it,
+fits its first lock, and gives its key to someone, any way it likes. The
+key can be copied a thousand times. Someone far away steps in there, and
+the house sees that the booth is occupied, and a key, never a name. The
+first one to step in with that key, and be answered, changes the lock to
+a key of their own that nobody else has ever seen. From that moment every
+copy of the first key is dead. The house can tear a purple booth down.
 
-**Blue booths.** A blue booth is one where this house holds the key. Its
+**Red booths.** A red booth is one where this house holds the key. Its
 other side is in someone else's house. Nobody appears in it unless this
 house goes in. Every time it steps in, it may bring the next key, and the
 lock takes it when an answer comes back. Only this house makes those keys,
 so nobody on the other side can take the booth from it. The house can
-forget a blue booth.
+forget a red booth.
 
 **The grey booth.** The porter keeps one place with no lock at all.
 Anyone may step in. Whether anyone inside ever comes to it, and what they
@@ -64,9 +64,9 @@ back. A late visit, arriving after a newer one, moves no key at all.
 every one of them the same blank sheet, and writes nothing down. A
 stranger cannot tell why.
 
-**Both ways.** A red booth never lets its house out, and a blue booth
+**Both ways.** A purple booth never lets its house out, and a red booth
 never lets anyone in. If two houses want to ask each other, each builds a
-red booth and hands the other its key.
+purple booth and hands the other its key.
 
 **What nobody can force.** A house may answer once and never again,
 forget its booths, or burn down. Visitors then hear nothing. No house is
@@ -84,8 +84,8 @@ padlock, and the lock printed on a card is the ward's ML-KEM-768 key.
 **The mirror** is what the bytes allow: an asker cannot tell from them
 how far the door is.
 
-**A booth** is a **relation**, and it runs one way. The red side is the
-door's, the blue side is the **standing** that asks.
+**A booth** is a **relation**, and it runs one way. The purple side is
+the door's, the red side is the **standing** that asks.
 
 **The first key** is the **heir**, and the card it is printed on is the
 **invitation**: `{ ward, heir, secret, lock }`. It goes by any channel.

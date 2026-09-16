@@ -9,6 +9,9 @@ A kit that answers every arrival with silence, or with nothing, departs
 from nothing and passes. The verifier reports how many arrivals it could
 judge, and a count is never a failure.
 
+The verifier prints one line per check and a summary. It exits `0` when
+no check failed, and `1` when a check failed or it was run wrongly.
+
 ## What the verifier holds
 
 The verifier holds the six algorithms and `SPEC.md`. It holds no kit, and
