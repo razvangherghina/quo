@@ -1,9 +1,0 @@
-{
-  "name": "quo-example-js-harness",
-  "private": true,
-  "type": "module",
-  "description": "The JavaScript stand program of vectors/HARNESS.md, an adapter over the kit.",
-  "scripts": {
-    "test": "node --test --test-timeout=30000 \"test/*.test.js\""
-  }
-}

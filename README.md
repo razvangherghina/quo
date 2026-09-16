@@ -1,35 +1,29 @@
 # Quo
 
-A protocol for one object to ask another and get an answer, without knowing
-whether the other is in its process, on its device or on another planet.
-Three words: a harbor boots wards and carries bytes, a ward is its seed and
-its partition and judges its one door, a being is one ordinary object with
-one answer.
+Quo is a language spoken in bytes. A door is one function: bytes in, bytes
+or nothing out. Quo is what those bytes mean: a few JSON shapes and six
+algorithms. How the bytes travel, and what stands behind a door, are not
+Quo's.
 
-This repository is the protocol, and the least that proves the text is
-enough.
-
-- `SPEC.md`: the whole truth. A kit, Quo in any language, is written
+- `SPEC.md`: the whole of Quo. A kit, Quo in any language, is written
   against it alone.
-- `KIT-SPEC.md`: every choice the spec leaves to a kit, as questions.
-- `SCENARIOS.md`: the claims two kits must agree on when they speak to each
-  other.
-- `vectors/`: the bytes a kit reproduces or it is not Quo, the arithmetic,
-  the framing, the door's cases and the TCP frames, with `HARNESS.md`, the
-  adapter a kit exposes to be replayed.
-- `verifier/`: replays the door's cases against a kit's stand program and
-  reports what differed, byte for byte, holding no key.
-  `node verifier/cli.js -- <stand>`.
-- `examples/`: two kits, JavaScript and Rust, written cold from the text,
-  and the world of `SCENARIOS.md` between them. Scholastic, not a library
-  and not a reference: Quo ships none. `examples/README.md` says how to run
-  both kits, the world and the verifier from this folder, with Node 24,
-  Rust and, for containers, Docker. `node examples/e2e/demo.js` shows the
-  two kits meet, step by step.
+- `KIT-SPEC.md`: every choice `SPEC.md` leaves to a kit, as questions.
+  Quo answers none of them.
+- `CARRIER-TCP.md`: one way to carry the bytes over TCP. Published beside
+  the spec, and not part of it.
+- `IMAGINE.md`: a picture of Quo for a first reading. The spec decides, and
+  the picture does not.
+- `VERIFIER.md` and `verifier/`: a checker any kit may run. It says where a
+  kit departs from `SPEC.md`, and nothing about whether the kit is good.
+  Passing it is necessary and never sufficient.
+  `node verifier/cli.js -- <stand program>`, with Node 24 and nothing else.
+- `vectors/HARNESS.md`: the requests a kit's stand program answers to be
+  checked. `vectors/arithmetic.json`: the six algorithms against their own
+  standards.
+- `examples/`: kits in several languages, each written cold from these
+  documents, each one example among equals. None is a reference.
 
-Anyone may write Quo, and no list of kits is part of it. The spec has no
+Anyone may write a kit. No list of kits is part of Quo. The spec has no
 version until 1.0.0, when it is frozen once.
-
-- [quo.systems](https://quo.systems): the protocol, read in a tab
 
 Apache-2.0, held by Razvan Gherghina. `spec@quo.systems`.

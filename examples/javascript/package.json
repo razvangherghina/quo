@@ -1,0 +1,8 @@
+{
+  "name": "quo-example-javascript",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test"
+  }
+}
