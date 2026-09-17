@@ -11,14 +11,17 @@ import { askFrame, delay, Hold, Line, MAX_BODY, nothingFrame, parseAt, rawFrame,
 import { aesOpen, edSign, hkdf, takesNoSeal, x25519, x25519Pub, ZERO32 } from "./primitives.js";
 import { Abort, AskerRun, Lost, mint, newKey, payloadBytes, sealAsk, Session, SIZE, Stand, Verifier, verifierWard } from "./verify.js";
 
+/** A window in ms from the environment, or its default. */
+const windowOf = (name, fallback) => {
+  const n = Number(process.env[name]);
+  return Number.isInteger(n) && n >= 0 ? n : fallback;
+};
 /** How long the verifier listens to be sure a kit writes nothing. */
-const QUIET_MS = 500;
+const QUIET_MS = windowOf("QUO_VERIFIER_QUIET_MS", 500);
 /** How long a kit has to close a connection after bytes that are not a frame. */
 const CLOSE_MS = 5000;
-/** How long the verifier holds an ask with no answer before it closes the connection. */
-const NO_ANSWER_MS = 4000;
 /** How long a delivery is held back to arrive late. */
-const LATE_MS = 1000;
+const LATE_MS = windowOf("QUO_VERIFIER_LATE_MS", 1000);
 /** How long the verifier waits for a frame it is owed. */
 const FRAME_MS = 60000;
 
@@ -28,7 +31,13 @@ const unhex = (s) => Buffer.from(s, "hex");
 const rand = (n) => randomBytes(n);
 const NOTHING = { nothing: true };
 const SILENCE = { silence: true };
-const shownFrame = (f) => (!f ? "no frame" : f.closed ? "the connection closed" : `a ${f.kind} frame`);
+/**
+ * What a send has already answered, or null. The verifier closes on an ask
+ * with no answer at once: a kit that answers without one has answered by
+ * the time the bytes it wrote were read, and one that waits reads the close.
+ */
+const answered = (send) => Promise.race([send, new Promise((res) => setImmediate(() => res(null)))]);
+const shownFrame =(f) => (!f ? "no frame" : f.closed ? "the connection closed" : `a ${f.kind} frame`);
 
 /** A zero-head ask to a ward, named `echo`, with its lid's secret kept. */
 function zeroAsk(ward, args) {
@@ -282,10 +291,10 @@ class Dial {
       return send;
     }
     if (r.mode === "wait") {
-      const early = await Promise.race([send, delay(NO_ANSWER_MS).then(() => null)]);
+      const early = await answered(send);
       if (early) return early;
       f.line.close();
-      this.s.check(`${label}: send had not answered when the verifier closed the connection after ${NO_ANSWER_MS / 1000}s`, true, "accepted", "carrier");
+      this.s.check(`${label}: send had not answered when the verifier closed the connection`, true, "accepted", "carrier");
       return send;
     }
     f.line.write(written ? replyFrame(f.id, written.box) : nothingFrame(f.id));
@@ -457,14 +466,14 @@ async function twoKits(v, sA, sB, keep) {
 
   label = "two kits: an ask never delivered";
   x = await catchSend(label, rel);
-  if (!(await Promise.race([x.send, delay(NO_ANSWER_MS).then(() => null)]))) x.f.line.close();
+  if (!(await answered(x.send))) x.f.line.close();
   await reads(`${label}, is nothing`, x.send, [NOTHING]);
   await straight("two kits: the ask after one never delivered", rel);
 
   label = "two kits: a reply never delivered";
   x = await catchSend(label, rel);
   await forward(label, x.f);
-  if (!(await Promise.race([x.send, delay(NO_ANSWER_MS).then(() => null)]))) x.f.line.close();
+  if (!(await answered(x.send))) x.f.line.close();
   await reads(`${label}, is nothing`, x.send, [NOTHING]);
   await straight("two kits: the ask after a reply never delivered", rel);
 

@@ -144,6 +144,14 @@ ward to it with `route`:
   each reach the kit, and the `read` it answers is checked;
 - a nothing frame and a closed connection read as nothing.
 
+An ask with no answer at all is closed at once, and a kit that waits
+reads the close. Two windows remain, because a kit that writes nothing
+can only be seen not to write: how long the verifier listens for bytes
+that must not come, `QUO_VERIFIER_QUIET_MS`, 500 unless the environment
+names another, and how long a frame is held to arrive late,
+`QUO_VERIFIER_LATE_MS`, 1000 unless named. A kit's own tests may set
+both near zero.
+
 ## Two kits
 
 The verifier stands a ward in one program, routes a far ward of a second

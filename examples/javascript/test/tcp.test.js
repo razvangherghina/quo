@@ -27,12 +27,18 @@ test("listener: unknown ward is nothing, a reply frame is ignored, garbage close
   const { port } = server.address();
   const sock = net.connect({ host: "127.0.0.1", port });
   const got = [];
+  let first;
+  const answered = new Promise((res) => (first = res));
   const closed = new Promise((res) => sock.on("close", res));
-  const feed = reader((k, id) => got.push([k, id]));
+  const feed = reader((k, id) => {
+    got.push([k, id]);
+    first();
+  });
   sock.on("data", feed);
   sock.write(frame(REPLY, 1, Buffer.alloc(5)));
   sock.write(frame(ASK, 2, Buffer.alloc(100)));
-  await new Promise((r) => setTimeout(r, 100));
+  // The reply frame is ignored, so the first frame back answers ask 2.
+  await answered;
   assert.deepEqual(got, [[NOTHING, 2]]);
   sock.write(frame(9, 3, Buffer.alloc(0)));
   await closed;

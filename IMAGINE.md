@@ -28,9 +28,10 @@ same.
 fits its first lock, and gives its key to someone, any way it likes. The
 key can be copied a thousand times. Someone far away steps in there, and
 the house sees that the booth is occupied, and a key, never a name. The
-first one to step in with that key, and be answered, changes the lock to
-a key of their own that nobody else has ever seen. From that moment every
-copy of the first key is dead. The house can tear a purple booth down.
+first one to step in with that key whom the house lets in changes the lock
+to a key of their own that nobody else has ever seen. From that moment
+every copy of the first key is dead. The house can tear a purple booth
+down.
 
 **Red booths.** A red booth is one where this house holds the key. Its
 other side is in someone else's house. Nobody appears in it unless this
@@ -40,8 +41,9 @@ so nobody on the other side can take the booth from it. The house can
 forget a red booth.
 
 **The grey booth.** The porter keeps one place with no lock at all.
-Anyone may step in. Whether anyone inside ever comes to it, and what they
-say, is the house's.
+Anyone may step in, and still signs what they ask with a key of their own,
+which the porter checks and does not keep. Whether anyone inside ever
+comes to it, and what they say, is the house's.
 
 **Which booth is whose.** A house may seat someone at a booth when it is
 built, and call that one its owner, or call nobody that. The porter does
@@ -53,12 +55,18 @@ nothing. With an answer may come a small mark the house alone makes, so
 the visitor notices when something changed.
 
 **One visit, one question.** When the answer is given, the visitor is
-gone. There is no line held open. The next question is a new visit.
+gone. There is no line held open. The next question is a new visit. The
+porter keeps the number of every visit it answered, for as long as the
+booth stands, and a visit bearing a number already kept is turned away
+with a word.
 
-**A key that keeps moving.** The booth opens to the key used last or to
-the one just brought, so a visit whose answer is lost on the way loses
-nothing. The visitor moves to the new key only when a real answer comes
-back. A late visit, arriving after a newer one, moves no key at all.
+**A key that keeps moving.** Every visit may bring the next key. When the
+house answers, the lock takes the new key beside the old, and the old dies
+at the next visit made with the new one. So the booth opens to the key
+used last or to the one just brought, and a visit whose answer is lost on
+the way loses nothing. The visitor moves to the new key only when a real
+answer comes back. A late visit, arriving after a newer one, moves no key
+at all.
 
 **Strangers.** No key, a dead key, a fake key, or noise: the porter hands
 every one of them the same blank sheet, and writes nothing down. A
