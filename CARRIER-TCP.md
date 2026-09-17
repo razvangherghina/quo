@@ -12,8 +12,13 @@ it. The dialer asks and the listener answers.
 A connection carries many asks at once. Either side closes it at any
 moment.
 
-How a dialer learns an address is not on the wire. Quo names no port. An
-address is whatever reaches the listener.
+Quo names no port. An address is whatever reaches the listener.
+
+In an invitation's `at`, this carrier's scheme is `tcp`, and an address is
+written `tcp://host:port`. The host is a name, an IPv4 address, or an IPv6
+address in brackets, as RFC 3986 writes them. The port is decimal. An
+address with a path, a query, a fragment or user information is not one of
+this carrier's.
 
 The frames are the same bytes on any reliable stream that reaches the
 listener, plain TCP, TCP inside TLS, or a tunnel.

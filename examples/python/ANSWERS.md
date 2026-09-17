@@ -1,3 +1,4 @@
+<!-- markdownlint-disable MD029 -->
 # Answers to KIT-SPEC.md
 
 This kit is Quo in Python: `quokit/` and the `stand` program. Each answer
@@ -82,8 +83,8 @@ is followed by its reason.
     as a dict, and the harness carries it. The minting ward keeps only the
     heir pk and the harness name. An invitation whose lock the library's
     FIPS 203 check refuses is no invitation, and `ask`, `read` or `send` on
-    it answers `bad request`. Reason: Quo carries no route, and the
-    harness is the only holder here.
+    it answers `bad request`. Reason: a door reads no route from an
+    invitation, and the harness is the only holder here.
 20. **Recovering a knock that brought no object back.** The next ask on the
     relation goes under the announced key and the knock's edge key, with no
     ciphertext, and carries the new method and args. If that ask also

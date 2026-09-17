@@ -96,7 +96,8 @@ how far the door is.
 the door's, the red side is the **standing** that asks.
 
 **The first key** is the **heir**, and the card it is printed on is the
-**invitation**: `{ ward, heir, secret, lock }`. It goes by any channel.
+**invitation**: `{ ward, heir, secret, lock, at? }`. It goes by any channel,
+and `at` may write on the card where the house is reached.
 
 **Stepping in with the first key** is the **knock**. It announces the
 visitor's own key in `next`, and the first knock the door answers binds

@@ -45,6 +45,12 @@ const MAX_SEQ = 9007199254740991;
 const J = JSON.stringify;
 const hex = (b) => Buffer.from(b).toString("hex");
 const unhex = (s) => Buffer.from(s, "hex");
+// CARRIER-TCP.md: tcp://host:port, the host a name, IPv4 or bracketed IPv6,
+// the port decimal, and nothing after it.
+const isTcpAddress = (s) => {
+  const m = /^tcp:\/\/(\[[0-9A-Fa-f:.]+\]|[A-Za-z0-9._~%!$&'()*+,;=-]+):([0-9]+)$/i.exec(s);
+  return m !== null && Number(m[2]) <= 65535;
+};
 const isHex = (s, n) => typeof s === "string" && (n === undefined || s.length === n) && s.length % 2 === 0 && /^[0-9a-f]*$/.test(s);
 const rand = (n) => randomBytes(n);
 
@@ -246,6 +252,13 @@ export class Session {
       inv.ward === ward.pk && isHex(inv.heir, 64) && isHex(inv.secret, 64) && isHex(inv.lock, 2368);
     this.check(`${label} has the four fields of their sizes`, shape, J(inv).slice(0, 300));
     if (!shape) throw new Abort("invitation malformed");
+    if (inv.at !== undefined) {
+      const addresses = Array.isArray(inv.at) && inv.at.every((s) => typeof s === "string" && /^[A-Za-z][A-Za-z0-9+.-]*:/.test(s));
+      this.check(`${label} at is an array of addresses`, addresses, J(inv.at).slice(0, 300));
+      for (const address of addresses ? inv.at.filter((s) => /^tcp:/i.test(s)) : []) {
+        this.check(`${label} tcp address ${J(address)} is tcp://host:port`, isTcpAddress(address), address);
+      }
+    }
     const secret = unhex(inv.secret);
     this.check(`${label} heir pk is the Ed25519 pk of its secret`, edPub(secret).equals(unhex(inv.heir)), inv.heir);
     const ek = unhex(inv.lock);
@@ -1383,11 +1396,14 @@ async function harnessErrors(v, spawnStand) {
   await errq("ask with a secret and no heir", { op: "ask", ward: pk, invitation: inv({ heir: undefined }) }, "bad request");
   await errq("ask with an heir and no lock", { op: "ask", ward: pk, invitation: inv({ lock: undefined }) }, "bad request");
   await errq("ask with a short ward in the invitation", { op: "ask", ward: pk, invitation: inv({ ward: invitation.ward.slice(2) }) }, "bad request");
-  // A field beside the four is ignored, and an invitation with one is still an
-  // invitation. A lock the modulus check of FIPS 203 section 7.2 refuses is no
+  // A field beside the five is ignored, and an invitation with one is still an
+  // invitation. An address no carrier stands is skipped, and an `at` that is
+  // not an array is read as absent. A lock the modulus check of FIPS 203 section 7.2 refuses is no
   // invitation.
   if (serves) {
-    await ok("ask with a fifth field in the invitation answers a box", { op: "ask", ward: pk, invitation: inv({ route: "nowhere" }) }, (a) => isHex(a.box));
+    await ok("ask with a sixth field in the invitation answers a box", { op: "ask", ward: pk, invitation: inv({ route: "nowhere" }) }, (a) => isHex(a.box));
+    await ok("ask with an unknown scheme in at answers a box", { op: "ask", ward: pk, invitation: inv({ at: ["zz://nowhere", "tcp://[::1]:1"] }) }, (a) => isHex(a.box));
+    await ok("ask with an at that is not an array answers a box", { op: "ask", ward: pk, invitation: inv({ at: "nowhere" }) }, (a) => isHex(a.box));
   }
   const highLock = Buffer.from(unhex(invitation.lock));
   highLock[0] = 0xff;

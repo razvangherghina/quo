@@ -72,7 +72,7 @@ of `SPEC.md`.
 ## What a kit asks
 
 - **Question 19. How does an invitation reach its holder, and does the
-  minting kit keep a copy?** An invitation carries no route.
+  minting kit keep a copy?** A door reads no route from an invitation.
 - **Question 20. How does a standing recover a knock that brought no object
   back?** It may ask under its own key and the knock's edge key, or send the
   knock again as the same bytes. Which first, how often, and how long
@@ -91,8 +91,13 @@ of `SPEC.md`.
 
 - **Question 24. Which carriers does the kit stand?** Quo over TCP is one.
   Any other is the kit's.
-- **Question 25. How does the kit learn where a ward is reached?** A ward's
-  name is its public key. Where it is reached is not on the wire.
+- **Question 25. How does the kit learn where a ward is reached, does it
+  write `at` in its invitations and with which addresses, and how does it
+  try the addresses it reads?** A ward's name is its public key. An
+  invitation may carry addresses in `at`, the first the minting side's
+  preference, and a kit may learn others its own way. Whether a reader
+  tries them one after another or at once, and how long it gives each, is
+  the kit's.
 
 ## What is not the kit's either
 

@@ -57,6 +57,10 @@ seed the signing key and the padlock. It holds the padlock's secret.
 It checks the ward pk against the seed. It asks for an invitation, and
 checks that the heir pk is the public key of the heir secret the
 invitation carries, and that the lock is an ML-KEM-768 encapsulation key.
+When the invitation carries `at`, it checks that `at` is an array of
+addresses, and that each `tcp` address is written as `CARRIER-TCP.md`
+writes one. It hands the kit invitations whose `at` holds a scheme no
+carrier names, or is not an array, and they are still invitations.
 
 It writes every ask itself, keeps each ask's lid secret, delivers the box
 with `arrive`, and opens what comes back:

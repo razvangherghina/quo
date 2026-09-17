@@ -161,15 +161,26 @@ keys move as on any choice.
 An invitation is a value of this shape:
 
 ```
-invitation = { ward, heir, secret, lock }
+invitation = { ward, heir, secret, lock, at? }
 ```
 
 `ward` is 128 hex, a ward pk. `heir` is 64 hex, an heir pk. `secret` is 64
 hex, the heir secret. `lock` is 2368 hex, the lock's encapsulation key.
 
-An invitation goes anywhere. It carries no route.
+An invitation goes anywhere. A door reads no route from it.
 
-Nothing else is read from an invitation. A field beside the four is
+`at`, when present, is an array of strings. Each string is an address: a
+URI of RFC 3986 at which the ward is reached. The scheme of an address
+names its carrier. The first address is the one the minting side prefers,
+and each after it is preferred less.
+
+An address whose scheme names no carrier the reader stands is skipped. A
+string that is not a URI with a scheme is skipped. An `at` that is not an
+array is read as absent. None of these makes an invitation no invitation.
+
+An address that reaches no door of that ward is not delivered.
+
+Nothing else is read from an invitation. A field beside the five is
 ignored, and an invitation with one is still an invitation.
 
 A shape other than this one is no invitation. A ward pk alone with a secret
@@ -628,4 +639,5 @@ Where a door has no value to write, the reply is silence.
 A carrier is one sentence: bytes to a ward pk in, bytes or nothing out, and
 nothing means not delivered.
 
-Quo names no carrier, no address and no port.
+Quo names no carrier and no port. A carrier's own document names the
+scheme its addresses are written in, and how they are written.
