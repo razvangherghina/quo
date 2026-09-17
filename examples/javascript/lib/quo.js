@@ -31,7 +31,8 @@ export function readInvitation(o) {
   const { ward, heir, secret, lock } = o;
   if (!isHex(ward, 128) || !isHex(heir, 64) || !isHex(secret, 64) || !isHex(lock, 2368)) return null;
   if (!lockOk(fromHex(lock))) return null;
-  return { ward, heir, secret, lock };
+  // An `at` that is not an array is read as absent; its entries are judged when dialed.
+  return Array.isArray(o.at) ? { ward, heir, secret, lock, at: o.at } : { ward, heir, secret, lock };
 }
 
 // The payload judged: case 2 or case 3, or the fields.
@@ -105,11 +106,13 @@ export class Ward {
   }
 
   // Makes a heir and gives its invitation. The ward keeps the heir pk, not the secret.
-  invite(reach = reaches.echo) {
+  // `at` is the addresses the ward is reached at, the preferred first; none writes no `at`.
+  invite(reach = reaches.echo, at = []) {
     const heir = edSecret(draw(32));
     const heirHex = hex(heir.pub);
     this.heirs.set(heirHex, { fresh: true, reach });
-    return { ward: this.pk, heir: heirHex, secret: hex(heir.seed), lock: this.lockHex };
+    const inv = { ward: this.pk, heir: heirHex, secret: hex(heir.seed), lock: this.lockHex };
+    return at.length ? { ...inv, at: [...at] } : inv;
   }
 
   release(heirHex) {

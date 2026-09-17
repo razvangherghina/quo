@@ -19,7 +19,7 @@ no bytes any kit produced.
 
 It reaches a kit through `vectors/HARNESS.md`: requests over the kit's stdin
 and stdout, with boxes as hex, and, where the kit carries bytes, the frames
-of `CARRIER-TCP.md`.
+of `CARRIER-TCP.md` and the post and held line of `CARRIER-WEB.md`.
 
 It holds that seam as well as Quo. It drives every error `HARNESS.md` names,
 and holds the kit to that vocabulary and to the order in which two errors
@@ -58,9 +58,10 @@ It checks the ward pk against the seed. It asks for an invitation, and
 checks that the heir pk is the public key of the heir secret the
 invitation carries, and that the lock is an ML-KEM-768 encapsulation key.
 When the invitation carries `at`, it checks that `at` is an array of
-addresses, and that each `tcp` address is written as `CARRIER-TCP.md`
-writes one. It hands the kit invitations whose `at` holds a scheme no
-carrier names, or is not an array, and they are still invitations.
+addresses, and that each address of a scheme a published carrier names is
+written as that carrier writes it. It hands the kit invitations whose
+`at` holds a scheme no carrier names, or is not an array, and they are
+still invitations.
 
 It writes every ask itself, keeps each ask's lid secret, delivers the box
 with `arrive`, and opens what comes back:
@@ -117,10 +118,23 @@ A kit that answers `ask` with `bad request` is judged as a door alone.
 ## The kit as a carrier
 
 A kit that answers `listen`, `route` and `send` of part two of
-`vectors/HARNESS.md` is judged on `CARRIER-TCP.md` as well. A kit that
-answers them with `bad request` is judged without a carrier.
+`vectors/HARNESS.md` is judged on `CARRIER-TCP.md` and `CARRIER-WEB.md` as
+well. The verifier asks for each scheme the harness names, `tcp`, `http`
+and `ws`, one at a time. A scheme a kit answers with `bad request` is one
+it does not stand, and the kit is judged without it. A kit that stands
+none is judged without a carrier.
 
-As a listener, the verifier dials the address `listen` answers:
+Every address a kit answers is taken apart as its carrier writes it. A
+`tcp` address is `tcp://host:port`. An `http` or `ws` address is a URI with
+a host, and with no user information and no fragment. A second `listen` of
+one scheme answers the same address, and `listen` with no scheme is
+`listen` of `tcp`. `listen` of `https` or `wss` is `bad request`. A
+`route` to an address its scheme's carrier does not write, of a scheme the
+kit stands, is `bad request`.
+
+### As a tcp listener
+
+The verifier dials the address `listen` answers:
 
 - the kit writes nothing before a frame arrives, and may close an idle
   connection at any moment;
@@ -129,24 +143,108 @@ As a listener, the verifier dials the address `listen` answers:
 - an ask frame written one byte at a time is answered the same way, or the
   connection closes with it in flight and answers none;
 - an ask frame of the largest body, 1,048,645, carries a box of the size;
+- an ask frame with a ward pk and no box is a frame;
 - an ask to a ward pk it does not stand comes back as a nothing frame with
   the same id;
 - many asks in flight on one connection each come back once, in any order;
-- after bytes that are not a frame, the kit closes the connection;
+- after bytes that are not a frame, the kit closes the connection, and
+  answers no ask written after them;
 - a reply frame or a nothing frame sent to it is read, nothing is written
   back, and the connection stands;
 - a whole relation runs over the line, a knock and the asks after it, each
   judged as at `arrive`, with a repeated number, a spent heir's knock and a
   key the door does not admit among them.
 
-As a dialer, the verifier holds a listener of its own, and routes a far
-ward to it with `route`:
+### As a listener of the held line
 
-- on `send`, the kit's first bytes on the connection are an ask frame;
-- the frame carries the far ward's pk, and its box is judged as at `ask`;
-- a reply frame, a nothing frame, a closed connection and no answer at all
-  each reach the kit, and the `read` it answers is checked;
-- a nothing frame and a closed connection read as nothing.
+The verifier opens a WebSocket to the address, offering the subprotocol
+`quo`:
+
+- the kit selects `quo`, and a handshake that selects nothing fails;
+- the kit sends no message before a frame arrives;
+- an ask message to a ward it stands comes back as a reply message with the
+  same id, whose box is judged as at `arrive`, or as a nothing message, or
+  not at all;
+- an ask message of the largest body, 1,048,645 bytes, carries a box of the
+  size, and an ask message with a ward pk and no box is a frame;
+- an ask to a ward pk it does not stand comes back as a nothing message
+  with the same id;
+- many asks in flight on one line each come back once, in any order;
+- after a binary message longer than 1,048,645 bytes, one shorter than
+  five, one of a kind that is none of the three, an ask with fewer than
+  sixty-four bytes after its id, a nothing with bytes after its id, or a
+  text message, the kit closes the line, and answers no ask sent after it;
+- a reply message or a nothing message sent to it is read, nothing is sent
+  back, and the line stands;
+- a line that offers no subprotocol carries no frame: its handshake is
+  refused, or an ask on it comes back as nothing at all;
+- a whole relation runs over the line, as over tcp.
+
+### As a listener of the post
+
+The verifier sends each ask as a `POST` to the address, its body the ward
+pk and the box:
+
+- an ask to a ward it stands comes back as status 200 with a body, the
+  reply's box, judged as at `arrive`, or as any other status, which is
+  nothing;
+- status 200 with an empty body is a departure;
+- the `Content-Type` of the request changes nothing;
+- an ask to a ward pk it does not stand comes back with a status other than
+  200;
+- many posts in flight each come back;
+- a `GET`, a `PUT` of a whole ask, and a `POST` of no body, of sixty-four
+  bytes or of 1,048,641 bytes, each come back with a status other than 200
+  and 204;
+- a `POST` of 1,048,641 bytes whose connection closes before a status
+  comes back is accepted, since a listener may answer a body too long
+  before it reads the whole;
+- a `POST` of sixty-five bytes is an ask, and one of 1,048,640 carries a box
+  of the size;
+- a whole relation runs over posts, as over tcp.
+
+### As a dialer
+
+For each scheme the kit stands, the verifier holds a listener of its own,
+and routes a far ward to it with `route`. A web listener of the verifier's
+answers at an address with a path and a query, and a request to any other
+path departs.
+
+- On tcp, the kit's first bytes on a connection are an ask frame, and it
+  writes only ask frames.
+- On the held line, the kit offers `quo`, and sends only binary ask
+  messages.
+- On the post, each ask is a `POST` to the address, with a body of
+  sixty-five to 1,048,640 bytes.
+- The ask carries the far ward's pk, and its box is judged as at `ask`.
+- On tcp and the held line, an ask frame sent to the kit is read, nothing
+  comes back, and the connection stands.
+- A reply, nothing, a closed connection and no answer at all each reach the
+  kit, and the `read` it answers is checked. Nothing is a nothing frame on
+  tcp and the held line, and any status other than 200 on the post.
+- On the post, status 500, status 200 with an empty body, and status 201
+  with a reply's box each read as nothing.
+- A send to a ward with no route and no `at` reads nothing.
+- After a second route for one far ward, no ask reaches the first address.
+
+### The invitation's `at`
+
+For each scheme the kit dials, the verifier mints an invitation from a ward
+no route names, whose `at` is a number, an address of a scheme no carrier
+names, and then an address of a listener of its own with its scheme in
+capitals. A reader skips the first two and reads the scheme in any case.
+
+- A kit that reaches that listener is judged there as a dialer, over a
+  whole relation.
+- A kit that reaches nothing and reads nothing is accepted, since
+  `KIT-SPEC.md` leaves reading `at` to the kit. The verifier prints whether
+  the kit reached the ward through `at`, scheme by scheme.
+- A kit that reaches the ward once and later reaches nothing departs, on
+  one relation and across the schemes it dials.
+- With a route and an `at` naming another address, the kit dials the route
+  alone, and no connection reaches the address in `at`.
+
+### Windows
 
 An ask with no answer at all is closed at once, and a kit that waits
 reads the close. Two windows remain, because a kit that writes nothing
@@ -158,19 +256,37 @@ both near zero.
 
 ## Two kits
 
-The verifier stands a ward in one program, routes a far ward of a second
-program to a listener of its own, and forwards each frame to the first
-program. It holds the first ward's seed and not its lock. For every ask it
-forwards, it checks the frame carries the first ward's pk and that the head
-opens to an heir pk. It opens no body and no reply, and judges the rest by
-what the second program reads.
+The verifier stands wards in one program and asks them from a ward in a
+second. It runs one pass for each scheme the first program listens on and
+the second dials. Two programs with no scheme in common cannot be judged
+together, and the run fails.
 
-It checks that what the second program reads is what the first program's
-`reach` answers. It then delivers frames late, twice, out of order, altered
-and not at all, and checks that each program answers as `SPEC.md` says. An
-ask delivered twice carries a number the door has honoured. A knock
-delivered twice is on a spent heir. An altered box is a stranger's. A frame
-not delivered is nothing.
+In each pass the verifier holds a listener of its own in that scheme, and
+forwards each ask to the first program's listener of the same scheme. It
+holds the first ward's seed and not its lock. For every ask it forwards, it
+checks the ask carries the first ward's pk and that the head opens to an
+heir pk. It opens no body and no reply, and judges the rest by what the
+second program reads. It checks that what the second program reads is what
+the first program's `reach` answers. A forwarded post the first program
+answers with any status other than 200 is nothing, and one it answers
+with status 200 and an empty body departs.
+
+Over tcp, the second program is routed to the verifier's listener. The
+verifier forwards a knock and an ask as they came, then delivers frames
+late, twice, out of order, altered and not at all, and checks that each
+program answers as `SPEC.md` says. An ask delivered twice carries a number
+the door has honoured. A knock delivered twice is on a spent heir. An
+altered box is a stranger's. A frame not delivered is nothing.
+
+Over the post and the held line, the second program is routed to the
+verifier's listener, and a knock and an ask are forwarded as they came.
+
+In every pass, the second program then holds an invitation from a ward no
+route names, and whose `at` the verifier writes with its listener's address
+alone. A second program that reaches the listener is judged over a knock
+and an ask as they came. One that reaches nothing and reads nothing is
+accepted, and the verifier prints whether it reached the first program
+through `at`.
 
 ## Vectors
 

@@ -11,6 +11,8 @@ Quo's.
   Quo answers none of them.
 - `CARRIER-TCP.md`: one way to carry the bytes over TCP. Published beside
   the spec, and not part of it.
+- `CARRIER-WEB.md`: one way to carry the bytes over HTTP and WebSocket,
+  where TCP cannot go. Published beside the spec, and not part of it.
 - `IMAGINE.md`: a picture of Quo for a first reading. The spec decides, and
   the picture does not.
 - `VERIFIER.md` and `verifier/`: a checker any kit may run. It says where a

@@ -6,8 +6,8 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"net"
 	"os"
+	"slices"
 	"sync"
 )
 
@@ -16,8 +16,8 @@ type Kit struct {
 	mu        sync.Mutex // judges one arrival at a time, and guards all below
 	wards     map[string]*Ward
 	standings map[string]*Standing
-	routes    map[string]string
-	listener  net.Listener
+	routes    map[string]*address
+	listeners map[string]string // an address by scheme
 
 	dmu   sync.Mutex
 	dials map[string]*dialed
@@ -30,7 +30,8 @@ func NewKit() *Kit {
 	return &Kit{
 		wards:     map[string]*Ward{},
 		standings: map[string]*Standing{},
-		routes:    map[string]string{},
+		routes:    map[string]*address{},
+		listeners: map[string]string{},
 		dials:     map[string]*dialed{},
 		out:       bufio.NewWriter(os.Stdout),
 	}
@@ -122,21 +123,40 @@ func (r request) hexOf(k string, n int) (string, bool) {
 	return s, ok && len(s) == n && isLowerHex(s)
 }
 
-func (r request) invitation() (*Standing, bool) {
+// invitation reads the request's invitation, and the addresses its `at`
+// holds that this kit can dial, in their order. An `at` that is not an
+// array is absent, and an entry that is no address this kit stands is
+// skipped.
+func (r request) invitation() (*Standing, []*address, bool) {
 	var fields map[string]json.RawMessage
 	raw, ok := r["invitation"]
 	if !ok || json.Unmarshal(raw, &fields) != nil || fields == nil {
-		return nil, false
+		return nil, nil, false
 	}
 	f := request(fields)
 	var inv Invitation
 	for key, to := range map[string]*string{"ward": &inv.Ward, "heir": &inv.Heir, "secret": &inv.Secret, "lock": &inv.Lock} {
 		if *to, ok = f.str(key); !ok {
-			return nil, false
+			return nil, nil, false
 		}
 	}
 	s, err := ParseInvitation(inv)
-	return s, err == nil
+	if err != nil {
+		return nil, nil, false
+	}
+	var entries []json.RawMessage
+	json.Unmarshal(f["at"], &entries)
+	var at []*address
+	for _, e := range entries {
+		var text string
+		if json.Unmarshal(e, &text) != nil {
+			continue
+		}
+		if a, ok := parseAddress(text); ok {
+			at = append(at, a)
+		}
+	}
+	return s, at, true
 }
 
 // asked reads method and args of an ask or a send. args is kept as the
@@ -233,6 +253,11 @@ func (k *Kit) handle(line []byte) {
 			fail(eNameHeld)
 			return
 		}
+		for _, scheme := range schemes {
+			if at, ok := k.listeners[scheme]; ok {
+				inv.At = append(inv.At, at)
+			}
+		}
 		k.answer(map[string]any{"id": id, "invitation": inv})
 
 	case "release":
@@ -279,7 +304,7 @@ func (k *Kit) handle(line []byte) {
 
 	case "ask", "send":
 		pk, ok := req.hexOf("ward", 128)
-		fresh, ok2 := req.invitation()
+		fresh, at, ok2 := req.invitation()
 		method, args, ok3 := req.asked()
 		if !ok || !ok2 || !ok3 {
 			fail(eBadRequest)
@@ -305,13 +330,13 @@ func (k *Kit) handle(line []byte) {
 			return
 		}
 		wardPK := append(append([]byte{}, st.wardSignPK...), st.padlock...)
-		at, routed := k.routes[hex.EncodeToString(wardPK)]
+		// the route alone where there is one, else the invitation's at in its order
+		if route, routed := k.routes[hex.EncodeToString(wardPK)]; routed {
+			at = []*address{route}
+		}
 		k.mu.Unlock()
 		go func() {
-			var reply []byte
-			if routed {
-				reply = k.carry(at, wardPK, sent.Box)
-			}
+			reply := k.carryFirst(at, wardPK, sent.Box)
 			k.mu.Lock()
 			r := st.ReadReply(sent, reply)
 			k.mu.Unlock()
@@ -320,7 +345,7 @@ func (k *Kit) handle(line []byte) {
 
 	case "read":
 		pk, ok := req.hexOf("ward", 128)
-		fresh, ok2 := req.invitation()
+		fresh, _, ok2 := req.invitation()
 		replyHex, ok3 := req.str("reply")
 		isNull := bytes.Equal(bytes.TrimSpace(req["reply"]), []byte("null"))
 		if !ok || !ok2 || !(isNull || ok3 && isLowerHex(replyHex)) {
@@ -343,7 +368,15 @@ func (k *Kit) handle(line []byte) {
 		k.readAnswer(id, st.ReadReply(sent, box))
 
 	case "listen":
-		at, err := k.Listen()
+		scheme, ok := req.optStr("scheme")
+		if !ok || scheme != nil && !slices.Contains(schemes, *scheme) {
+			fail(eBadRequest)
+			return
+		}
+		if scheme == nil {
+			scheme = &schemes[0]
+		}
+		at, err := k.Listen(*scheme)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "stand: cannot listen:", err)
 			fail(eBadRequest)
@@ -353,12 +386,9 @@ func (k *Kit) handle(line []byte) {
 
 	case "route":
 		far, ok := req.hexOf("far", 128)
-		at, ok2 := req.str("at")
-		if ok2 {
-			_, _, err := net.SplitHostPort(at)
-			ok2 = err == nil
-		}
-		if !ok || !ok2 {
+		text, ok2 := req.str("at")
+		at, ok3 := parseAddress(text)
+		if !ok || !ok2 || !ok3 {
 			fail(eBadRequest)
 			return
 		}

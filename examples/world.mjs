@@ -1,8 +1,8 @@
 #!/usr/bin/env node
-// The world: the example kits speaking Quo to each other over TCP, in seven
-// scenes, narrated. It shows Quo working between strangers and proves
-// nothing the verifier does not. A scene fails only where it ends otherwise
-// than SPEC.md says. Each kit is driven through part two of
+// The world: the example kits speaking Quo to each other over TCP and the
+// web, in eight scenes, narrated. It shows Quo working between strangers and
+// proves nothing the verifier does not. A scene fails only where it ends
+// otherwise than SPEC.md says. Each kit is driven through part two of
 // vectors/HARNESS.md; where a scene needs a stranger, the world is the
 // stranger, and writes its boxes with the verifier's own primitives.
 //   node examples/world.mjs
@@ -31,6 +31,8 @@ const KITS = [
   ["Rust", "rust", "target/debug/stand"],
 ];
 
+const SCHEMES = ["tcp", "ws", "http"];
+
 let failures = 0;
 const say = (line = "") => process.stdout.write(`${line}\n`);
 const expect = (what, ok, got) => {
@@ -53,8 +55,25 @@ class Kit {
     return a;
   }
 
+  /** The kit's listener of every scheme it stands; `at` is its tcp listener. */
   async start() {
-    this.at = (await this.req({ op: "listen" })).at;
+    this.ats = {};
+    for (const scheme of SCHEMES) {
+      const a = await this.stand.request({ op: "listen", scheme });
+      if (typeof a.at === "string") this.ats[scheme] = a.at;
+    }
+    this.at = this.ats.tcp;
+    if (!this.at) throw new Error(`${this.name} holds no tcp listener`);
+    this.dialed = {};
+  }
+
+  /** Whether the kit dials `scheme`: a route to a ward nobody stands answers so. */
+  async dials(scheme, at) {
+    if (!(scheme in this.dialed)) {
+      const a = await this.stand.request({ op: "route", far: hex(randomBytes(64)), at });
+      this.dialed[scheme] = typeof a.routed === "string";
+    }
+    return this.dialed[scheme];
   }
 }
 
@@ -258,7 +277,7 @@ async function lostReply([, , , javascript, rust]) {
     };
   });
   await new Promise((res) => server.listen(0, "127.0.0.1", res));
-  await route(hal, gus, `127.0.0.1:${server.address().port}`);
+  await route(hal, gus, `tcp://127.0.0.1:${server.address().port}`);
   const card = await invite(gus, "for Hal", "echo");
   let read = await send(hal, card, "first", { n: 1 });
   say(`   Hal knocks and hears ${shown(read)}.`);
@@ -272,12 +291,50 @@ async function lostReply([, , , javascript, rust]) {
   server.close();
 }
 
+async function cardSaysWhere(kits) {
+  say("8. The card says where");
+  say("   Alice keeps a ward in each kit, and her card names her door in at. A friend in the next kit holds the card and no route.");
+  const outcomes = new Map(kits.map((k) => [k.name, { reached: [], missed: [] }]));
+  let departed = false;
+  for (const [i, home] of kits.entries()) {
+    const guest = kits[(i + 1) % kits.length];
+    for (const scheme of SCHEMES) {
+      const door = home.ats[scheme];
+      if (!door || !(await guest.dials(scheme, door))) continue;
+      const alice = await ward(home, `Alice in ${home.name}, over ${scheme}`);
+      const friend = await ward(guest, `a friend in ${guest.name}, over ${scheme}`);
+      const card = await invite(alice, "for a friend", "echo");
+      // The world writes the card's at with the one address this pass is about.
+      const read = await send(friend, { ...card, at: [door] }, "where", { over: scheme });
+      const o = outcomes.get(guest.name);
+      if (read.object?.over === scheme) {
+        o.reached.push(scheme);
+        say(`   ${guest.name} reads ${door} on the card and reaches Alice in ${home.name} over ${scheme}.`);
+      } else if (read.nothing) {
+        o.missed.push(scheme);
+        say(`   ${guest.name} holds the card with ${scheme} in at and hears nothing.`);
+      } else {
+        departed = true;
+        say(`   ${guest.name} asks Alice in ${home.name} over ${scheme} and hears ${shown(read)}.`);
+      }
+    }
+  }
+  const readers = [...outcomes].filter(([, o]) => o.reached.length).map(([n, o]) => `${n} (${o.reached.join(", ")})`);
+  const nonReaders = [...outcomes].filter(([, o]) => !o.reached.length && o.missed.length).map(([n]) => n);
+  const mixed = [...outcomes].filter(([, o]) => o.reached.length && o.missed.length).map(([n, o]) => `${n} missed ${o.missed.join(", ")}`);
+  say(`   Kits that reached a door through at: ${readers.join(", ") || "none"}.`);
+  say(`   Kits that read no at: ${nonReaders.join(", ") || "none"}.`);
+  // Reading at is the kit's (KIT-SPEC.md question 25). A kit that reads it
+  // and then hears nothing over a scheme it dials has not reached a door that answers.
+  expect("each friend reaches Alice through her card, or reads no at at all", !departed && mixed.length === 0, [...mixed, departed ? "a read other than an object or nothing" : ""].filter(Boolean).join("; "));
+}
+
 // ---------- the run ----------
 
 const kits = KITS.map((k) => new Kit(k));
 try {
   await Promise.all(kits.map((k) => k.start()));
-  say(`The world: ${kits.map((k) => `${k.name} at ${k.at}`).join(", ")}.`);
+  say(`The world: ${kits.map((k) => `${k.name} at ${Object.values(k.ats).join(" ")}`).join(", ")}.`);
   say();
   const first = await aliceAndBob(kits);
   say();
@@ -292,6 +349,8 @@ try {
   await mallory(first, fay);
   say();
   await lostReply(kits);
+  say();
+  await cardSaysWhere(kits);
   say();
 } catch (e) {
   failures++;

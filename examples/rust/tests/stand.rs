@@ -187,3 +187,50 @@ fn part_two() {
     assert_eq!(a.close(), 0);
     assert_eq!(b.close(), 0);
 }
+
+#[test]
+fn addresses_and_at() {
+    let mut a = Stand::new();
+    let mut b = Stand::new();
+    let wa = field(&a.req(r#""op":"ward","seed":"alpha""#), "ward");
+    let wb = field(&b.req(r#""op":"ward","seed":"beta""#), "ward");
+
+    // before a listener, no at
+    let bare = invitation(&a.req(&format!(r#""op":"invite","ward":"{wa}","heir":"bare""#)));
+    assert!(!bare.contains("\"at\""));
+
+    // tcp alone is stood
+    for scheme in ["http", "ws", "https", "wss", "udp"] {
+        assert_eq!(a.req(&format!(r#""op":"listen","scheme":"{scheme}""#)), r#""error":"bad request""#);
+    }
+    assert_eq!(a.req(r#""op":"listen","scheme":null"#), r#""error":"bad request""#);
+    let at = field(&a.req(r#""op":"listen","scheme":"tcp""#), "at");
+    assert!(at.starts_with("tcp://127.0.0.1:"), "{at}");
+    assert_eq!(field(&a.req(r#""op":"listen""#), "at"), at);
+    for bad in ["http://127.0.0.1:1/q", "ws://127.0.0.1:1", "127.0.0.1:1", "tcp://h:1/p"] {
+        assert_eq!(b.req(&format!(r#""op":"route","far":"{wa}","at":"{bad}""#)), r#""error":"bad request""#);
+    }
+
+    // after it, every invitation carries it in at
+    let inv = invitation(&a.req(&format!(r#""op":"invite","ward":"{wa}","heir":"h""#)));
+    let tail = format!(r#","at":["{at}"]}}"#);
+    assert!(inv.ends_with(&tail), "{inv}");
+
+    // with no route, at is tried in order: another scheme and a dead tcp address are passed over
+    let dead = std::net::TcpListener::bind("127.0.0.1:0").unwrap().local_addr().unwrap();
+    let lead = format!(r#","at":["ws://127.0.0.1:1/q","tcp://{dead}","not a uri",7,"{at}"]}}"#);
+    let tried = inv.replace(&tail, &lead);
+    assert_eq!(
+        b.req(&format!(r#""op":"send","ward":"{wb}","invitation":{tried},"method":"m","args":{{"n":1}}"#)),
+        r#""read":{"object":{"n":1},"seen":null}"#
+    );
+    // an at that is not an array is absent: nothing is dialed
+    let flat = inv.replace(&tail, &format!(r#","at":"{at}"}}"#));
+    assert_eq!(b.req(&format!(r#""op":"send","ward":"{wb}","invitation":{flat}"#)), r#""read":{"nothing":true}"#);
+    // a route is dialed alone, even where at would deliver
+    b.req(&format!(r#""op":"route","far":"{wa}","at":"tcp://{dead}""#));
+    assert_eq!(b.req(&format!(r#""op":"send","ward":"{wb}","invitation":{inv}"#)), r#""read":{"nothing":true}"#);
+
+    assert_eq!(a.close(), 0);
+    assert_eq!(b.close(), 0);
+}

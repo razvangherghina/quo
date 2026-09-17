@@ -96,9 +96,10 @@ test("part two: carried over TCP", async () => {
   const asker = program();
   const w = (await door.req({ op: "ward", seed: "door2" })).ward;
   const me = (await asker.req({ op: "ward", seed: "asker2" })).ward;
+  // Minted before any listener, so it carries no `at`.
+  const { invitation } = await door.req({ op: "invite", ward: w, heir: "h" });
   const { at } = await door.req({ op: "listen" });
   assert.equal((await door.req({ op: "listen" })).at, at);
-  const { invitation } = await door.req({ op: "invite", ward: w, heir: "h" });
   assert.deepEqual((await asker.req({ op: "send", ward: me, invitation, method: "m" })).read, { nothing: true });
   assert.equal((await asker.req({ op: "route", far: w, at })).routed, w);
   // The knock was not delivered, so its same bytes go again, with no args.
@@ -116,4 +117,56 @@ test("part two: carried over TCP", async () => {
   assert.equal(await asker.end(), 0);
   assert.equal(await door.end(), 0);
   assert.equal(await other.end(), 0);
+});
+
+test("part two: every scheme, and the invitation's at", async () => {
+  const door = program();
+  const asker = program();
+  const w = (await door.req({ op: "ward", seed: "door3" })).ward;
+  const me = (await asker.req({ op: "ward", seed: "asker3" })).ward;
+  assert.equal((await door.req({ op: "listen", scheme: "https" })).error, "bad request");
+  assert.equal((await door.req({ op: "listen", scheme: 1 })).error, "bad request");
+  const plain = (await door.req({ op: "invite", ward: w, heir: "plain" })).invitation;
+  assert.equal(plain.at, undefined);
+  const tcp = (await door.req({ op: "listen" })).at;
+  const http = (await door.req({ op: "listen", scheme: "http" })).at;
+  const ws = (await door.req({ op: "listen", scheme: "ws" })).at;
+  assert.match(tcp, /^tcp:\/\/127\.0\.0\.1:\d+$/);
+  assert.match(http, /^http:\/\/127\.0\.0\.1:\d+\/$/);
+  assert.match(ws, /^ws:\/\/127\.0\.0\.1:\d+\/$/);
+  assert.equal((await door.req({ op: "listen", scheme: "tcp" })).at, tcp);
+
+  for (const bad of ["127.0.0.1:1", "ftp://h/", "http://u@h/"]) {
+    assert.equal((await asker.req({ op: "route", far: w, at: bad })).error, "bad request", bad);
+  }
+
+  // Every invitation names the listeners, ws first, and `at` alone reaches the ward.
+  const inv = async (heir) => (await door.req({ op: "invite", ward: w, heir })).invitation;
+  const all = await inv("all");
+  assert.deepEqual(all.at, [ws, http, tcp]);
+  const send = (invitation, args) => asker.req({ op: "send", ward: me, invitation, method: "m", args });
+  assert.deepEqual((await send(all, { a: 1 })).read, { object: { a: 1 }, seen: null });
+  for (const [name, at] of [["tcp", tcp], ["http", http], ["ws", ws]]) {
+    const invitation = { ...(await inv(name)), at: ["gopher://h/", "not a uri", at] };
+    assert.deepEqual((await send(invitation, { name })).read, { object: { name }, seen: null }, name);
+    assert.deepEqual((await send(invitation, { again: name })).read, { object: { again: name }, seen: null }, name);
+  }
+
+  // An address that delivers nothing is passed over for the next.
+  const dead = (await asker.req({ op: "listen", scheme: "http" })).at;
+  const past = { ...(await inv("past")), at: [dead, tcp] };
+  assert.deepEqual((await send(past, { p: 1 })).read, { object: { p: 1 }, seen: null });
+
+  // An `at` that is not an array is absent, and a route is dialed alone.
+  const lone = { ...(await inv("lone")), at: tcp };
+  assert.deepEqual((await send(lone, {})).read, { nothing: true });
+  assert.equal((await asker.req({ op: "route", far: w, at: dead })).routed, w);
+  assert.deepEqual((await send(all, { b: 2 })).read, { nothing: true });
+  assert.equal((await asker.req({ op: "route", far: w, at: ws })).routed, w);
+  // The knock on `lone` was not delivered, so its same bytes go again.
+  assert.deepEqual((await send(lone, { c: 3 })).read, { object: {}, seen: null });
+  assert.deepEqual((await send(lone, { d: 4 })).read, { object: { d: 4 }, seen: null });
+
+  assert.equal(await asker.end(), 0);
+  assert.equal(await door.end(), 0);
 });

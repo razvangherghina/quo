@@ -71,13 +71,54 @@ pub fn read_frame(r: &mut impl Read) -> io::Result<Frame> {
     })
 }
 
+/// Read `tcp://host:port`, the scheme in any case, into the `host:port` a socket dials.
+/// The host is a name, an IPv4 address, or an IPv6 address in brackets; the port is
+/// decimal. Anything else, a path, a query, a fragment or user information among it,
+/// is no tcp address.
+pub fn tcp_address(s: &str) -> Option<String> {
+    let (scheme, rest) = s.split_once("://")?;
+    if !scheme.eq_ignore_ascii_case("tcp") {
+        return None;
+    }
+    let (host, port) = if let Some(inner) = rest.strip_prefix('[') {
+        let (ip6, after) = inner.split_once(']')?;
+        ip6.parse::<std::net::Ipv6Addr>().ok()?;
+        (&rest[..ip6.len() + 2], after.strip_prefix(':')?)
+    } else {
+        let (h, p) = rest.split_once(':')?;
+        (h, p)
+    };
+    if host.is_empty() || port.is_empty() || !port.bytes().all(|b| b.is_ascii_digit()) {
+        return None;
+    }
+    let port: u16 = port.parse().ok()?;
+    if !host.starts_with('[') && !reg_name(host) {
+        return None;
+    }
+    Some(format!("{host}:{port}"))
+}
+
+/// RFC 3986 reg-name: unreserved, percent-encoded and sub-delims. An IPv4 address is one.
+fn reg_name(h: &str) -> bool {
+    let b = h.as_bytes();
+    let mut i = 0;
+    while i < b.len() {
+        match b[i] {
+            b'%' if i + 2 < b.len() && b[i + 1].is_ascii_hexdigit() && b[i + 2].is_ascii_hexdigit() => i += 3,
+            c if c.is_ascii_alphanumeric() || b"-._~!$&'()*+,;=".contains(&c) => i += 1,
+            _ => return false,
+        }
+    }
+    true
+}
+
 /// What a listener hands an ask to: Some(reply box), or None for 02.
 pub type Handler = Arc<dyn Fn(&[u8; 64], &[u8]) -> Option<Vec<u8>> + Send + Sync>;
 
-/// Hold a listener on 127.0.0.1 and answer on it. Returns "host:port".
+/// Hold a listener on 127.0.0.1 and answer on it. Returns its `tcp://host:port`.
 pub fn listen(handler: Handler) -> io::Result<String> {
     let l = TcpListener::bind("127.0.0.1:0")?;
-    let at = l.local_addr()?.to_string();
+    let at = format!("tcp://{}", l.local_addr()?);
     std::thread::spawn(move || {
         for s in l.incoming().flatten() {
             let h = handler.clone();
@@ -124,7 +165,7 @@ pub enum Dialed {
     Unsent,
 }
 
-/// Dial `at`, send one ask, and wait up to `wait` for its answer.
+/// Dial `at`, a `host:port`, send one ask, and wait up to `wait` for its answer.
 pub fn dial(at: &str, ward: &[u8; 64], bx: &[u8], wait: Duration) -> Dialed {
     let deadline = Instant::now() + wait;
     let Some(addr) = at.to_socket_addrs().ok().and_then(|mut a| a.next()) else { return Dialed::Unsent };
@@ -181,10 +222,44 @@ mod tests {
     }
 
     #[test]
+    fn tcp_addresses() {
+        for (s, want) in [
+            ("tcp://127.0.0.1:80", "127.0.0.1:80"),
+            ("TCP://example.org:080", "example.org:80"),
+            ("tcp://[::1]:9", "[::1]:9"),
+            ("tcp://a%2Db:1", "a%2Db:1"),
+        ] {
+            assert_eq!(tcp_address(s).as_deref(), Some(want), "{s}");
+        }
+        for s in [
+            "127.0.0.1:80",
+            "http://h:1",
+            "ws://h:1",
+            "tcp://h",
+            "tcp://h:",
+            "tcp://:1",
+            "tcp://h:65536",
+            "tcp://h:1/",
+            "tcp://h:1/p",
+            "tcp://h:1?q",
+            "tcp://h:1#f",
+            "tcp://u@h:1",
+            "tcp://::1:1",
+            "tcp://[::1]",
+            "tcp://[zz]:1",
+            "tcp://h%2:1",
+            "tcp://h:+1",
+            "tcp:h:1",
+        ] {
+            assert_eq!(tcp_address(s), None, "{s}");
+        }
+    }
+
+    #[test]
     fn listen_and_dial() {
         let h: Handler = Arc::new(|w, b| if w[0] == 1 { Some(b.iter().rev().copied().collect()) } else { None });
-        let at = listen(h).unwrap();
-        assert_eq!(dial(&at, &[1u8; 64], &[1, 2, 3], Duration::from_secs(2)), Dialed::Reply(vec![3, 2, 1]));
+        let at = tcp_address(&listen(h).unwrap()).unwrap();
+        assert_eq!(dial(&at,&[1u8; 64], &[1, 2, 3], Duration::from_secs(2)), Dialed::Reply(vec![3, 2, 1]));
         assert_eq!(dial(&at, &[2u8; 64], &[1, 2, 3], Duration::from_secs(2)), Dialed::Unsent);
         assert_eq!(dial("127.0.0.1:1", &[2u8; 64], &[1], Duration::from_secs(2)), Dialed::Unsent);
     }

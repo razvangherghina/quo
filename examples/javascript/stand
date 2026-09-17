@@ -3,15 +3,37 @@
 import { Ward, reaches, readInvitation, readJSON } from "./lib/quo.js";
 import { utf8, parse, compact, toJS } from "./lib/json.js";
 import { isHex, fromHex, hex } from "./lib/crypto.js";
-import { listen, Dialer } from "./lib/tcp.js";
+import { listen as listenTcp, Dialer } from "./lib/tcp.js";
+import { listenPost, askPost, listenLine, LineDialer } from "./lib/web.js";
+import { readAddress, dialable, LISTENED } from "./lib/address.js";
 
 const log = (m) => process.stderr.write(`stand: ${m}\n`);
 const wards = new Map(); // ward pk -> { ward, names: Map name -> heir hex }
-const routes = new Map();
-const dialer = new Dialer();
-let server = null;
-let at = null;
+const routes = new Map(); // far ward pk -> address
+const tcp = new Dialer();
+const lines = new LineDialer();
 const inFlight = new Set();
+
+// The carriers this kit dials, by scheme.
+const dialers = {
+  tcp: (a, pk, box) => tcp.ask(a, pk, box),
+  http: askPost,
+  https: askPost,
+  ws: (a, pk, box) => lines.ask(a, pk, box),
+  wss: (a, pk, box) => lines.ask(a, pk, box),
+};
+
+// The listeners this program holds, by scheme: { server: Promise, at }.
+const lookup = (pk) => wards.get(pk)?.ward;
+const starters = { tcp: listenTcp, http: listenPost, ws: listenLine };
+const listeners = new Map();
+const addressOf = (scheme, s) => {
+  const a = s.address();
+  const host = a.family === "IPv6" ? `[${a.address}]` : a.address;
+  return scheme === "tcp" ? `tcp://${host}:${a.port}` : `${scheme}://${host}:${a.port}/`;
+};
+// The addresses written in an invitation's `at`: ws first, then http, then tcp.
+const ours = () => ["ws", "http", "tcp"].map((s) => listeners.get(s)?.at).filter(Boolean);
 
 const out = (line) => process.stdout.write(line + "\n");
 const answer = (id, body) => out(`{"id":${JSON.stringify(id)}${body ? "," + body : ""}}`);
@@ -64,7 +86,7 @@ const ops = {
     const w = held(pk);
     const reach = reachOf(reachName) ?? reaches.echo;
     if (w.names.has(name)) refuse("name held");
-    const inv = w.ward.invite(reach);
+    const inv = w.ward.invite(reach, ours());
     w.names.set(name, inv.heir);
     return `"invitation":${JSON.stringify(inv)}`;
   },
@@ -105,21 +127,21 @@ const ops = {
     const r = s.read(n.t === "null" ? null : fromHex(n.v));
     return `"read":${readJSON(r)}`;
   },
-  async listen() {
-    if (!server) {
-      server = listen((pk) => wards.get(pk)?.ward, { log });
-      const s = await server;
-      const a = s.address();
-      at = `${a.family === "IPv6" ? `[${a.address}]` : a.address}:${a.port}`;
-    } else await server;
-    return `"at":${JSON.stringify(at)}`;
+  async listen(f) {
+    const scheme = str(f, "scheme", true) ?? "tcp";
+    if (!LISTENED.includes(scheme)) refuse("bad request");
+    let l = listeners.get(scheme);
+    if (!l) {
+      l = { server: starters[scheme](lookup, { log }), at: null };
+      listeners.set(scheme, l);
+      l.at = addressOf(scheme, await l.server);
+    } else await l.server;
+    return `"at":${JSON.stringify(l.at)}`;
   },
   route(f) {
     const far = str(f, "far");
-    const where = str(f, "at");
-    if (!isHex(far, 128)) refuse("bad request");
-    const m = /^(.+):(\d{1,5})$/.exec(where);
-    if (!m || Number(m[2]) > 65535) refuse("bad request");
+    const where = readAddress(str(f, "at"));
+    if (!isHex(far, 128) || !where) refuse("bad request");
     routes.set(far, where);
     return `"routed":"${far}"`;
   },
@@ -132,8 +154,13 @@ const ops = {
     // One send at a time on one relation.
     const run = s.chain.then(async () => {
       const box = s.ask(method, args);
+      // The route alone where there is one; else `at`, in order, until one delivers.
       const route = routes.get(inv.ward);
-      const reply = route === undefined ? null : await dialer.ask(route, inv.ward, box);
+      let reply = null;
+      for (const a of route ? [route] : dialable(inv.at)) {
+        reply = await dialers[a.scheme](a, inv.ward, box);
+        if (reply) break;
+      }
       return s.read(reply);
     });
     s.chain = run.catch(() => {});
@@ -148,7 +175,8 @@ async function handle(bytes) {
     text = utf8(bytes);
     if (text.endsWith("\r")) text = text.slice(0, -1);
     if (text === "") return;
-    node = parse(text, { unique: false });
+    // Three levels: the request, the invitation, and its `at`.
+    node = parse(text, { unique: false, depth: 3 });
   } catch {
     return error(null, "bad request");
   }
@@ -188,7 +216,12 @@ process.stdin.on("data", (chunk) => {
 process.stdin.on("end", async () => {
   if (pending.length) take(pending);
   while (inFlight.size) await Promise.allSettled([...inFlight]);
-  dialer.close();
-  if (server) (await server).close();
+  tcp.close();
+  lines.close();
+  for (const l of listeners.values()) {
+    const s = await l.server;
+    s.close();
+    s.closeAllConnections?.();
+  }
   process.stdout.write("", () => process.exit(0));
 });

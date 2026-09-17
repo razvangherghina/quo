@@ -1,4 +1,5 @@
 import hashlib
+import http.client
 import json
 import os
 import subprocess
@@ -9,6 +10,8 @@ HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, HERE)
 
 from quokit import crypto as c  # noqa: E402
+from quokit.address import address  # noqa: E402
+from quokit.web import post  # noqa: E402
 from quokit.box import (SILENCE, ZERO_EDGE, WardKey, open_reply, payload_text,  # noqa: E402
                         read_reply_text, seal_ask)
 from quokit.carrier import ASK, NOTHING, REPLY, dial, frame  # noqa: E402
@@ -321,6 +324,26 @@ class Door(unittest.TestCase):
         self.assertEqual(open_reply(self.ward.arrive(big), lid_secret, self.sign)[0], ("silence",))
 
 
+class Addresses(unittest.TestCase):
+    def test_tcp(self):
+        a = address("tcp://[::1]:9")
+        self.assertEqual((a.scheme, a.host, a.port), ("tcp", "::1", 9))
+        self.assertEqual(address("TCP://example.org:65535").port, 65535)
+        for s in ["tcp://h", "tcp://h:0", "tcp://h:65536", "tcp://h:1/", "tcp://h:1?q", "tcp://h:1#f",
+                  "tcp://u@h:1", "tcp://:1", "h:1", "tcp://h 1:1"]:
+            self.assertIsNone(address(s), s)
+
+    def test_web(self):
+        a = address("http://example.org/quo?w=1")
+        self.assertEqual((a.scheme, a.host, a.port, a.target), ("http", "example.org", 80, "/quo?w=1"))
+        self.assertEqual(address("https://h").port, 443)
+        self.assertEqual(address("https://h").target, "/")
+        self.assertEqual(address("http://[fe80::1]:8/").host, "fe80::1")
+        for s in ["http://u@h/", "http://h/#f", "http:/h", "ws://h/", "wss://h/", "zz://h", "",
+                  None, 7, "http://h:99999/"]:
+            self.assertIsNone(address(s), s)
+
+
 def stand(lines):
     p = subprocess.run([os.path.join(HERE, "stand")], input="".join(line + "\n" for line in lines).encode(),
                        stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=120)
@@ -405,14 +428,18 @@ class Harness(unittest.TestCase):
         try:
             req({"id": "w", "op": "ward", "seed": "dora"})
             at = req({"id": "l", "op": "listen"})["at"]
-            self.assertEqual(req({"id": "l2", "op": "listen"})["at"], at)
+            self.assertEqual(req({"id": "l2", "op": "listen", "scheme": "tcp"})["at"], at)
+            self.assertEqual(req({"id": "l3", "op": "listen", "scheme": "ws"}),
+                             {"id": "l3", "error": "bad request"})
+            tcp = address(at)
+            self.assertEqual((tcp.scheme, tcp.host), ("tcp", "127.0.0.1"))
             inv = req({"id": "i", "op": "invite", "ward": pk, "heir": "h"})["invitation"]
+            self.assertEqual(inv["at"], [at])
             st = Standing(inv, OsSource())
-            reply = dial(at, bytes.fromhex(pk), st.next_box("echo", '{"x":1}'), 10)
+            reply = dial(tcp, bytes.fromhex(pk), st.next_box("echo", '{"x":1}'), 10)
             self.assertEqual(st.take(reply)[2], b'{"x":1}')
-            self.assertIsNone(dial(at, os.urandom(64), st.next_box(), 10))
-            host, port = at.split(":")
-            s = socket.create_connection((host, int(port)))
+            self.assertIsNone(dial(tcp, os.urandom(64), st.next_box(), 10))
+            s = socket.create_connection((tcp.host, tcp.port))
             s.sendall(frame(REPLY, 1, b"x") + frame(ASK, 2, os.urandom(64) + b"y"))
             self.assertEqual(read_frame(s), (NOTHING, 2, b""))
             s.sendall(b"\x00\x00\x00\x01")
@@ -426,6 +453,34 @@ class Harness(unittest.TestCase):
             self.assertEqual(got, {"id": "s", "read": {"object": {"q": 2}, "seen": None}})
             got = req({"id": "s2", "op": "send", "ward": me, "invitation": inv2})
             self.assertEqual(got, {"id": "s2", "read": {"object": {}, "seen": None}})
+
+            # the post: listened on, written first in `at`, and read through `at`
+            web = req({"id": "l4", "op": "listen", "scheme": "http"})["at"]
+            post_at = address(web)
+            self.assertEqual((post_at.scheme, post_at.target), ("http", "/"))
+            inv3 = req({"id": "i3", "op": "invite", "ward": pk, "heir": "f"})["invitation"]
+            self.assertEqual(inv3["at"], [web, at])
+            st = Standing(inv3, OsSource())
+            self.assertEqual(st.take(post(post_at, bytes.fromhex(pk), st.next_box("e", '{"p":1}'), 10))[2],
+                             b'{"p":1}')
+            self.assertIsNone(post(post_at, os.urandom(64), st.next_box(), 10))
+            for method, body, status in [("GET", None, 405), ("POST", b"", 400),
+                                         ("POST", os.urandom(64), 400)]:
+                conn = http.client.HTTPConnection(post_at.host, post_at.port, timeout=10)
+                conn.request(method, "/", body=body)
+                self.assertEqual(conn.getresponse().status, status)
+                conn.close()
+
+            far = req({"id": "w3", "op": "ward", "seed": "fay"})["ward"]
+            self.assertEqual(req({"id": "r2", "op": "route", "far": far, "at": "ws://127.0.0.1:1/"}),
+                             {"id": "r2", "error": "bad request"})
+            inv4 = req({"id": "i4", "op": "invite", "ward": far, "heir": "k"})["invitation"]
+            inv4["at"] = ["zz://nowhere", "not a uri", 7, "ws://127.0.0.1:1/", web]
+            got = req({"id": "s3", "op": "send", "ward": me, "invitation": inv4, "method": "e", "args": {"a": 1}})
+            self.assertEqual(got, {"id": "s3", "read": {"object": {"a": 1}, "seen": None}})
+            inv4["at"] = web  # not an array: read as absent
+            got = req({"id": "s4", "op": "send", "ward": me, "invitation": inv4})
+            self.assertEqual(got, {"id": "s4", "read": {"nothing": True}})
         finally:
             proc.stdin.close()
             self.assertEqual(proc.wait(30), 0)

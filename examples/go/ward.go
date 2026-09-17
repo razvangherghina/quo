@@ -101,10 +101,11 @@ var errNameHeld = errors.New("name held")
 
 // Invitation is the invitation of SPEC.md.
 type Invitation struct {
-	Ward   string `json:"ward"`
-	Heir   string `json:"heir"`
-	Secret string `json:"secret"`
-	Lock   string `json:"lock"`
+	Ward   string   `json:"ward"`
+	Heir   string   `json:"heir"`
+	Secret string   `json:"secret"`
+	Lock   string   `json:"lock"`
+	At     []string `json:"at,omitempty"`
 }
 
 // Invite makes a heir, holds its pk under name, and gives its secret away.

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { askFrame, FrameReader, MAX_BODY, nothingFrame, parseAt, rawFrame, replyFrame } from "../frame.js";
+import { askFrame, FrameReader, MAX_BODY, nothingFrame, parseBody, rawFrame, replyFrame, splitFrames } from "../frame.js";
 
 const pk = Buffer.alloc(64, 7);
 const body = (kind, id, rest = Buffer.alloc(0)) => {
@@ -80,9 +80,35 @@ test("a partial header waits for more bytes", () => {
   assert.equal(r.push(body(2, 8))[0].id, 8);
 });
 
-test("an address is host:port", () => {
-  assert.deepEqual(parseAt("127.0.0.1:4000"), { host: "127.0.0.1", port: 4000 });
-  assert.deepEqual(parseAt("[::1]:80"), { host: "::1", port: 80 });
-  assert.deepEqual(parseAt("example.org:65535"), { host: "example.org", port: 65535 });
-  for (const no of ["127.0.0.1", ":80", "host:0", "host:65536", "host:x", "::1:80", 5, null]) assert.equal(parseAt(no), null, String(no));
+test("a body with no length in front reads as its frame", () => {
+  const ask = parseBody(splitFrames(askFrame(7, pk, Buffer.from("box")))[0]).frame;
+  assert.deepEqual([ask.kind, ask.id, ask.pk, ask.box.toString()], ["ask", 7, pk, "box"]);
+  assert.equal(parseBody(body(2, 9)).frame.kind, "nothing");
+  assert.equal(parseBody(body(1, 9)).frame.box.length, 0);
+  assert.equal(parseBody(Buffer.concat([body(0, 1), pk])).frame.box.length, 0);
+  assert.equal(parseBody(Buffer.alloc(MAX_BODY)).frame.box.length, MAX_BODY - 69);
+});
+
+test("a body that is no frame says why", () => {
+  for (const [what, b] of [
+    ["an empty body", Buffer.alloc(0)],
+    ["four bytes", body(2, 0).subarray(0, 4)],
+    ["a body above the largest", Buffer.alloc(MAX_BODY + 1)],
+    ["a kind of three", body(3, 1)],
+    ["an ask with sixty-three bytes after its id", Buffer.concat([body(0, 1), Buffer.alloc(63)])],
+    ["a nothing with a byte after its id", body(2, 1, Buffer.from([0]))],
+  ]) {
+    const p = parseBody(b);
+    assert.equal(p.frame, undefined, what);
+    assert.equal(typeof p.bad, "string", what);
+  }
+});
+
+test("frames written one after another split into their bodies", () => {
+  const bodies = splitFrames(Buffer.concat([askFrame(1, pk, Buffer.from("a")), nothingFrame(2), replyFrame(3, Buffer.alloc(0))]));
+  assert.deepEqual(
+    bodies.map((b) => parseBody(b).frame.id),
+    [1, 2, 3],
+  );
+  assert.deepEqual(splitFrames(Buffer.alloc(0)), []);
 });

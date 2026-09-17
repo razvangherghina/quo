@@ -1,6 +1,7 @@
 # Quo over TCP
 
-This is one carrier of Quo. Any other carrier is a kit's own. Every term
+This is one carrier of Quo. `CARRIER-WEB.md` is another. Any other
+carrier is a kit's own. Every term
 here is the term `SPEC.md` defines.
 
 ## The line
@@ -16,9 +17,10 @@ Quo names no port. An address is whatever reaches the listener.
 
 In an invitation's `at`, this carrier's scheme is `tcp`, and an address is
 written `tcp://host:port`. The host is a name, an IPv4 address, or an IPv6
-address in brackets, as RFC 3986 writes them. The port is decimal. An
-address with a path, a query, a fragment or user information is not one of
-this carrier's.
+address in brackets, as RFC 3986 writes them. A name is looked up as it is
+written. The port is decimal, from 1 to 65535. Nothing follows the port: an
+address with a path, a lone `/` included, a query, a fragment or user
+information is not one of this carrier's.
 
 The frames are the same bytes on any reliable stream that reaches the
 listener, plain TCP, TCP inside TLS, or a tunnel.

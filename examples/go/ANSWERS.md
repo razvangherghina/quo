@@ -20,13 +20,15 @@ answer is the kit's choice, with its reason. Each number is the number
    nothing answers, and every zero-head ask is case 4. Reason: the harness
    fixes this.
 4. **Asks judged at once.** One. A single mutex holds every door and every
-   standing, so each arrival, from `arrive` or from any TCP connection, is
+   standing, so each arrival, from `arrive` or from any listener, is
    judged alone and checked once. Reason: the second check buys nothing
    when nothing races.
 5. **Names.** `Kit`, `Ward`, `Heir` (the occupant's relation), `Standing`
    (the standing's relation), `Sent` (one sealed ask), `Target`, `Read`.
    A relation at the door is named by the name `invite` gave; at the
-   standing by the asking ward, the far ward pk and the heir pk.
+   standing by the asking ward, the far ward pk and the heir pk. The
+   carriers' parts are `address`, `frame`, `dialed` (a line a dialer holds)
+   and `wsConn` (one end of a held line).
 
 ## What a kit keeps
 
@@ -53,8 +55,9 @@ answer is the kit's choice, with its reason. Each number is the number
 
 ## What a kit answers
 
-12. **Does the door answer.** Always, with a reply. A carrier gives nothing
-    only for a ward pk the program does not stand.
+12. **Does the door answer.** Always, with a reply. A listener gives
+    nothing only for a ward pk the program does not stand: a nothing frame
+    on tcp and the held line, status 204 on the post.
 13. **`seen`.** `null`, except behind `marked`, which writes `"1"` on a
     named ask as the harness fixes.
 14. **The empty ask.** Behind `echo` and `marked`, the object `{}` with
@@ -68,7 +71,8 @@ answer is the kit's choice, with its reason. Each number is the number
     same sixteen bytes, but cases that end earlier return earlier. Reason:
     this kit is an example, and a timing floor is a deployment's choice.
 18. **Its own eyes.** Nothing is logged per arrival. stderr carries only a
-    failure to write an answer or to open a listener.
+    failure to write an answer or to open a listener, and what Go's HTTP
+    server says of its own connections.
 
 ## What a kit asks
 
@@ -76,15 +80,17 @@ answer is the kit's choice, with its reason. Each number is the number
     minting ward keeps no copy. The standing checks the four fields' hex,
     that the secret gives the heir pk, that the lock passes FIPS 203's
     encapsulation key check, which `crypto/mlkem` makes, and that the
-    padlock takes a seal, and refuses anything else as `bad request`.
+    padlock takes a seal, and refuses anything else as `bad request`. `at`
+    is read as question 25 says, and nothing in it refuses an invitation.
 20. **A knock that brought no object back.** After nothing, the knock is
     sent again as the same bytes. After silence, a word or a reply that did
     not open, the standing asks under the key the knock announced and the
     knock's edge key. After each further non-object it alternates between
     the two. Each retry happens only when asked to ask again.
-21. **How long an asker waits.** Five seconds to dial a far ward, then ten
-    seconds for the reply to an ask, then nothing. A closed connection is
-    nothing at once.
+21. **How long an asker waits.** Five seconds to reach an address, TLS
+    and the WebSocket handshake included, then ten seconds for the reply to
+    an ask, then nothing. A closed connection is nothing at once. Each
+    address in `at` is given the same, one after another.
 22. **Two sends on one relation.** Each send carries its own sealed ask and
     lid secret and number. Numbers come from one counter per relation, so
     no two asks share one, and the standing keeps the highest number it
@@ -94,13 +100,44 @@ answer is the kit's choice, with its reason. Each number is the number
 
 ## What a kit carries
 
-24. **Carriers.** Quo over TCP alone, as listener and dialer. The listener
-    binds `127.0.0.1` on a port the system chooses. The dialer keeps one
-    connection per address, redials after it closes, and numbers its asks
-    per connection.
-25. **Where a ward is reached.** Only from `route`. A ward with no route is
-    not delivered to. The kit writes no `at` in its invitations and does not
-    read one, so it tries no address from an invitation.
+24. **Carriers.** Both published ones, and no other, with Go's standard
+    library alone: Quo over TCP, and Quo over the web in both forms, the
+    post on `net/http` and the held line written by hand on RFC 6455.
+    - As a listener, one per scheme, `tcp`, `http` and `ws`, each on
+      `127.0.0.1` at a port the system chooses, plain. A web listener
+      answers at every path, and its address is written with the path `/`.
+      The post answers 405 to a method other than `POST`, 400 to a body
+      under sixty-five bytes, 413 to one over 1,048,640, 204 for nothing and
+      200 with the reply's box. It sends no CORS headers, so it answers no
+      page of another origin. The held line refuses a handshake that does
+      not offer `quo`, and closes with status 1002 on bytes RFC 6455
+      refuses, 1003 on a text message, 1009 on a message longer than the
+      largest body, and 1008 on any other message that is no frame. It
+      answers pings and never pings.
+    - As a dialer, `tcp`, `http`, `https`, `ws` and `wss`, the secure two
+      inside TLS under the system's roots, since the harness counts them as
+      the same carrier. It keeps one line per address on tcp and the held
+      line, dials it again after it closes, and numbers its asks per line.
+      Each post is one request that follows no redirect. Reason: the
+      standard library holds HTTP and TLS, and RFC 6455 is small enough to
+      write where the library has none.
+25. **Where a ward is reached.** From `route`, and from an invitation's
+    `at`; the kit learns no address any other way.
+    - Where a ward has a route, the kit dials the route alone.
+    - Where it has none, the kit reads `at` in its order, skips every entry
+      that is not a string, not a URI with a scheme, of a scheme it does not
+      dial, or not written as that scheme's carrier writes it, and tries the
+      rest one after another. It stops at the first that answers with a
+      reply. An address that answers nothing, or that it cannot reach, sends
+      it to the next, and the ask reads nothing when none answered. Reason:
+      the first is the minting side's preference, and nothing means not
+      delivered, so the next address is still worth the same bytes.
+    - An `at` that is not an array is read as absent.
+    - Once the program holds listeners, every invitation it mints carries
+      `at` with each listener's address, `tcp` first, then `http`, then
+      `ws`. With no listener, it writes no `at`. Reason: TCP carries the
+      bytes with the least around them, and a reader that stands only the
+      web still finds its own scheme further on.
 
 ## What is not the kit's either
 

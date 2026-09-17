@@ -202,7 +202,7 @@ func TestReplyShapes(t *testing.T) {
 
 func TestFrames(t *testing.T) {
 	pk := make([]byte, 64)
-	f, err := readFrame(bytes.NewReader(frameBytes(kindAsk, 7, pk, []byte("box"))))
+	f, err := readFrame(bytes.NewReader(withLength(frameBody(kindAsk, 7, pk, []byte("box")))))
 	if err != nil || f.id != 7 || string(f.box) != "box" {
 		t.Fatal(f, err)
 	}

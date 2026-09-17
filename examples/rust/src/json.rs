@@ -113,28 +113,42 @@ pub fn keys_unique_throughout(bytes: &[u8]) -> bool {
                 let o = object(b)?;
                 Some(o.fields.iter().all(|(_, v)| walk(v.text(b)) == Some(true)))
             }
-            b'[' => {
-                let mut p = P::new(b)?;
-                p.i = 1;
-                loop {
-                    p.ws();
-                    if p.peek()? == b']' {
-                        return Some(true);
-                    }
-                    let v = p.value()?;
-                    if walk(v.text(b)) != Some(true) {
-                        return Some(false);
-                    }
-                    p.ws();
-                    if p.peek()? == b',' {
-                        p.i += 1;
-                    }
-                }
-            }
+            b'[' => Some(elements(b)?.iter().all(|v| walk(v.text(b)) == Some(true))),
             _ => Some(true),
         }
     }
     walk(bytes) == Some(true)
+}
+
+/// One JSON text that is one array, its elements kept as spans.
+pub fn elements(bytes: &[u8]) -> Option<Vec<Node>> {
+    let mut p = P::new(bytes)?;
+    p.ws();
+    if p.peek()? != b'[' {
+        return None;
+    }
+    p.i += 1;
+    let mut out = Vec::new();
+    p.ws();
+    if p.peek()? == b']' {
+        p.i += 1;
+    } else {
+        loop {
+            p.ws();
+            out.push(p.value()?);
+            p.ws();
+            match p.peek()? {
+                b',' => p.i += 1,
+                b']' => {
+                    p.i += 1;
+                    break;
+                }
+                _ => return None,
+            }
+        }
+    }
+    p.end()?;
+    Some(out)
 }
 
 /// One JSON text of any kind.

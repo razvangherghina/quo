@@ -12,7 +12,7 @@ sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
 WAIT = 30.0
 
 HEX = re.compile(r"\A(?:[0-9a-f]{2})*\Z")
-AT = re.compile(r"\A(\[[^\]]+\]|[^:\s]+):([0-9]{1,5})\Z")
+LISTENED = ("http", "tcp")  # the order their addresses take in `at`
 
 
 class BadRequest(Exception):
@@ -55,7 +55,17 @@ def invitation(req):
     from quokit.crypto import mlkem_valid
     if not mlkem_valid(bytes.fromhex(inv["lock"])):
         raise BadRequest()
-    return {k: inv[k] for k in ("ward", "heir", "secret", "lock")}
+    out = {k: inv[k] for k in ("ward", "heir", "secret", "lock")}
+    if isinstance(inv.get("at"), list):
+        out["at"] = inv["at"]
+    return out
+
+
+def dial(at, ward_pk, box):
+    """Carry one box to an Address. The reply box, or None for nothing."""
+    from quokit import carrier, web
+    carry = carrier.dial if at.scheme == "tcp" else web.post
+    return carry(at, ward_pk, box, WAIT)
 
 
 def asked(req):
@@ -112,7 +122,7 @@ class Program:
         self.standings = {}
         self.relation_locks = {}
         self.routes = {}
-        self.listener = None
+        self.listeners = {}
         self.sends = []
 
     # ---- the channel ----
@@ -195,6 +205,9 @@ class Program:
             raise Refused("name held")
         inv = ward.invite(self.reaches[reach or "echo"])
         self.names[pk][name] = bytes.fromhex(inv["heir"])
+        at = [self.listeners[s].at for s in LISTENED if s in self.listeners]
+        if at:
+            inv["at"] = at
         return {"invitation": inv}
 
     def op_release(self, req):
@@ -250,9 +263,14 @@ class Program:
 
     def op_listen(self, req):
         from quokit.carrier import Listener
-        if self.listener is None:
-            self.listener = Listener(self.door_for, log)
-        return {"at": self.listener.at}
+        from quokit.web import PostListener
+        scheme = string(req, "scheme", optional=True) or "tcp"
+        kinds = {"tcp": Listener, "http": PostListener}
+        if scheme not in kinds:
+            raise BadRequest()
+        if scheme not in self.listeners:
+            self.listeners[scheme] = kinds[scheme](self.door_for, log)
+        return {"at": self.listeners[scheme].at}
 
     def door_for(self, pk):
         ward = self.wards.get(pk)
@@ -266,8 +284,9 @@ class Program:
 
     def op_route(self, req):
         far = hexstr(req, "far", 128)
-        at = string(req, "at")
-        if not AT.match(at) or int(AT.match(at).group(2)) > 65535:
+        from quokit.address import address
+        at = address(string(req, "at"))
+        if at is None:
             raise BadRequest()
         self.routes[far] = at
         return {"routed": far}
@@ -284,13 +303,21 @@ class Program:
         t.start()
 
     def send(self, rid, pk, inv, method, args, rlock):
-        from quokit.carrier import dial
+        from quokit.address import address
         try:
             with rlock:
                 with self.kit:
                     box = self.seal(pk, inv, method, args)
-                    at = self.routes.get(inv["ward"])
-                reply = None if at is None else dial(at, bytes.fromhex(inv["ward"]), box, WAIT)
+                    route = self.routes.get(inv["ward"])
+                if route is not None:
+                    tries = [route]
+                else:
+                    tries = [a for a in map(address, inv.get("at", [])) if a is not None]
+                reply = None
+                for at in tries:
+                    reply = dial(at, bytes.fromhex(inv["ward"]), box)
+                    if reply is not None:
+                        break
                 with self.kit:
                     st, _ = self.standing(pk, inv)
                     read = reading(st.take(reply))

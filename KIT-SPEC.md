@@ -89,15 +89,20 @@ of `SPEC.md`.
 
 ## What a kit carries
 
-- **Question 24. Which carriers does the kit stand?** Quo over TCP is one.
-  Any other is the kit's.
+- **Question 24. Which carriers does the kit stand, and in which forms,
+  does it carry them inside TLS and with which checks, and where it listens
+  on the web, at which path, for which origins, and with which status when
+  it does not carry an ask?** Quo over TCP and Quo over the web, its post
+  and its held line, are published. Any other is the kit's.
 - **Question 25. How does the kit learn where a ward is reached, does it
   write `at` in its invitations and with which addresses, and how does it
   try the addresses it reads?** A ward's name is its public key. An
   invitation may carry addresses in `at`, the first the minting side's
-  preference, and a kit may learn others its own way. Whether a reader
-  tries them one after another or at once, and how long it gives each, is
-  the kit's.
+  preference, and a kit may learn others its own way. Which source it
+  trusts first, whether it tries addresses one after another or at once,
+  how long it gives each, and whether it carries a box to the next address
+  after one that gave nothing or may have heard it, are the kit's. A door
+  honours a number once, whichever address carried it.
 
 ## What is not the kit's either
 

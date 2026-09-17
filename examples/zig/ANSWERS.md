@@ -38,11 +38,14 @@ keyed by heir pk.
 
 ## What a kit keeps
 
-**Question 6. How are a ward's seed and its lock handed in and held, how and when is the lock made, and does the ward keep a heir's secret after it gives the invitation?**
+**Question 6. How are a ward's seed and its lock handed in and held, how and when is the lock made, how many locks a ward holds, and does the ward keep an heir's secret after it gives the invitation?**
 The seed arrives as text on `ward`. It is hashed and derived at once, and
 only the derived keys are kept, in memory. The lock is made at the ward's
 first `invite`, from sixty-four drawn bytes, and is held in memory for as
-long as the process runs. The heir secret is not kept. The door keeps only
+long as the process runs. A ward holds one lock, and every invitation it
+gives carries that lock's encapsulation key. Reason: one lock is all a
+door needs to open every knock, and a second would be a second key to
+keep. The heir secret is not kept. The door keeps only
 the heir pk. Reason: the relation chapter asks for no more, and keeping the
 secret would let the occupant sign as its own standing.
 
@@ -56,7 +59,7 @@ removed, the held key, the vouched key (optional), the open and offered
 edge keys, and the highest honoured number. It is all in a hash map in
 process memory. Nothing survives a restart.
 
-**Question 9. When does a door stop holding a heir, and what asks it to?**
+**Question 9. When does a door stop holding an heir, and what asks it to?**
 Only `release`. A fresh heir is forgotten entirely. A spent heir is marked
 removed, and its keys become the keys kept at removal.
 
@@ -128,8 +131,9 @@ not. Only an object tells the standing which case it is in, so alternating
 covers both.
 
 **Question 21. How long does an asker wait for a reply?**
-Over TCP, `send` waits up to eight seconds from the moment its frame is
-written. After that it closes the connection and reads nothing. On the
+Over TCP, `send` waits up to eight seconds for each address it dials,
+from the moment its frame is written. After that it closes that
+connection and takes the address as having delivered nothing. On the
 harness's `ask` and `read`, the harness decides.
 
 **Question 22. How does a standing number its asks, which keys does it announce and when, and how does it keep two sends on one relation apart?**
@@ -148,18 +152,37 @@ The union `Read`, with four tags: `object` (the raw object text and the
 
 ## What a kit carries
 
-**Question 24. Which carriers does the kit stand?**
-Quo over TCP only, over IPv4, from libc sockets. The listener binds to
-127.0.0.1 on a port the system chooses, and serves every accepted
-connection on a thread of its own, one frame at a time. The dialer opens
-one connection per `send` and closes it after the answer.
+**Question 24. Which carriers does the kit stand, and in which forms, does it carry them inside TLS and with which checks, and where it listens on the web, at which path, for which origins, and with which status when it does not carry an ask?**
+Quo over TCP alone, as listener and as dialer, from libc sockets, plain and
+never inside TLS. It listens nowhere on the web, so no path, origin or
+status is its to choose. It
+stands neither form of Quo over the web: `listen` of `http` or `ws`, and a
+`route` to an address of either, answer `bad request`. The listener binds
+to 127.0.0.1 on a port the system chooses, and serves every accepted
+connection on a thread of its own, one frame at a time. The dialer
+resolves the address's host with `getaddrinfo`, so a name, an IPv4
+address and a bracketed IPv6 address are all dialled, and opens one
+connection per address per `send`, closed after the answer. Reason: one
+carrier proves the frames, and the web's two forms would each be a second
+listener and dialer that no other part of this kit uses.
 
 **Question 25. How does the kit learn where a ward is reached, does it write `at` in its invitations and with which addresses, and how does it try the addresses it reads?**
-Only through `route`: a map from a far ward pk to `host:port`, with the
-host written as a dotted IPv4 address or `localhost`. A ward with no route
-is not asked, and `send` reads nothing. The kit writes no `at` in its
-invitations and does not read one, so it tries no address from an
-invitation.
+Two ways. A `route` names one `tcp` address for a far ward, and replaces
+the one before. An invitation's `at` names the rest. Where a ward has a
+route, `send` dials the route alone. Where it has none, `send` reads the
+invitation's `at` in order, takes each string that is a `tcp://host:port`
+address as `CARRIER-TCP.md` writes it, and skips every other string,
+every other scheme, and every entry that is not a string. An `at` that is
+not an array is read as absent. The kit tries the addresses one after
+another, the same box to each, and stops at the first that answers with a
+reply. A nothing frame, a closed connection, a refused dial or eight
+seconds without an answer moves it to the next. With no route and no
+`tcp` address, nothing is delivered. Once the program holds its listener,
+every invitation it gives carries `at` with that listener's one address,
+`tcp://127.0.0.1:<port>`. Before then it writes no `at`. Reason: the
+listener is the one place this program is reached, and trying in order
+keeps the minting side's preference and sends each box to one address at
+a time.
 
 ## What is not the kit's either
 

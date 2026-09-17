@@ -174,9 +174,12 @@ URI of RFC 3986 at which the ward is reached. The scheme of an address
 names its carrier. The first address is the one the minting side prefers,
 and each after it is preferred less.
 
-An address whose scheme names no carrier the reader stands is skipped. A
-string that is not a URI with a scheme is skipped. An `at` that is not an
-array is read as absent. None of these makes an invitation no invitation.
+A scheme is read without regard to case, as RFC 3986 reads it. An address
+whose scheme names no carrier the reader stands is skipped. A string that
+is not a URI with a scheme, or that the carrier of its scheme does not
+write as an address, is skipped. An entry that is not a string is skipped.
+An `at` that is not an array is read as absent. None of these makes an
+invitation no invitation.
 
 An address that reaches no door of that ward is not delivered.
 

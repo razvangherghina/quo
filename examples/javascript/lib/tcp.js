@@ -1,4 +1,4 @@
-// Quo over TCP: frames, a listener and a dialer.
+// Quo over TCP (CARRIER-TCP.md): frames, a listener and a dialer.
 import * as net from "node:net";
 
 export const MAX_BODY = 1048645;
@@ -12,6 +12,17 @@ export function frame(kind, id, rest) {
   head[4] = kind;
   head.writeUInt32BE(id >>> 0, 5);
   return Buffer.concat([head, rest]);
+}
+
+// One frame body read: { kind, id, rest }, or null when it is not a frame.
+export function readBody(body) {
+  if (body.length > MAX_BODY || body.length < 5) return null;
+  const kind = body[0];
+  const rest = body.subarray(5);
+  if (kind > NOTHING) return null;
+  if (kind === ASK && rest.length < 64) return null;
+  if (kind === NOTHING && rest.length > 0) return null;
+  return { kind, id: body.readUInt32BE(1), rest };
 }
 
 // Feeds bytes; calls onFrame(kind, id, rest) per frame; returns false once the stream is broken.
@@ -28,14 +39,10 @@ export function reader(onFrame) {
         if (buf.length >= 5 && buf[4] > NOTHING) return !(broken = true);
         break;
       }
-      const kind = buf[4];
-      const id = buf.readUInt32BE(5);
-      const rest = buf.subarray(9, 4 + len);
+      const f = readBody(buf.subarray(4, 4 + len));
       buf = buf.subarray(4 + len);
-      if (kind > NOTHING) return !(broken = true);
-      if (kind === ASK && rest.length < 64) return !(broken = true);
-      if (kind === NOTHING && rest.length > 0) return !(broken = true);
-      onFrame(kind, id, rest);
+      if (!f) return !(broken = true);
+      onFrame(f.kind, f.id, f.rest);
     }
     return true;
   };
@@ -74,12 +81,10 @@ export class Dialer {
     this.conns = new Map();
   }
 
-  conn(at) {
+  conn({ host, port }) {
+    const at = `${host}/${port}`;
     let c = this.conns.get(at);
     if (c) return c;
-    const i = at.lastIndexOf(":");
-    const host = at.slice(0, i).replace(/^\[|\]$/g, "");
-    const port = Number(at.slice(i + 1));
     const sock = net.connect({ host, port });
     c = { sock, pending: new Map(), next: 1 };
     const close = () => {
@@ -103,7 +108,7 @@ export class Dialer {
     return c;
   }
 
-  // Resolves to a reply box, or null for nothing.
+  // Resolves to a reply box, or null for nothing. `at` is a tcp address read by lib/address.js.
   ask(at, wardPkHex, box, timeoutMs = 5000) {
     const c = this.conn(at);
     const id = c.next++ >>> 0;

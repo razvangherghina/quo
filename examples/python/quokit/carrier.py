@@ -67,7 +67,7 @@ class Listener:
         self.sock.bind(("127.0.0.1", 0))
         self.sock.listen(64)
         host, port = self.sock.getsockname()
-        self.at = "%s:%d" % (host, port)
+        self.at = "tcp://%s:%d" % (host, port)
         threading.Thread(target=self._accept, daemon=True).start()
 
     def _accept(self):
@@ -107,11 +107,10 @@ class Listener:
 
 
 def dial(at, ward_pk, box, wait):
-    """Carry one ask. Returns the reply box, or None for nothing."""
-    host, _, port = at.rpartition(":")
+    """Carry one ask to a tcp Address. Returns the reply box, or None for nothing."""
     fid = struct.unpack(">I", os.urandom(4))[0]
     try:
-        sock = socket.create_connection((host.strip("[]"), int(port)), timeout=wait)
+        sock = socket.create_connection((at.host, at.port), timeout=wait)
     except (OSError, ValueError):
         return None
     try:

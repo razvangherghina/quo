@@ -1,7 +1,9 @@
 #!/usr/bin/env node
-// Every example kit: built, its own tests run, judged by the verifier alone,
-// and every pair of kits judged against each other, both ways; then, with
-// every kit, the world of world.mjs.
+// Every example kit: built, its own tests run, judged by the verifier alone
+// as a door, an asker, and a listener and dialer of every scheme it stands,
+// and every pair of kits judged against each other, both ways, over every
+// scheme both stand and through an invitation's `at`; then, with every kit,
+// the world of world.mjs.
 //   node examples/check.mjs [kit ...]
 // With kit names, only those kits and the pairs among them. Exits 1 on any
 // failure. Needs each kit's toolchain: go, zig, python3 with cryptography,
@@ -29,12 +31,14 @@ if (unknown.length) {
 }
 
 const failed = [];
-const step = (label, argv, cwd) => {
+// A verifier step shows its last two lines: what was judged, whether `at` was
+// read, and the count of checks.
+const step = (label, argv, cwd, shown = 1) => {
   process.stdout.write(`examples: ${label}\n`);
   const r = spawnSync(argv[0], argv.slice(1), { cwd, stdio: ["ignore", "pipe", "pipe"], encoding: "utf8" });
   const out = `${r.stdout ?? ""}${r.stderr ?? ""}`.trim().split("\n");
   if (r.status === 0) {
-    process.stdout.write(`  ok ${out.at(-1) ?? ""}\n`);
+    process.stdout.write(`  ok ${out.slice(-shown).join("\n     ")}\n`);
     return;
   }
   failed.push(label);
@@ -46,18 +50,18 @@ for (const name of names) {
   const dir = join(here, name);
   if (kit.build) step(`${name}: build`, kit.build, dir);
   step(`${name}: its own tests`, kit.test, dir);
-  step(`${name}: the verifier`, ["node", verifier, "--cwd", dir, "--", `./${kit.stand}`], dir);
+  step(`${name}: the verifier`, ["node", verifier, "--cwd", dir, "--", `./${kit.stand}`], dir, 2);
 }
 for (const a of names) {
   for (const b of names) {
     if (a === b) continue;
     const first = join(here, a, KITS[a].stand);
     const second = join(here, b, KITS[b].stand);
-    step(`${a} asking ${b}: the verifier, two kits`, ["node", verifier, "--two", "--", first, "--", second], join(here, a));
+    step(`${a} asking ${b}: the verifier, two kits`, ["node", verifier, "--two", "--", first, "--", second], join(here, a), 2);
   }
 }
 
-if (names.length === Object.keys(KITS).length) step("the world, seven scenes", ["node", join(here, "world.mjs")], here);
+if (names.length === Object.keys(KITS).length) step("the world, eight scenes", ["node", join(here, "world.mjs")], here);
 
 process.stdout.write(failed.length ?`examples: ${failed.length} failed\n` : "examples: all green\n");
 process.exit(failed.length ? 1 : 0);

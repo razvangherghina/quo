@@ -19,11 +19,12 @@ is followed by its reason.
    With none named, nothing answers, and the ask is case 4. Reason: the
    harness says so.
 4. **How many asks judged at once.** One. One lock guards every door and
-   every standing in the program, whether the ask comes from `arrive` or
-   from the TCP listener. The door therefore checks once. Reason: this is
+   every standing in the program, whether the ask comes from `arrive`, from
+   the TCP listener or from the post. The door therefore checks once. Reason: this is
    the simplest correct choice, and Python's crypto here is fast enough.
 5. **Names.** `Ward`, `Heir`, `Kept` (the keys kept at removal),
-   `Standing`, `Listener`, and `dial`. A heir is named by the harness
+   `Standing`, `Listener` and `dial` for TCP, `PostListener` and `post` for
+   the post, and `Address` for an address it stands. A heir is named by the harness
    string, and a relation by its heir pk. Reason: they mirror SPEC.md's
    words.
 
@@ -58,7 +59,7 @@ is followed by its reason.
 
 12. **Does the door answer.** Always, with a reply box. The door gives
     nothing only when there is no ward under the pk, which on TCP is a 02
-    frame. Reason: silence is bytes, and the kit has no cause to withhold
+    frame and on the post status 404. Reason: silence is bytes, and the kit has no cause to withhold
     them.
 13. **`seen`.** Always `null`, except `"1"` from `marked` on a named ask, as
     the harness fixes. Reason: nothing behind these doors moves.
@@ -80,7 +81,8 @@ is followed by its reason.
 ## What a kit asks
 
 19. **How an invitation reaches its holder.** It is returned to the caller
-    as a dict, and the harness carries it. The minting ward keeps only the
+    as a dict, and the harness carries it. It carries `at` once the program
+    holds a listener, as question 25 says. The minting ward keeps only the
     heir pk and the harness name. An invitation whose lock the library's
     FIPS 203 check refuses is no invitation, and `ask`, `read` or `send` on
     it answers `bad request`. Reason: a door reads no route from an
@@ -93,8 +95,9 @@ is followed by its reason.
     once, with no timer. Reason: the recovery ask succeeds where the door
     bound the heir. The resent knock succeeds where the door did not, and
     it is harmless where the heir is spent.
-21. **How long an asker waits.** Over TCP, thirty seconds for each read on
-    the socket. After that the read is `nothing`. A closed connection is
+21. **How long an asker waits.** Thirty seconds for each read on the
+    socket, over TCP and over the post alike. After that the read is
+    `nothing`. A closed connection is
     `nothing` at once. Reason: this is long enough for a Python door and
     short enough for a harness.
 22. **Two sends on one relation.** One lock per relation serialises them.
@@ -111,16 +114,36 @@ is followed by its reason.
 
 ## What a kit carries
 
-24. **Carriers.** Quo over TCP only. There is one listener per program, on
-    `127.0.0.1` at a port the system chooses. Each ask gets a fresh
-    connection, and it closes after its answer. The listener answers asks
-    on one connection concurrently. Reason: the harness asks for TCP, and
-    a connection per ask means ids never collide.
-25. **Where a ward is reached.** Only from the harness's `route`, a table
-    from ward pk to `host:port` held in memory. With no route, the ask is
-    not delivered and reads `nothing`. Reason: the harness is the only
-    source of addresses here. The kit writes no `at` in its invitations and
-    does not read one, so it tries no address from an invitation.
+24. **Carriers.** Quo over TCP, and the post of Quo over the web, each as
+    listener and as dialer, with the standard library alone. The kit does
+    not stand the held line: `listen` of `ws` and a `ws` or `wss` route
+    answer `bad request`. A program holds at most one listener of each, on
+    `127.0.0.1` at a port the system chooses. The TCP listener answers asks
+    on one connection concurrently. The post listener answers any path,
+    one thread per request. It answers 204 when the door gives nothing,
+    404 for a ward it does not stand, 400 or 413 for a body too short or
+    too long, 411 without a `Content-Length`, and 405 to any method but
+    `POST`. It sends no CORS headers, so it answers no page of another
+    origin. The dialer opens a fresh connection for each ask, TCP or HTTP,
+    and closes it after the answer. It posts to `https` addresses as well,
+    under the system's default TLS checks. Reason: TCP and the post need
+    nothing beyond the standard library, while the held line would need a
+    WebSocket written by hand. A connection per ask means ids never collide.
+25. **Where a ward is reached.** From the harness's `route`, a table from
+    ward pk to one address held in memory, and from an invitation's `at`.
+    The kit learns no address any other way. Where a route names the ward,
+    the kit dials the route alone. Otherwise it reads `at` when it is an
+    array, skips every entry that is not a string, not a URI, or not a
+    `tcp`, `http` or `https` address as its carrier writes it, and tries
+    the rest one after another in the order written. It moves to the next
+    when an address gives nothing, of any kind, and stops at the first
+    reply. Each try waits as question 21 says. With no address left, the
+    read is `nothing`. Once the program holds listeners, every invitation
+    it mints carries their addresses in `at`, the post first, then TCP.
+    Reason: the order in `at` is the minting side's preference, so trying
+    in that order honours it. Nothing means not delivered, so the next
+    address may carry the same box. The post goes first because it reaches
+    where TCP cannot.
 
 ## What is not the kit's either
 

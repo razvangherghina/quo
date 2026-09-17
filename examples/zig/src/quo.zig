@@ -615,13 +615,17 @@ pub const Invitation = struct {
     secret: [32]u8,
     lock: [ek_len]u8,
 
-    pub fn write(self: Invitation, w: *std.Io.Writer) !void {
-        try w.print("{{\"ward\":\"{s}\",\"heir\":\"{s}\",\"secret\":\"{s}\",\"lock\":\"{s}\"}}", .{
+    /// Writes the invitation, with `at` naming `address` when there is one. An
+    /// address is written as JSON string content, so it holds no `"` and no `\`.
+    pub fn write(self: Invitation, w: *std.Io.Writer, address: ?[]const u8) !void {
+        try w.print("{{\"ward\":\"{s}\",\"heir\":\"{s}\",\"secret\":\"{s}\",\"lock\":\"{s}\"", .{
             &std.fmt.bytesToHex(self.ward, .lower),
             &std.fmt.bytesToHex(self.heir, .lower),
             &std.fmt.bytesToHex(self.secret, .lower),
             &std.fmt.bytesToHex(self.lock, .lower),
         });
+        if (address) |at| try w.print(",\"at\":[\"{s}\"]", .{at});
+        try w.writeAll("}");
     }
 };
 

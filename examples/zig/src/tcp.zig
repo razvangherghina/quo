@@ -115,43 +115,75 @@ fn noSigpipe(fd: c.fd_t) void {
     }
 }
 
-/// "host:port" with an IPv4 host.
-pub fn parseAt(at: []const u8) ?c.sockaddr.in {
-    const colon = std.mem.lastIndexOfScalar(u8, at, ':') orelse return null;
-    const port = std.fmt.parseInt(u16, at[colon + 1 ..], 10) catch return null;
-    if (port == 0) return null;
-    const host = if (std.mem.eql(u8, at[0..colon], "localhost")) "127.0.0.1" else at[0..colon];
-    var octets: [4]u8 = undefined;
-    var it = std.mem.splitScalar(u8, host, '.');
-    var n: usize = 0;
-    while (it.next()) |part| : (n += 1) {
-        if (n == 4) return null;
-        octets[n] = std.fmt.parseInt(u8, part, 10) catch return null;
-    }
-    if (n != 4) return null;
-    var sa: c.sockaddr.in = .{ .port = std.mem.nativeToBig(u16, port), .addr = @bitCast(octets) };
-    _ = &sa;
-    return sa;
-}
+/// A `tcp` address: the host as a socket takes it, brackets taken off, and the port.
+pub const Address = struct { host: []const u8, port: u16 };
 
-/// Opens a connection, or null.
-pub fn dial(at: []const u8) ?c.fd_t {
-    const sa = parseAt(at) orelse return null;
-    const fd = c.socket(c.AF.INET, c.SOCK.STREAM, 0);
-    if (fd < 0) return null;
-    noSigpipe(fd);
-    if (c.connect(fd, @ptrCast(&sa), @sizeOf(c.sockaddr.in)) != 0) {
-        _ = c.close(fd);
+/// `tcp://host:port` as CARRIER-TCP.md writes it, or null. The host is a name or an
+/// IPv4 address of RFC 3986, or an IPv6 address in brackets.
+pub fn parseAddress(s: []const u8) ?Address {
+    const sep = std.mem.indexOf(u8, s, "://") orelse return null;
+    if (!std.ascii.eqlIgnoreCase(s[0..sep], "tcp")) return null;
+    const auth = s[sep + 3 ..];
+    const colon = std.mem.lastIndexOfScalar(u8, auth, ':') orelse return null;
+    const digits = auth[colon + 1 ..];
+    if (digits.len == 0) return null;
+    for (digits) |d| if (!std.ascii.isDigit(d)) return null;
+    // A port above a socket's sixteen bits names nothing a dialer can open.
+    const port = std.fmt.parseInt(u16, digits, 10) catch return null;
+    const host = auth[0..colon];
+    if (host.len == 0) return null;
+    if (host[0] == '[') {
+        if (host.len < 3 or host[host.len - 1] != ']') return null;
+        const inner = host[1 .. host.len - 1];
+        for (inner) |ch| if (!(std.ascii.isHex(ch) or ch == ':' or ch == '.')) return null;
+        return .{ .host = inner, .port = port };
+    }
+    var i: usize = 0;
+    while (i < host.len) : (i += 1) {
+        const ch = host[i];
+        if (std.ascii.isAlphanumeric(ch) or std.mem.indexOfScalar(u8, "-._~!$&'()*+,;=", ch) != null) continue;
+        if (ch == '%' and i + 2 < host.len and std.ascii.isHex(host[i + 1]) and std.ascii.isHex(host[i + 2])) {
+            i += 2;
+            continue;
+        }
         return null;
     }
-    const one: c_int = 1;
-    _ = c.setsockopt(fd, c.IPPROTO.TCP, c.TCP.NODELAY, &one, @sizeOf(c_int));
-    return fd;
+    return .{ .host = host, .port = port };
+}
+
+/// Opens a connection to the first of the host's socket addresses that takes one, or null.
+pub fn dial(a: Allocator, at: Address) !?c.fd_t {
+    const host = try a.dupeZ(u8, at.host);
+    defer a.free(host);
+    var port_buf: [6]u8 = undefined;
+    const port = std.fmt.bufPrintZ(&port_buf, "{d}", .{at.port}) catch unreachable;
+    var hints = std.mem.zeroes(c.addrinfo);
+    hints.family = c.AF.UNSPEC;
+    hints.socktype = c.SOCK.STREAM;
+    var res: ?*c.addrinfo = null;
+    if (@intFromEnum(c.getaddrinfo(host, port, &hints, &res)) != 0) return null;
+    const first = res orelse return null;
+    defer c.freeaddrinfo(first);
+    var it: ?*c.addrinfo = first;
+    while (it) |ai| : (it = ai.next) {
+        const sa = ai.addr orelse continue;
+        const fd = c.socket(@intCast(ai.family), @intCast(ai.socktype), @intCast(ai.protocol));
+        if (fd < 0) continue;
+        noSigpipe(fd);
+        if (c.connect(fd, sa, ai.addrlen) != 0) {
+            _ = c.close(fd);
+            continue;
+        }
+        const one: c_int = 1;
+        _ = c.setsockopt(fd, c.IPPROTO.TCP, c.TCP.NODELAY, &one, @sizeOf(c_int));
+        return fd;
+    }
+    return null;
 }
 
 /// Sends one ask on a fresh connection and waits for what answers it. Null is nothing.
-pub fn exchange(a: Allocator, at: []const u8, id: u32, pk: [64]u8, box: []const u8, wait_ms: i64) !?[]u8 {
-    const fd = dial(at) orelse return null;
+pub fn exchange(a: Allocator, at: Address, id: u32, pk: [64]u8, box: []const u8, wait_ms: i64) !?[]u8 {
+    const fd = try dial(a, at) orelse return null;
     defer close(fd);
     if (!try writeFrame(a, fd, kind_ask, id, pk, box)) return null;
     const deadline = nowMs() + wait_ms;
@@ -227,3 +259,46 @@ pub const Listener = struct {
         }
     }
 };
+
+const testing = std.testing;
+
+test "tcp addresses" {
+    const v4 = parseAddress("tcp://127.0.0.1:9000").?;
+    try testing.expectEqualStrings("127.0.0.1", v4.host);
+    try testing.expectEqual(@as(u16, 9000), v4.port);
+    try testing.expectEqualStrings("::1", parseAddress("tcp://[::1]:1").?.host);
+    try testing.expectEqualStrings("example.org", parseAddress("TCP://example.org:65535").?.host);
+    const not_ones = [_][]const u8{
+        "127.0.0.1:9000",     "tcp://127.0.0.1",       "tcp://127.0.0.1:",
+        "tcp://127.0.0.1:-1", "tcp://127.0.0.1:65536", "tcp://127.0.0.1:+80",
+        "tcp://:80",          "tcp://h:80/",           "tcp://h:80?q",
+        "tcp://h:80#f",       "tcp://u@h:80",          "tcp://[::1:80",
+        "tcp://::1:80",       "ws://127.0.0.1:80",     "http://127.0.0.1:80",
+        "zz://nowhere",       "tcp://h h:80",          "tcp://h:123456",
+    };
+    for (not_ones) |s| try testing.expect(parseAddress(s) == null);
+}
+
+fn echoBack(ctx: *anyopaque, a: Allocator, pk: [64]u8, box: []const u8) anyerror!?[]u8 {
+    _ = ctx;
+    if (box.len == 0) return null;
+    const out = try a.alloc(u8, box.len + 1);
+    out[0] = pk[0];
+    @memcpy(out[1..], box);
+    return out;
+}
+
+test "a dialer reaches a listener by its address, and a nothing frame is nothing" {
+    ignoreSigpipe();
+    var ctx: u8 = 0;
+    const l = try Listener.start(.{ .ctx = &ctx, .answer = echoBack });
+    var buf: [32]u8 = undefined;
+    const text = try std.fmt.bufPrint(&buf, "tcp://127.0.0.1:{d}", .{l.port});
+    const at = parseAddress(text).?;
+    const pk = [_]u8{7} ** 64;
+    const got = (try exchange(testing.allocator, at, 1, pk, "box", 2000)).?;
+    defer testing.allocator.free(got);
+    try testing.expectEqualStrings("\x07box", got);
+    try testing.expect(try exchange(testing.allocator, at, 2, pk, "", 2000) == null);
+    try testing.expect(try exchange(testing.allocator, .{ .host = "127.0.0.1", .port = 1 }, 3, pk, "box", 2000) == null);
+}

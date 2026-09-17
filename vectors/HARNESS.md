@@ -138,41 +138,58 @@ asks on that heir. With no `reach` on `invite`, it is `echo`.
 ## Part two: carried
 
 Part two is part one, and three requests more, for a kit that carries its
-bytes over `CARRIER-TCP.md`. A kit that carries no bytes answers each of
-the three with `bad request`, and is judged by part one alone.
+bytes over `CARRIER-TCP.md` or `CARRIER-WEB.md`. A kit that carries no
+bytes answers each of the three with `bad request`, and is judged by part
+one alone.
+
+An address here is an address of `SPEC.md`, written as the carrier its
+scheme names writes it. A scheme is `tcp`, `http` or `ws`. A kit stands a
+scheme when it carries bytes in that scheme's carrier. `http` and `ws`
+stand for `https` and `wss` as well, since the harness runs no TLS.
+`listen` of `https` or `wss` is `bad request`. Whether `route` takes
+`https` and `wss` is the kit's.
 
 ### The three requests
 
 ```
-{ id, op: "listen" }                               { id, at: "host:port" }
+{ id, op: "listen", scheme? }                      { id, at: <address> }
 { id, op: "route",  far, at }                      { id, routed: <128 hex> }
 { id, op: "send",   ward, invitation, method?, args? }
                                                    { id, read }
 ```
 
-**`listen`** makes the program hold one TCP listener, on an address it
-chooses, and answer on it for every ward it stands, in the frames of
-`CARRIER-TCP.md`. The answer is that address. A second `listen` answers the
-same address.
+**`listen`** makes the program hold one listener of `scheme`, `tcp` when
+absent, on a loopback address it chooses, and answer on it for every ward
+it stands. The answer is that listener's address. A second `listen` of one
+scheme answers the same address. A scheme the kit does not stand is `bad
+request`.
+
+**`invite`**, once the program holds a listener, may write that
+listener's address, or any of its listeners' addresses, in the
+invitation's `at`.
 
 **`route`** tells the program that the ward whose 128 hex ward pk is `far`
-is reached at `at`, a host and a port. From then on the program dials `at`
-for every ask to `far`. A second `route` for one `far` replaces the first.
-An ask to a ward with no route is not delivered. `far` names a ward
-anywhere, and is not held to `no such ward`.
+is reached at `at`, one address. A second `route` for one `far` replaces
+the first. An `at` that is not an address, as the carrier of its scheme
+writes one, of a scheme the kit stands is `bad request`. `far` names a
+ward anywhere, and is not held to `no such ward`.
 
 **`send`** makes that ward ask, as a standing, on the relation
-`invitation` names, and carry the box over `CARRIER-TCP.md` to the ward the
-invitation names, dialed at its route. The first `send` on an invitation is
-a knock. The answer `read` is what the kit read, as in part one. How long
-the kit waits is its own, and `{ nothing: true }` is the answer when
-nothing came back.
+`invitation` names, and carry the box to the ward the invitation names.
+Where that ward has a route, the kit dials the route alone. Where it has
+none, a kit that reads `at` dials the addresses in the invitation's `at`,
+as it tries them, and a kit that does not read `at` delivers nothing.
+With neither, the ask is not delivered. The first `send` on an
+invitation is a knock. The answer `read` is what the kit read, as in part
+one. How long the kit waits is its own, and `{ nothing: true }` is the
+answer when nothing came back.
 
 ### Between two kits
 
 The verifier stands a ward in one program and asks from a ward in another.
 It holds no kit. It routes the asking program's far ward to an address of
-its own, and forwards the frames to the answering program's listener.
+its own, or hands it an invitation whose `at` names that address, and
+forwards the frames to the answering program's listener.
 Standing between them, it may deliver a frame as it came, late, twice, out
 of order, altered, or not at all. No kit implements any of that.
 

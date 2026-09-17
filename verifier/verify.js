@@ -2,14 +2,16 @@
 // vectors/HARNESS.md to it. It judges the kit as a door, writing every ask
 // itself, and as an asker, opening every box the kit seals and writing every
 // reply. Where the kit carries bytes, carried.js judges it as a listener and
-// a dialer over CARRIER-TCP.md. It takes every byte apart under SPEC.md,
-// compares against no stored bytes, and reads nothing of what a kit draws.
+// a dialer over CARRIER-TCP.md and CARRIER-WEB.md, and as a reader of an
+// invitation's `at`. It takes every byte apart under SPEC.md, compares
+// against no stored bytes, and reads nothing of what a kit draws.
 import { spawn } from "node:child_process";
 import { randomBytes } from "node:crypto";
 import { createInterface } from "node:readline";
 import { isDeepStrictEqual } from "node:util";
 
-import { theDialer, theListener } from "./carried.js";
+import { carrierWritingOf, parseAddress } from "./address.js";
+import { theDialer, theInvitationAt, theLineDialer, theLineListener, theListener, thePostDialer, thePostListener } from "./carried.js";
 import { decaps, encaps, isEncapsKey, keyGen } from "./mlkem.js";
 import {
   aesOpen,
@@ -45,12 +47,6 @@ const MAX_SEQ = 9007199254740991;
 const J = JSON.stringify;
 const hex = (b) => Buffer.from(b).toString("hex");
 const unhex = (s) => Buffer.from(s, "hex");
-// CARRIER-TCP.md: tcp://host:port, the host a name, IPv4 or bracketed IPv6,
-// the port decimal, and nothing after it.
-const isTcpAddress = (s) => {
-  const m = /^tcp:\/\/(\[[0-9A-Fa-f:.]+\]|[A-Za-z0-9._~%!$&'()*+,;=-]+):([0-9]+)$/i.exec(s);
-  return m !== null && Number(m[2]) <= 65535;
-};
 const isHex = (s, n) => typeof s === "string" && (n === undefined || s.length === n) && s.length % 2 === 0 && /^[0-9a-f]*$/.test(s);
 const rand = (n) => randomBytes(n);
 
@@ -253,10 +249,14 @@ export class Session {
     this.check(`${label} has the four fields of their sizes`, shape, J(inv).slice(0, 300));
     if (!shape) throw new Abort("invitation malformed");
     if (inv.at !== undefined) {
-      const addresses = Array.isArray(inv.at) && inv.at.every((s) => typeof s === "string" && /^[A-Za-z][A-Za-z0-9+.-]*:/.test(s));
+      const addresses = Array.isArray(inv.at) && inv.at.every((s) => parseAddress(s) !== null);
       this.check(`${label} at is an array of addresses`, addresses, J(inv.at).slice(0, 300));
-      for (const address of addresses ? inv.at.filter((s) => /^tcp:/i.test(s)) : []) {
-        this.check(`${label} tcp address ${J(address)} is tcp://host:port`, isTcpAddress(address), address);
+      for (const address of addresses ? inv.at : []) {
+        const why = carrierWritingOf(address);
+        const scheme = parseAddress(address).scheme;
+        if (why !== null || ["tcp", "http", "https", "ws", "wss"].includes(scheme)) {
+          this.check(`${label} ${scheme} address ${J(address)} is written as its carrier writes it`, why === null, why);
+        }
       }
     }
     const secret = unhex(inv.secret);
@@ -268,6 +268,7 @@ export class Session {
     const heir = {
       name,
       ward,
+      at: inv.at,
       reach: reach ?? "echo",
       pk: unhex(inv.heir),
       pkHex: inv.heir,
@@ -1026,10 +1027,11 @@ export function verifierWard(seedText) {
   return { ...wardKeys(seedText), lock: keyGen() };
 }
 
-/** An invitation the verifier mints from its own ward, and the relation it opens. */
-export function mint(mine) {
+/** An invitation the verifier mints from its own ward, with `at` when given, and the relation it opens. */
+export function mint(mine, at) {
   const heir = newKey();
   const inv = { ward: mine.pk, heir: heir.hex, secret: hex(heir.seed), lock: hex(mine.lock.ek) };
+  if (at !== undefined) inv.at = at;
   return { inv, heir, state: "fresh", knock: null, key: null, edge: null, movedAt: 0 };
 }
 
@@ -1080,10 +1082,16 @@ const REPLIES = {
 
 const ASKS = [{ method: "echo", args: { i: 1, s: "x" } }, {}, { method: "m" }];
 
-/** Replies only a carrier can give: the connection closes, or no frame comes back. */
+/**
+ * Replies only a carrier can give: the connection closes, no frame comes
+ * back, or a post is answered with a status that is no reply.
+ */
 export const CARRIED_REPLIES = {
   "a closed connection": { none: true, mode: "close", read: { nothing: true } },
   "no answer at all": { none: true, mode: "wait", read: { nothing: true } },
+  "status 500": { none: true, mode: "status", status: 500, read: { nothing: true } },
+  "status 200 with an empty body": { none: true, mode: "status", status: 200, read: { nothing: true } },
+  "status 201 with a reply's box": { text: '{"object":1,"seen":null}', mode: "status", status: 201, read: { nothing: true } },
 };
 
 export class Lost extends Error {}
@@ -1154,14 +1162,16 @@ function writeReply(mine, t, r) {
  * instead of `ask`, and the reply goes back over it instead of `read`:
  * `via.seal(rel, o, label)` answers `{ box }` as `ask` would, and
  * `via.deliver(rel, t, written, r, label)` answers `{ read }` as `read` would.
+ * With `at` set, every invitation it mints carries that `at`.
  */
 export class AskerRun {
-  constructor(s, ward, mine, via = null) {
+  constructor(s, ward, mine, via = null, at = undefined) {
     this.s = s;
     this.ward = ward;
     this.mine = mine;
     this.n = 0;
     this.via = via;
+    this.at = at;
     this.boxes = 0;
   }
 
@@ -1247,7 +1257,7 @@ export class AskerRun {
   /** Runs one relation through the replies named, then one ask more to judge the last. */
   async relation(title, names) {
     const { s } = this;
-    const rel = mint(this.mine);
+    const rel = mint(this.mine, this.at);
     try {
       for (let i = 0; i <= names.length; i++) {
         const label = `${title}: ask ${i + 1}${i ? `, after ${names[i - 1]}` : ""}`;
@@ -1424,16 +1434,42 @@ async function harnessErrors(v, spawnStand) {
 
   // `listen`, `route` and `send` of part two. A kit that carries no bytes
   // answers each with `bad request`, which comes before every other error.
-  await ok("listen answers an address or bad request", { op: "listen" }, (a) => typeof a.at === "string" || a.error === "bad request");
+  for (const scheme of ["tcp", "http", "ws"]) {
+    await ok(`listen ${scheme} answers an address or bad request`, { op: "listen", scheme }, (a) => typeof a.at === "string" || a.error === "bad request");
+  }
+  await errq("listen of a scheme the harness does not name", { op: "listen", scheme: "zz" }, "bad request");
+  await errq("listen of https, which the harness runs without TLS", { op: "listen", scheme: "https" }, "bad request");
+  await errq("listen of wss, which the harness runs without TLS", { op: "listen", scheme: "wss" }, "bad request");
+  await errq("listen with a numeric scheme", { op: "listen", scheme: 5 }, "bad request");
+  await errq("listen with a null scheme", { op: "listen", scheme: null }, "bad request");
   const far = verifierWard("harness errors, the far ward").pk;
-  const routed = await ok("route answers the far ward pk or bad request", { op: "route", far, at: "127.0.0.1:9" }, (a) => a.routed === far || a.error === "bad request");
-  await errq("route with no far", { op: "route", at: "127.0.0.1:9" }, "bad request");
-  await errq("route with a far of 126 hex", { op: "route", far: far.slice(2), at: "127.0.0.1:9" }, "bad request");
-  await errq("route with an uppercase far", { op: "route", far: far.toUpperCase(), at: "127.0.0.1:9" }, "bad request");
+  // Port 9 on loopback: a route is only told, and nothing here is sent.
+  const stood = [];
+  for (const at of ["tcp://127.0.0.1:9", "http://127.0.0.1:9/quo", "ws://127.0.0.1:9/quo"]) {
+    const a = await ok(`route to ${at} answers the far ward pk or bad request`, { op: "route", far, at }, (x) => x.routed === far || x.error === "bad request");
+    if (a.routed === far) stood.push(at);
+  }
+  const at = stood[0] ?? "tcp://127.0.0.1:9";
+  await errq("route with no far", { op: "route", at }, "bad request");
+  await errq("route with a far of 126 hex", { op: "route", far: far.slice(2), at }, "bad request");
+  await errq("route with an uppercase far", { op: "route", far: far.toUpperCase(), at }, "bad request");
   await errq("route with no at", { op: "route", far }, "bad request");
   await errq("route with a numeric at", { op: "route", far, at: 9 }, "bad request");
-  if (routed.routed === far) {
-    await ok("route of a ward no program stands is not no such ward", { op: "route", far: fakeWard, at: "127.0.0.1:9" }, (a) => a.routed === fakeWard);
+  await errq("route with an at of a scheme no carrier names", { op: "route", far, at: "zz://127.0.0.1:9" }, "bad request");
+  await errq("route with an at that is host:port, no URI", { op: "route", far, at: "127.0.0.1:9" }, "bad request");
+  await errq("route with an at that is an array", { op: "route", far, at: [at] }, "bad request");
+  // An at that is not an address as its scheme's carrier writes one, of a scheme the kit stands.
+  const malformed = {
+    "tcp://127.0.0.1:9": ["a tcp address with no port", "tcp://127.0.0.1"],
+    "http://127.0.0.1:9/quo": ["an http address with a fragment", "http://127.0.0.1:9/quo#f"],
+    "ws://127.0.0.1:9/quo": ["a ws address with user information", "ws://u@127.0.0.1:9/quo"],
+  };
+  for (const good of stood) {
+    const [what, bad] = malformed[good];
+    await errq(`route with ${what}`, { op: "route", far, at: bad }, "bad request");
+  }
+  if (stood.length) {
+    await ok("route of a ward no program stands is not no such ward", { op: "route", far: fakeWard, at }, (a) => a.routed === fakeWard);
   }
   const sendProbe = await ok("send at no ward answers no such ward or bad request", { op: "send", ward: fakeWard, invitation }, (a) => a.error === "no such ward" || a.error === "bad request");
   const noSendWard = sendProbe.error === "no such ward" ? "no such ward" : "bad request";
@@ -1468,6 +1504,11 @@ const SCENARIOS = [
   ["the asker", theAsker],
   ["the listener", theListener],
   ["the dialer", theDialer],
+  ["the post listener", thePostListener],
+  ["the post dialer", thePostDialer],
+  ["the held line listener", theLineListener],
+  ["the held line dialer", theLineDialer],
+  ["the invitation's at", theInvitationAt],
 ];
 
 export class Verifier {
@@ -1480,8 +1521,8 @@ export class Verifier {
     this.nothings = 0;
     this.boxes = 0;
     this.doorAlone = false;
-    this.listener = null;
-    this.dialer = null;
+    this.roles = new Map();
+    this.at = new Map();
     this.frames = 0;
     this.two = false;
     this.heads = 0;
@@ -1492,10 +1533,11 @@ export class Verifier {
   }
   /** How much was judged. A count, never a failure. */
   counts() {
-    if (this.two) return `${this.frames} frames carried between two programs; ${this.heads} ask heads opened at the door's side`;
+    const at = [...this.at].map(([scheme, did]) => `; ${did ? "reached" : "did NOT reach"} a ward through at over ${scheme}`).join("");
+    if (this.two) return `${this.frames} frames and posts carried between two programs; ${this.heads} ask heads opened at the door's side${at}`;
     const asker = this.doorAlone ? "the kit has no asking side and was judged as a door alone" : `${this.boxes} boxes the kit sealed were taken apart`;
-    const role = (name, how) => (how === null ? "" : how ? `; judged as a ${name}` : `; judged without a ${name}`);
-    const carried = `${role("listener", this.listener)}${role("dialer", this.dialer)}${this.frames ? `; ${this.frames} frames read from the kit` : ""}`;
+    const roles = [...this.roles].map(([name, how]) => `; judged ${how ? "as" : "without"} ${name.startsWith("http") ? "an" : "a"} ${name}`).join("");
+    const carried = `${roles}${this.frames ? `; ${this.frames} frames and posts read from the kit` : ""}${at}`;
     return `${this.arrivals} arrivals at the door: ${this.judged} replies opened, ${this.unopened} sealed to a lid nobody holds, ${this.nothings} answered nothing; ${asker}${carried}`;
   }
 }

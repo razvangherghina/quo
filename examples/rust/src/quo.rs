@@ -134,12 +134,20 @@ pub struct Invitation {
     pub heir: [u8; 32],
     pub secret: [u8; 32],
     pub lock: Vec<u8>,
+    /// The strings of `at`, in order. Which of them this kit dials is the carrier's to say.
+    pub at: Vec<String>,
 }
 
 impl Invitation {
     pub fn to_json(&self) -> String {
+        let at = if self.at.is_empty() {
+            String::new()
+        } else {
+            let a: Vec<String> = self.at.iter().map(|s| json::quote(s)).collect();
+            format!(",\"at\":[{}]", a.join(","))
+        };
         format!(
-            "{{\"ward\":\"{}\",\"heir\":\"{}\",\"secret\":\"{}\",\"lock\":\"{}\"}}",
+            "{{\"ward\":\"{}\",\"heir\":\"{}\",\"secret\":\"{}\",\"lock\":\"{}\"{at}}}",
             hex(&self.ward),
             hex(&self.heir),
             hex(&self.secret),
@@ -147,7 +155,8 @@ impl Invitation {
         )
     }
 
-    /// Read an invitation from a parsed JSON object. Fields beside the four are ignored.
+    /// Read an invitation from a JSON text. Fields beside the five are ignored.
+    /// An `at` that is not an array is absent, and an element that is not a string is skipped.
     pub fn from_text(t: &[u8]) -> Option<Invitation> {
         let n = json::object(t)?;
         let f = |k: &str, len: usize| -> Option<Vec<u8>> { unhex(&n.get(k)?.as_str()?, Some(len)) };
@@ -157,7 +166,12 @@ impl Invitation {
         let lock = f("lock", LOCK_EK_LEN).filter(|l| ek_valid(l))?;
         let mut w = [0u8; 64];
         w.copy_from_slice(&ward);
-        Some(Invitation { ward: w, heir: arr32(&heir), secret: arr32(&secret), lock })
+        let at = n
+            .get("at")
+            .and_then(|a| json::elements(a.text(t)))
+            .map(|es| es.iter().filter_map(|e| e.as_str()).collect())
+            .unwrap_or_default();
+        Some(Invitation { ward: w, heir: arr32(&heir), secret: arr32(&secret), lock, at })
     }
 
     pub fn sign_pk(&self) -> [u8; 32] {
@@ -194,13 +208,13 @@ impl Door {
     }
 
     /// Make a heir under `name` and give its invitation. The ward keeps the heir pk
-    /// and not the secret.
-    pub fn invite(&mut self, name: &str, reach: Reach) -> Invitation {
+    /// and not the secret. `at` is written in the invitation as given.
+    pub fn invite(&mut self, name: &str, reach: Reach, at: Vec<String>) -> Invitation {
         let secret = draw::<32>();
         let pk = ed_pub(&secret);
         self.heirs.insert(pk, Heir { state: HeirState::Fresh, reach });
         self.names.insert(name.to_string(), pk);
-        Invitation { ward: self.key.pk_bytes(), heir: pk, secret, lock: self.lock.ek.clone() }
+        Invitation { ward: self.key.pk_bytes(), heir: pk, secret, lock: self.lock.ek.clone(), at }
     }
 
     /// Stop holding the heir named `name`. A spent heir's keys are kept at removal.
@@ -674,7 +688,7 @@ mod tests {
     }
 
     fn pair(d: &mut Door, name: &str, reach: Reach) -> Standing {
-        Standing::new(d.invite(name, reach))
+        Standing::new(d.invite(name, reach, vec![]))
     }
 
     fn roundtrip(d: &mut Door, s: &mut Standing, method: Option<&str>, args: Option<&str>) -> Read {
@@ -815,13 +829,34 @@ mod tests {
     #[test]
     fn a_lock_the_check_refuses_is_no_invitation() {
         let mut d = door(None);
-        let inv = d.invite("a", Reach::Echo);
+        let inv = d.invite("a", Reach::Echo, vec![]);
         assert!(Invitation::from_text(inv.to_json().as_bytes()).is_some());
         let mut bad = inv.lock.clone();
         bad[0] = 0xff;
         bad[1] |= 0x0f;
         let t = Invitation { lock: bad, ..inv }.to_json();
         assert!(Invitation::from_text(t.as_bytes()).is_none());
+    }
+
+    #[test]
+    fn at_is_written_and_read() {
+        let mut d = door(None);
+        let inv = d.invite("a", Reach::Echo, vec!["tcp://127.0.0.1:9".into(), "x\"y".into()]);
+        let read = Invitation::from_text(inv.to_json().as_bytes()).unwrap();
+        assert_eq!(read.at, inv.at);
+        assert!(!d.invite("b", Reach::Echo, vec![]).to_json().contains("\"at\""));
+        let base = inv.to_json();
+        let with = |at: &str| format!("{},\"at\":{at}}}", &base[..base.find(",\"at\"").unwrap()]);
+        for (at, want) in [
+            ("\"tcp://h:1\"", vec![]),
+            ("{}", vec![]),
+            ("null", vec![]),
+            ("[]", vec![]),
+            ("[1, null, \"tcp://h:1\", [\"q\"], \"not a uri\"]", vec!["tcp://h:1", "not a uri"]),
+        ] {
+            let got = Invitation::from_text(with(at).as_bytes()).expect("still an invitation").at;
+            assert_eq!(got, want, "{at}");
+        }
     }
 
     #[test]
@@ -932,7 +967,7 @@ mod tests {
     #[test]
     fn unannounced_knock() {
         let mut d = door(None);
-        let inv = d.invite("a", Reach::Echo);
+        let inv = d.invite("a", Reach::Echo, vec![]);
         let (ct, ss) = encapsulate(&inv.lock).unwrap();
         let e = hkdf32(&ss, "quo-lock");
         let payload = format!("{{\"to\":\"{h}\",\"by\":\"{h}\",\"next\":\"{h}\",\"seq\":7}}", h = hex(&inv.heir));

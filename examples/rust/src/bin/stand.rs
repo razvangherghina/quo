@@ -111,7 +111,9 @@ fn handle(kit: &Shared, n: &Object, line: &[u8], op: &str, id: &str) -> Option<R
             if door.holds_name(&heir) {
                 return Err("name held");
             }
-            Ok(format!("\"invitation\":{}", door.invite(&heir, reach).to_json()))
+            let at = k.at.iter().cloned().collect();
+            let door = k.wards.get_mut(&w).ok_or("no such ward")?;
+            Ok(format!("\"invitation\":{}", door.invite(&heir, reach, at).to_json()))
         })(),
         "release" => (|| {
             let w = ward_field(n)?;
@@ -163,6 +165,10 @@ fn handle(kit: &Shared, n: &Object, line: &[u8], op: &str, id: &str) -> Option<R
             Ok(format!("\"read\":{}", r.to_json()))
         })(),
         "listen" => (|| {
+            // This kit stands tcp alone.
+            if opt_s(n, "scheme")?.is_some_and(|s| s != "tcp") {
+                return Err(BAD);
+            }
             let mut k = kit.lock().unwrap();
             if let Some(at) = &k.at {
                 return Ok(format!("\"at\":\"{at}\""));
@@ -182,11 +188,7 @@ fn handle(kit: &Shared, n: &Object, line: &[u8], op: &str, id: &str) -> Option<R
         "route" => (|| {
             let far = s(n, "far")?;
             unhex(&far, Some(64)).ok_or(BAD)?;
-            let at = s(n, "at")?;
-            match at.rsplit_once(':') {
-                Some((h, p)) if !h.is_empty() && p.parse::<u16>().is_ok() => {}
-                _ => return Err(BAD),
-            }
+            let at = carrier::tcp_address(&s(n, "at")?).ok_or(BAD)?;
             kit.lock().unwrap().routes.insert(far.clone(), at);
             Ok(format!("\"routed\":\"{far}\""))
         })(),
@@ -208,7 +210,8 @@ fn prepare_send(kit: &Shared, n: &Object, line: &[u8]) -> Result<impl FnOnce() -
     let w = ward_field(n)?;
     let inv = invitation(n, line)?;
     let (m, a) = method_args(n, line)?;
-    let far = hex(&inv.ward);
+    let far = inv.ward;
+    let from_at: Vec<String> = inv.at.iter().filter_map(|a| carrier::tcp_address(a)).collect();
     let st = standing(kit, &w, inv)?;
     let kit = kit.clone();
     Ok(move || {
@@ -217,16 +220,17 @@ fn prepare_send(kit: &Shared, n: &Object, line: &[u8]) -> Result<impl FnOnce() -
         let Ok(bx) = st.ask(m.as_deref(), a.as_deref()) else {
             return format!("\"error\":\"{BAD}\"");
         };
-        let route = kit.lock().unwrap().routes.get(&far).cloned();
-        let dialed = match route {
-            None => carrier::Dialed::Unsent,
-            Some(at) => {
-                let wb = unhex(&far, Some(64)).unwrap();
-                let mut w = [0u8; 64];
-                w.copy_from_slice(&wb);
-                carrier::dial(&at, &w, &bx, SEND_WAIT)
+        // A route is dialed alone. Without one, the invitation's tcp addresses are
+        // tried in order, each only after the one before it delivered nothing.
+        let route = kit.lock().unwrap().routes.get(&hex(&far)).cloned();
+        let addresses = route.map(|r| vec![r]).unwrap_or(from_at);
+        let mut dialed = carrier::Dialed::Unsent;
+        for at in &addresses {
+            dialed = carrier::dial(at, &far, &bx, SEND_WAIT);
+            if dialed != carrier::Dialed::Unsent {
+                break;
             }
-        };
+        }
         let r = match dialed {
             carrier::Dialed::Unsent => {
                 st.unsent();
