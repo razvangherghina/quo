@@ -81,9 +81,12 @@ export async function theListener(s) {
     return s.judge(s.open(z, r, lidSecret), want, label, predicate);
   };
   try {
-    const line = await dial("the first connection");
-    const greeted = await line.until(() => (line.bytes > 0 || line.closed ? true : undefined), QUIET_MS);
-    c("the kit writes nothing before a frame arrives", !greeted, line.closed ? "the kit closed the connection" : `${line.bytes} bytes`);
+    let line = await dial("the first connection");
+    // Either side closes at any moment, so an idle connection the kit closes
+    // departs from nothing. The rule is that it writes nothing before a frame.
+    await line.until(() => (line.bytes > 0 || line.closed ? true : undefined), QUIET_MS);
+    c("the kit writes nothing before a frame arrives", line.bytes === 0, `${line.bytes} bytes`);
+    if (line.closed) line = await dial("a connection after the kit closed an idle one");
     s.carry = carryOn(s, line);
 
     const over = async (label, args) => {
@@ -97,9 +100,17 @@ export async function theListener(s) {
     const id = line.nextId++;
     for (const b of askFrame(id, unhex(z.pk), q.box)) line.write(Buffer.from([b]));
     const byteWise = await line.answer(id, FRAME_MS);
-    if (c("carried: an ask frame written one byte at a time leaves the connection standing", !byteWise?.closed, shownFrame(byteWise))) {
-      const reply = !byteWise || byteWise.kind === "nothing" ? null : hex(byteWise.box);
+    // A connection that closes with asks in flight answers none of them. Where
+    // the listener answers, the answer is judged as at arrive.
+    if (byteWise && !byteWise.closed) {
+      const reply = byteWise.kind === "nothing" ? null : hex(byteWise.box);
       zeroJudge("carried: an ask frame written one byte at a time, judged as at arrive", '{"one":"byte at a time"}', reply, q.lidSecret);
+    } else {
+      c("carried: an ask frame written one byte at a time is answered, or the connection closes with it in flight", true, shownFrame(byteWise));
+    }
+    if (line.closed) {
+      line = await dial("a connection after the byte-wise ask");
+      s.carry = carryOn(s, line);
     }
 
     q = zeroAsk(z, "{}");

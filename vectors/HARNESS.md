@@ -44,7 +44,7 @@ bad request    a line that is no JSON object, a field missing, null or of the
                serve
 ward stood     a ward with that ward pk already stands
 no such ward   ward names no ward this program stands
-name held      heir names a heir this ward already holds
+name held      heir names an heir this ward already holds
 not reached    reach names nothing the kit provides
 ```
 

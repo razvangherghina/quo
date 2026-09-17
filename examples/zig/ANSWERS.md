@@ -109,9 +109,12 @@ The `invite` answer carries it, and the harness takes it from there. The
 minting door keeps no copy: it keeps the heir pk and the name only. The
 asking side keeps what it needs in its `Standing`, keyed by the
 invitation's ward pk and heir pk. That is the heir key pair (the secret
-included), the ward's signing key and padlock, and the lock. A lock that
-FIPS 203's check of an encapsulation key refuses is no invitation, and the
-kit answers `bad request` to the `ask` or `send` that hands it one.
+included), the ward's signing key and padlock, and the lock. Every request
+that reads an invitation reads it through one function, which holds the
+lock to 2368 lowercase hex and to the modulus check of FIPS 203 section
+7.2, every twelve-bit coefficient of the first 1152 bytes below q = 3329.
+A lock that check refuses is no invitation, and the kit answers `bad
+request` to the `ask` or `send` that hands it one.
 
 **Question 20. How does a standing recover a knock that brought no object back?**
 It alternates. After the knock, the next ask is sealed under the standing's
@@ -129,7 +132,7 @@ Over TCP, `send` waits up to eight seconds from the moment its frame is
 written. After that it closes the connection and reads nothing. On the
 harness's `ask` and `read`, the harness decides.
 
-**Question 22. How does the kit keep two sends on one relation apart?**
+**Question 22. How does a standing number its asks, which keys does it announce and when, and how does it keep two sends on one relation apart?**
 It doesn't. A relation holds only the last ask. Every ask replaces it, and
 `read` opens the reply under that ask's lid. Sends on one relation are
 serial, because `stand` runs one request at a time. The numbers increase
@@ -164,7 +167,7 @@ Nothing to the door. The reach looks only at whether `method` is present.
 
 ## What a kit reads
 
-**Question 27. How deep, how long and how strange a JSON text does the kit read inside `args` and `object`, and what does it answer beyond that?**
+**Question 27. How deep, how long and how strange a JSON text does the kit read where Quo reads nothing, and what does it answer beyond that?**
 Any depth and any length the size allows. The kit reads into nodes only the
 outer object of a payload or a reply text (and two levels of a harness
 line). Inside `args` and `object` it holds the text to the RFC 8259 grammar

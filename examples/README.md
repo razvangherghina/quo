@@ -15,7 +15,7 @@ difference is the kit's, and Quo allows it.
 | `zig/` | Zig 0.16 | the standard library and libc | `zig build` | `zig-out/bin/stand` |
 | `python/` | Python 3.9 or later | `cryptography` | none | `./stand` |
 | `javascript/` | Node 24 | Node's own modules | none | `./stand` |
-| `rust/` | Rust | the algorithms' crates | `cargo build` | `target/debug/stand` |
+| `rust/` | Rust 1.98, edition 2021 | the algorithms' crates | `cargo build` | `target/debug/stand` |
 
 ## Running
 

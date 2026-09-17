@@ -23,24 +23,26 @@ of `SPEC.md`.
 - **Question 3. What answers the zero head, and does anything?** The zero
   head chapter leaves both to the door. With nothing answering it, an ask on
   the zero head is case 4.
-- **Question 4. How many asks does a door judge at once?** A door that judges
-  several concurrently checks twice, as the door's cases say. A door that
-  judges one at a time checks once.
+- **Question 4. How many asks does a door judge at once?** Whatever the
+  number, an ask is admitted only under a key the door holds or vouches for
+  when it makes its choice, and the keys move as the move chapter says.
 - **Question 5. What does the kit call its parts, and its relations?** No
   name a kit gives crosses a door.
 
 ## What a kit keeps
 
 - **Question 6. How are a ward's seed and its lock handed in and held, how
-  and when is the lock made, and does the ward keep a heir's secret after it
-  gives the invitation?** A ward has one lock.
-- **Question 7. Where do drawn bytes come from?** A heir secret, an ephemeral
+  and when is the lock made, how many locks a ward holds, and does the ward
+  keep an heir's secret after it gives the invitation?** The lock's
+  encapsulation key travels in every invitation, and a knock's ciphertext
+  is to the lock in the invitation it came from.
+- **Question 7. Where do drawn bytes come from?** An heir secret, an ephemeral
   secret, a lock and an encapsulation each draw bytes. The source is the
   kit's.
 - **Question 8. What does a door keep for a relation, and in what?** What it
   holds is fixed by the keys of a relation. Where it holds it, and whether it
   survives a restart, is the kit's.
-- **Question 9. When does a door stop holding a heir, and what asks it to?**
+- **Question 9. When does a door stop holding an heir, and what asks it to?**
   The relation chapter says only that a door may.
 - **Question 10. How long are keys kept at removal kept?** Until then, an ask
   signed by one hears `removed`. Afterwards it hears silence.

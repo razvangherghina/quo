@@ -295,12 +295,14 @@ fn anyHex(a: Allocator, obj: Json.Node, key: []const u8) ![]u8 {
 fn invitationOf(req: Json.Node) Fail!quo.Invitation {
     const inv = req.get("invitation") orelse return error.BadRequest;
     if (inv.kind != .object) return error.BadRequest;
-    return .{
+    const out: quo.Invitation = .{
         .ward = try hexField(inv, "ward", 64),
         .heir = try hexField(inv, "heir", 32),
         .secret = try hexField(inv, "secret", 32),
         .lock = try hexField(inv, "lock", quo.ek_len),
     };
+    if (!quo.lockPasses(&out.lock)) return error.BadRequest;
+    return out;
 }
 
 fn writeError(out: *Writer, id: ?[]const u8, msg: []const u8) !void {

@@ -21,6 +21,11 @@ It reaches a kit through `vectors/HARNESS.md`: requests over the kit's stdin
 and stdout, with boxes as hex, and, where the kit carries bytes, the frames
 of `CARRIER-TCP.md`.
 
+It holds that seam as well as Quo. It drives every error `HARNESS.md` names,
+and holds the kit to that vocabulary and to the order in which two errors
+are answered. It holds a kit to exiting `0` when its stdin closes, and to
+writing nothing on its stdout but the answers `HARNESS.md` names.
+
 ## What the verifier refuses
 
 The verifier refuses a kit only where `SPEC.md` fixes the bytes. It accepts
@@ -38,9 +43,11 @@ every answer to every question `KIT-SPEC.md` asks.
 
 ## Checking, not comparing
 
-The verifier takes bytes apart under `SPEC.md`. It never compares bytes a
-kit wrote against stored bytes. A check that holds for every correct box
-holds for a kit whatever it draws.
+The verifier takes bytes apart under `SPEC.md`. A check that holds for every
+correct box holds for a kit whatever it draws.
+
+The sixteen bytes of silence are the one thing it compares, because `SPEC.md`
+fixes them. Nothing else a kit wrote is held against stored bytes.
 
 ## The kit as a door
 
@@ -64,6 +71,14 @@ with `arrive`, and opens what comes back:
 It drives each of the thirteen cases of `SPEC.md` by writing the arrival
 that provokes it. Every stranger's reply has one reply text and one length.
 
+It drives the signature check's whole failure list: an `s` at or above the
+group order, an `R` that does not decode, an `R` that is not canonical, a
+public key that does not decode, a public key whose y is at or above the
+prime, and a small-order public key in each spelling. It drives the two
+signatures that list does not hold, a small-order `R` and a public key with
+a torsion component that is not small-order, and holds that each is answered
+as an admitted key is.
+
 It drives both tables of the move, and follows the door's keys as they say.
 
 ## The kit as an asker
@@ -84,10 +99,14 @@ would:
 
 The verifier answers with a reply it writes, delivers it with `read`, and
 checks what the kit says it read. It answers with objects, silence, each
-of the three words, nothing, and replies that read as silence. It then
-checks, by the kit's next `ask`, that the kit moved its signing key and its
-edge key when an object came back to an ask above every ask it had moved
-on, and on nothing else.
+of the three words, nothing, and replies that read as silence.
+
+It holds the number of every ask the kit sealed, and with them the highest
+the standing has moved on. It then checks, by the kit's next `ask`, that the
+kit moved its signing key and its edge key when an object came back to an ask
+above that highest, and that it moved neither when an object came back to an
+ask at or below it. It runs two relations at once, answering each ask after
+the other's, and holds the kit to keeping them apart.
 
 A kit that answers `ask` with `bad request` is judged as a door alone.
 
@@ -99,15 +118,22 @@ answers them with `bad request` is judged without a carrier.
 
 As a listener, the verifier dials the address `listen` answers:
 
-- the kit writes nothing before a frame arrives;
+- the kit writes nothing before a frame arrives, and may close an idle
+  connection at any moment;
 - an ask to a ward it stands comes back as a reply frame with the same id,
   whose box is judged as at `arrive`, or as a nothing frame, or not at all;
+- an ask frame written one byte at a time is answered the same way, or the
+  connection closes with it in flight and answers none;
+- an ask frame of the largest body, 1,048,645, carries a box of the size;
 - an ask to a ward pk it does not stand comes back as a nothing frame with
   the same id;
 - many asks in flight on one connection each come back once, in any order;
 - after bytes that are not a frame, the kit closes the connection;
 - a reply frame or a nothing frame sent to it is read, nothing is written
-  back, and the connection stands.
+  back, and the connection stands;
+- a whole relation runs over the line, a knock and the asks after it, each
+  judged as at `arrive`, with a repeated number, a spent heir's knock and a
+  key the door does not admit among them.
 
 As a dialer, the verifier holds a listener of its own, and routes a far
 ward to it with `route`:
@@ -124,7 +150,7 @@ The verifier stands a ward in one program, routes a far ward of a second
 program to a listener of its own, and forwards each frame to the first
 program. It holds the first ward's seed and not its lock. For every ask it
 forwards, it checks the frame carries the first ward's pk and that the head
-opens to a heir pk. It opens no body and no reply, and judges the rest by
+opens to an heir pk. It opens no body and no reply, and judges the rest by
 what the second program reads.
 
 It checks that what the second program reads is what the first program's
@@ -153,6 +179,6 @@ sizes stand as `SPEC.md` writes them. These stand on the text alone.
 ## What the verifier does not see
 
 Whatever a kit keeps, and how it keeps it, across a restart or across two
-copies of one ward. What a kit draws. How long a kit waits. Whether two asks
-judged at once are checked twice, since no request of the harness makes a
-door judge two arrivals at one moment.
+copies of one ward. What a kit draws. How long a kit waits. What a door
+does with two arrivals on one relation at one moment, since no request of
+the harness makes it judge two at once.

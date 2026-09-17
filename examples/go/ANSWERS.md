@@ -1,7 +1,9 @@
+<!-- markdownlint-disable MD029 -->
 # This kit's answers to KIT-SPEC.md
 
 The Go kit in this folder, one program `stand`, standard library only. Each
-answer is the kit's choice, with its reason.
+answer is the kit's choice, with its reason. Each number is the number
+`KIT-SPEC.md` gives the question.
 
 ## What stands behind a door
 
@@ -9,8 +11,8 @@ answer is the kit's choice, with its reason.
    for the zero head: a Go function handed the method, the parsed args and
    the args' bytes as they arrived, answering an object with its `seen` or
    silence. The kit provides four, `echo`, `marked`, `null` and `silent`,
-   the names HARNESS.md sends. Reason: a function is the smallest thing
-   that can stand behind a door, and the harness names nothing more.
+   the names `vectors/HARNESS.md` sends. Reason: a function is the smallest
+   thing that can stand behind a door, and the harness names nothing more.
 2. **The way back to what made the ward.** None. A target is a plain
    function, holds no reference to the ward or the kit, and nothing removes
    what was never given. Reason: no target here needs one.
@@ -73,15 +75,16 @@ answer is the kit's choice, with its reason.
 19. **Invitations.** Handed in and out as the harness's JSON object. The
     minting ward keeps no copy. The standing checks the four fields' hex,
     that the secret gives the heir pk, that the lock passes FIPS 203's
-    encapsulation key check, which `crypto/mlkem` makes, and that the padlock takes a seal, and refuses
-    anything else as `bad request`.
+    encapsulation key check, which `crypto/mlkem` makes, and that the
+    padlock takes a seal, and refuses anything else as `bad request`.
 20. **A knock that brought no object back.** After nothing, the knock is
     sent again as the same bytes. After silence, a word or a reply that did
     not open, the standing asks under the key the knock announced and the
     knock's edge key. After each further non-object it alternates between
     the two. Each retry happens only when asked to ask again.
-21. **How long an asker waits.** Ten seconds on a TCP send, then nothing. A
-    closed connection is nothing at once.
+21. **How long an asker waits.** Five seconds to dial a far ward, then ten
+    seconds for the reply to an ask, then nothing. A closed connection is
+    nothing at once.
 22. **Two sends on one relation.** Each send carries its own sealed ask and
     lid secret and number. Numbers come from one counter per relation, so
     no two asks share one, and the standing keeps the highest number it

@@ -33,10 +33,10 @@ A ward is thirty-two bytes, its seed. A ward has a signing pair, an Ed25519
 key pair, and an X25519 scalar. The public key of the signing pair is the
 signing pk. The public key of the X25519 scalar is the padlock.
 
-A heir is an Ed25519 key pair a ward makes. Its secret is the heir secret,
+An heir is an Ed25519 key pair a ward makes. Its secret is the heir secret,
 thirty-two bytes. Its public key is the heir pk.
 
-A head is thirty-two bytes inside an ask's box: a heir pk, or thirty-two
+A head is thirty-two bytes inside an ask's box: an heir pk, or thirty-two
 zero bytes. The head of thirty-two zero bytes is the zero head.
 
 An ephemeral key is an X25519 key pair used for one box and for nothing
@@ -96,26 +96,22 @@ The thirty-two bytes under `quo-ward-seal` are the X25519 scalar as RFC
 The ward pk is the signing pk followed by the padlock, 128 lowercase hex.
 The ward's name is its ward pk.
 
-A seed given as thirty-two bytes is the seed. Text of any length, and bytes
-of any other length, are hashed with SHA-256 to thirty-two bytes first.
-Text is hashed as its UTF-8 bytes.
+Only bytes given as exactly thirty-two are the seed. Text is hashed with
+SHA-256 to thirty-two bytes whatever its length, as its UTF-8 bytes, and so
+are bytes of any other length.
 
 ## The lock
 
-A ward's lock is an ML-KEM-768 key pair of FIPS 203.
+A ward's lock is an ML-KEM-768 key pair of FIPS 203. The lock is not in
+the ward pk.
 
-The lock is not derived from the seed. The lock is not in the ward pk.
-
-A ward has one lock.
-
-The lock's encapsulation key is 1184 bytes. It travels in every invitation
-that names a heir.
+The lock's encapsulation key is 1184 bytes. It travels in every invitation.
 
 ## The other keys
 
 Every key other than the ward key is drawn, and nothing derives it.
 
-A heir secret is thirty-two drawn bytes, and they are the Ed25519 private
+An heir secret is thirty-two drawn bytes, and they are the Ed25519 private
 key as RFC 8032 names it, the seed the signing key is expanded from. No
 label and no hash is applied before RFC 8032 takes them.
 
@@ -156,6 +152,9 @@ six-character escape for that letter, are one name.
 Quo reads nothing inside `args` or `object`, nothing of `method` but that
 it is a string, and nothing of a field this document does not name. Every
 JSON text is a value there, whatever its strings, its keys or its nesting.
+A door that will not read what stands there answers with a choice, silence
+among them, and never with a stranger's case: the number is spent and the
+keys move as on any choice.
 
 ## The invitation
 
@@ -165,7 +164,7 @@ An invitation is a value of this shape:
 invitation = { ward, heir, secret, lock }
 ```
 
-`ward` is 128 hex, a ward pk. `heir` is 64 hex, a heir pk. `secret` is 64
+`ward` is 128 hex, a ward pk. `heir` is 64 hex, an heir pk. `secret` is 64
 hex, the heir secret. `lock` is 2368 hex, the lock's encapsulation key.
 
 An invitation goes anywhere. It carries no route.
@@ -174,8 +173,8 @@ Nothing else is read from an invitation. A field beside the four is
 ignored, and an invitation with one is still an invitation.
 
 A shape other than this one is no invitation. A ward pk alone with a secret
-or a lock is no invitation. A heir with no secret is no invitation. A secret
-with no heir is no invitation. A heir with no lock is no invitation. A lock
+or a lock is no invitation. An heir with no secret is no invitation. A secret
+with no heir is no invitation. An heir with no lock is no invitation. A lock
 that is not 2368 lowercase hex, or that the modulus check of
 FIPS 203 section 7.2 refuses, is no invitation.
 
@@ -190,12 +189,12 @@ Replies come back from the occupant to the standing.
 Two wards that each ask the other hold two relations. Each ward made the
 heir of one. The two relations share no key.
 
-A heir on which no door has made a choice is fresh. A heir on which a door
-has made a choice is spent. A refusal does not spend a heir.
+An heir on which no door has made a choice is fresh. An heir on which a door
+has made a choice is spent. A refusal does not spend an heir.
 
 A knock is an ask on a fresh heir.
 
-A door may stop holding a heir.
+A door may stop holding an heir.
 
 ## The box
 
@@ -283,13 +282,18 @@ bytes exactly as they stand in the box.
 
 The signature of a reply is by the ward's signing key over the reply text.
 
+On every head the signature is checked under the key `by` names. On a head
+that names an heir, `by` is owed to be a key the door admits or a key kept at
+removal, and an ask by any other key is case 7.
+
 A signature is checked against the bytes as they were received. It is never
 checked against a re-serialisation of what those bytes parsed to.
 
 A signature is Ed25519 as RFC 8032 defines it, and is deterministic. The
 check is the cofactorless check of RFC 8032, `[s]B = R + [k]A`.
 
-The check fails in these places and in no other:
+The check fails when the equation does not hold, and beside that in these
+places and in no other:
 
 - a signature of any length but sixty-four;
 - an `s` at or above the group order;
@@ -366,8 +370,8 @@ it continue the same count.
 
 ## The keys of a relation
 
-A relation has three signing keys over its life: the heir, the standing's
-own key, and next.
+A relation's signing keys are the heir, then the key the knock announces,
+then each key an ask announces after it.
 
 The heir is made by the inviting ward for one occupant. The ward keeps the
 heir pk. The ward gives the heir secret away inside the invitation.
@@ -380,7 +384,7 @@ with the heir and announces that key in `next`.
 
 Every ask announces in `next` the key its sender will sign with next.
 
-A door that keeps a relation holds two signing pks for a heir: the key held
+A door that keeps a relation holds two signing pks for an heir: the key held
 and the key vouched for. It holds two edge keys: the open key and the
 offered key.
 
@@ -484,7 +488,7 @@ edge key `E`, then the reply's agreement. It gives thirty-two bytes.
 On a fresh heir, the door reads the ciphertext, decapsulates it with the
 lock, and opens the body under the knock's edge key alone.
 
-For the zero head, for a heir the door does not hold, and for a heir the
+For the zero head, for an heir the door does not hold, and for an heir the
 door stopped holding while it was fresh, the door reads no ciphertext and
 opens the body under the zero edge key alone.
 
@@ -510,6 +514,9 @@ A standing moves to its announced signing key, and to the edge key that
 follows the one it sent under, when an object comes back to an ask whose
 number is above every ask it has moved on, and on nothing else.
 
+When the ask that brought the object announced nothing, the standing keeps
+the signing key it has.
+
 A knock is the one ask after which the door admits one key: the heir dies
 and the announced key is held.
 
@@ -526,7 +533,7 @@ knock moves nothing.
 A knock binds when the door makes a choice on it. Only the first such knock
 binds. A knock on a spent heir is a stranger's.
 
-A knock on a heir a door stopped holding while it was fresh is a stranger's.
+A knock on an heir a door stopped holding while it was fresh is a stranger's.
 
 A knock on a secret that is not the heir's meets silence. A knock on a lock
 that is not the ward's meets silence.
@@ -539,8 +546,8 @@ anything does, is behind the door.
 On the zero head the door keeps nothing for whoever asked: no key and no
 count.
 
-On the zero head `by` is read, and the signature is checked under the key
-`by` names.
+On the zero head no key is admitted, so the signature is checked under the
+key `by` names and nothing more is asked of `by`.
 
 On the zero head `next` and `seq` are held to the payload's rules, and the
 door keeps nothing by them.
@@ -550,7 +557,7 @@ On the zero head the same sealed bytes presented twice are answered twice.
 To the zero head, a case that would be a word to an admitted key is
 silence.
 
-A head that names a heir the door does not hold is not the zero head. It is
+A head that names an heir the door does not hold is not the zero head. It is
 a stranger's and hears silence.
 
 ## What a door tells apart
@@ -566,8 +573,8 @@ in this order.
   ciphertext, a body that opens under no edge key the door takes for the
   head's heir, or a body of sixty-four bytes or fewer.
 - **Case 2.** A payload that opens and is not UTF-8, is not JSON, is not one
-  object, or has two keys of one name among its own keys. This is a box
-  that does not open.
+  object, or has two keys of one name among its own keys. It is answered as
+  case 1 is.
 - **Case 3.** The payload is not well formed: `to`, `by` or `next` not a pk
   where a pk is owed, sixty-four zero hex included; on the zero head, `to`
   not `null`; on any other head, `to` not the heir pk the head names;
@@ -611,14 +618,8 @@ point, of thirty-two more drawn bytes.
 
 The signature is checked before anything moves and before any word is said.
 
-A door that judges several asks concurrently checks twice, once before the
-signature is checked and once after. The second check is that the key that
-signed is still held or vouched for, and that the edge key the body opened
-under is still open or offered. An ask that fails the second check is case
-7.
-
-On the empty ask, a door that answers with an object gives a value, and its
-`seen` is `null`. Silence on the empty ask is a choice like any other.
+On the empty ask, a door that answers with an object gives any value and
+any `seen`. Silence on the empty ask is a choice like any other.
 
 Where a door has no value to write, the reply is silence.
 

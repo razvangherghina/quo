@@ -14,10 +14,23 @@ import { decaps, encaps, isEncapsKey, keyGen } from "./mlkem.js";
 import {
   aesOpen,
   aesSeal,
+  BASE,
   edPub,
+  edScalar,
   edSign,
   edVerify,
   hkdf,
+  hramScalar,
+  IDENTITY,
+  L,
+  leBytes,
+  pointAdd,
+  pointDecode,
+  pointEncode,
+  pointEq,
+  pointMul,
+  pointNeg,
+  scalarLe,
   sha256,
   takesNoSeal,
   x25519,
@@ -407,7 +420,7 @@ export class Session {
   }
 
   /**
-   * Builds an ask on a heir (or the zero head), delivers it, judges the reply
+   * Builds an ask on an heir (or the zero head), delivers it, judges the reply
    * and follows the door's move. `want` is "answer" for what the reach gives.
    */
   async ask(heir, o, want, label) {
@@ -427,7 +440,7 @@ export class Session {
     const payload =
       o.raw ??
       payloadBytes({ to: zero ? "null" : J(heir.pkHex), by: J(signer.hex), next, seq: String(seq) }, o);
-    const sig = edSign(signer.seed, payload);
+    const sig = o.sig ? o.sig(payload) : edSign(signer.seed, payload);
     if (o.badSig) sig[40] ^= 0x01;
     const body = o.body ?? Buffer.concat([payload, sig]);
     let ct;
@@ -508,7 +521,7 @@ async function wardsAndInvitations(s) {
 async function theMove(s) {
   const w = await s.ward("the move");
   let rows = 0;
-  // Each row of the spent-heir table on a heir of its own: bind with K1, then
+  // Each row of the spent-heir table on an heir of its own: bind with K1, then
   // K1 announces K2, so H = K1 and V = K2 before the row's ask.
   const row = async (label, o, after) => {
     const h = await s.invite(w, `row ${rows++}`);
@@ -583,6 +596,20 @@ async function theCount(s) {
   await ask(MAX_SEQ, "repeated", "2^53 - 1 is honoured once");
   await ask(MAX_SEQ + 1, "stranger", "2^53 is no count number", { set: { seq: "9007199254740992" } });
   await ask(1, "below", "one, below the highest");
+  // A knock carries any count number, and the asks after it continue that count.
+  for (const [how, seq] of [
+    ["one", 1],
+    ["a middle number", 4503599627370496],
+    ["2^53 - 2", MAX_SEQ - 1],
+    ["2^53 - 1", MAX_SEQ],
+  ]) {
+    const kh = await s.invite(w, `knock at ${how}`);
+    await s.bind(kh, seq);
+    await s.ask(kh, { signer: "H", under: "O", next: null, seq, method: "echo", args: "{}" }, "repeated", `count: a knock at ${how} honoured that number`);
+    if (seq < MAX_SEQ) {
+      await s.ask(kh, { signer: "H", under: "F", next: null, seq: seq + 1, method: "echo", args: '{"after":"the knock"}' }, "answer", `count: the ask after a knock at ${how} continues the count`);
+    }
+  }
 }
 
 async function theReaches(s) {
@@ -648,6 +675,105 @@ async function theZeroHead(s) {
   await zero(w, { ...o, next: "self" }, "answer", "next equal to by");
 }
 
+// ---------- the signature's failure list ----------
+
+const PRIME = 2n ** 255n - 19n;
+/** The one small-order X25519 point the verifier writes, of order eight. */
+const SMALL_ORDER_X = Buffer.from("e0eb7a7c3b41b8ae1656e3faf19fc46ada098deb9c32b1fd866205165f49b800", "hex");
+
+/** A point of order eight, drawn. */
+function order8Point() {
+  for (;;) {
+    const p = pointDecode(rand(32));
+    if (!p) continue;
+    const t = pointMul(L, p);
+    if (!pointEq(pointMul(4n, t), IDENTITY)) return t;
+  }
+}
+
+/** A signature whose R is given, holding the cofactorless equation for the key `scalar`B. */
+const withR = (rBytes, pk, scalar, msg) => Buffer.concat([rBytes, leBytes((hramScalar(rBytes, pk, msg) * scalar) % L)]);
+
+/** The first y with no point on the curve. */
+function undecodable() {
+  let y = 2n;
+  while (pointDecode(leBytes(y))) y++;
+  return leBytes(y);
+}
+
+/**
+ * Every place SPEC.md says the signature check fails, and the two it says it
+ * does not, driven at the door on the zero head, where `by` is read and a
+ * failing check is case 5: silence.
+ */
+async function theSignature(s) {
+  const w = await s.ward("the signature", "echo");
+  const k = newKey();
+  const a = edScalar(k.seed);
+  const args = '{"sig":1}';
+  let n = 0;
+  const zero = (o, want, label) =>
+    s.ask(
+      { ward: w, reach: "echo", pkHex: null },
+      { zero: true, ward: w, signer: k, next: null, seq: ++n, method: "echo", args, ...o },
+      want,
+      `the signature: ${label}`,
+    );
+  const asKey = (pk) => ({ seed: k.seed, pk, hex: hex(pk) });
+  /** The payload a zero-head ask carries at that number, so an R can be chosen for it. */
+  const payloadAt = (seq, pk) => payloadBytes({ to: "null", by: J(hex(pk)), next: "null", seq: String(seq) }, { method: "echo", args });
+  /** The first number at or above `from` whose payload gives an `h` of that residue modulo eight. */
+  const numberFor = (from, pk, rBytes, residue) => {
+    for (let q = from; ; q++) {
+      const payload = payloadAt(q, pk);
+      if (hramScalar(rBytes, pk, payload) % 8n === residue) return { seq: q, payload };
+    }
+  };
+
+  await zero({ sig: (p) => { const g = edSign(k.seed, p); return Buffer.concat([g.subarray(0, 32), leBytes(scalarLe(g.subarray(32)) + L)]); } }, "stranger", "an s above the group order, though the equation holds");
+  await zero({ sig: (p) => Buffer.concat([edSign(k.seed, p).subarray(0, 32), leBytes(L)]) }, "stranger", "an s equal to the group order");
+  await zero({ sig: (p) => withR(undecodable(), k.pk, a, p) }, "stranger", "an R that does not decode to a point");
+  await zero({ sig: (p) => withR(leBytes(1n + PRIME), k.pk, a, p) }, "stranger", "an R whose bytes are not the bytes its point encodes to");
+  await zero({ sig: (p) => withR(leBytes(1n | (1n << 255n)), k.pk, a, p) }, "stranger", "an R spelled with the sign bit set on x zero");
+  await zero({ signer: asKey(undecodable()) }, "stranger", "a public key that does not decode to a point");
+  let good = 2n;
+  while (!pointDecode(leBytes(good)) || pointEq(pointMul(8n, pointDecode(leBytes(good))), IDENTITY)) good++;
+  const unreduced = leBytes(good + PRIME);
+  await zero({ signer: asKey(unreduced), sig: (p) => withR(leBytes(1n), unreduced, 0n, p) }, "stranger", "a public key whose y is at or above the prime");
+  const t8 = order8Point();
+  const spellings = [
+    ["the identity", leBytes(1n)],
+    ["y equal to p minus one", leBytes(PRIME - 1n)],
+    ["the identity with the sign bit set on x zero", leBytes(1n | (1n << 255n))],
+    ["y equal to p minus one with the sign bit set on x zero", leBytes((PRIME - 1n) | (1n << 255n))],
+    ["a point of order eight", pointEncode(t8)],
+    ["a point of order four", pointEncode(pointMul(2n, t8))],
+  ];
+  for (const [how, pk] of spellings) {
+    await zero({ signer: asKey(pk), sig: () => Buffer.concat([leBytes(1n), leBytes(0n)]) }, "stranger", `a small-order public key, ${how}`);
+  }
+
+  // The two the list does not hold: both are answered as the reach answers.
+  await zero({ sig: (p) => withR(leBytes(1n), k.pk, a, p) }, "answer", "a small-order R, the identity, verifies");
+  const torsion = pointEncode(pointAdd(pointMul(a, BASE), t8));
+  const r = 12345n;
+  const rB = pointEncode(pointMul(r, BASE));
+  const one = numberFor(1000, torsion, rB, 0n);
+  await zero(
+    { signer: asKey(torsion), raw: one.payload, seq: one.seq, sig: () => Buffer.concat([rB, leBytes((r + hramScalar(rB, torsion, one.payload) * a) % L)]) },
+    "answer",
+    "a public key with a torsion component that is not small-order verifies",
+  );
+  const rB8 = pointEncode(pointNeg(t8));
+  const two = numberFor(2000, torsion, rB8, 1n);
+  await zero(
+    { signer: asKey(torsion), raw: two.payload, seq: two.seq, sig: () => Buffer.concat([rB8, leBytes((hramScalar(rB8, torsion, two.payload) * a) % L)]) },
+    "answer",
+    "an R of order eight verifies under a key with a torsion component",
+  );
+  await zero({}, "answer", "the door still answers after every failure");
+}
+
 async function theStrangers(s) {
   const w = await s.ward("strangers");
   const other = await s.ward("strangers, the other ward");
@@ -692,8 +818,8 @@ async function theStrangers(s) {
   await s.ask(f, { knock: true, signer: "heir", next: newKey(), seq: 0 }, "stranger", "case 3: a knock with seq zero");
   const ghost = { name: "ghost", ward: w, pk: rand(32), pkHex: "", E: ZERO32, ct: f.ct };
   ghost.pkHex = hex(ghost.pk);
-  await s.ask(ghost, { edge: ZERO32, signer: newKey(), next: null, seq: 1, method: "x" }, "stranger", "case 6: a heir never made here");
-  await s.ask(ghost, { knock: true, signer: newKey(), next: newKey(), seq: 1, method: "x" }, "stranger", "case 6: a knock on a heir never made here");
+  await s.ask(ghost, { edge: ZERO32, signer: newKey(), next: null, seq: 1, method: "x" }, "stranger", "case 6: an heir never made here");
+  await s.ask(ghost, { knock: true, signer: newKey(), next: newKey(), seq: 1, method: "x" }, "stranger", "case 6: a knock on an heir never made here");
   await s.ask({ ...o, ward: w }, { knock: true, signer: "heir", next: newKey(), seq: 1 }, "stranger", "case 6: a knock on another ward's heir");
   await s.ask(h, { ...good, seq: seq++, signer: newKey() }, "stranger", "case 7: a key not admitted");
   await s.ask(h, { ...good, seq: seq++, set: { by: J(newKey().hex) } }, "stranger", "case 7: by names a key not admitted, signed by the held key");
@@ -746,7 +872,7 @@ async function thePayload(s) {
   await bad("case 3: to in uppercase hex", { set: { to: J(h.pkHex.toUpperCase()) } });
   await bad("case 3: to of 63 hex", { set: { to: J(h.pkHex.slice(1)) } });
   await bad("case 3: to zero hex", { set: { to: J("0".repeat(64)) } });
-  await bad("case 3: to null on a heir's head", { set: { to: "null" } });
+  await bad("case 3: to null on an heir's head", { set: { to: "null" } });
   await bad("case 3: to another heir", { set: { to: J(hex(rand(32))) } });
   await bad("case 3: to absent", { set: { to: undefined } });
   await bad("case 3: by in uppercase hex", { set: { by: J(pk.toUpperCase()) } });
@@ -842,10 +968,14 @@ async function removal(s) {
   await s.ask(sp, { ...o, signer: "H", under: "O", seq: 2 }, "removed", "removal: case 9 comes before case 11");
   await s.ask(sp, { ...o, signer: "H", under: "O", seq: 5 }, "removed", "removal: removed moved nothing");
   await s.ask(sp, { ...o, signer: "H", under: "O", seq: 6, badSig: true }, "stranger", "removal: a bad signature by a kept key is case 8");
+  await s.ask(sp, { ...o, signer: "H", under: "O", seq: 10, set: { seq: "0" } }, "stranger", "removal: case 3 before case 9, a kept key with seq zero");
+  await s.ask(sp, { ...o, signer: "H", under: "O", seq: 11, set: { next: J("0".repeat(64)) } }, "stranger", "removal: case 3 before case 9, a kept key with next zero hex");
+  await s.ask(sp, { ...o, signer: "H", under: "O", seq: 12, set: { to: "null" } }, "stranger", "removal: case 3 before case 9, a kept key with to null");
+  await s.ask(sp, { ...o, signer: "H", under: "O", seq: 13, raw: Buffer.from("[1,2]", "utf8") }, "stranger", "removal: case 2 before case 9, a kept key with a payload that is no object");
   await s.ask(sp, { ...o, signer: newKey(), under: "O", seq: 7 }, "stranger", "removal: a key never kept is a stranger's");
   await s.ask(sp, { ...o, signer: "heir", under: "O", seq: 8 }, "stranger", "removal: the heir is a stranger's");
   await s.ask(sp, { ...o, signer: "H", edge: rand(32), seq: 9 }, "stranger", "removal: a body under no kept edge key");
-  await s.ask(fr, { knock: true, signer: "heir", next: newKey(), seq: 1, method: "echo", args: "{}" }, "stranger", "removal: case 6, a knock on a heir released while fresh");
+  await s.ask(fr, { knock: true, signer: "heir", next: newKey(), seq: 1, method: "echo", args: "{}" }, "stranger", "removal: case 6, a knock on an heir released while fresh");
   await s.ask(fr2, { knock: true, signer: "heir", next: null, seq: 1 }, "stranger", "removal: case 6 before case 10");
   await s.ask(fr, { signer: "heir", edge: ZERO32, next: newKey(), seq: 1, method: "echo", args: "{}" }, "stranger", "removal: case 6 under the zero edge key");
   const again = await s.invite(w, "spent");
@@ -887,7 +1017,7 @@ export function verifierWard(seedText) {
 export function mint(mine) {
   const heir = newKey();
   const inv = { ward: mine.pk, heir: heir.hex, secret: hex(heir.seed), lock: hex(mine.lock.ek) };
-  return { inv, heir, state: "fresh", knock: null, key: null, edge: null };
+  return { inv, heir, state: "fresh", knock: null, key: null, edge: null, movedAt: 0 };
 }
 
 const SIL = { silence: true };
@@ -909,6 +1039,20 @@ const REPLIES = {
   "a reply that does not open": { text: '{"object":1,"seen":null}', read: SIL, flip: true },
   "a reply sealed to another lid": { text: '{"object":1,"seen":null}', read: SIL, otherLid: true },
   "a reply signed by another key": { text: '{"object":1,"seen":null}', read: SIL, otherSigner: true },
+  "a reply whose s is above the group order": {
+    text: '{"object":1,"seen":null}',
+    read: SIL,
+    sig: (mine, text) => {
+      const g = edSign(mine.signSeed, text);
+      return Buffer.concat([g.subarray(0, 32), leBytes(scalarLe(g.subarray(32)) + L)]);
+    },
+  },
+  "a reply whose R is the identity spelled unreduced": {
+    text: '{"object":1,"seen":null}',
+    read: SIL,
+    sig: (mine, text) => withR(leBytes(1n + PRIME), mine.signPk, edScalar(mine.signSeed), text),
+  },
+  "a reply whose ephemeral pk is a small-order point": { text: '{"object":1,"seen":null}', read: SIL, smallEph: true },
   "a box too short to open": { raw: 60, read: SIL },
   "a box above the size": { text: `{"object":"${big(SIZE + 1)}","seen":null}`, read: SIL },
   "a field beside the shape": { text: '{"object":1,"seen":null,"x":1}', read: SIL },
@@ -980,10 +1124,13 @@ function writeReply(mine, t, r) {
   if (r.none) return null;
   if (r.raw) return { box: rand(r.raw) };
   const eph = rand(32);
-  const ephPk = x25519Pub(eph);
-  const agr = x25519(eph, r.otherLid ? x25519Pub(rand(32)) : t.lid);
+  // A small-order ephemeral pk gives an all-zero agreement, and a box sealed
+  // under it is a box that does not open.
+  const ephPk = r.smallEph ? SMALL_ORDER_X : x25519Pub(eph);
+  const agr = r.smallEph ? Buffer.from(ZERO32) : x25519(eph, r.otherLid ? x25519Pub(rand(32)) : t.lid);
   const text = Buffer.from(r.text, "utf8");
-  const body = Buffer.concat([text, edSign(r.otherSigner ? rand(32) : mine.signSeed, text)]);
+  const sig = r.sig ? r.sig(mine, text) : edSign(r.otherSigner ? rand(32) : mine.signSeed, text);
+  const body = Buffer.concat([text, sig]);
   const box = Buffer.concat([ephPk, aesSeal(hkdf(agr, "quo-seal", 44), ephPk, body)]);
   if (r.flip) box[box.length - 1] ^= 1;
   return { box, agr };
@@ -1026,7 +1173,7 @@ export class AskerRun {
     const why = resent ? null : sameAsk(p, o);
     s.check(`${label}: method and args are the ones asked, or the knock is sent again as the same bytes`, !why, why, "harness");
     const announced = p.next !== null && p.next !== rel.heir.hex && p.next !== p.by ? p.next : null;
-    return { ...t, announced, box: a.box };
+    return { ...t, announced, box: a.box, seq: p.seq };
   }
 
   /** Hands the kit a reply, checks what it read, and follows the standing as SPEC.md moves it. */
@@ -1041,12 +1188,46 @@ export class AskerRun {
     const shown = J(a.read).slice(0, 160);
     s.check(`${label}: the kit reads ${name} as ${J(r.read).slice(0, 60)}`, isDeepStrictEqual(a.read, r.read), `read ${shown}`);
     if (r.read.object !== undefined) {
-      rel.key = t.announced ?? t.by;
-      rel.edge = follow(t.edge, w.agr);
-      rel.state = "spent";
+      // The standing moves when an object comes back to an ask whose number is
+      // above every ask it has moved on, and on nothing else. The verifier
+      // holds the kit's numbers from the payloads it sent.
+      const above = t.seq > rel.movedAt;
+      s.check(`${label}: the object came back to number ${t.seq}, ${above ? "above" : "at or below"} the highest the standing moved on, ${rel.movedAt}`, true, above ? "the standing moves" : "the standing keeps its keys");
+      if (above) {
+        rel.key = t.announced ?? t.by;
+        rel.edge = follow(t.edge, w.agr);
+        rel.movedAt = t.seq;
+        rel.state = "spent";
+      }
     } else if (t.knock) {
       rel.knock = t;
       rel.knockBox = t.box;
+    }
+  }
+
+  /**
+   * Two relations at once, each ask answered after the other's: `read` answers
+   * the last `ask` on its own invitation, and the two are kept apart.
+   */
+  async interleaved(title) {
+    const [a, b] = [mint(this.mine), mint(this.mine)];
+    const rounds = [
+      ["an object with seen", "an object with seen"],
+      ["silence", "an object with seen"],
+      ["an object with seen", "nothing"],
+      ["an object with seen", "an object with seen"],
+    ];
+    const named = (t, name) => (t.knock && !t.announced ? "unannounced" : name);
+    try {
+      for (const [i, [x, y]] of rounds.entries()) {
+        const ta = await this.ask(a, `${title}: round ${i + 1}, the first relation`);
+        const tb = await this.ask(b, `${title}: round ${i + 1}, the second relation`);
+        if (!ta || !tb) return;
+        await this.reply(b, tb, named(tb, y), `${title}: round ${i + 1}, the second relation answered first`);
+        await this.reply(a, ta, named(ta, x), `${title}: round ${i + 1}, the first relation answered second`);
+      }
+    } catch (e) {
+      if (!(e instanceof Lost)) throw e;
     }
   }
 
@@ -1103,6 +1284,7 @@ async function theAsker(s) {
   await run.relation("a knock met by an object", ["an object with seen null, padded and reordered", "nothing", "an object with seen", "silence"]);
   await run.relation("a knock met by nothing", ["nothing", "nothing", "an object with seen", "removed", "the object null"]);
   await run.relation("a knock met by a reply that does not open", ["a reply that does not open", "repeated", "an object with seen", "a reply signed by another key", "an object with seen"]);
+  await run.interleaved("two relations answered out of order");
 }
 
 // ---------- the harness seam ----------
@@ -1197,10 +1379,20 @@ async function harnessErrors(v, spawnStand) {
   await errq("ask with a string invitation", { op: "ask", ward: pk, invitation: J(invitation) }, "bad request");
   await errq("ask with a lock one byte short", { op: "ask", ward: pk, invitation: inv({ lock: invitation.lock.slice(2) }) }, "bad request");
   await errq("ask with an uppercase lock", { op: "ask", ward: pk, invitation: inv({ lock: invitation.lock.toUpperCase() }) }, "bad request");
-  await errq("ask with a heir and no secret", { op: "ask", ward: pk, invitation: inv({ secret: undefined }) }, "bad request");
+  await errq("ask with an heir and no secret", { op: "ask", ward: pk, invitation: inv({ secret: undefined }) }, "bad request");
   await errq("ask with a secret and no heir", { op: "ask", ward: pk, invitation: inv({ heir: undefined }) }, "bad request");
-  await errq("ask with a heir and no lock", { op: "ask", ward: pk, invitation: inv({ lock: undefined }) }, "bad request");
+  await errq("ask with an heir and no lock", { op: "ask", ward: pk, invitation: inv({ lock: undefined }) }, "bad request");
   await errq("ask with a short ward in the invitation", { op: "ask", ward: pk, invitation: inv({ ward: invitation.ward.slice(2) }) }, "bad request");
+  // A field beside the four is ignored, and an invitation with one is still an
+  // invitation. A lock the modulus check of FIPS 203 section 7.2 refuses is no
+  // invitation.
+  if (serves) {
+    await ok("ask with a fifth field in the invitation answers a box", { op: "ask", ward: pk, invitation: inv({ route: "nowhere" }) }, (a) => isHex(a.box));
+  }
+  const highLock = Buffer.from(unhex(invitation.lock));
+  highLock[0] = 0xff;
+  highLock[1] |= 0x0f;
+  await errq("ask with a lock of 2368 hex whose coefficient is at or above q", { op: "ask", ward: pk, invitation: inv({ lock: hex(highLock) }) }, "bad request");
   await errq("ask with a numeric method", { op: "ask", ward: pk, invitation, method: 5 }, "bad request");
   await errq("ask with a null method", { op: "ask", ward: pk, invitation, method: null }, "bad request");
   await errq("ask with args an array", { op: "ask", ward: pk, invitation, args: [] }, "bad request");
@@ -1230,7 +1422,7 @@ async function harnessErrors(v, spawnStand) {
   const sendProbe = await ok("send at no ward answers no such ward or bad request", { op: "send", ward: fakeWard, invitation }, (a) => a.error === "no such ward" || a.error === "bad request");
   const noSendWard = sendProbe.error === "no such ward" ? "no such ward" : "bad request";
   await errq("send with no invitation", { op: "send", ward: pk }, "bad request");
-  await errq("send with a heir and no lock", { op: "send", ward: pk, invitation: inv({ lock: undefined }) }, "bad request");
+  await errq("send with an heir and no lock", { op: "send", ward: pk, invitation: inv({ lock: undefined }) }, "bad request");
   await errq("send with a numeric method", { op: "send", ward: pk, invitation, method: 5 }, "bad request");
   await errq("send at no ward with null args", { op: "send", ward: fakeWard, invitation, args: null }, "bad request");
   await errq("send at no ward again", { op: "send", ward: fakeWard, invitation }, noSendWard);
@@ -1251,6 +1443,7 @@ const SCENARIOS = [
   ["the count", theCount],
   ["the reaches", theReaches],
   ["the zero head", theZeroHead],
+  ["the signature", theSignature],
   ["strangers", theStrangers],
   ["the payload", thePayload],
   ["unannounced", unannounced],

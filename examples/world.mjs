@@ -230,7 +230,7 @@ async function mallory({ alice, card }, fay) {
   };
   await tryOne("noise", alice, { raw: randomBytes(300) });
   await tryOne("a box sealed to someone else's padlock", alice, { padlock: x25519Pub(randomBytes(32)) });
-  await tryOne("an ask naming a heir Alice never made", alice, { head: randomBytes(32), to: J(hex(randomBytes(32))) });
+  await tryOne("an ask naming an heir Alice never made", alice, { head: randomBytes(32), to: J(hex(randomBytes(32))) });
   const heirPk = unhex(inv.heir);
   const { key, ct } = encaps(unhex(inv.lock));
   const signer = { seed: unhex(inv.secret), hex: inv.heir };

@@ -596,6 +596,19 @@ pub const Heir = struct {
     highest: u64 = 0,
 };
 
+/// The modulus check of FIPS 203 section 7.2: ByteEncode12(ByteDecode12(ek)) == ek,
+/// which holds when each of the 768 twelve-bit coefficients of the first 1152 bytes
+/// is below q = 3329.
+pub fn lockPasses(ek: *const [ek_len]u8) bool {
+    var at: usize = 0;
+    while (at < 1152) : (at += 3) {
+        const lo = @as(u16, ek[at]) | (@as(u16, ek[at + 1] & 0x0f) << 8);
+        const hi = (@as(u16, ek[at + 1]) >> 4) | (@as(u16, ek[at + 2]) << 4);
+        if (lo >= 3329 or hi >= 3329) return false;
+    }
+    return true;
+}
+
 pub const Invitation = struct {
     ward: [64]u8,
     heir: [32]u8,
@@ -1034,6 +1047,29 @@ test "ward keys" {
     try testing.expectEqualSlices(u8, &w.wardPk(), &WardKeys.fromText("alice").wardPk());
     const text32 = "0123456789abcdef0123456789abcdef";
     try testing.expect(!std.mem.eql(u8, &WardKeys.fromText(text32).wardPk(), &WardKeys.fromBytes(text32).wardPk()));
+}
+
+test "the lock's modulus check" {
+    var seed: [64]u8 = undefined;
+    for (&seed, 0..) |*b, i| b.* = @intCast(i);
+    const kp = MLKem.KeyPair.generateDeterministic(seed) catch unreachable;
+    var ek = kp.public_key.toBytes();
+    try testing.expect(lockPasses(&ek));
+
+    // A coefficient of exactly q, and one above it, are both refused.
+    var at_q = ek;
+    at_q[0] = 3329 & 0xff;
+    at_q[1] = (at_q[1] & 0xf0) | (3329 >> 8);
+    try testing.expect(!lockPasses(&at_q));
+    var high = ek;
+    high[1150] |= 0xf0;
+    high[1151] = 0xff;
+    try testing.expect(!lockPasses(&high));
+
+    // The thirty-two bytes of rho after the polynomials are read as no coefficient.
+    ek[1152] = 0xff;
+    ek[1183] = 0xff;
+    try testing.expect(lockPasses(&ek));
 }
 
 test "box sizes" {

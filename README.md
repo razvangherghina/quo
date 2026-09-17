@@ -17,9 +17,10 @@ Quo's.
   kit departs from `SPEC.md`, and nothing about whether the kit is good.
   Passing it is necessary and never sufficient.
   `node verifier/cli.js -- <stand program>`, with Node 24 and nothing else.
-- `vectors/HARNESS.md`: the requests a kit's stand program answers to be
-  checked. `vectors/arithmetic.json`: the six algorithms against their own
-  standards.
+  A stand program is one executable answering the requests of
+  `vectors/HARNESS.md` on stdin and stdout.
+- `vectors/HARNESS.md`: those requests in full. `vectors/arithmetic.json`:
+  the six algorithms against their own standards.
 - `examples/`: kits in several languages, each written cold from these
   documents, each one example among equals. None is a reference.
 
