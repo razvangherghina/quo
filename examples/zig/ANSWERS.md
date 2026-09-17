@@ -154,10 +154,12 @@ Quo over TCP only, over IPv4, from libc sockets. The listener binds to
 connection on a thread of its own, one frame at a time. The dialer opens
 one connection per `send` and closes it after the answer.
 
-**Question 25. How does the kit learn where a ward is reached?**
+**Question 25. How does the kit learn where a ward is reached, does it write `at` in its invitations and with which addresses, and how does it try the addresses it reads?**
 Only through `route`: a map from a far ward pk to `host:port`, with the
 host written as a dotted IPv4 address or `localhost`. A ward with no route
-is not asked, and `send` reads nothing.
+is not asked, and `send` reads nothing. The kit writes no `at` in its
+invitations and does not read one, so it tries no address from an
+invitation.
 
 ## What is not the kit's either
 

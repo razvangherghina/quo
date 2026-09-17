@@ -99,7 +99,8 @@ answer is the kit's choice, with its reason. Each number is the number
     connection per address, redials after it closes, and numbers its asks
     per connection.
 25. **Where a ward is reached.** Only from `route`. A ward with no route is
-    not delivered to.
+    not delivered to. The kit writes no `at` in its invitations and does not
+    read one, so it tries no address from an invitation.
 
 ## What is not the kit's either
 

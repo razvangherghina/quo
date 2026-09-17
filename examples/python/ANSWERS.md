@@ -119,7 +119,8 @@ is followed by its reason.
 25. **Where a ward is reached.** Only from the harness's `route`, a table
     from ward pk to `host:port` held in memory. With no route, the ask is
     not delivered and reads `nothing`. Reason: the harness is the only
-    source of addresses here.
+    source of addresses here. The kit writes no `at` in its invitations and
+    does not read one, so it tries no address from an invitation.
 
 ## What is not the kit's either
 
