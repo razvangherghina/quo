@@ -200,6 +200,11 @@ The end at the ward that made the heir is the occupant. The end at the
 other ward is the standing. Asks go from the standing to the occupant.
 Replies come back from the occupant to the standing.
 
+An end is what its ward keeps of the relation. The occupant is the
+signing keys and the edge keys the door holds for the heir, and the count.
+The standing is the invitation, the key it signs with, the edge key it
+sends under, and the numbers of the asks it has moved on.
+
 Two wards that each ask the other hold two relations. Each ward made the
 heir of one. The two relations share no key.
 
@@ -387,10 +392,10 @@ it continue the same count.
 A relation's signing keys are the heir, then the key the knock announces,
 then each key an ask announces after it.
 
-The heir is made by the inviting ward for one occupant. The ward keeps the
+The heir is made by the inviting ward for one relation. The ward keeps the
 heir pk. The ward gives the heir secret away inside the invitation.
 
-The heir never rotates. It names the occupant for as long as the relation
+The heir never rotates. It names the relation for as long as the relation
 lasts. It rides inside the box and never outside it.
 
 The standing's own key is made by the knocking ward. The knock is signed

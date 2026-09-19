@@ -35,8 +35,9 @@ is followed by its reason.
    lock is sixty-four drawn bytes, `d || z` of FIPS 203, made at the ward's
    first invitation and kept in memory. The ward does not keep a heir's
    secret after it builds the invitation. Reason: a ward has one lock, and
-   drawing it lazily costs nothing. Keeping the secret would only let the
-   ward impersonate its own occupant.
+   drawing it lazily costs nothing. The heir secret travels to the
+   standing inside the invitation; a ward keeping it could knock on its
+   own heir as the standing, and its occupant needs only the heir pk.
 7. **Drawn bytes.** `os.urandom`, for heir secrets, ephemeral secrets and
    the lock seed. The library draws its own bytes for encapsulation.
    Reason: the operating system's source is the right source.

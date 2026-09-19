@@ -27,7 +27,7 @@ same.
 **Purple booths.** A purple booth faces outwards. The house builds it,
 fits its first lock, and gives its key to someone, any way it likes. The
 key can be copied a thousand times. Someone far away steps in there, and
-the house sees that the booth is occupied, and a key, never a name. The
+the house sees that the booth is in use, and a key, never a name. The
 first one to step in with that key whom the house lets in changes the lock
 to a key of their own that nobody else has ever seen. From that moment
 every copy of the first key is dead. The house can tear a purple booth
