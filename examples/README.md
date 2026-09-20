@@ -23,6 +23,19 @@ invitation it takes, skipping the schemes it does not carry.
 
 ## Running
 
+Three kits are built before anything below reaches them, as the Build
+column says. From this folder:
+
+```bash
+(cd go && go build -o stand .)
+(cd zig && zig build)
+(cd rust && cargo build)
+```
+
+Python and JavaScript are run as they stand. `check.mjs` at the end
+builds all three itself. Everything else here, the verifier, a pair and
+the world, runs a kit's stand program and never builds it.
+
 From this folder, each kit's own tests:
 
 ```bash

@@ -38,7 +38,7 @@ keyed by heir pk.
 
 ## What a kit keeps
 
-**Question 6. How are a ward's seed and its lock handed in and held, how and when is the lock made, how many locks a ward holds, and does the ward keep an heir's secret after it gives the invitation?**
+**Question 6. How are a ward's seed and its lock handed in and held? How and when is the lock made, and how many locks does a ward hold? Does the ward keep an heir's secret after it gives the invitation?**
 The seed arrives as text on `ward`. It is hashed and derived at once, and
 only the derived keys are kept, in memory. The lock is made at the ward's
 first `invite`, from sixty-four drawn bytes, and is held in memory for as
@@ -152,7 +152,7 @@ The union `Read`, with four tags: `object` (the raw object text and the
 
 ## What a kit carries
 
-**Question 24. Which carriers does the kit stand, and in which forms, does it carry them inside TLS and with which checks, and where it listens on the web, at which path, for which origins, and with which status when it does not carry an ask?**
+**Question 24. Which carriers does the kit stand, and in which forms? Does it carry them inside TLS, and with which checks? Where does it listen on the web, at which path and for which origins? With which status when it does not carry an ask?**
 Quo over TCP alone, as listener and as dialer, from libc sockets, plain and
 never inside TLS. It listens nowhere on the web, so no path, origin or
 status is its to choose. It
@@ -166,7 +166,7 @@ connection per address per `send`, closed after the answer. Reason: one
 carrier proves the frames, and the web's two forms would each be a second
 listener and dialer that no other part of this kit uses.
 
-**Question 25. How does the kit learn where a ward is reached, does it write `at` in its invitations and with which addresses, and how does it try the addresses it reads?**
+**Question 25. How does the kit learn where a ward is reached? Does it write `at` in its invitations, and with which addresses? How does it try the addresses it reads?**
 Two ways. A `route` names one `tcp` address for a far ward, and replaces
 the one before. An invitation's `at` names the rest. Where a ward has a
 route, `send` dials the route alone. Where it has none, `send` reads the
