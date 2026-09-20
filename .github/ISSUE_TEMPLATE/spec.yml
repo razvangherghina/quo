@@ -1,0 +1,34 @@
+name: A sentence of the spec
+description: A sentence two implementers could read two ways, or one that is wrong
+labels: ['spec']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not report a security problem here. See SECURITY.md.
+  - type: input
+    id: where
+    attributes:
+      label: Which document and which section
+      placeholder: SPEC.md, "The head"
+    validations:
+      required: true
+  - type: textarea
+    id: sentence
+    attributes:
+      label: The sentence, quoted
+    validations:
+      required: true
+  - type: textarea
+    id: readings
+    attributes:
+      label: The two readings you can see
+      description: >
+        A sentence two implementers read two ways is a defect, whatever it
+        was meant to say. Say what each reading would make a kit do.
+    validations:
+      required: true
+  - type: textarea
+    id: bytes
+    attributes:
+      label: Where the two readings differ in bytes, if they do

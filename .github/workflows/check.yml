@@ -1,0 +1,25 @@
+name: check
+
+# The verifier's own tests, which replay `vectors/arithmetic.json` and
+# hold the checker to `SPEC.md`. They need Node and nothing else: there is
+# no build here, no dependency, and no install step.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verifier:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+
+      - run: node --test verifier/test/*.test.js

@@ -1,0 +1,10 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Security
+    url: https://github.com/razvangherghina/quo/security/policy
+    about: >
+      A flaw in the bytes or in the six algorithms is reported privately,
+      never in a public issue.
+  - name: Quo, read
+    url: https://quo.systems
+    about: The site that shows these documents.

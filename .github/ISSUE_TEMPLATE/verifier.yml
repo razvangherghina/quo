@@ -1,0 +1,42 @@
+name: A verifier defect
+description: The verifier passes a kit that departs from the spec, or fails one that follows it
+labels: ['verifier']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not report a security problem here. See SECURITY.md.
+  - type: dropdown
+    id: which
+    attributes:
+      label: Which way
+      options:
+        - It passes a kit that departs from the spec
+        - It fails a kit that follows the spec
+        - It crashes, or says something it cannot mean
+    validations:
+      required: true
+  - type: input
+    id: node
+    attributes:
+      label: Node version
+      placeholder: '24.8.0'
+    validations:
+      required: true
+  - type: textarea
+    id: check
+    attributes:
+      label: Which check, and what it printed
+    validations:
+      required: true
+  - type: textarea
+    id: stand
+    attributes:
+      label: The smallest stand program that shows it
+      description: One executable answering the requests of vectors/HARNESS.md.
+    validations:
+      required: true
+  - type: input
+    id: sentence
+    attributes:
+      label: The sentence of SPEC.md this turns on
