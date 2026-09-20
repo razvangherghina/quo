@@ -17,9 +17,9 @@ difference is the kit's, and Quo allows it.
 | `javascript/` | Node 24 | Node's own modules | `tcp`, `http`, `ws` | none | `./stand` |
 | `rust/` | Rust 1.98, edition 2021 | the algorithms' crates | `tcp` | `cargo build` | `target/debug/stand` |
 
-Every kit writes its listeners' addresses in the `at` of the invitations it
-mints, and reaches a ward through the `at` of an invitation it takes,
-skipping the schemes it does not carry.
+Every kit writes its listeners' addresses in the `at` of the
+invitations it mints. It reaches a ward through the `at` of an
+invitation it takes, skipping the schemes it does not carry.
 
 ## Running
 
@@ -45,11 +45,11 @@ Any two kits against each other, through the verifier's proxy:
 node ../verifier/cli.js --two -- "$PWD/go/stand" -- "$PWD/rust/target/debug/stand"
 ```
 
-The world, eight scenes of the five kits speaking to each other, narrated:
-Alice and Bob, both ways, a ring through every kit, the mesh of every pair,
-a front desk on the zero head, a stranger trying every door, a reply lost
-on the way, and a card that says where, reached through its `at` over
-every carrier the two kits share.
+The world is eight scenes of the five kits speaking to each other,
+narrated. Alice and Bob, both ways. A ring through every kit. The mesh
+of every pair. A front desk on the zero head. A stranger trying every
+door. A reply lost on the way. A card that says where, reached through
+its `at` over every carrier the two kits share.
 
 ```bash
 node world.mjs

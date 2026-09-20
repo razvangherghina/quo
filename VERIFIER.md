@@ -17,9 +17,10 @@ no check failed, and `1` when a check failed or it was run wrongly.
 The verifier holds the six algorithms and `SPEC.md`. It holds no kit, and
 no bytes any kit produced.
 
-It reaches a kit through `vectors/HARNESS.md`: requests over the kit's stdin
-and stdout, with boxes as hex, and, where the kit carries bytes, the frames
-of `CARRIER-TCP.md` and the post and held line of `CARRIER-WEB.md`.
+It reaches a kit through `vectors/HARNESS.md`. Requests go over the
+kit's stdin and stdout, with boxes as hex. Where the kit carries bytes,
+it reaches it through the frames of `CARRIER-TCP.md` and the post and
+held line of `CARRIER-WEB.md`.
 
 It holds that seam as well as Quo. It drives every error `HARNESS.md` names,
 and holds the kit to that vocabulary and to the order in which two errors
@@ -54,12 +55,13 @@ fixes them. Nothing else a kit wrote is held against stored bytes.
 The verifier stands a ward from a seed it chooses, and derives from that
 seed the signing key and the padlock. It holds the padlock's secret.
 
-It checks the ward pk against the seed. It asks for an invitation, and
+It checks the ward pk against the seed. It asks for an invitation. It
 checks that the heir pk is the public key of the heir secret the
-invitation carries, and that the lock is an ML-KEM-768 encapsulation key.
-When the invitation carries `at`, it checks that `at` is an array of
-addresses, and that each address of a scheme a published carrier names is
-written as that carrier writes it. It hands the kit invitations whose
+invitation carries, and that the lock is an ML-KEM-768 encapsulation
+key. When the invitation carries `at`, it checks that `at` is an array
+of addresses. It checks that each address of a scheme a published
+carrier names is written as that carrier writes it. It hands the kit
+invitations whose
 `at` holds a scheme no carrier names, or is not an array, and they are
 still invitations.
 
@@ -76,13 +78,14 @@ with `arrive`, and opens what comes back:
 It drives each of the thirteen cases of `SPEC.md` by writing the arrival
 that provokes it. Every stranger's reply has one reply text and one length.
 
-It drives the signature check's whole failure list: an `s` at or above the
-group order, an `R` that does not decode, an `R` that is not canonical, a
-public key that does not decode, a public key whose y is at or above the
-prime, and a small-order public key in each spelling. It drives the two
-signatures that list does not hold, a small-order `R` and a public key with
-a torsion component that is not small-order, and holds that each is answered
-as an admitted key is.
+It drives the signature check's whole failure list. An `s` at or above
+the group order. An `R` that does not decode, and an `R` that is not
+canonical. A public key that does not decode, and one whose y is at or
+above the prime. A small-order public key in each spelling.
+
+It drives the two signatures that list does not hold: a small-order
+`R`, and a public key with a torsion component that is not
+small-order. It holds that each is answered as an admitted key is.
 
 It drives both tables of the move, and follows the door's keys as they say.
 
@@ -107,10 +110,11 @@ checks what the kit says it read. It answers with objects, silence, each
 of the three words, nothing, and replies that read as silence.
 
 It holds the number of every ask the kit sealed, and with them the highest
-the standing has moved on. It then checks, by the kit's next `ask`, that the
-kit moved its signing key and its edge key when an object came back to an ask
-above that highest, and that it moved neither when an object came back to an
-ask at or below it. It runs two relations at once, answering each ask after
+the standing has moved on. It then checks, by the kit's next `ask`,
+that the kit moved its signing key and its edge key when an object came
+back to an ask above that highest. It checks that it moved neither when
+an object came back to an ask at or below it. It runs two relations at
+once, answering each ask after
 the other's, and holds the kit to keeping them apart.
 
 A kit that answers `ask` with `bad request` is judged as a door alone.
@@ -138,8 +142,9 @@ The verifier dials the address `listen` answers:
 
 - the kit writes nothing before a frame arrives, and may close an idle
   connection at any moment;
-- an ask to a ward it stands comes back as a reply frame with the same id,
-  whose box is judged as at `arrive`, or as a nothing frame, or not at all;
+- an ask to a ward it stands comes back one of three ways. As a reply
+  frame with the same id, whose box is judged as at `arrive`. As a
+  nothing frame. Or not at all;
 - an ask frame written one byte at a time is answered the same way, or the
   connection closes with it in flight and answers none;
 - an ask frame of the largest body, 1,048,645, carries a box of the size;
@@ -151,9 +156,9 @@ The verifier dials the address `listen` answers:
   answers no ask written after them;
 - a reply frame or a nothing frame sent to it is read, nothing is written
   back, and the connection stands;
-- a whole relation runs over the line, a knock and the asks after it, each
-  judged as at `arrive`, with a repeated number, a spent heir's knock and a
-  key the door does not admit among them.
+- a whole relation runs over the line, a knock and the asks after it,
+  each judged as at `arrive`. Among them stand a repeated number, a
+  spent heir's knock, and a key the door does not admit.
 
 ### As a listener of the held line
 
@@ -162,18 +167,19 @@ The verifier opens a WebSocket to the address, offering the subprotocol
 
 - the kit selects `quo`, and a handshake that selects nothing fails;
 - the kit sends no message before a frame arrives;
-- an ask message to a ward it stands comes back as a reply message with the
-  same id, whose box is judged as at `arrive`, or as a nothing message, or
-  not at all;
+- an ask message to a ward it stands comes back one of three ways. As a
+  reply message with the same id, whose box is judged as at `arrive`.
+  As a nothing message. Or not at all;
 - an ask message of the largest body, 1,048,645 bytes, carries a box of the
   size, and an ask message with a ward pk and no box is a frame;
 - an ask to a ward pk it does not stand comes back as a nothing message
   with the same id;
 - many asks in flight on one line each come back once, in any order;
-- after a binary message longer than 1,048,645 bytes, one shorter than
-  five, one of a kind that is none of the three, an ask with fewer than
-  sixty-four bytes after its id, a nothing with bytes after its id, or a
-  text message, the kit closes the line, and answers no ask sent after it;
+- the kit closes the line after any of six messages, and answers no
+  ask sent after it. A binary message longer than 1,048,645 bytes. One
+  shorter than five. One of a kind that is none of the three. An ask
+  with fewer than sixty-four bytes after its id. A nothing with bytes
+  after its id. A text message;
 - a reply message or a nothing message sent to it is read, nothing is sent
   back, and the line stands;
 - a line that offers no subprotocol carries no frame: its handshake is
@@ -186,16 +192,16 @@ The verifier sends each ask as a `POST` to the address, its body the ward
 pk and the box:
 
 - an ask to a ward it stands comes back as status 200 with a body, the
-  reply's box, judged as at `arrive`, or as any other status, which is
-  nothing;
+  reply's box, judged as at `arrive`. Or it comes back as any other
+  status, which is nothing;
 - status 200 with an empty body is a departure;
 - the `Content-Type` of the request changes nothing;
 - an ask to a ward pk it does not stand comes back with a status other than
   200;
 - many posts in flight each come back;
-- a `GET`, a `PUT` of a whole ask, and a `POST` of no body, of sixty-four
-  bytes or of 1,048,641 bytes, each come back with a status other than 200
-  and 204;
+- five requests each come back with a status other than 200 and 204. A
+  `GET`. A `PUT` of a whole ask. A `POST` of no body, one of sixty-four
+  bytes, and one of 1,048,641 bytes;
 - a `POST` of 1,048,641 bytes whose connection closes before a status
   comes back is accepted, since a listener may answer a body too long
   before it reads the whole;
@@ -229,10 +235,11 @@ path departs.
 
 ### The invitation's `at`
 
-For each scheme the kit dials, the verifier mints an invitation from a ward
-no route names, whose `at` is a number, an address of a scheme no carrier
-names, and then an address of a listener of its own with its scheme in
-capitals. A reader skips the first two and reads the scheme in any case.
+For each scheme the kit dials, the verifier mints an invitation from a
+ward no route names. Its `at` is a number, then an address of a scheme
+no carrier names, then an address of a listener of its own with its
+scheme in capitals. A reader skips the first two and reads the scheme
+in any case.
 
 - A kit that reaches that listener is judged there as a dialer, over a
   whole relation.
@@ -248,11 +255,11 @@ capitals. A reader skips the first two and reads the scheme in any case.
 
 An ask with no answer at all is closed at once, and a kit that waits
 reads the close. Two windows remain, because a kit that writes nothing
-can only be seen not to write: how long the verifier listens for bytes
-that must not come, `QUO_VERIFIER_QUIET_MS`, 500 unless the environment
-names another, and how long a frame is held to arrive late,
-`QUO_VERIFIER_LATE_MS`, 1000 unless named. A kit's own tests may set
-both near zero.
+can only be seen not to write. One is how long the verifier listens
+for bytes that must not come, `QUO_VERIFIER_QUIET_MS`, 500 unless the
+environment names another. The other is how long a frame is held to
+arrive late, `QUO_VERIFIER_LATE_MS`, 1000 unless named. A kit's own
+tests may set both near zero.
 
 ## Two kits
 
@@ -272,9 +279,9 @@ answers with any status other than 200 is nothing, and one it answers
 with status 200 and an empty body departs.
 
 Over tcp, the second program is routed to the verifier's listener. The
-verifier forwards a knock and an ask as they came, then delivers frames
-late, twice, out of order, altered and not at all, and checks that each
-program answers as `SPEC.md` says. An ask delivered twice carries a number
+verifier forwards a knock and an ask as they came. Then it delivers
+frames late, twice, out of order, altered and not at all, and checks
+that each program answers as `SPEC.md` says. An ask delivered twice carries a number
 the door has honoured. A knock delivered twice is on a spent heir. An
 altered box is a stranger's. A frame not delivered is nothing.
 

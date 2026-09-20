@@ -24,16 +24,17 @@ of `SPEC.md`.
   head chapter leaves both to the door. With nothing answering it, an ask on
   the zero head is case 4.
 - **Question 4. How many asks does a door judge at once?** Whatever the
-  number, an ask is admitted only under a key the door holds or vouches for
-  when it makes its choice, and the keys move as the move chapter says.
+  number, an ask is admitted only under a key the door holds or vouches
+  for when it makes its choice. The keys move as the move chapter says.
 - **Question 5. What does the kit call its parts, and its relations?** No
   name a kit gives crosses a door.
 
 ## What a kit keeps
 
-- **Question 6. How are a ward's seed and its lock handed in and held, how
-  and when is the lock made, how many locks a ward holds, and does the ward
-  keep an heir's secret after it gives the invitation?** The lock's
+- **Question 6. How are a ward's seed and its lock handed in and held?
+  How and when is the lock made, and how many locks does a ward hold?
+  Does the ward keep an heir's secret after it gives the
+  invitation?** The lock's
   encapsulation key travels in every invitation, and a knock's ciphertext
   is to the lock in the invitation it came from.
 - **Question 7. Where do drawn bytes come from?** An heir secret, an ephemeral
@@ -89,20 +90,22 @@ of `SPEC.md`.
 
 ## What a kit carries
 
-- **Question 24. Which carriers does the kit stand, and in which forms,
-  does it carry them inside TLS and with which checks, and where it listens
-  on the web, at which path, for which origins, and with which status when
-  it does not carry an ask?** Quo over TCP and Quo over the web, its post
+- **Question 24. Which carriers does the kit stand, and in which
+  forms? Does it carry them inside TLS, and with which checks? Where
+  does it listen on the web, at which path and for which origins? With
+  which status when it does not carry an ask?** Quo over TCP and Quo
+  over the web, its post
   and its held line, are published. Any other is the kit's.
-- **Question 25. How does the kit learn where a ward is reached, does it
-  write `at` in its invitations and with which addresses, and how does it
-  try the addresses it reads?** A ward's name is its public key. An
+- **Question 25. How does the kit learn where a ward is reached? Does
+  it write `at` in its invitations, and with which addresses? How does
+  it try the addresses it reads?** A ward's name is its public key. An
   invitation may carry addresses in `at`, the first the minting side's
-  preference, and a kit may learn others its own way. Which source it
-  trusts first, whether it tries addresses one after another or at once,
-  how long it gives each, and whether it carries a box to the next address
-  after one that gave nothing or may have heard it, are the kit's. A door
-  honours a number once, whichever address carried it.
+  preference, and a kit may learn others its own way. Four things are
+  the kit's. Which source it trusts first. Whether it tries addresses
+  one after another or at once. How long it gives each. Whether it
+  carries a box to the next address after one that gave nothing or may
+  have heard it. A door honours a number once, whichever address
+  carried it.
 
 ## What is not the kit's either
 

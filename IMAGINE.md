@@ -57,8 +57,8 @@ the visitor notices when something changed.
 **One visit, one question.** When the answer is given, the visitor is
 gone. There is no line held open. The next question is a new visit. The
 porter keeps the number of every visit it answered, for as long as the
-booth stands, and a visit bearing a number already kept is turned away
-with a word.
+booth stands. A visit bearing a number already kept is turned away with
+a word.
 
 **A key that keeps moving.** Every visit may bring the next key. When the
 house answers, the lock takes the new key beside the old, and the old dies
@@ -103,9 +103,9 @@ and `at` may write on the card where the house is reached.
 visitor's own key in `next`, and the first knock the door answers binds
 it.
 
-**A key that keeps moving** is `next`, and the door's two signing keys,
-the one held and the one vouched for, beside two edge keys that follow
-every answer and are never sent.
+**A key that keeps moving** is `next`, and the door's two signing
+keys, the one held and the one vouched for. Beside them stand two edge
+keys that follow every answer and are never sent.
 
 **Asking** is an **ask**: a `method` and `args` Quo never reads, sealed,
 signed and numbered by `seq`, so each number is honoured once.

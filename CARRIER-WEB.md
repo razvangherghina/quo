@@ -35,10 +35,11 @@ A response of status 200 with a body that is not empty is a reply, and its
 body is the reply's box. A reply's box above the size reads as silence.
 Every other response is nothing.
 
-A listener that gives nothing answers status 204 with an empty body. A
-listener that does not carry an ask, a listener that answers for no ward
-under that pk among them, answers any status other than 200, and the ask
-may be sent again. A listener never answers status 200 with an empty body.
+A listener that gives nothing answers status 204 with an empty body.
+Two listeners answer any status other than 200: one that does not carry
+an ask, and one that answers for no ward under that pk. After either,
+the ask may be sent again. A listener never answers status 200 with an
+empty body.
 
 A request that is not a `POST`, or whose body is shorter than sixty-five
 bytes or longer than 1,048,640, is not an ask. The listener answers it

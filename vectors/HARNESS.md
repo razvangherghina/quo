@@ -97,8 +97,8 @@ names. The first `ask` on an invitation is a knock. `method` absent is the
 empty ask. `args` absent is the empty object. The answer is the box the kit
 sealed, as hex. The kit chooses every key it announces and every count
 number it sends. After a knock that brought no object back, a kit may
-answer `ask` on that invitation with the knock it sent before, as the same
-bytes, whatever `method` and `args` ask.
+answer `ask` on that invitation with the knock it sent before. It
+answers with the same bytes, whatever `method` and `args` ask.
 
 **`read`** hands that ward `reply`, the reply's box as hex, or `null` for
 nothing, as the answer to its last `ask` on that invitation. The answer
@@ -187,9 +187,9 @@ answer when nothing came back.
 ### Between two kits
 
 The verifier stands a ward in one program and asks from a ward in another.
-It holds no kit. It routes the asking program's far ward to an address of
-its own, or hands it an invitation whose `at` names that address, and
-forwards the frames to the answering program's listener.
+It holds no kit. It routes the asking program's far ward to an address
+of its own, or hands it an invitation whose `at` names that address.
+It forwards the frames to the answering program's listener.
 Standing between them, it may deliver a frame as it came, late, twice, out
 of order, altered, or not at all. No kit implements any of that.
 
