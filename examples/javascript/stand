@@ -1,0 +1,227 @@
+#!/usr/bin/env node
+// The harness of HARNESS.md, parts one and two, on stdin and stdout.
+import { Ward, reaches, readInvitation, readJSON } from "./lib/quo.js";
+import { utf8, parse, compact, toJS } from "./lib/json.js";
+import { isHex, fromHex, hex } from "./lib/crypto.js";
+import { listen as listenTcp, Dialer } from "./lib/tcp.js";
+import { listenPost, askPost, listenLine, LineDialer } from "./lib/web.js";
+import { readAddress, dialable, LISTENED } from "./lib/address.js";
+
+const log = (m) => process.stderr.write(`stand: ${m}\n`);
+const wards = new Map(); // ward pk -> { ward, names: Map name -> heir hex }
+const routes = new Map(); // far ward pk -> address
+const tcp = new Dialer();
+const lines = new LineDialer();
+const inFlight = new Set();
+
+// The carriers this kit dials, by scheme.
+const dialers = {
+  tcp: (a, pk, box) => tcp.ask(a, pk, box),
+  http: askPost,
+  https: askPost,
+  ws: (a, pk, box) => lines.ask(a, pk, box),
+  wss: (a, pk, box) => lines.ask(a, pk, box),
+};
+
+// The listeners this program holds, by scheme: { server: Promise, at }.
+const lookup = (pk) => wards.get(pk)?.ward;
+const starters = { tcp: listenTcp, http: listenPost, ws: listenLine };
+const listeners = new Map();
+const addressOf = (scheme, s) => {
+  const a = s.address();
+  const host = a.family === "IPv6" ? `[${a.address}]` : a.address;
+  return scheme === "tcp" ? `tcp://${host}:${a.port}` : `${scheme}://${host}:${a.port}/`;
+};
+// The addresses written in an invitation's `at`: ws first, then http, then tcp.
+const ours = () => ["ws", "http", "tcp"].map((s) => listeners.get(s)?.at).filter(Boolean);
+
+const out = (line) => process.stdout.write(line + "\n");
+const answer = (id, body) => out(`{"id":${JSON.stringify(id)}${body ? "," + body : ""}}`);
+const error = (id, e) => answer(id, `"error":${JSON.stringify(e)}`);
+
+class Refusal extends Error {}
+const refuse = (e) => {
+  throw new Refusal(e);
+};
+
+const str = (f, name, optional = false) => {
+  const n = f.get(name);
+  if (!n) return optional ? undefined : refuse("bad request");
+  if (n.t !== "string") refuse("bad request");
+  return n.v;
+};
+const wardField = (f) => {
+  const s = str(f, "ward");
+  if (!isHex(s, 128)) refuse("bad request");
+  return s;
+};
+const invitationField = (f) => {
+  const n = f.get("invitation");
+  if (!n || n.t !== "object") refuse("bad request");
+  return readInvitation(toJS(n)) ?? refuse("bad request");
+};
+const askFields = (f, text) => {
+  const method = str(f, "method", true);
+  const a = f.get("args");
+  if (a && a.t !== "object") refuse("bad request");
+  return { method, args: a ? compact(a, text) : undefined };
+};
+const held = (pk) => wards.get(pk) ?? refuse("no such ward");
+const reachOf = (name) => (name === undefined ? undefined : (Object.hasOwn(reaches, name) ? reaches[name] : refuse("not reached")));
+
+const ops = {
+  ward(f) {
+    const seed = str(f, "seed");
+    const reachName = str(f, "reach", true);
+    const zero = reachOf(reachName) ?? null;
+    const ward = new Ward(seed, { zero, log });
+    if (wards.has(ward.pk)) refuse("ward stood");
+    wards.set(ward.pk, { ward, names: new Map() });
+    return `"ward":"${ward.pk}"`;
+  },
+  invite(f) {
+    const pk = wardField(f);
+    const name = str(f, "heir");
+    const reachName = str(f, "reach", true);
+    const w = held(pk);
+    const reach = reachOf(reachName) ?? reaches.echo;
+    if (w.names.has(name)) refuse("name held");
+    const inv = w.ward.invite(reach, ours());
+    w.names.set(name, inv.heir);
+    return `"invitation":${JSON.stringify(inv)}`;
+  },
+  release(f) {
+    const pk = wardField(f);
+    const name = str(f, "heir");
+    const w = held(pk);
+    const heir = w.names.get(name);
+    if (heir === undefined) return `"released":null`;
+    w.names.delete(name);
+    w.ward.release(heir);
+    return `"released":${JSON.stringify(name)}`;
+  },
+  arrive(f) {
+    const pk = wardField(f);
+    const box = str(f, "box");
+    if (box.length % 2 !== 0 || !isHex(box, box.length)) refuse("bad request");
+    const w = held(pk);
+    const reply = w.ward.arrive(fromHex(box));
+    return `"reply":${reply ? `"${hex(reply)}"` : "null"}`;
+  },
+  ask(f, text) {
+    const pk = wardField(f);
+    const inv = invitationField(f);
+    const { method, args } = askFields(f, text);
+    const w = held(pk);
+    const box = w.ward.standing(inv).ask(method, args);
+    return `"box":"${hex(box)}"`;
+  },
+  read(f) {
+    const pk = wardField(f);
+    const inv = invitationField(f);
+    const n = f.get("reply");
+    if (!n || !(n.t === "null" || (n.t === "string" && n.v.length % 2 === 0 && isHex(n.v, n.v.length)))) refuse("bad request");
+    const w = held(pk);
+    const s = w.ward.standing(inv);
+    if (!s.last) refuse("bad request");
+    const r = s.read(n.t === "null" ? null : fromHex(n.v));
+    return `"read":${readJSON(r)}`;
+  },
+  async listen(f) {
+    const scheme = str(f, "scheme", true) ?? "tcp";
+    if (!LISTENED.includes(scheme)) refuse("bad request");
+    let l = listeners.get(scheme);
+    if (!l) {
+      l = { server: starters[scheme](lookup, { log }), at: null };
+      listeners.set(scheme, l);
+      l.at = addressOf(scheme, await l.server);
+    } else await l.server;
+    return `"at":${JSON.stringify(l.at)}`;
+  },
+  route(f) {
+    const far = str(f, "far");
+    const where = readAddress(str(f, "at"));
+    if (!isHex(far, 128) || !where) refuse("bad request");
+    routes.set(far, where);
+    return `"routed":"${far}"`;
+  },
+  async send(f, text) {
+    const pk = wardField(f);
+    const inv = invitationField(f);
+    const { method, args } = askFields(f, text);
+    const w = held(pk);
+    const s = w.ward.standing(inv);
+    // One send at a time on one relation.
+    const run = s.chain.then(async () => {
+      const box = s.ask(method, args);
+      // The route alone where there is one; else `at`, in order, until one delivers.
+      const route = routes.get(inv.ward);
+      let reply = null;
+      for (const a of route ? [route] : dialable(inv.at)) {
+        reply = await dialers[a.scheme](a, inv.ward, box);
+        if (reply) break;
+      }
+      return s.read(reply);
+    });
+    s.chain = run.catch(() => {});
+    return `"read":${readJSON(await run)}`;
+  },
+};
+
+async function handle(bytes) {
+  let text;
+  let node;
+  try {
+    text = utf8(bytes);
+    if (text.endsWith("\r")) text = text.slice(0, -1);
+    if (text === "") return;
+    // Three levels: the request, the invitation, and its `at`.
+    node = parse(text, { unique: false, depth: 3 });
+  } catch {
+    return error(null, "bad request");
+  }
+  if (node.t !== "object") return error(null, "bad request");
+  const idn = node.fields.get("id");
+  if (!idn || idn.t !== "string") return error(null, "bad request");
+  const id = idn.v;
+  try {
+    const opn = node.fields.get("op");
+    if (!opn || opn.t !== "string") refuse("bad request");
+    if (!Object.hasOwn(ops, opn.v)) refuse("no such op");
+    const body = await ops[opn.v](node.fields, text);
+    answer(id, body);
+  } catch (e) {
+    if (e instanceof Refusal) return error(id, e.message);
+    log(`internal: ${e.stack}`);
+    return error(id, "bad request");
+  }
+}
+
+let pending = Buffer.alloc(0);
+const take = (line) => {
+  const p = handle(line);
+  if (p && typeof p.then === "function") {
+    inFlight.add(p);
+    p.finally(() => inFlight.delete(p));
+  }
+};
+process.stdin.on("data", (chunk) => {
+  pending = Buffer.concat([pending, chunk]);
+  let i;
+  while ((i = pending.indexOf(0x0a)) !== -1) {
+    take(pending.subarray(0, i));
+    pending = pending.subarray(i + 1);
+  }
+});
+process.stdin.on("end", async () => {
+  if (pending.length) take(pending);
+  while (inFlight.size) await Promise.allSettled([...inFlight]);
+  tcp.close();
+  lines.close();
+  for (const l of listeners.values()) {
+    const s = await l.server;
+    s.close();
+    s.closeAllConnections?.();
+  }
+  process.stdout.write("", () => process.exit(0));
+});

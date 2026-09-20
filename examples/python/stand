@@ -1,0 +1,353 @@
+#!/usr/bin/python3
+"""HARNESS.md parts one and two: requests on stdin, answers on stdout."""
+
+import json
+import os
+import re
+import sys
+import threading
+
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
+
+WAIT = 30.0
+
+HEX = re.compile(r"\A(?:[0-9a-f]{2})*\Z")
+LISTENED = ("http", "tcp")  # the order their addresses take in `at`
+
+
+class BadRequest(Exception):
+    pass
+
+
+class Refused(Exception):
+    pass
+
+
+def log(msg):
+    sys.stderr.write(msg + "\n")
+    sys.stderr.flush()
+
+
+def string(req, name, optional=False):
+    if name not in req:
+        if optional:
+            return None
+        raise BadRequest()
+    v = req[name]
+    if not isinstance(v, str):
+        raise BadRequest()
+    return v
+
+
+def hexstr(req, name, length=None):
+    v = string(req, name)
+    if not HEX.match(v) or (length is not None and len(v) != length):
+        raise BadRequest()
+    return v
+
+
+def invitation(req):
+    inv = req.get("invitation")
+    if not isinstance(inv, dict):
+        raise BadRequest()
+    for name, length in (("ward", 128), ("heir", 64), ("secret", 64), ("lock", 2368)):
+        hexstr(inv, name, length)
+    from quokit.crypto import mlkem_valid
+    if not mlkem_valid(bytes.fromhex(inv["lock"])):
+        raise BadRequest()
+    out = {k: inv[k] for k in ("ward", "heir", "secret", "lock")}
+    if isinstance(inv.get("at"), list):
+        out["at"] = inv["at"]
+    return out
+
+
+def dial(at, ward_pk, box):
+    """Carry one box to an Address. The reply box, or None for nothing."""
+    from quokit import carrier, web
+    carry = carrier.dial if at.scheme == "tcp" else web.post
+    return carry(at, ward_pk, box, WAIT)
+
+
+def asked(req):
+    """method and args of an ask or a send: (method or None, args JSON text or None).
+    args is taken from the request line as written, its whitespace removed."""
+    method = string(req, "method", optional=True)
+    args = None
+    if "args" in req:
+        from quokit.values import Invalid, minify, parse
+        try:
+            line, text = parse(req[None].decode("utf-8"))
+            a, b = line.spans["args"]
+        except (Invalid, UnicodeDecodeError, AttributeError):
+            raise BadRequest()
+        if not text[a:b].startswith("{"):
+            raise BadRequest()
+        args = minify(text[a:b])
+    return method, args
+
+
+class Raw:
+    """JSON text written into a channel line as it stands."""
+
+    def __init__(self, text):
+        self.text = text
+
+
+def reading(r):
+    if r[0] == "object":
+        # The raw text may hold whitespace, newlines included; the channel
+        # carries it again with that whitespace removed.
+        from quokit.values import minify
+        return {"object": Raw(minify(r[2].decode("utf-8"))), "seen": r[3]}
+    if r[0] == "word":
+        return {"quo": r[1]}
+    if r[0] == "nothing":
+        return {"nothing": True}
+    return {"silence": True}
+
+
+class Program:
+    OPS = ("ward", "invite", "release", "arrive", "ask", "read", "listen", "route", "send")
+
+    def __init__(self, out):
+        from quokit.door import REACHES
+        from quokit.entropy import OsSource
+        self.reaches = REACHES
+        self.source = OsSource()
+        self.out = out
+        self.out_lock = threading.Lock()
+        self.kit = threading.RLock()     # one arrival, one ask at a time
+        self.wards = {}
+        self.names = {}
+        self.standings = {}
+        self.relation_locks = {}
+        self.routes = {}
+        self.listeners = {}
+        self.sends = []
+
+    # ---- the channel ----
+
+    def write(self, obj):
+        raw = None
+        read = obj.get("read")
+        if isinstance(read, dict) and isinstance(read.get("object"), Raw):
+            raw = read["object"].text
+            obj = dict(obj, read=dict(read, object=0))
+        line = json.dumps(obj, separators=(",", ":"))
+        if raw is not None:
+            line = line.replace('"read":{"object":0,', '"read":{"object":' + raw + ",", 1)
+        with self.out_lock:
+            self.out.write(line + "\n")
+            self.out.flush()
+
+    def line(self, raw):
+        rid = None
+        try:
+            try:
+                req = json.loads(raw.decode("utf-8"))
+            except (UnicodeDecodeError, ValueError):
+                raise BadRequest()
+            if not isinstance(req, dict) or not isinstance(req.get("id"), str):
+                raise BadRequest()
+            rid = req["id"]
+            req[None] = raw  # the line as written; no JSON key is None
+            op = req.get("op")
+            if not isinstance(op, str):
+                raise BadRequest()
+            if op not in self.OPS:
+                raise Refused("no such op")
+            if op == "send":
+                self.op_send_start(rid, req)
+                return
+            with self.kit:
+                out = getattr(self, "op_" + op)(req)
+            self.write(dict({"id": rid}, **out))
+        except BadRequest:
+            self.write({"id": rid, "error": "bad request"})
+        except Refused as r:
+            self.write({"id": rid, "error": str(r)})
+        except Exception as e:  # a fault in the kit is said on stderr
+            log("fault: %r" % (e,))
+            self.write({"id": rid, "error": "bad request"})
+
+    def ward_of(self, pk):
+        if pk not in self.wards:
+            raise Refused("no such ward")
+        return self.wards[pk]
+
+    def reach(self, name):
+        if name is not None and name not in self.reaches:
+            raise Refused("not reached")
+
+    # ---- part one ----
+
+    def op_ward(self, req):
+        from quokit.crypto import sha256
+        from quokit.door import Ward
+        seed = string(req, "seed")
+        reach = string(req, "reach", optional=True)
+        self.reach(reach)
+        ward = Ward(sha256(seed.encode("utf-8")), self.source,
+                    self.reaches[reach] if reach is not None else None, log=log)
+        if ward.pk_hex in self.wards:
+            raise Refused("ward stood")
+        self.wards[ward.pk_hex] = ward
+        self.names[ward.pk_hex] = {}
+        return {"ward": ward.pk_hex}
+
+    def op_invite(self, req):
+        pk = hexstr(req, "ward", 128)
+        name = string(req, "heir")
+        reach = string(req, "reach", optional=True)
+        ward = self.ward_of(pk)
+        self.reach(reach)
+        if name in self.names[pk]:
+            raise Refused("name held")
+        inv = ward.invite(self.reaches[reach or "echo"])
+        self.names[pk][name] = bytes.fromhex(inv["heir"])
+        at = [self.listeners[s].at for s in LISTENED if s in self.listeners]
+        if at:
+            inv["at"] = at
+        return {"invitation": inv}
+
+    def op_release(self, req):
+        pk = hexstr(req, "ward", 128)
+        name = string(req, "heir")
+        ward = self.ward_of(pk)
+        heir = self.names[pk].pop(name, None)
+        if heir is None:
+            return {"released": None}
+        ward.release(heir)
+        return {"released": name}
+
+    def op_arrive(self, req):
+        pk = hexstr(req, "ward", 128)
+        box = hexstr(req, "box")
+        ward = self.ward_of(pk)
+        reply = ward.arrive(bytes.fromhex(box))
+        return {"reply": None if reply is None else reply.hex()}
+
+    def standing(self, pk, inv):
+        from quokit.standing import Standing
+        key = (pk, inv["ward"], inv["heir"], inv["secret"], inv["lock"])
+        if key not in self.standings:
+            self.standings[key] = Standing(inv, self.source)
+            self.relation_locks[key] = threading.Lock()
+        return self.standings[key], self.relation_locks[key]
+
+    def seal(self, pk, inv, method, args):
+        return self.standing(pk, inv)[0].next_box(method, args)
+
+    def op_ask(self, req):
+        pk = hexstr(req, "ward", 128)
+        inv = invitation(req)
+        method, args = asked(req)
+        self.ward_of(pk)
+        return {"box": self.seal(pk, inv, method, args).hex()}
+
+    def op_read(self, req):
+        pk = hexstr(req, "ward", 128)
+        inv = invitation(req)
+        if "reply" not in req:
+            raise BadRequest()
+        reply = req["reply"]
+        if reply is not None:
+            if not isinstance(reply, str) or not HEX.match(reply):
+                raise BadRequest()
+            reply = bytes.fromhex(reply)
+        self.ward_of(pk)
+        st, _ = self.standing(pk, inv)
+        return {"read": reading(st.take(reply))}
+
+    # ---- part two ----
+
+    def op_listen(self, req):
+        from quokit.carrier import Listener
+        from quokit.web import PostListener
+        scheme = string(req, "scheme", optional=True) or "tcp"
+        kinds = {"tcp": Listener, "http": PostListener}
+        if scheme not in kinds:
+            raise BadRequest()
+        if scheme not in self.listeners:
+            self.listeners[scheme] = kinds[scheme](self.door_for, log)
+        return {"at": self.listeners[scheme].at}
+
+    def door_for(self, pk):
+        ward = self.wards.get(pk)
+        if ward is None:
+            return None
+
+        def arrive(box):
+            with self.kit:
+                return ward.arrive(box)
+        return arrive
+
+    def op_route(self, req):
+        far = hexstr(req, "far", 128)
+        from quokit.address import address
+        at = address(string(req, "at"))
+        if at is None:
+            raise BadRequest()
+        self.routes[far] = at
+        return {"routed": far}
+
+    def op_send_start(self, rid, req):
+        pk = hexstr(req, "ward", 128)
+        inv = invitation(req)
+        method, args = asked(req)
+        with self.kit:
+            self.ward_of(pk)
+            _, rlock = self.standing(pk, inv)
+        t = threading.Thread(target=self.send, args=(rid, pk, inv, method, args, rlock))
+        self.sends.append(t)
+        t.start()
+
+    def send(self, rid, pk, inv, method, args, rlock):
+        from quokit.address import address
+        try:
+            with rlock:
+                with self.kit:
+                    box = self.seal(pk, inv, method, args)
+                    route = self.routes.get(inv["ward"])
+                if route is not None:
+                    tries = [route]
+                else:
+                    tries = [a for a in map(address, inv.get("at", [])) if a is not None]
+                reply = None
+                for at in tries:
+                    reply = dial(at, bytes.fromhex(inv["ward"]), box)
+                    if reply is not None:
+                        break
+                with self.kit:
+                    st, _ = self.standing(pk, inv)
+                    read = reading(st.take(reply))
+            self.write({"id": rid, "read": read})
+        except BadRequest:
+            self.write({"id": rid, "error": "bad request"})
+        except Exception as e:
+            log("fault in send: %r" % (e,))
+            self.write({"id": rid, "error": "bad request"})
+
+
+def main():
+    try:
+        import quokit.crypto  # noqa: F401
+    except Exception as e:
+        log("cannot start: %r" % (e,))
+        return 1
+    prog = Program(sys.stdout)
+    for raw in sys.stdin.buffer:
+        if raw.endswith(b"\n"):
+            raw = raw[:-1]
+        if raw.endswith(b"\r"):
+            raw = raw[:-1]
+        if not raw:
+            continue
+        prog.line(raw)
+    for t in prog.sends:
+        t.join()
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
