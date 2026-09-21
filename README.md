@@ -15,6 +15,9 @@ Quo's.
   where TCP cannot go. Published beside the spec, and not part of it.
 - `IMAGINE.md`: a picture of Quo for a first reading. The spec decides, and
   the picture does not.
+- `TYPES.md`: the same spec read as types, for an exact reading. GraphQL
+  is its notation and nothing more: nothing in Quo runs over it. The spec
+  decides, and the types do not.
 - `VERIFIER.md` and `verifier/`: a checker any kit may run. It says where a
   kit departs from `SPEC.md`, and nothing about whether the kit is good.
   Passing it is necessary and never sufficient.
