@@ -33,10 +33,11 @@ export function sealAsk({ padlock, head, edge, lockEk, payload, signer }) {
 }
 
 // A reply's box, sealed to `lid`. Returns the box and the reply's agreement.
+// The signature covers the lid, then the reply text. The lid is not in the body.
 export function sealReply({ lid, text, signer }) {
   const e = ephemeralTo(lid);
   if (!e) throw new Error("lid takes no seal");
-  const body = Buffer.concat([text, sign(signer, text)]);
+  const body = Buffer.concat([text, sign(signer, Buffer.concat([lid, text]))]);
   return { box: Buffer.concat([e.eph.pub, seal(hkdf(e.a, "quo-seal", 44), body, e.eph.pub)]), agreement: e.a };
 }
 
@@ -55,7 +56,12 @@ export function openReply(box, lidSecret) {
   if (isZero(a)) return null;
   const body = open(hkdf(a, "quo-seal", 44), box.subarray(32), pk);
   if (!body || body.length < 64) return null;
-  return { text: body.subarray(0, body.length - 64), sig: body.subarray(body.length - 64), agreement: a };
+  return {
+    text: body.subarray(0, body.length - 64),
+    sig: body.subarray(body.length - 64),
+    lid: lidSecret.pub,
+    agreement: a,
+  };
 }
 
 export { ZERO32 };

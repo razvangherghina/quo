@@ -244,8 +244,10 @@ impl Door {
             let eph = draw::<32>();
             let eph_pk = x25519_pub(&eph);
             let Some(agr) = agree(&eph, &lid) else { continue };
+            let mut over = lid.to_vec();
+            over.extend_from_slice(text);
             let mut body = text.to_vec();
-            body.extend_from_slice(&ed_sign(&self.key.sign_secret, text));
+            body.extend_from_slice(&ed_sign(&self.key.sign_secret, &over));
             let mut out = eph_pk.to_vec();
             out.extend(seal_with(&agr, "quo-seal", &eph_pk, &body));
             return (out, agr);
@@ -653,7 +655,9 @@ pub fn read_reply(sign_pk: &[u8; 32], lid_secret: &[u8; 32], bx: &[u8]) -> Optio
         return None;
     }
     let (text, sig) = pt.split_at(pt.len() - 64);
-    if !ed_verify(sign_pk, text, sig) {
+    let mut over = x25519_pub(lid_secret).to_vec();
+    over.extend_from_slice(text);
+    if !ed_verify(sign_pk, &over, sig) {
         return None;
     }
     let silence = Some((Read::Silence, agr));
@@ -896,13 +900,46 @@ mod tests {
     #[test]
     fn garbage_and_zero_head() {
         let mut d = door(None);
-        let pk = d.key.sign_pk;
         for g in [vec![], vec![1u8; 10], vec![9u8; 200], vec![0u8; 200]] {
             let r = d.arrive(&g);
             assert_eq!(r.len(), SILENCE.len() + 112);
             assert_eq!(d.last_case, Some(Case::C1));
-            let _ = pk;
         }
+    }
+
+    /// A reply is signed over the lid it is sealed to and then the reply text.
+    /// Signed over the text alone, or over another ask's lid, it reads as silence.
+    #[test]
+    fn reply_signature_covers_the_lid() {
+        let d = door(None);
+        let text = b"{\"object\":1,\"seen\":null}";
+        let lid_secret = draw::<32>();
+        let lid = x25519_pub(&lid_secret);
+        let other = x25519_pub(&draw::<32>());
+        for over in [text.to_vec(), [&other[..], &text[..]].concat()] {
+            let eph = draw::<32>();
+            let eph_pk = x25519_pub(&eph);
+            let agr = agree(&eph, &lid).unwrap();
+            let mut body = text.to_vec();
+            body.extend_from_slice(&ed_sign(&d.key.sign_secret, &over));
+            let mut bx = eph_pk.to_vec();
+            bx.extend(seal_with(&agr, "quo-seal", &eph_pk, &body));
+            assert!(read_reply(&d.key.sign_pk, &lid_secret, &bx).is_none());
+        }
+        let mut bx = Vec::new();
+        {
+            let eph = draw::<32>();
+            let eph_pk = x25519_pub(&eph);
+            let agr = agree(&eph, &lid).unwrap();
+            let mut body = text.to_vec();
+            body.extend_from_slice(&ed_sign(&d.key.sign_secret, &[&lid[..], &text[..]].concat()));
+            bx.extend_from_slice(&eph_pk);
+            bx.extend(seal_with(&agr, "quo-seal", &eph_pk, &body));
+        }
+        assert!(matches!(
+            read_reply(&d.key.sign_pk, &lid_secret, &bx).unwrap().0,
+            Read::Object { .. }
+        ));
     }
 
     fn zero_ask(padlock: &[u8; 32], signer: &[u8; 32], payload: &[u8]) -> (Vec<u8>, [u8; 32]) {

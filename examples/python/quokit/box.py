@@ -61,6 +61,7 @@ def open_reply(box, lid_secret, ward_signing_pk):
     silence = (("silence",), None)
     if len(box) > SIZE or len(box) < 32 + 16 + 64:
         return silence
+    lid = c.x25519_public(lid_secret)
     rpk = box[:32]
     agr = c.agree(lid_secret, rpk)
     if agr is None:
@@ -70,7 +71,7 @@ def open_reply(box, lid_secret, ward_signing_pk):
     if body is None or len(body) <= 64:
         return silence
     text, sig = body[:-64], body[-64:]
-    if not c.ed_verify(ward_signing_pk, text, sig):
+    if not c.ed_verify(ward_signing_pk, lid + text, sig):
         return silence
     return read_reply_text(text), agr
 

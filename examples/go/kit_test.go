@@ -5,6 +5,7 @@ import (
 	"crypto/ed25519"
 	"encoding/hex"
 	"io"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -163,6 +164,33 @@ func TestStrangersHearOneSilence(t *testing.T) {
 	for _, box := range [][]byte{nil, {1}, make([]byte, 200), draw(400)} {
 		if n := len(w.Arrive(box)); n != 128 {
 			t.Errorf("a stranger's reply of %d bytes", n)
+		}
+	}
+}
+
+// A reply's signature covers the lid it is sealed to, then the reply text.
+func TestAReplySignedOverAnythingElseReadsAsSilence(t *testing.T) {
+	w, st := pair(t, "echo")
+	round(t, w, st, "m", `{}`)
+	m := "m"
+	sent, _ := st.Seal(&m, nil)
+	other, _ := st.Seal(&m, nil)
+	text := []byte(`{"object":1,"seen":null}`)
+	lid := x25519Pub(sent.lidSecret)
+	for name, signedOver := range map[string][]byte{
+		"the reply text alone": text,
+		"another ask's lid":    slices.Concat(x25519Pub(other.lidSecret), text),
+	} {
+		eph := draw(32)
+		ephPK := x25519Pub(eph)
+		agr, err := x25519(eph, lid)
+		if err != nil {
+			t.Fatal(err)
+		}
+		body := slices.Concat(text, ed25519.Sign(w.Sign, signedOver))
+		box := slices.Concat(ephPK, sealWith(sealKN(agr), body, ephPK))
+		if r := st.ReadReply(sent, box); r.Kind != "silence" {
+			t.Errorf("a reply signed over %s read %+v", name, r)
 		}
 	}
 }

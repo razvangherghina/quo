@@ -15,9 +15,13 @@ is followed by its reason.
    nothing else. The `Ward` object holds its own seed, and only the program
    that built it can reach it. Reason: nothing behind the door here needs a
    way back.
-3. **What answers the zero head.** The reach named by `reach` on `ward`.
-   With none named, nothing answers, and the ask is case 4. Reason: the
-   harness says so.
+3. **What answers the zero head, and does anything.** The reach named by
+   `reach` on `ward` answers it. With none named, nothing answers, and an
+   ask on the zero head is case 4. The zero head holds no relation, so the
+   door keeps no number for it and reads none. The same sealed bytes
+   presented twice are answered twice, each under a fresh reply ephemeral.
+   Reason: the harness names the reach. A door that kept a number for the
+   zero head would keep one for every stranger who ever sent one.
 4. **How many asks judged at once.** One. One lock guards every door and
    every standing in the program, whether the ask comes from `arrive`, from
    the TCP listener or from the post. The door therefore checks once. Reason: this is
@@ -101,13 +105,21 @@ is followed by its reason.
     `nothing`. A closed connection is
     `nothing` at once. Reason: this is long enough for a Python door and
     short enough for a harness.
-22. **Two sends on one relation.** One lock per relation serialises them.
-    Each send seals, dials, waits and reads before the next begins. Every
-    ask announces a newly drawn key. The count goes up by one on every box
-    sealed, whatever comes back. The knock is numbered 1, and a resent knock
-    keeps its number. The standing keeps the highest number it moved on and
-    moves on an object to a higher number only. Reason: a standing moves
-    only on an object, so asks that overlap would race on its keys.
+22. **Numbering, announcing, two sends, and the keys moved from.** The
+    count goes up by one on every box sealed, whatever comes back. The
+    knock is numbered 1, and a resent knock keeps its number. Every ask
+    announces a newly drawn key, on the knock and on every ask after it.
+    One lock per relation keeps two sends apart: each send seals, dials,
+    waits and reads before the next begins. The standing keeps the highest
+    number it moved on, and moves on an object to a higher number only.
+    Of the keys it moved from it keeps nothing. The signing key and the
+    edge key it moved to replace what stood before. When the asks after a
+    move meet silence, the standing stays where it moved to. It keeps
+    asking under that key and that edge key, with the count going up, and
+    it never falls back. Reason: a standing moves only on an object,
+    so asks that overlap would race on its keys. The door admits the key
+    moved from as the key held, so the standing needs no copy of it.
+    Silence is a choice the door made, so it says the ask was read.
 23. **What the kit tells its own code.** `Standing.take` returns
     `("object", value, raw, seen)`, `("silence",)`, `("word", w)` or
     `("nothing",)`. The harness gets `{object, seen}`, `{silence: true}`,
@@ -139,12 +151,16 @@ is followed by its reason.
     the rest one after another in the order written. It moves to the next
     when an address gives nothing, of any kind, and stops at the first
     reply. Each try waits as question 21 says. With no address left, the
-    read is `nothing`. Once the program holds listeners, every invitation
-    it mints carries their addresses in `at`, the post first, then TCP.
-    Reason: the order in `at` is the minting side's preference, so trying
-    in that order honours it. Nothing means not delivered, so the next
-    address may carry the same box. The post goes first because it reaches
-    where TCP cannot.
+    read is `nothing`. It carries the same box to the next address after
+    one that gave nothing, whether or not that address may have heard it.
+    Once the program holds listeners, every invitation it mints carries
+    their addresses in `at`, the post first, then TCP.
+    Reason: a route is the harness's own word and beats what an invitation
+    carries, since whoever carried the invitation may have written its
+    `at`. The order in `at` is the minting side's preference, so trying in
+    that order honours it. A door honours a number once, whichever address
+    carried it, so a second address costs nothing but the wait. The post
+    goes first because it reaches where TCP cannot.
 
 ## What is not the kit's either
 

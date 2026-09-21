@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { Ward, Standing, reaches, readReply } from "../lib/quo.js";
 import { sealAsk, follow, openReply } from "../lib/box.js";
-import { edSecret, draw, hex, fromHex, xSecret, ZERO32 } from "../lib/crypto.js";
+import { edSecret, draw, hex, fromHex, xSecret, agree, hkdf, seal, sign, ZERO32 } from "../lib/crypto.js";
 
 const setup = (reach, zero = null) => {
   const w = new Ward(draw(32), { zero });
@@ -180,6 +180,25 @@ test("payload refusals", () => {
     assert.equal(tryP(`{"to":null,"by":"${by}","next":null,"seq":1,"x":${x},"method":"m","args":{"a":${x}}}`), "object", x);
   assert.equal(tryP(`{"to":null,"by":"${by}","next":null,"seq":9007199254740991}`), "object");
   assert.equal(tryP(`  {"to":null,"by":"${by}","next":null,"seq":1}\n`), "object");
+});
+
+test("a reply's signature covers the lid, then the reply text", () => {
+  const { w, inv, s } = setup();
+  const signPub = fromHex(inv.ward.slice(0, 64));
+  const ask = s.ask("m");
+  const lid = s.last.lidSecret;
+  assert.equal(readReply(w.arrive(ask), lid, signPub).kind, "object");
+  // A reply the ward signed over its reply text alone, or over another ask's lid, reads as silence.
+  const text = Buffer.from('{"object":1,"seen":null}');
+  const write = (msg) => {
+    const e = xSecret(draw(32));
+    const a = agree(e, lid.pub);
+    const body = Buffer.concat([text, sign(w.signer, msg)]);
+    return Buffer.concat([e.pub, seal(hkdf(a, "quo-seal", 44), body, e.pub)]);
+  };
+  assert.equal(readReply(write(Buffer.concat([lid.pub, text])), lid, signPub).kind, "object");
+  assert.equal(readReply(write(text), lid, signPub).kind, "silence");
+  assert.equal(readReply(write(Buffer.concat([draw(32), text])), lid, signPub).kind, "silence");
 });
 
 test("follow is shared by both ends", () => {

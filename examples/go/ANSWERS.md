@@ -16,9 +16,12 @@ answer is the kit's choice, with its reason. Each number is the number
 2. **The way back to what made the ward.** None. A target is a plain
    function, holds no reference to the ward or the kit, and nothing removes
    what was never given. Reason: no target here needs one.
-3. **The zero head.** The target named by `reach` on `ward`. Without it
-   nothing answers, and every zero-head ask is case 4. Reason: the harness
-   fixes this.
+3. **The zero head.** The target named by `reach` on `ward`, one per ward.
+   Without it nothing answers, and every zero-head ask is case 4. The door
+   keeps nothing for the zero head: no signing key, no edge key, no number.
+   So the same sealed bytes presented twice are answered twice, each answer
+   sealed to the one lid those bytes carry. Reason: the harness fixes the
+   target, and a head that names no relation has nothing to keep.
 4. **Asks judged at once.** One. A single mutex holds every door and every
    standing, so each arrival, from `arrive` or from any listener, is
    judged alone and checked once. Reason: the second check buys nothing
@@ -91,10 +94,21 @@ answer is the kit's choice, with its reason. Each number is the number
     and the WebSocket handshake included, then ten seconds for the reply to
     an ask, then nothing. A closed connection is nothing at once. Each
     address in `at` is given the same, one after another.
-22. **Two sends on one relation.** Each send carries its own sealed ask and
-    lid secret and number. Numbers come from one counter per relation, so
-    no two asks share one, and the standing keeps the highest number it
-    moved on, so a late object to an older ask moves nothing.
+22. **Numbering, announcing, and two sends on one relation.** Numbers come
+    from one counter per relation, raised once per sealed ask and never
+    reused, and the knock carries the number one. Every ask announces in
+    `next` a signing key drawn for that ask alone. A knock sent again as
+    the same bytes carries the same number and the same announced key.
+    Each send keeps its own box, lid secret, number, signing
+    key, announced key and edge key, so two sends in flight read their
+    replies apart. The standing keeps the highest number it moved on, so a
+    late object to an older ask moves nothing. Of the keys it moved from it
+    keeps nothing: the ask that moved it replaces the signing key and the
+    edge key, and the knock is dropped. When the asks after a move meet
+    silence, a word or nothing, the standing keeps sending under the key
+    and edge key it moved to. Reason: the door admits the key held and the
+    key vouched for, so the key just announced is admitted next, and a
+    standing that went back would announce a key the door already holds.
 23. **What the kit tells its own code.** A `Read` whose `Kind` is `object`,
     `silence`, `quo` (with `Word`) or `nothing`.
 
@@ -127,11 +141,16 @@ answer is the kit's choice, with its reason. Each number is the number
     - Where it has none, the kit reads `at` in its order, skips every entry
       that is not a string, not a URI with a scheme, of a scheme it does not
       dial, or not written as that scheme's carrier writes it, and tries the
-      rest one after another. It stops at the first that answers with a
-      reply. An address that answers nothing, or that it cannot reach, sends
-      it to the next, and the ask reads nothing when none answered. Reason:
-      the first is the minting side's preference, and nothing means not
-      delivered, so the next address is still worth the same bytes.
+      rest one after another, never two at once, each given the waits of
+      question 21. It stops at the first that answers with a reply, whatever
+      the reply says. Reason: the first entry is the minting side's
+      preference, and this kit trusts no other source over it.
+    - The kit carries the same box to the next address after every nothing.
+      It draws no line between an address it never reached and one that may
+      have heard the box before the line closed. Reason: a door honours a
+      number once, whichever address carried it, so a box that may have been
+      heard costs at worst a `repeated` and never a second choice. The ask
+      reads nothing when no address answered.
     - An `at` that is not an array is read as absent.
     - Once the program holds listeners, every invitation it mints carries
       `at` with each listener's address, `tcp` first, then `http`, then

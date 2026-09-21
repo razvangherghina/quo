@@ -20,9 +20,10 @@ of `SPEC.md`.
   taken away?** Whatever makes a ward holds its seed. How the kit gives the
   things behind the door a way back to what made them, and whether any path
   removes that way, is the kit's. None of it crosses a door.
-- **Question 3. What answers the zero head, and does anything?** The zero
-  head chapter leaves both to the door. With nothing answering it, an ask on
-  the zero head is case 4.
+- **Question 3. What answers the zero head, and does anything? What may
+  answer there, where the same sealed bytes are answered every time they
+  arrive?** The zero head chapter leaves both to the door. With nothing
+  answering it, an ask on the zero head is case 4.
 - **Question 4. How many asks does a door judge at once?** Whatever the
   number, an ask is admitted only under a key the door holds or vouches
   for when it makes its choice. The keys move as the move chapter says.
@@ -82,8 +83,11 @@ of `SPEC.md`.
   wire.
 - **Question 22. How does a standing number its asks, which keys does it
   announce and when, and how does it keep two sends on one relation
-  apart?** A knock carries any count number. A standing moves on an object
-  to an ask above every ask it has moved on, and on nothing else.
+  apart? What does it keep of the keys it moved from, and what does it do
+  when the asks after a move meet silence?** A knock carries any count
+  number. A standing moves on an object to an ask above every ask it has
+  moved on, and on nothing else. A door admits the key held and the key
+  vouched for, and takes the open key and the offered key.
 - **Question 23. What does the kit tell its own code on silence, on a word,
   and on nothing?** The three words cross a door. The kit's own spelling for
   them does not.
@@ -98,7 +102,9 @@ of `SPEC.md`.
   and its held line, are published. Any other is the kit's.
 - **Question 25. How does the kit learn where a ward is reached? Does
   it write `at` in its invitations, and with which addresses? How does
-  it try the addresses it reads?** A ward's name is its public key. An
+  it try the addresses it reads, and which does it refuse to try?** A
+  ward's name is its public key. An invitation goes anywhere, and whoever
+  carried it may have written its `at`. An
   invitation may carry addresses in `at`, the first the minting side's
   preference, and a kit may learn others its own way. Four things are
   the kit's. Which source it trusts first. Whether it tries addresses

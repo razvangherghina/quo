@@ -331,8 +331,9 @@ export class Session {
     if (!body) return { kind: "invalid", why: "reply does not open under the ask's lid" };
     if (body.length < 64) return { kind: "invalid", why: "reply body shorter than a signature" };
     const text = body.subarray(0, body.length - 64);
-    if (!edVerify(ward.signPk, text, body.subarray(body.length - 64))) {
-      return { kind: "invalid", why: "reply not signed by the ward's signing key" };
+    // A reply is signed over the lid it is sealed to, then its reply text.
+    if (!edVerify(ward.signPk, Buffer.concat([x25519Pub(lidSecret), text]), body.subarray(body.length - 64))) {
+      return { kind: "invalid", why: "reply not signed by the ward's signing key over the lid and the reply text" };
     }
     if (rb.length !== text.length + 112) return { kind: "invalid", why: "reply box is not its text plus 112" };
     const rr = readReply(text);
@@ -462,6 +463,8 @@ export class Session {
     const head = o.head ?? (zero ? ZERO32 : heir.pk);
     let { box, lidSecret } = sealAsk({ padlock: o.padlock ?? ward.padlock, head, edge, body, ct });
     if (o.mutate) box = o.mutate(box);
+    // Sealed and not delivered, for a scenario that delivers two at one moment.
+    if (o.sealOnly) return { box, lidSecret, announced, edge, seq };
     let predicate = o.predicate;
     if (want === "answer" || want === "chosen") {
       const [w, p] = this.wantFor(o.reach ?? heir.reach, o);
@@ -623,6 +626,54 @@ async function theCount(s) {
     if (seq < MAX_SEQ) {
       await s.ask(kh, { signer: "H", under: "F", next: null, seq: seq + 1, method: "echo", args: '{"after":"the knock"}' }, "answer", `count: the ask after a knock at ${how} continues the count`);
     }
+  }
+}
+
+/**
+ * Two arrivals on one relation at one moment. A door honours a number once
+ * and only the first knock binds, however many arrivals it judges at once.
+ */
+async function atOneMoment(s) {
+  const w = await s.ward("at one moment");
+  const together = (sealed) => Promise.all(sealed.map((x) => s.arrive(w, x.box, x.lidSecret)));
+  // Judges a pair of replies: at most one object, and beside it only what
+  // `others` takes. Answers the index of the object, or -1.
+  const one = (replies, label, others) => {
+    for (const r of replies) if (r.kind === "error" || r.kind === "invalid") s.judge(r, "object", label);
+    const objects = replies.filter((r) => r.kind === "object").length;
+    const rest = replies.every((r) => r.kind === "object" || r.kind === "nothing" || others(r));
+    const shown = replies.map((r) => (r.kind === "word" ? `quo ${r.word}` : r.kind)).join(" and ");
+    s.check(label, objects <= 1 && rest, `got ${shown}`);
+    return objects === 1 ? replies.findIndex((r) => r.kind === "object") : -1;
+  };
+
+  const h = await s.invite(w, "two knocks");
+  const knocks = [0, 1].map(() => {
+    const { key, ct } = encaps(h.ek);
+    return { E: hkdf(key, "quo-lock", 32), ct, k: newKey() };
+  });
+  const knock = (kn) => ({ knock: true, signer: "heir", next: kn.k, seq: 1, method: "echo", args: '{"k":1}', ct: kn.ct, edge: kn.E });
+  const sealedKnocks = await Promise.all(knocks.map((kn) => s.ask(h, { ...knock(kn), sealOnly: true })));
+  const knockReplies = await together(sealedKnocks);
+  const won = one(knockReplies, "at one moment: of two knocks on one fresh heir, one binds and the other is a stranger's", (r) => r.kind === "silence");
+  if (won >= 0) {
+    const [winner, loser] = [knocks[won], knocks[1 - won]];
+    h.E = winner.E;
+    const sent = sealedKnocks[won];
+    s.move(h, knock(winner), sent.announced, sent.edge, sent.seq, knockReplies[won].agr);
+    await s.ask(h, { signer: "H", under: "F", next: null, seq: 2, method: "echo", args: '{"after":"the knock"}' }, "answer", "at one moment: the knock that bound holds the relation");
+    await s.ask(h, { signer: loser.k, edge: loser.E, next: null, seq: 2, method: "echo", args: "{}" }, "stranger", "at one moment: the knock that did not bind holds no relation");
+  }
+
+  const h2 = await s.invite(w, "one ask twice");
+  await s.bind(h2, 1);
+  const o = { signer: "H", under: "F", next: newKey(), seq: 2, method: "echo", args: '{"twice":true}' };
+  const sealed = await s.ask(h2, { ...o, sealOnly: true });
+  const replies = await together([sealed, sealed]);
+  const at = one(replies, "at one moment: one ask delivered twice is honoured once", (r) => r.kind === "word" && r.word === "repeated");
+  if (at >= 0) {
+    s.move(h2, o, sealed.announced, sealed.edge, sealed.seq, replies[at].agr);
+    await s.ask(h2, { signer: "V", under: "F", next: null, seq: 3, method: "echo", args: '{"after":"twice"}' }, "answer", "at one moment: the relation moved by the one choice");
   }
 }
 
@@ -1054,6 +1105,9 @@ const REPLIES = {
   "a reply that does not open": { text: '{"object":1,"seen":null}', read: SIL, flip: true },
   "a reply sealed to another lid": { text: '{"object":1,"seen":null}', read: SIL, otherLid: true },
   "a reply signed by another key": { text: '{"object":1,"seen":null}', read: SIL, otherSigner: true },
+  "a reply the ward signed over another ask's lid": { text: '{"object":1,"seen":null}', read: SIL, signedLid: "another" },
+  "a word the ward signed over another ask's lid": { ...word("repeated"), read: SIL, signedLid: "another" },
+  "a reply signed over its reply text alone": { text: '{"object":1,"seen":null}', read: SIL, textAlone: true },
   "a reply whose s is above the group order": {
     text: '{"object":1,"seen":null}',
     read: SIL,
@@ -1150,7 +1204,9 @@ function writeReply(mine, t, r) {
   const ephPk = r.smallEph ? SMALL_ORDER_X : x25519Pub(eph);
   const agr = r.smallEph ? Buffer.from(ZERO32) : x25519(eph, r.otherLid ? x25519Pub(rand(32)) : t.lid);
   const text = Buffer.from(r.text, "utf8");
-  const sig = r.sig ? r.sig(mine, text) : edSign(r.otherSigner ? rand(32) : mine.signSeed, text);
+  // What a reply's signature covers: the lid it is sealed to, then its text.
+  const signed = r.textAlone ? text : Buffer.concat([r.signedLid === "another" ? x25519Pub(rand(32)) : t.lid, text]);
+  const sig = r.sig ? r.sig(mine, signed) : edSign(r.otherSigner ? rand(32) : mine.signSeed, signed);
   const body = Buffer.concat([text, sig]);
   const box = Buffer.concat([ephPk, aesSeal(hkdf(agr, "quo-seal", 44), ephPk, body)]);
   if (r.flip) box[box.length - 1] ^= 1;
@@ -1493,6 +1549,7 @@ const SCENARIOS = [
   ["wards and invitations", wardsAndInvitations],
   ["the move", theMove],
   ["the count", theCount],
+  ["at one moment", atOneMoment],
   ["the reaches", theReaches],
   ["the zero head", theZeroHead],
   ["the signature", theSignature],

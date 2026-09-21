@@ -22,7 +22,11 @@ nothing is given.
 
 **Question 3. What answers the zero head, and does anything?**
 The `reach` given on `ward`, if there is one. With no reach, nothing answers
-the zero head, and every ask on it is case 4. The zero head keeps nothing.
+the zero head, and every ask on it is case 4. The zero head keeps nothing:
+no key, no count and no record of any box. So the same sealed bytes
+presented twice are answered twice, and the second answer is written from
+the arrival alone. Reason: a reach is a pure function of the arrival, so
+there is nothing a second presentation could be weighed against.
 
 **Question 4. How many asks does a door judge at once?**
 One. One process-wide mutex covers every door, every standing, and every
@@ -136,15 +140,38 @@ from the moment its frame is written. After that it closes that
 connection and takes the address as having delivered nothing. On the
 harness's `ask` and `read`, the harness decides.
 
-**Question 22. How does a standing number its asks, which keys does it announce and when, and how does it keep two sends on one relation apart?**
-It doesn't. A relation holds only the last ask. Every ask replaces it, and
-`read` opens the reply under that ask's lid. Sends on one relation are
-serial, because `stand` runs one request at a time. The numbers increase
-with every ask, so a late reply to an earlier ask does not open under the
-current lid, and reads as silence. The standing also keeps the highest
-number it has moved on, and an object to an ask at or below it is read
-and moves nothing. The one ask that can meet that is the knock sent again,
-number 1, and it only moves a standing that has not moved.
+**Question 22. How does a standing number its asks, which keys does it announce and when, and how does it keep two sends on one relation apart? What does it keep of the keys it moved from, and what does it do when the asks after a move meet silence?**
+The numbers count up from one, one number per ask sealed, whatever came
+back. The knock announces the one key the standing ever announces, drawn at
+the knock. Every ask after it announces nothing, so its `next` is `null`.
+Reason: a relation with one key needs no second, and a key announced is a
+key that must then be kept.
+
+It keeps two sends on one relation apart by holding one. A relation holds
+the last ask alone: its lid secret, its edge key, its signing key and its
+number. Every ask replaces it, and `read` opens the reply under that ask's
+lid. Sends on one relation are serial, because `stand` runs one request at
+a time. So a late reply to an earlier ask does not open under the current
+lid, and reads as silence.
+
+Of the keys it moved from it keeps nothing. A move takes the key the ask
+was signed with and the edge key that follows the one it was sent under.
+What stood before is dropped, and the kept knock is dropped with it.
+Reason: this standing is only ever the key the door holds, so an older key
+would open no box.
+
+When the asks after a move meet silence, the standing does nothing. It
+moves on an object alone. Silence, a word and nothing leave the signing
+key, the edge key and the highest number where they stand. The next ask
+goes out under the same two keys with the next number. Reason: the door
+moves on a choice too, so a refusal leaves both ends together. An object
+the standing did not hear leaves it one ask behind, and the ask after it
+arrives under the door's open key, which still opens.
+
+The standing also keeps the highest number it has moved on. An object to an
+ask at or below it is read and moves nothing. The one ask that can meet
+that is the knock sent again, number 1, and it only moves a standing that
+has not moved.
 
 **Question 23. What does the kit tell its own code on silence, on a word, and on nothing?**
 The union `Read`, with four tags: `object` (the raw object text and the
@@ -166,17 +193,27 @@ connection per address per `send`, closed after the answer. Reason: one
 carrier proves the frames, and the web's two forms would each be a second
 listener and dialer that no other part of this kit uses.
 
-**Question 25. How does the kit learn where a ward is reached? Does it write `at` in its invitations, and with which addresses? How does it try the addresses it reads?**
+**Question 25. How does the kit learn where a ward is reached? Does it write `at` in its invitations, and with which addresses? How does it try the addresses it reads, and which does it refuse to try?**
 Two ways. A `route` names one `tcp` address for a far ward, and replaces
 the one before. An invitation's `at` names the rest. Where a ward has a
 route, `send` dials the route alone. Where it has none, `send` reads the
-invitation's `at` in order, takes each string that is a `tcp://host:port`
-address as `CARRIER-TCP.md` writes it, and skips every other string,
-every other scheme, and every entry that is not a string. An `at` that is
-not an array is read as absent. The kit tries the addresses one after
-another, the same box to each, and stops at the first that answers with a
-reply. A nothing frame, a closed connection, a refused dial or eight
-seconds without an answer moves it to the next. With no route and no
+invitation's `at` in order and takes each string that is a
+`tcp://host:port` address as `CARRIER-TCP.md` writes it.
+
+It refuses to try four kinds of entry, and skips each where it stands. An
+entry that is not a string. A string that is no URI with a scheme. A
+string whose scheme is not `tcp`, this kit standing no other carrier. A
+`tcp` string that `CARRIER-TCP.md` does not write, a missing port or a
+path among them. The scheme is read without regard to case. An `at` that is
+not an array is read as absent. None of this makes the invitation no
+invitation.
+
+The kit tries the addresses it kept one after another, the same box to
+each, and stops at the first that answers with a reply. A nothing frame, a
+closed connection, a refused dial or eight seconds without an answer moves
+it to the next. So a box does go on to the next address after one that may
+have heard it, and the door honours its number once whichever address
+carried it. With no route and no
 `tcp` address, nothing is delivered. Once the program holds its listener,
 every invitation it gives carries `at` with that listener's one address,
 `tcp://127.0.0.1:<port>`. Before then it writes no `at`. Reason: the

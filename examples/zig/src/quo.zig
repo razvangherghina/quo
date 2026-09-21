@@ -214,7 +214,12 @@ pub fn sealReply(a: Allocator, ent: *Entropy, signer: KeyPair, lid: [32]u8, text
     const body = try a.alloc(u8, text.len + 64);
     defer a.free(body);
     @memcpy(body[0..text.len], text);
-    body[text.len..][0..64].* = sign(signer, text);
+    // The signature is over the lid this reply is sealed to, then the reply text.
+    const signed = try a.alloc(u8, 32 + text.len);
+    defer a.free(signed);
+    signed[0..32].* = lid;
+    @memcpy(signed[32..], text);
+    body[text.len..][0..64].* = sign(signer, signed);
     const out = try a.alloc(u8, 32 + body.len + 16);
     out[0..32].* = eph_pk;
     seal(out[32..], body, &ag, "quo-seal", &eph_pk);
@@ -229,7 +234,12 @@ pub fn openReply(a: Allocator, lid_secret: [32]u8, box: []const u8, ward_sign_pk
     const body = try a.alloc(u8, box.len - 48);
     if (!open(body, box[32..], &ag, "quo-seal", &eph)) return null;
     const text = body[0 .. body.len - 64];
-    if (!verify(ward_sign_pk, text, body[body.len - 64 ..])) return null;
+    // The signature is checked over the lid of this ask, then the reply text.
+    const signed = try a.alloc(u8, 32 + text.len);
+    defer a.free(signed);
+    signed[0..32].* = X25519.recoverPublicKey(lid_secret) catch return null;
+    @memcpy(signed[32..], text);
+    if (!verify(ward_sign_pk, signed, body[body.len - 64 ..])) return null;
     return .{ .text = text, .agreement = ag };
 }
 
@@ -1043,6 +1053,37 @@ test "the check" {
     r_signed[0] = 1;
     r_signed[31] = 0x80;
     try testing.expect(!verify(pk, "x", &r_signed));
+}
+
+test "a reply's signature covers the lid it is sealed to" {
+    var arena = std.heap.ArenaAllocator.init(testing.allocator);
+    defer arena.deinit();
+    const a = arena.allocator();
+    var ent: Entropy = .{ .fixed = true, .state = 11 };
+    const w = WardKeys.fromText("replier");
+    const lid_secret = [_]u8{2} ** 32;
+    const lid = try X25519.recoverPublicKey(lid_secret);
+    const text = "{\"object\":1,\"seen\":null}";
+
+    const good = try sealReply(a, &ent, w.sign, lid, text);
+    const opened = (try openReply(a, lid_secret, good.box, w.sign.public_key.toBytes())).?;
+    try testing.expectEqualStrings(text, opened.text);
+
+    // A signature over the reply text alone, and one over another ask's lid, read as silence.
+    const other = try X25519.recoverPublicKey([_]u8{3} ** 32);
+    const over_other = try std.fmt.allocPrint(a, "{s}{s}", .{ &other, text });
+    for ([_][]const u8{ text, over_other }) |signed_over| {
+        const eph = ent.bytes(32);
+        const ag = agree(eph, lid).?;
+        const eph_pk = try X25519.recoverPublicKey(eph);
+        const body = try a.alloc(u8, text.len + 64);
+        @memcpy(body[0..text.len], text);
+        body[text.len..][0..64].* = sign(w.sign, signed_over);
+        const box = try a.alloc(u8, 32 + body.len + 16);
+        box[0..32].* = eph_pk;
+        seal(box[32..], body, &ag, "quo-seal", &eph_pk);
+        try testing.expect(try openReply(a, lid_secret, box, w.sign.public_key.toBytes()) == null);
+    }
 }
 
 test "ward keys" {

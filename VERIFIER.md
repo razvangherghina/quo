@@ -70,7 +70,8 @@ with `arrive`, and opens what comes back:
 
 - the reply's length is its reply text plus one hundred and twelve;
 - the reply opens under `quo-seal` from the lid;
-- the signature is the ward's signing key over the reply text;
+- the signature is the ward's signing key over the lid, then the reply
+  text;
 - the reply text is one of the three shapes, and silence is the sixteen
   bytes;
 - the edge key that follows the reply is the one `SPEC.md` gives.
@@ -88,6 +89,12 @@ It drives the two signatures that list does not hold: a small-order
 small-order. It holds that each is answered as an admitted key is.
 
 It drives both tables of the move, and follows the door's keys as they say.
+
+It delivers two arrivals on one relation at one moment, without waiting
+for the first answer. Of two knocks on one fresh heir, one binds and the
+other is a stranger's. One ask delivered twice is honoured once, and the
+other hears `repeated`. A kit that judges one arrival at a time passes
+both.
 
 ## The kit as an asker
 
@@ -107,7 +114,9 @@ would:
 
 The verifier answers with a reply it writes, delivers it with `read`, and
 checks what the kit says it read. It answers with objects, silence, each
-of the three words, nothing, and replies that read as silence.
+of the three words, nothing, and replies that read as silence. Among
+those are a reply and a word the ward signed over another ask's lid, and a
+reply signed over its reply text alone.
 
 It holds the number of every ask the kit sealed, and with them the highest
 the standing has moved on. It then checks, by the kit's next `ask`,
@@ -314,6 +323,6 @@ sizes stand as `SPEC.md` writes them. These stand on the text alone.
 ## What the verifier does not see
 
 Whatever a kit keeps, and how it keeps it, across a restart or across two
-copies of one ward. What a kit draws. How long a kit waits. What a door
-does with two arrivals on one relation at one moment, since no request of
-the harness makes it judge two at once.
+copies of one ward. What a kit draws. How long a kit waits. How many
+arrivals a door judges at once, since a kit that judges one at a time
+answers two sent together as it answers two sent apart.

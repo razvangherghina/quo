@@ -126,7 +126,8 @@ func sealAsk(padlock, head, ct, edge, payload []byte, signer ed25519.PrivateKey)
 }
 
 // sealReply seals a reply text to a lid that takes a seal, signed by the
-// ward. It answers the box and the reply's agreement.
+// ward over the lid and then the reply text. The lid is signed and is not in
+// the body. It answers the box and the reply's agreement.
 func sealReply(lid, text []byte, sign ed25519.PrivateKey) (box, agr []byte) {
 	eph := draw(32)
 	ephPK := x25519Pub(eph)
@@ -134,7 +135,7 @@ func sealReply(lid, text []byte, sign ed25519.PrivateKey) (box, agr []byte) {
 	if err != nil {
 		panic("a lid that takes no seal reached a reply")
 	}
-	body := slices.Concat(text, ed25519.Sign(sign, text))
+	body := slices.Concat(text, ed25519.Sign(sign, slices.Concat(lid, text)))
 	return slices.Concat(ephPK, sealWith(sealKN(a), body, ephPK)), a
 }
 
@@ -157,7 +158,7 @@ func openReply(box, lidSecret, wardSignPK []byte) (text, agreement []byte, err e
 		return nil, nil, errNoOpen
 	}
 	text = body[:len(body)-sigSize]
-	if !Verify(wardSignPK, text, body[len(body)-sigSize:]) {
+	if !Verify(wardSignPK, slices.Concat(x25519Pub(lidSecret), text), body[len(body)-sigSize:]) {
 		return nil, nil, errNoOpen
 	}
 	return text, agr, nil

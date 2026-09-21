@@ -226,7 +226,8 @@ export function readReply(box, lidSecret, signPub) {
   if (box === null) return { kind: "nothing" };
   const r = openReply(box, lidSecret);
   if (!r) return { kind: "silence" };
-  if (!verify(signPub, r.text, r.sig)) return { kind: "silence" };
+  // The ward's signing key over the lid of this ask, then the reply text.
+  if (!verify(signPub, Buffer.concat([r.lid, r.text]), r.sig)) return { kind: "silence" };
   let node;
   let text;
   try {

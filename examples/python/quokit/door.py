@@ -79,7 +79,7 @@ class Ward:
         rpk = c.x25519_public(eph)
         agr = c.agree(eph, lid)
         k, n = c.key_nonce(agr, "quo-seal")
-        body = text + c.ed_sign(self.key.sign_seed, text)
+        body = text + c.ed_sign(self.key.sign_seed, lid + text)
         return rpk + c.gcm_seal(k, n, body, rpk), agr
 
     def _stranger(self, box, case, opened):

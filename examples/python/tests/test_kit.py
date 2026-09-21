@@ -314,6 +314,23 @@ class Door(unittest.TestCase):
             r = open_reply(w.arrive(box), ls, self.sign)[0]
             self.assertEqual((r[0], r[2], r[3]), ("object", b'{"z":1}', "1"))
 
+    def test_reply_signature_covers_the_lid(self):
+        w, st = self.ward, self.st
+        self.bound()
+        box = st.next_box("echo", '{"a":1}')
+        lid_secret = st.pending[0]
+        reply = w.arrive(box)
+        self.assertEqual(open_reply(reply, lid_secret, self.sign)[0][0], "object")
+        # the same reply read against another ask's lid is silence
+        self.assertEqual(open_reply(reply, os.urandom(32), self.sign)[0], ("silence",))
+        # a reply signed over its reply text alone is silence
+        eph = os.urandom(32)
+        rpk = c.x25519_public(eph)
+        k, n = c.key_nonce(c.agree(eph, c.x25519_public(lid_secret)), "quo-seal")
+        body = SILENCE + c.ed_sign(w.key.sign_seed, SILENCE)
+        alone = rpk + c.gcm_seal(k, n, body, rpk)
+        self.assertEqual(open_reply(alone, lid_secret, self.sign)[0], ("silence",))
+
     def test_unopened_lids(self):
         for junk in [b"", b"x" * 10, SMALL_ORDER[1] + b"y" * 100]:
             self.assertEqual(len(self.ward.arrive(junk)), 128)

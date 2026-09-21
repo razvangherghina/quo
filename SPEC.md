@@ -299,7 +299,11 @@ sent under it. The zero edge key never moves.
 The signature of an ask is sixty-four bytes of Ed25519 over the payload
 bytes exactly as they stand in the box.
 
-The signature of a reply is by the ward's signing key over the reply text.
+The signature of a reply is by the ward's signing key over the thirty-two
+bytes of the lid the reply is sealed to, then the reply text. The lid is
+signed and is not in the reply's body. The lid a reply is sealed to is the
+lid whose secret opens it, so a reader checks the signature over the lid of
+its own ask.
 
 On every head the signature is checked under the key `by` names. On a head
 that names an heir, `by` is owed to be a key the door admits or a key kept at
@@ -448,7 +452,8 @@ own and bound nothing. `repeated`: the number is one the door does not
 honour.
 
 A reply that does not open reads as silence. A reply not signed by the
-signing key of the ward the ask was sent to reads as silence. A reply that
+signing key of the ward the ask was sent to, over the lid of that ask and
+then the reply text, reads as silence. A reply that
 is none of the three shapes reads as silence, and a `quo` whose word is not
 one of the three is none of the three shapes.
 
@@ -634,6 +639,8 @@ holds.
 A lid nobody holds is thirty-two drawn bytes taken as a lid. When those
 take no seal either, it is the X25519 public key, on the RFC 7748 base
 point, of thirty-two more drawn bytes.
+
+Whichever lid a reply is sealed to, its signature covers that lid.
 
 The signature is checked before anything moves and before any word is said.
 

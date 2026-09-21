@@ -99,7 +99,7 @@ function openReply(w, box, lidSecret) {
   const body = aesOpen(hkdf(agr, "quo-seal", 44), eph, box.subarray(32));
   if (!body) return { len: box.length, bad: "does not open" };
   const text = body.subarray(0, body.length - 64);
-  if (!edVerify(w.signPk, text, body.subarray(body.length - 64))) return { len: box.length, bad: "not signed by the ward" };
+  if (!edVerify(w.signPk, Buffer.concat([x25519Pub(lidSecret), text]), body.subarray(body.length - 64))) return { len: box.length, bad: "not signed by the ward" };
   const r = readReply(text);
   const read = r.shape === "object" ? { object: JSON.parse(text).object } : r.shape === "word" ? { quo: r.word } : { silence: true };
   return { len: box.length, read };
