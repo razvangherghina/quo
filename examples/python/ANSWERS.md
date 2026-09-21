@@ -68,9 +68,9 @@ is followed by its reason.
     them.
 13. **`seen`.** Always `null`, except `"1"` from `marked` on a named ask, as
     the harness fixes. Reason: nothing behind these doors moves.
-14. **The empty ask.** `echo` and `marked` answer `{}`, `null` answers
-    `null`, and `silent` answers silence. `seen` is always `null`. Reason:
-    the harness says so.
+14. **The empty ask.** `echo`, `marked` and `null` answer the describe
+    `{"asks":[]}`, the same to every asker and with no `lang`. `silent`
+    answers silence. `seen` is always `null`. Reason: the harness says so.
 15. **Reply text.** `{"object":<object>,"seen":<seen>}` with no whitespace
     between the kit's own tokens. From `echo` and `marked`, `object` is the
     bytes of `args` exactly as they arrived. A word is `{"quo":"<word>"}`.

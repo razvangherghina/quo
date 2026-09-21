@@ -85,10 +85,10 @@ everything puts no case on the wire.
 `"1"` on a named ask. The reason is that the harness fixes what those two
 reaches answer, and `null` is the mark that says nothing moved.
 
-**14.** With echo and marked, the object is `{}` and `seen` is null. With
-null, the object is null. With silent, silence. The reason is that the
-empty ask names no method and carries no args. A reach that echoes has
-nothing to echo but the empty object.
+**14.** With echo, marked and null, the object is the describe
+`{"asks":[]}` and `seen` is null. It is the same to every asker and names
+no `lang`. With silent, silence. The reason is that the harness lists no
+method a reach answers, so the describe lists none.
 
 **15.** `{"object":<value>,"seen":<seen>}`, object first, with no
 whitespace between tokens. A word is `{"quo":"<word>"}`. The reason is that

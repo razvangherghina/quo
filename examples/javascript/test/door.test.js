@@ -29,7 +29,7 @@ test("knock, then asks, both tables walk", () => {
   const { w, s } = setup(reaches.marked);
   assert.deepEqual(read(s, w.arrive(s.ask("m", '{"x": [1, 2]}'))), { object: '{"x": [1, 2]}', seen: "1" });
   assert.equal(s.phase, "bound");
-  for (let i = 0; i < 5; i++) assert.deepEqual(read(s, w.arrive(s.ask(undefined, undefined))), { object: "{}", seen: null });
+  for (let i = 0; i < 5; i++) assert.deepEqual(read(s, w.arrive(s.ask(undefined, undefined))), { object: '{"asks":[]}', seen: null });
 });
 
 test("unannounced knock binds nothing", () => {

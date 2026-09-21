@@ -213,7 +213,7 @@ class Door(unittest.TestCase):
         self.bound()
         # the empty ask
         r = st.take(w.arrive(st.next_box()))
-        self.assertEqual((r[0], r[2], r[3]), ("object", b"{}", None))
+        self.assertEqual((r[0], r[2], r[3]), ("object", b'{"asks":[]}', None))
         # an ask announcing nothing keeps the held key; asking under the vouched one moves it
         held = st.signer
         r = st.take(w.arrive(st.ask("echo", "{}", held, st.edge, announce=False)))
@@ -469,7 +469,7 @@ class Harness(unittest.TestCase):
             got = req({"id": "s", "op": "send", "ward": me, "invitation": inv2, "method": "e", "args": {"q": 2}})
             self.assertEqual(got, {"id": "s", "read": {"object": {"q": 2}, "seen": None}})
             got = req({"id": "s2", "op": "send", "ward": me, "invitation": inv2})
-            self.assertEqual(got, {"id": "s2", "read": {"object": {}, "seen": None}})
+            self.assertEqual(got, {"id": "s2", "read": {"object": {"asks": []}, "seen": None}})
 
             # the post: listened on, written first in `at`, and read through `at`
             web = req({"id": "l4", "op": "listen", "scheme": "http"})["at"]

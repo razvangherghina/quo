@@ -37,6 +37,9 @@ every answer to every question `KIT-SPEC.md` asks.
 - On a delivered ask, it accepts a reply and nothing.
 - On `seen`, it accepts any string and `null`, except where a `reach` of the
   harness fixes it.
+- On the empty ask, it accepts silence and every describe, whatever its
+  entries and its `lang`. It reads nothing inside `description`, an
+  entry's `args`, or a field `SPEC.md` does not name.
 - A reply text other than silence it parses, and never compares byte for
   byte.
 - The bytes a kit draws are the kit's. The verifier reads none of them
@@ -74,6 +77,8 @@ with `arrive`, and opens what comes back:
   text;
 - the reply text is one of the three shapes, and silence is the sixteen
   bytes;
+- an object that answers the empty ask is a describe, on a relation and on
+  the zero head. An object of any other shape there is a departure;
 - the edge key that follows the reply is the one `SPEC.md` gives.
 
 It drives each of the thirteen cases of `SPEC.md` by writing the arrival
@@ -120,7 +125,9 @@ The verifier answers with a reply it writes, delivers it with `read`, and
 checks what the kit says it read. It answers with objects, silence, each
 of the three words, nothing, and replies that read as silence. Among
 those are a reply and a word the ward signed over another ask's lid, and a
-reply signed over its reply text alone.
+reply signed over its reply text alone. Objects that are no describe come
+back to the empty ask, and the kit reads each as an object and moves on
+it.
 
 It holds the number of every ask the kit sealed, and with them the highest
 the standing has moved on. It then checks, by the kit's next `ask`,

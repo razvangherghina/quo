@@ -39,7 +39,9 @@ import {
   x25519Pub,
   ZERO32,
 } from "./primitives.js";
-import { parseValue, readPayload, readReply, sameValue } from "./value.js";
+import { parseValue, readPayload, readReply, sameValue, whyNoDescribe } from "./value.js";
+
+const EMPTY_DESCRIBE = parseValue(Buffer.from('{"asks":[]}')).value;
 
 export const SIZE = 1048576;
 const SILENCE = Buffer.from('{"silence":true}');
@@ -418,8 +420,9 @@ export class Session {
   wantFor(reach, o) {
     const named = o.method !== undefined;
     if (reach === "silent") return ["silence"];
-    if (reach === "null") return ["object", (r) => (r.object.type === "null" && r.seen === null ? null : `wanted object null seen null, got ${r.text}`)];
-    let args = { type: "object", entries: new Map() };
+    if (reach === "null" && named) return ["object", (r) => (r.object.type === "null" && r.seen === null ? null : `wanted object null seen null, got ${r.text}`)];
+    // Every reach but silent answers the empty ask with the describe {"asks":[]}.
+    let args = named ? { type: "object", entries: new Map() } : EMPTY_DESCRIBE;
     if (named && o.args !== undefined) {
       args = parseValue(Buffer.from(o.args), { outer: false }).value;
     }
@@ -471,6 +474,14 @@ export class Session {
       [want, predicate] = want === "chosen" ? ["chosen", p] : [w, p];
     }
     const r = this.judge(await this.arrive(ward, box, lidSecret), want, label, predicate);
+    if (r.kind === "object") {
+      // An object that answers the empty ask is a describe, whatever reach answered.
+      const p = readPayload(payload);
+      if (!p.error && p.method === undefined) {
+        const why = whyNoDescribe(r.object);
+        this.check(`${label}: the object that answers the empty ask is a describe`, !why, why ?? "");
+      }
+    }
     const moves = !zero && ["object", "silence", "chosen"].includes(want) && (r.kind === "object" || r.kind === "silence");
     if (moves) this.move(heir, o, announced, edge, seq, r.agr);
     return r;
@@ -591,7 +602,7 @@ async function theMove(s) {
   await ask({ signer: "H", next: null, edge: stale, seq: 21 }, "stranger", "an edge key neither open nor offered does not open");
   await ask({ signer: "heir", next: null, under: "O", seq: 22 }, "stranger", "the heir signs nothing after the knock");
   await s.ask(h, { knock: true, signer: "heir", next: K1, seq: 23, method: "echo", args: "{}" }, "stranger", at("a knock again with the binding ciphertext on a spent heir"));
-  await s.ask(h, { signer: "H", next: null, under: "O", seq: 24 }, "answer", at("the empty ask answers {} with seen null"));
+  await s.ask(h, { signer: "H", next: null, under: "O", seq: 24 }, "answer", at("the empty ask answers the describe {\"asks\":[]} with seen null"));
   await ask({ signer: "H", next: null, under: "F", seq: 25, pad: " \t\r\n ", reverse: true }, "answer", "padding and any field order are read");
   await ask({ signer: "H", next: null, under: "O", seq: 26, extra: [["zz", '{"x":[1]}']] }, "answer", "a field beside the six carries no meaning");
   await ask({ signer: "H", next: null, under: "F", seq: 27 }, "answer", "open against offered, after all of it");

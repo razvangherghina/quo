@@ -29,8 +29,14 @@ type Target func(Ask) Answer
 
 var silence = Answer{Silence: true}
 
+// describeNone is the describe every reach but silent gives the empty ask.
+var describeNone = []byte(`{"asks":[]}`)
+
 func echoOf(a Ask) Answer {
-	if a.Method == nil || a.Args == nil {
+	if a.Method == nil {
+		return Answer{Object: describeNone}
+	}
+	if a.Args == nil {
 		return Answer{Object: []byte("{}")}
 	}
 	return Answer{Object: a.Args}
@@ -47,7 +53,12 @@ var Targets = map[string]Target{
 		}
 		return ans
 	},
-	"null":   func(Ask) Answer { return Answer{Object: []byte("null")} },
+	"null": func(a Ask) Answer {
+		if a.Method == nil {
+			return Answer{Object: describeNone}
+		}
+		return Answer{Object: []byte("null")}
+	},
 	"silent": func(Ask) Answer { return silence },
 }
 

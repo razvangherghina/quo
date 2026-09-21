@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { parseValue, readPayload, readReply } from "../value.js";
+import { parseValue, readPayload, readReply, whyNoDescribe } from "../value.js";
 
 const b = (s) => Buffer.from(s, "utf8");
 
@@ -41,6 +41,38 @@ test("a reply is one of three shapes", () => {
   assert.ok(readReply(b('{"object":1,"seen":null,"x":1}')).error);
   assert.ok(readReply(b('{"object":1,"object":2,"seen":null}')).error);
   assert.ok(!readReply(b(`{"object":${"[".repeat(500)}${"]".repeat(500)},"seen":null}`)).error);
+});
+
+test("the object that answers the empty ask is a describe or says why not", () => {
+  const object = (s) => readReply(b(`{"object":${s},"seen":null}`)).object;
+  for (const yes of [
+    '{"asks":[]}',
+    ' { "asks" : [ ] , "lang" : "org.example.asks/1" } ',
+    '{"asks":[{"method":"a"},{"method":"b","description":{"x":[1]},"args":null,"z":1}],"other":{"k":1,"k":2}}',
+    '{"asks":[{"method":"\\ud800"},{"method":"\\udc00"}]}',
+    '{"asks":[{"method":""}]}',
+  ]) {
+    assert.equal(whyNoDescribe(object(yes)), null, yes);
+  }
+  for (const no of [
+    "null",
+    "{}",
+    "[]",
+    '{"asks":{}}',
+    '{"asks":null}',
+    '{"asks":[],"lang":null}',
+    '{"asks":[],"lang":1}',
+    '{"asks":[1]}',
+    '{"asks":[{}]}',
+    '{"asks":[{"method":1}]}',
+    '{"asks":[{"method":null}]}',
+    '{"asks":[{"method":"a"},{"method":"a"}]}',
+    '{"asks":[{"method":"a"},{"method":"\\u0061"}]}',
+    '{"asks":[{"method":"a","method":"b"}]}',
+    '{"asks":[],"asks":[]}',
+  ]) {
+    assert.ok(whyNoDescribe(object(no)), no);
+  }
 });
 
 test("a payload is well formed or says why not", () => {

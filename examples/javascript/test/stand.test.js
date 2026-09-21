@@ -79,7 +79,7 @@ test("part one: two programs, door and asker", async () => {
     return (await asker.req({ op: "read", ward: me, invitation, reply })).read;
   };
   assert.deepEqual(await turn("m", { big: 1e21, s: "x" }), { object: { big: 1e21, s: "x" }, seen: "1" });
-  assert.deepEqual(await turn(undefined, undefined), { object: {}, seen: null });
+  assert.deepEqual(await turn(undefined, undefined), { object: { asks: [] }, seen: null });
   assert.deepEqual(await turn("m", undefined), { object: {}, seen: "1" });
   const { box } = await asker.req({ op: "ask", ward: me, invitation, method: "m" });
   assert.deepEqual((await asker.req({ op: "read", ward: me, invitation, reply: null })).read, { nothing: true });

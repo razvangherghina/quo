@@ -7,6 +7,7 @@ use std::collections::HashMap;
 pub const SIZE: usize = 1_048_576;
 pub const SILENCE: &[u8] = br#"{"silence":true}"#;
 const ZERO: [u8; 32] = [0u8; 32];
+const DESCRIBE_NONE: &[u8] = br#"{"asks":[]}"#;
 
 /// What answers behind a door.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -32,24 +33,22 @@ impl Reach {
     fn answer(&self, named: bool, args: Option<(&Node, &[u8])>) -> Option<Vec<u8>> {
         let (object, seen): (Vec<u8>, &str) = match self {
             Reach::Silent => return None,
+            // The describe every reach but silent gives the empty ask: no entry, no lang.
+            _ if !named => (DESCRIBE_NONE.to_vec(), "null"),
             Reach::Null => (b"null".to_vec(), "null"),
             Reach::Echo | Reach::Marked => {
-                if !named {
-                    (b"{}".to_vec(), "null")
-                } else {
-                    let obj = match args {
-                        Some((n, src)) => {
-                            // This kit echoes args nesting sixty-four deep at most,
-                            // with no key repeated in any object.
-                            if n.depth > 64 || !json::keys_unique_throughout(n.text(src)) {
-                                return None;
-                            }
-                            n.text(src).to_vec()
+                let obj = match args {
+                    Some((n, src)) => {
+                        // This kit echoes args nesting sixty-four deep at most,
+                        // with no key repeated in any object.
+                        if n.depth > 64 || !json::keys_unique_throughout(n.text(src)) {
+                            return None;
                         }
-                        None => b"{}".to_vec(),
-                    };
-                    (obj, if *self == Reach::Marked { "\"1\"" } else { "null" })
-                }
+                        n.text(src).to_vec()
+                    }
+                    None => b"{}".to_vec(),
+                };
+                (obj, if *self == Reach::Marked { "\"1\"" } else { "null" })
             }
         };
         let mut t = b"{\"object\":".to_vec();
@@ -739,7 +738,7 @@ mod tests {
             let r = roundtrip(&mut d, &mut s, Some("go"), Some(&a));
             assert_eq!(r, Read::Object { object: a, seen: "\"1\"".into() });
         }
-        assert_eq!(roundtrip(&mut d, &mut s, None, None), Read::Object { object: "{}".into(), seen: "null".into() });
+        assert_eq!(roundtrip(&mut d, &mut s, None, None), Read::Object { object: r#"{"asks":[]}"#.into(), seen: "null".into() });
     }
 
     #[test]

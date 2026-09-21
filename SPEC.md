@@ -149,8 +149,9 @@ section 8.3 compares them. An escaped lone surrogate is one code unit like
 any other. A key written as the letter `a`, and a key written as the
 six-character escape for that letter, are one name.
 
-Quo reads nothing inside `args` or `object`, nothing of `method` but that
-it is a string, and nothing of a field this document does not name. Every
+Quo reads nothing inside `args`, nothing inside `object` but what the
+chapter on what may be asked names, nothing of `method` but that it is a
+string, and nothing of a field this document does not name. Every
 JSON text is a value there, whatever its strings, its keys or its nesting.
 A door that will not read what stands there answers with a choice, silence
 among them, and never with a stranger's case: the number is spent and the
@@ -372,7 +373,8 @@ A payload that names every field it owes, each as above, is well formed.
 The payload is one JSON object. An array, a string or a number is no
 payload. A field this document does not name carries no meaning.
 
-Quo reads neither `method` nor `args`.
+A door reads neither `method` nor `args` beyond this chapter. What a named
+ask names is said in the chapter on what may be asked.
 
 ## The count
 
@@ -437,9 +439,10 @@ A reply text is one of three shapes, with no field beside its shape's.
 `{ object, seen }`: `object` is any JSON value. `seen` is always
 present. It is a string the answering side chooses, or `null`.
 
-A `seen` different from the one before means that what may be asked has
-moved. Quo does not say how a `seen` is made. No end other than the
-answering side computes one.
+A `seen` different from the one its asker heard before means that the
+describe that asker would hear has moved, its `lang` included. The
+chapter on what may be asked defines a describe. Quo does not say how a
+`seen` is made. No end other than the answering side computes one.
 
 `{ silence: true }`: bytes that say nothing and give no reason.
 
@@ -465,6 +468,57 @@ of the three shapes.
 Silence is a reply the door wrote, and it is bytes.
 
 Nothing is not Quo's. Nothing means the ask was not delivered.
+
+## What may be asked
+
+```
+describe = JSON { lang?, asks }
+entry    = JSON { method, description?, args? }
+```
+
+The empty ask asks what may be asked. A describe is the object that
+answers it.
+
+`asks` is an array. Each of its items is an entry.
+
+An entry is one object. Its `method` is a string.
+
+A named ask asks the entry whose `method` is the ask's `method`. The ask's
+`args` are what that entry takes.
+
+`lang`, when present, is a string. It names the language the describe's
+asks are read in. Quo reads nothing of `lang` but that it is a string.
+
+A describe with no `lang` names no language. Its asks mean what this
+document says of them and nothing more.
+
+`description`, when present, is text for whoever reads the entry.
+`args`, when present, is what the entry's method takes. Quo reads neither.
+
+A field of a describe or of an entry that this document does not name
+carries no meaning.
+
+A describe has no duplicate keys among its own keys, and neither has an
+entry. Two keys are one name as they are in a payload.
+
+No two entries of one describe name one `method`. Two methods are one
+when their strings are equal after escapes are read, compared code unit by
+code unit.
+
+A value of any other shape is no describe. A value whose `asks` is absent
+or not an array is no describe. An entry that is not an object, or whose
+`method` is absent or not a string, makes no describe. A `lang` that is
+not a string makes no describe.
+
+What may be asked is for the asker who asks. One door may give two askers
+two describes.
+
+On the empty ask, a door that answers with an object gives a describe as
+that object, and any `seen`. Silence on the empty ask is a choice like any
+other.
+
+An object that is no describe is still an object. It moves the standing
+as any object does.
 
 ## The move
 
@@ -643,9 +697,6 @@ point, of thirty-two more drawn bytes.
 Whichever lid a reply is sealed to, its signature covers that lid.
 
 The signature is checked before anything moves and before any word is said.
-
-On the empty ask, a door that answers with an object gives any value and
-any `seen`. Silence on the empty ask is a choice like any other.
 
 Where a door has no value to write, the reply is silence.
 

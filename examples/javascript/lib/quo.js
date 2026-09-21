@@ -79,14 +79,16 @@ export function objectText(object, seen) {
 
 // What stands behind a door: a function of an arrival giving { object, seen } or null for silence.
 // `args` arrives as the raw text of a JSON object, at any depth; `unread` marks args the kit does not read.
+// The describe every reach but silent gives the empty ask: no entry, no lang.
+const describeNone = { object: '{"asks":[]}', seen: null };
 const echo = (seen) => (a) => {
-  if (a.method === undefined) return { object: "{}", seen: null };
+  if (a.method === undefined) return describeNone;
   return a.unread ? null : { object: a.args ?? "{}", seen };
 };
 export const reaches = {
   echo: echo(null),
   marked: echo("1"),
-  null: () => ({ object: "null", seen: null }),
+  null: (a) => (a.method === undefined ? describeNone : { object: "null", seen: null }),
   silent: () => null,
 };
 

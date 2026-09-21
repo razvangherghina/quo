@@ -87,9 +87,9 @@ nothing frame for a ward pk this program does not stand.
 The kit does not make one. `seen` is `null`, except under the `marked`
 reach, where a named ask gets `"1"` as the harness fixes.
 
-**Question 14. What does the empty ask answer?**
-Under `echo` and `marked`: the object `{}` with `seen` null. Under `null`:
-the object `null`. Under `silent`: silence.
+**Question 14. What does the empty ask answer, and to whom?**
+Under `echo`, `marked` and `null`: the describe `{"asks":[]}` with `seen`
+null, the same to every asker and with no `lang`. Under `silent`: silence.
 
 **Question 15. How is a reply text other than silence written?**
 `{"object":…,"seen":…}`, in that order, with no whitespace of the kit's own.

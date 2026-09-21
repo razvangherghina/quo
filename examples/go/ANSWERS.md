@@ -63,8 +63,9 @@ answer is the kit's choice, with its reason. Each number is the number
     on tcp and the held line, status 204 on the post.
 13. **`seen`.** `null`, except behind `marked`, which writes `"1"` on a
     named ask as the harness fixes.
-14. **The empty ask.** Behind `echo` and `marked`, the object `{}` with
-    `seen` null. Behind `null`, the object null. Behind `silent`, silence.
+14. **The empty ask.** Behind `echo`, `marked` and `null`, the describe
+    `{"asks":[]}` with `seen` null, the same to every asker and with no
+    `lang`. Behind `silent`, silence.
 15. **Reply text.** `{"object":<value>,"seen":<seen>}`, in that order, with
     no whitespace of its own. `echo` writes the args' bytes exactly as they
     arrived, whitespace included. A word is `{"quo":"<word>"}`.

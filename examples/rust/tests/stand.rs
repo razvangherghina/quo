@@ -68,7 +68,7 @@ fn part_one() {
 
     for (method, args, want) in [
         (r#","method":"m""#, r#","args":{"x":1e21, "y" : [true]}"#, r#""read":{"object":{"x":1e21,"y":[true]},"seen":null}"#),
-        ("", "", r#""read":{"object":{},"seen":null}"#),
+        ("", "", r#""read":{"object":{"asks":[]},"seen":null}"#),
         (r#","method":"m""#, "", r#""read":{"object":{},"seen":null}"#),
     ] {
         let bx = field(&b.req(&format!(r#""op":"ask","ward":"{wb}","invitation":{inv}{method}{args}"#)), "box");
@@ -165,7 +165,7 @@ fn part_two() {
     }
     assert_eq!(
         b.req(&format!(r#""op":"send","ward":"{wb}","invitation":{inv}"#)),
-        r#""read":{"object":{},"seen":null}"#
+        r#""read":{"object":{"asks":[]},"seen":null}"#
     );
 
     // a ward the listener does not stand: 02, read as nothing

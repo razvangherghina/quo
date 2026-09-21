@@ -8,9 +8,13 @@ from .values import Invalid, JObj, parse
 
 # ---- what stands behind a door: a reach answers (payload) with reply text or None ----
 
+# The describe every reach but silent gives the empty ask: no entry, no lang.
+DESCRIBE_NONE = b'{"asks":[]}'
+
+
 def reach_echo(p, marked=False):
     if not p.has_method:
-        return object_text(b"{}", None)
+        return object_text(DESCRIBE_NONE, None)
     try:
         parse(p.args_raw)  # echo does not read args whose own keys repeat
     except Invalid:
@@ -21,7 +25,7 @@ def reach_echo(p, marked=False):
 REACHES = {
     "echo": lambda p: reach_echo(p),
     "marked": lambda p: reach_echo(p, True),
-    "null": lambda p: object_text(b"null", None),
+    "null": lambda p: object_text(b"null" if p.has_method else DESCRIBE_NONE, None),
     "silent": lambda p: None,
 }
 

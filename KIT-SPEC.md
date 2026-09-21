@@ -58,9 +58,13 @@ of `SPEC.md`.
   Silence is bytes the door wrote. Nothing is no reply, and means not
   delivered.
 - **Question 13. How is `seen` made, and when does it change?** Only the
-  answering side makes it, and `null` is one mark among the rest.
-- **Question 14. What does the empty ask answer?** Any JSON value as the
-  object, or silence.
+  answering side makes it, and `null` is one mark among the rest. It
+  moves when the describe its asker would hear moves.
+- **Question 14. What does the empty ask answer, and to whom?** A describe
+  as the object, or silence. Which entries it lists, whether two askers
+  hear two describes, and which `lang` it names, if any, are the kit's.
+  So is what an entry's `description` and `args` say, and what a door
+  answers a named ask that no entry names.
 - **Question 15. How is a reply text other than silence written?** The field
   order of `{ object, seen }` and the whitespace between tokens are the
   kit's. Silence alone is fixed to sixteen bytes.
@@ -115,15 +119,19 @@ of `SPEC.md`.
 
 ## What is not the kit's either
 
-- **Question 26. What do `method` and `args` mean?** Quo reads neither. Their
-  meaning is agreed between the two ends of a relation.
+- **Question 26. What do `method` and `args` mean, and what does a `lang`
+  name?** Quo reads neither, and reads of a `lang` only that it is a
+  string. A named ask names an entry of a describe. What that entry does
+  is agreed between the two ends of a relation, and a `lang` may name
+  where the agreement is written.
 
 ## What a kit reads
 
 - **Question 27. How deep, how long and how strange a JSON text does the kit
   read where Quo reads nothing, and what does it answer beyond that?**
-  Where Quo reads nothing is inside `args` and `object`, the string of
-  `method`, and every field the spec does not name. Nesting, lone
+  Where Quo reads nothing is inside `args`, inside `object` beyond what a
+  describe names, the string of `method`, and every field the spec does
+  not name. Nesting, lone
   surrogates, noncharacters and repeated keys there are JSON's to allow and
   the kit's to take or refuse. What a door answers
   there is a choice, and silence is one.

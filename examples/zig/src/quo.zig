@@ -571,13 +571,16 @@ pub const Reach = enum {
     }
 };
 
+const describe_none = "{\"asks\":[]}";
+
 /// What answers behind the door: a reply text, or null for a chosen silence.
 fn behind(a: Allocator, reach: Reach, named: bool, args: ?Json.Node) !?[]const u8 {
     const object: []const u8 = switch (reach) {
         .silent => return null,
-        .null_ => "null",
+        // The describe every reach but silent gives the empty ask: no entry, no lang.
+        .null_ => if (named) "null" else describe_none,
         .echo, .marked => blk: {
-            if (!named) break :blk "{}";
+            if (!named) break :blk describe_none;
             const ar = args orelse break :blk "{}";
             // This kit does not read `args` whose own keys repeat a name: silence, by choice.
             _ = Json.parse(a, ar.raw, 1) catch |e| switch (e) {
@@ -1179,7 +1182,7 @@ test "a standing and a door: knock, asks, and a knock recovered" {
     try testing.expect(try st.read(a, null) == .nothing);
     _ = try p.arrive(knock); // the door bound the heir; the reply never came back
     try expectObject(try p.round("\"m\"", "{\"probe\":true}"), "{\"probe\":true}", "\"1\"");
-    try expectObject(try p.round(null, null), "{}", null);
+    try expectObject(try p.round(null, null), describe_none, null);
     try expectObject(try p.round("\"m\"", null), "{}", "\"1\"");
     // The knock again as the same bytes is a stranger's.
     try testing.expect(try st.read(a, try p.arrive(knock)) == .silence);
@@ -1245,7 +1248,7 @@ test "the move: vouched keys and edge keys" {
     const lid_secret = [_]u8{5} ** 32;
     const box = try sealAsk(a, door.keys.padlock, lid_secret, heir, null, st.edge, text, sign(st.key, text));
     const reply = (try openReply(a, lid_secret, try p.arrive(box), door.keys.sign.public_key.toBytes())).?;
-    try expectObject(try readText(a, reply.text), "{}", null);
+    try expectObject(try readText(a, reply.text), describe_none, null);
     try testing.expectEqualSlices(u8, &by, &h.held);
     try testing.expectEqualSlices(u8, &k2.public_key.toBytes(), &h.vouched.?);
     try testing.expectEqualSlices(u8, &st.edge, &h.open);
@@ -1255,7 +1258,7 @@ test "the move: vouched keys and edge keys" {
     const text2 = try std.fmt.allocPrint(a, "{{\"to\":\"{x}\",\"by\":\"{x}\",\"next\":null,\"seq\":10}}", .{ &heir, &k2.public_key.toBytes() });
     const box2 = try sealAsk(a, door.keys.padlock, lid_secret, heir, null, h.offered, text2, sign(k2, text2));
     const reply2 = (try openReply(a, lid_secret, try p.arrive(box2), door.keys.sign.public_key.toBytes())).?;
-    try expectObject(try readText(a, reply2.text), "{}", null);
+    try expectObject(try readText(a, reply2.text), describe_none, null);
     try testing.expectEqualSlices(u8, &k2.public_key.toBytes(), &h.held);
     try testing.expect(h.vouched == null);
 }
@@ -1301,7 +1304,7 @@ test "the size, and strangers' silence of one length" {
         const box = try sealAsk(a, door.keys.padlock, lid_secret, zero32, null, zero32, full, sign(k, full));
         try testing.expectEqual(size_limit + i, box.len);
         const r = (try openReply(a, lid_secret, try door.arrive(a, &ent, box), door.keys.sign.public_key.toBytes())).?;
-        if (i == 0) try expectObject(try readText(a, r.text), "null", null) else try testing.expectEqualStrings(silence_text, r.text);
+        if (i == 0) try expectObject(try readText(a, r.text), describe_none, null) else try testing.expectEqualStrings(silence_text, r.text);
     }
     try testing.expectEqual(silence_text.len + 112, (try door.arrive(a, &ent, "abc")).len);
     try testing.expectEqual(silence_text.len + 112, (try door.arrive(a, &ent, &([_]u8{0} ** 100))).len);

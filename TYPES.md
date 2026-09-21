@@ -34,8 +34,8 @@ The notation reads this way:
 
 An enum value in lowercase is written on the wire exactly so. An enum
 value in capitals never crosses a door. The fields of `Invitation`,
-`Payload`, `Answer`, `Silence` and `WordReply` are the keys of their JSON
-text, spelt as on the wire.
+`Payload`, `Answer`, `Silence`, `WordReply`, `Describe` and `Entry` are the
+keys of their JSON text, spelt as on the wire.
 
 A key pair is named by its public key. A secret is a field only where it
 crosses, which is `Invitation.secret` alone.
@@ -230,7 +230,10 @@ type Payload {
   next: Pk
   "This ask's number. A door honours a number once on a relation."
   seq: Count!
-  "A string Quo does not read. Absent is the empty ask. Never null."
+  """
+  A string, the method of the entry a named ask asks. Absent is the empty
+  ask, which asks for a Describe. Never null.
+  """
   method: String
   "One object Quo does not read. Absent is the empty object. Never null."
   args: Value
@@ -241,13 +244,48 @@ union Reply = Answer | Silence | WordReply
 
 "An object came back."
 type Answer {
-  "Any value."
+  """
+  Any value. On the empty ask, a door that answers with an object gives a
+  Describe. An object that is no Describe is still an object.
+  """
   object: Value!
   """
   A mark only the answering side makes: a string, or null. Never absent.
-  A seen different from the one before means what may be asked has moved.
+  A seen different from the one its asker heard before means the Describe
+  that asker would hear has moved, its lang included.
   """
   seen: String
+}
+
+"""
+What may be asked: the object that answers the empty ask. It is for the
+asker who asks, so one door may give two askers two describes. It has no
+duplicate keys among its own keys. A field it does not name carries no
+meaning. A value of any other shape is no describe.
+"""
+type Describe {
+  """
+  The language the asks are read in, a string Quo reads nothing else of.
+  Never null. Absent names no language: the asks mean what SPEC.md says
+  and no more.
+  """
+  lang: String
+  "The entries. No two name one method."
+  asks: [Entry!]!
+}
+
+"""
+One ask that may be asked. A named ask asks the entry whose method is its
+own, and its args are what that entry takes. An entry has no duplicate
+keys among its own keys. A field it does not name carries no meaning.
+"""
+type Entry {
+  "A string. Two methods are one when their strings are equal after escapes are read."
+  method: String!
+  "Text for whoever reads the entry. Quo reads nothing of it."
+  description: Value
+  "What the method takes. Quo reads nothing of it."
+  args: Value
 }
 
 """
@@ -562,6 +600,7 @@ is this reading's, and it binds no kit.
 | edge key | two keys that follow every answer and are never sent | `Occupant.open`, `Occupant.offered`, `Standing.edgeKey` |
 | `seq`, the count | the number of every visit | `Payload.seq`, `Occupant.honoured` |
 | `seen` | the small mark | `Answer.seen` |
+| describe, entry | the list | `Describe`, `Entry` |
 | an object | an answer | `Answer` |
 | silence | the blank sheet | `Silence` |
 | a word | a word | `WordReply`, `Word` |
@@ -591,6 +630,7 @@ is this reading's, and it binds no kit.
 | The count | `Count`, `Occupant.honoured` |
 | The keys of a relation | The signing keys, `HeirState` |
 | The replies | `Reply`, `Answer`, `Silence`, `WordReply`, `Word` |
+| What may be asked | `Describe`, `Entry`; duplicate keys and methods are not typed |
 | The move | The occupant's states |
 | The standing's side | The standing's states |
 | What a knock binds | `Relation.holders`, `HeirState` |

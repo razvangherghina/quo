@@ -13,7 +13,7 @@
 11. None. Only a number above the highest honoured is honoured, so every choice this door makes on a spent heir moves the keys.
 12. The door always answers with bytes. It never gives nothing, because silence already says nothing and costs the asker no retry. A carrier gives nothing only where no door answered: an unknown ward pk, or a door that throws. Over TCP and the held line that is a 02 frame with the ask's id. On the post it is status 404 for an unknown ward pk and 204 for a door that throws. A post that is not an ask hears 405, 400 or 413.
 13. `seen` is whatever the function behind the door returns: `null` for `echo` and `null`, and `"1"` on a named ask for `marked`.
-14. For `echo` and `marked`, `{}` with `seen` `null`. For `null`, `null`. For `silent`, silence.
+14. For `echo`, `marked` and `null`, the describe `{"asks":[]}` with `seen` `null`, the same to every asker and with no `lang`. For `silent`, silence.
 15. `{"object":<raw>,"seen":<seen>}`, with no whitespace outside the raw object, and words as `{"quo":"<word>"}`. The raw object is written as it arrived or as the function made it, and is not parsed again.
 16. No padding.
 17. No. Refusals take whatever time they take. Case 1 is cheaper than case 8.

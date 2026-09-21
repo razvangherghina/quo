@@ -50,16 +50,19 @@ export function parseValue(bytes, { outer = true } = {}) {
     i++;
     const entries = new Map();
     let depth = 1;
+    let dup = false;
     ws();
     if (text[i] === "}") {
       i++;
-      return { type: "object", entries, depth };
+      return { type: "object", entries, depth, dup };
     }
     for (;;) {
       ws();
       if (text[i] !== '"') fail("key expected");
       const key = string();
       if (outer && level === 1 && entries.has(key)) fail(`duplicate key ${JSON.stringify(key)}`);
+      // Deeper, a repeated key is kept as a mark, for a describe refuses one.
+      if (entries.has(key)) dup = true;
       ws();
       if (text[i] !== ":") fail("colon expected");
       i++;
@@ -74,7 +77,7 @@ export function parseValue(bytes, { outer = true } = {}) {
       }
       if (text[i] === "}") {
         i++;
-        return { type: "object", entries, depth };
+        return { type: "object", entries, depth, dup };
       }
       fail("comma or brace expected");
     }
@@ -210,6 +213,32 @@ export function readPayload(bytes) {
   const args = get("args");
   if (args && args.type !== "object") return { error: "args is not one object" };
   return { to, by: get("by").value, next, seq: seq.value, method: method?.value, args };
+}
+
+/**
+ * Says why a value is no describe, under the chapter on what may be asked,
+ * or null where it is one. Nothing inside `description`, an entry's `args`
+ * or an unnamed field is read.
+ */
+export function whyNoDescribe(v) {
+  if (v.type !== "object") return "the object is not one object";
+  if (v.dup) return "the describe has two keys of one name";
+  const lang = v.entries.get("lang");
+  if (lang && lang.type !== "string") return "lang is not a string";
+  const asks = v.entries.get("asks");
+  if (!asks) return "asks is absent";
+  if (asks.type !== "array") return "asks is not an array";
+  const methods = new Set();
+  for (const [n, e] of asks.items.entries()) {
+    if (e.type !== "object") return `entry ${n} is not an object`;
+    if (e.dup) return `entry ${n} has two keys of one name`;
+    const m = e.entries.get("method");
+    if (!m) return `entry ${n} has no method`;
+    if (m.type !== "string") return `the method of entry ${n} is not a string`;
+    if (methods.has(m.value)) return `two entries name the method ${JSON.stringify(m.value)}`;
+    methods.add(m.value);
+  }
+  return null;
 }
 
 /** Reads a reply text into one of the three shapes, or says why it is none. */

@@ -54,6 +54,11 @@ house decides whether to come to the mirror at all. It answers, or says
 nothing. With an answer may come a small mark the house alone makes, so
 the visitor notices when something changed.
 
+**The list.** A visitor may step in and ask nothing in particular. Then
+the house may hand over the list of what this visitor may ask, and name
+the language it is written in. Another visitor may be handed another
+list. The small mark changes when the visitor's list does.
+
 **One visit, one question.** When the answer is given, the visitor is
 gone. There is no line held open. The next question is a new visit. The
 porter keeps the number of every visit it answered, for as long as the
@@ -111,6 +116,10 @@ keys that follow every answer and are never sent.
 signed and numbered by `seq`, so each number is honoured once.
 
 **The small mark** is `seen`.
+
+**The list** is a **describe**, `{ lang?, asks }`, and it answers the
+**empty ask**, the ask with no `method`. Each entry in `asks` names a
+`method`, and `lang` names the language they are read in.
 
 **What comes back** is an object, silence, or one of three words,
 `removed`, `unannounced` and `repeated`, said only to a key the door
