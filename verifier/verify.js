@@ -1184,6 +1184,13 @@ function openKitBox(mine, rel, box) {
     const body = under(rel.edge, 80);
     if (body) return done({ knock: false, edge: rel.edge, by: rel.key, body, over: 160 });
     tried.push("the edge key that follows the last object");
+    // After a reply that moved nothing, the door may still hold the key and
+    // edge key the last move was asked under, so an ask may go back to them.
+    if (rel.back && rel.from) {
+      const back = under(rel.from.edge, 80);
+      if (back) return done({ knock: false, edge: rel.from.edge, by: rel.from.key, body: back, over: 160 });
+      tried.push("the edge key the last move was asked under, after a reply that moved nothing");
+    }
   }
   return { why: `the body opens as none of: ${tried.join("; ")}` };
 }
@@ -1273,15 +1280,19 @@ export class AskerRun {
       const above = t.seq > rel.movedAt;
       s.check(`${label}: the object came back to number ${t.seq}, ${above ? "above" : "at or below"} the highest the standing moved on, ${rel.movedAt}`, true, above ? "the standing moves" : "the standing keeps its keys");
       if (above) {
+        rel.from = t.knock ? null : { key: t.by, edge: t.edge };
         rel.key = t.announced ?? t.by;
         rel.edge = follow(t.edge, w.agr);
         rel.movedAt = t.seq;
         rel.state = "spent";
+        rel.back = false;
+        return;
       }
     } else if (t.knock) {
       rel.knock = t;
       rel.knockBox = t.box;
     }
+    rel.back = true;
   }
 
   /**

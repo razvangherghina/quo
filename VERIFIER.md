@@ -112,6 +112,10 @@ would:
 - `by` is the key the relation admits, and `next` is read as `SPEC.md`
   reads it.
 
+The key and edge key for an ask are those the standing moved to. After a
+reply that moved nothing, they may instead be the key and edge key the
+last move was asked under, which a door may still hold.
+
 The verifier answers with a reply it writes, delivers it with `read`, and
 checks what the kit says it read. It answers with objects, silence, each
 of the three words, nothing, and replies that read as silence. Among
