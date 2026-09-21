@@ -58,8 +58,9 @@ of `SPEC.md`.
   Silence is bytes the door wrote. Nothing is no reply, and means not
   delivered.
 - **Question 13. How is `seen` made, and when does it change?** Only the
-  answering side makes it, and `null` is one mark among the rest. It
-  moves when the describe its asker would hear moves.
+  answering side makes it, and `null` is one mark among the rest. A
+  `seen` different from the one its asker heard before means the
+  describe that asker would hear has moved.
 - **Question 14. What does the empty ask answer, and to whom?** A describe
   as the object, or silence. Which entries it lists, whether two askers
   hear two describes, and which `lang` it names, if any, are the kit's.
@@ -137,4 +138,4 @@ of `SPEC.md`.
   there is a choice, and silence is one.
 
 Everything a kit may choose is asked above. Everything else is `SPEC.md`,
-and this document restates none of it.
+and this document decides none of it.

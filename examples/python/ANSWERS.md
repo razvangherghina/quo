@@ -66,11 +66,15 @@ is followed by its reason.
     nothing only when there is no ward under the pk, which on TCP is a 02
     frame and on the post status 404. Reason: silence is bytes, and the kit has no cause to withhold
     them.
-13. **`seen`.** Always `null`, except `"1"` from `marked` on a named ask, as
-    the harness fixes. Reason: nothing behind these doors moves.
+13. **`seen`.** Always `null`, except `"1"` from `marked` on every ask, the
+    empty ask included, as the harness fixes. Reason: nothing behind these
+    doors moves, so no `seen` ever changes.
 14. **The empty ask.** `echo`, `marked` and `null` answer the describe
     `{"asks":[]}`, the same to every asker and with no `lang`. `silent`
-    answers silence. `seen` is always `null`. Reason: the harness says so.
+    answers silence. So no entry names any named ask, and each reach
+    answers one as the harness fixes: `echo` and `marked` its `args`,
+    `null` the object `null`, `silent` silence. Reason: the harness says
+    so.
 15. **Reply text.** `{"object":<object>,"seen":<seen>}` with no whitespace
     between the kit's own tokens. From `echo` and `marked`, `object` is the
     bytes of `args` exactly as they arrived. A word is `{"quo":"<word>"}`.
@@ -165,12 +169,14 @@ is followed by its reason.
 ## What is not the kit's either
 
 26. **`method` and `args`.** This kit gives them no meaning. The reaches
-    echo `args` or ignore both. Reason: their meaning belongs to the two
-    ends.
+    echo `args` or ignore both. Its describe names no `lang`, so its asks
+    mean what `SPEC.md` says of them and nothing more. Reason: their
+    meaning belongs to the two ends.
 
 ## What a kit reads
 
-27. **What is read inside `args` and `object`.** The kit reads only a
+27. **What is read inside `args`, and inside `object` beyond what a
+    describe names.** The kit reads only a
     payload's or a reply text's own keys. Every container below them is
     checked against the grammar of RFC 8259, iteratively, with no bound on
     depth or length beyond the size, and its lone surrogates,

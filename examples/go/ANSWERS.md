@@ -61,11 +61,14 @@ answer is the kit's choice, with its reason. Each number is the number
 12. **Does the door answer.** Always, with a reply. A listener gives
     nothing only for a ward pk the program does not stand: a nothing frame
     on tcp and the held line, status 204 on the post.
-13. **`seen`.** `null`, except behind `marked`, which writes `"1"` on a
-    named ask as the harness fixes.
+13. **`seen`.** `null`, except behind `marked`, which writes `"1"` on
+    every ask, the empty ask included, as the harness fixes. Neither ever
+    changes, and neither does the describe.
 14. **The empty ask.** Behind `echo`, `marked` and `null`, the describe
-    `{"asks":[]}` with `seen` null, the same to every asker and with no
-    `lang`. Behind `silent`, silence.
+    `{"asks":[]}`, the same to every asker and with no `lang`. Behind
+    `silent`, silence. So no entry names any named ask, and each target
+    answers one as the harness fixes: `echo` and `marked` its `args`,
+    `null` the object `null`, `silent` silence.
 15. **Reply text.** `{"object":<value>,"seen":<seen>}`, in that order, with
     no whitespace of its own. `echo` writes the args' bytes exactly as they
     arrived, whitespace included. A word is `{"quo":"<word>"}`.
@@ -163,11 +166,13 @@ answer is the kit's choice, with its reason. Each number is the number
 
 26. **`method` and `args`.** The kit reads them only to hand them to a
     target. The four targets ignore `method` except to tell a named ask
-    from the empty one.
+    from the empty one. Its describe names no `lang`, so its asks mean
+    what `SPEC.md` says of them and nothing more.
 
 ## What a kit reads
 
-27. **JSON inside `args` and `object`.** Any JSON text RFC 8259's grammar
+27. **JSON inside `args`, and inside `object` beyond what a describe
+    names.** Any JSON text RFC 8259's grammar
     allows, of any length the size admits and any nesting: containers
     there are checked against the grammar without recursion and never
     parsed further. Lone surrogates, noncharacters and repeated keys there

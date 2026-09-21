@@ -20,7 +20,7 @@ the raw ward pk. What stands behind a door has no way back to it. A reach is
 a pure function of the arrival. Nothing needs to be taken away because
 nothing is given.
 
-**Question 3. What answers the zero head, and does anything?**
+**Question 3. What answers the zero head, and does anything? What may answer there, where the same sealed bytes are answered every time they arrive?**
 The `reach` given on `ward`, if there is one. With no reach, nothing answers
 the zero head, and every ask on it is case 4. The zero head keeps nothing:
 no key, no count and no record of any box. So the same sealed bytes
@@ -85,11 +85,14 @@ nothing frame for a ward pk this program does not stand.
 
 **Question 13. How is `seen` made, and when does it change?**
 The kit does not make one. `seen` is `null`, except under the `marked`
-reach, where a named ask gets `"1"` as the harness fixes.
+reach, where every ask gets `"1"`, the empty ask included, as the harness
+fixes. No `seen` ever changes, and no describe here ever moves.
 
 **Question 14. What does the empty ask answer, and to whom?**
-Under `echo`, `marked` and `null`: the describe `{"asks":[]}` with `seen`
-null, the same to every asker and with no `lang`. Under `silent`: silence.
+Under `echo`, `marked` and `null`: the describe `{"asks":[]}`, the same to
+every asker and with no `lang`. Under `silent`: silence. So no entry names
+any named ask, and each reach answers one as the harness fixes: `echo` and
+`marked` its `args`, `null` the object `null`, `silent` silence.
 
 **Question 15. How is a reply text other than silence written?**
 `{"object":…,"seen":…}`, in that order, with no whitespace of the kit's own.
@@ -223,16 +226,18 @@ a time.
 
 ## What is not the kit's either
 
-**Question 26. What do `method` and `args` mean?**
+**Question 26. What do `method` and `args` mean, and what does a `lang` name?**
 Nothing to the door. The reach looks only at whether `method` is present.
-`echo` and `marked` return `args` as they arrived.
+`echo` and `marked` return `args` as they arrived. Its describe names no
+`lang`, so its asks mean what `SPEC.md` says of them and nothing more.
 
 ## What a kit reads
 
 **Question 27. How deep, how long and how strange a JSON text does the kit read where Quo reads nothing, and what does it answer beyond that?**
 Any depth and any length the size allows. The kit reads into nodes only the
 outer object of a payload or a reply text (and two levels of a harness
-line). Inside `args` and `object` it holds the text to the RFC 8259 grammar
+line). Inside `args`, and inside `object` beyond what a describe names, it
+holds the text to the RFC 8259 grammar
 with a loop and a stack of brackets, not recursion, so depth costs one byte
 of heap per level. Numbers are carried as written, whatever their size.
 Lone surrogates, noncharacters and repeated keys there are taken and

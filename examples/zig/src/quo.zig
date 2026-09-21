@@ -590,7 +590,7 @@ fn behind(a: Allocator, reach: Reach, named: bool, args: ?Json.Node) !?[]const u
             break :blk ar.raw;
         },
     };
-    const seen = if (reach == .marked and named) "\"1\"" else "null";
+    const seen = if (reach == .marked) "\"1\"" else "null";
     return try std.fmt.allocPrint(a, "{{\"object\":{s},\"seen\":{s}}}", .{ object, seen });
 }
 
@@ -1182,7 +1182,7 @@ test "a standing and a door: knock, asks, and a knock recovered" {
     try testing.expect(try st.read(a, null) == .nothing);
     _ = try p.arrive(knock); // the door bound the heir; the reply never came back
     try expectObject(try p.round("\"m\"", "{\"probe\":true}"), "{\"probe\":true}", "\"1\"");
-    try expectObject(try p.round(null, null), describe_none, null);
+    try expectObject(try p.round(null, null), describe_none, "\"1\"");
     try expectObject(try p.round("\"m\"", null), "{}", "\"1\"");
     // The knock again as the same bytes is a stranger's.
     try testing.expect(try st.read(a, try p.arrive(knock)) == .silence);

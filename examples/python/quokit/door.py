@@ -13,13 +13,14 @@ DESCRIBE_NONE = b'{"asks":[]}'
 
 
 def reach_echo(p, marked=False):
+    seen = "1" if marked else None
     if not p.has_method:
-        return object_text(DESCRIBE_NONE, None)
+        return object_text(DESCRIBE_NONE, seen)
     try:
         parse(p.args_raw)  # echo does not read args whose own keys repeat
     except Invalid:
         return None
-    return object_text(p.args_raw, "1" if marked else None)
+    return object_text(p.args_raw, seen)
 
 
 REACHES = {

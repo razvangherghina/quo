@@ -31,10 +31,11 @@ impl Reach {
 
     /// The reply text chosen, or None for silence.
     fn answer(&self, named: bool, args: Option<(&Node, &[u8])>) -> Option<Vec<u8>> {
+        let seen_of = if *self == Reach::Marked { "\"1\"" } else { "null" };
         let (object, seen): (Vec<u8>, &str) = match self {
             Reach::Silent => return None,
             // The describe every reach but silent gives the empty ask: no entry, no lang.
-            _ if !named => (DESCRIBE_NONE.to_vec(), "null"),
+            _ if !named => (DESCRIBE_NONE.to_vec(), seen_of),
             Reach::Null => (b"null".to_vec(), "null"),
             Reach::Echo | Reach::Marked => {
                 let obj = match args {
@@ -48,7 +49,7 @@ impl Reach {
                     }
                     None => b"{}".to_vec(),
                 };
-                (obj, if *self == Reach::Marked { "\"1\"" } else { "null" })
+                (obj, seen_of)
             }
         };
         let mut t = b"{\"object\":".to_vec();
@@ -738,7 +739,7 @@ mod tests {
             let r = roundtrip(&mut d, &mut s, Some("go"), Some(&a));
             assert_eq!(r, Read::Object { object: a, seen: "\"1\"".into() });
         }
-        assert_eq!(roundtrip(&mut d, &mut s, None, None), Read::Object { object: r#"{"asks":[]}"#.into(), seen: "null".into() });
+        assert_eq!(roundtrip(&mut d, &mut s, None, None), Read::Object { object: r#"{"asks":[]}"#.into(), seen: "\"1\"".into() });
     }
 
     #[test]

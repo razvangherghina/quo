@@ -47,7 +47,7 @@ var Targets = map[string]Target{
 	"echo": echoOf,
 	"marked": func(a Ask) Answer {
 		ans := echoOf(a)
-		if !ans.Silence && a.Method != nil {
+		if !ans.Silence {
 			one := "1"
 			ans.Seen = &one
 		}

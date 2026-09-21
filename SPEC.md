@@ -492,7 +492,7 @@ asks are read in. Quo reads nothing of `lang` but that it is a string.
 A describe with no `lang` names no language. Its asks mean what this
 document says of them and nothing more.
 
-`description`, when present, is text for whoever reads the entry.
+`description`, when present, is any value for whoever reads the entry.
 `args`, when present, is what the entry's method takes. Quo reads neither.
 
 A field of a describe or of an entry that this document does not name
@@ -513,9 +513,8 @@ not a string makes no describe.
 What may be asked is for the asker who asks. One door may give two askers
 two describes.
 
-On the empty ask, a door that answers with an object gives a describe as
-that object, and any `seen`. Silence on the empty ask is a choice like any
-other.
+An object that answers the empty ask is a describe, beside any `seen`.
+Silence on the empty ask is a choice like any other.
 
 An object that is no describe is still an object. It moves the standing
 as any object does.

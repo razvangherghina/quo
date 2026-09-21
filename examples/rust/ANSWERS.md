@@ -82,13 +82,16 @@ and writes frame 02 there. The reason is that a door which answers
 everything puts no case on the wire.
 
 **13.** The kit writes `null`, except for the `marked` reach, which writes
-`"1"` on a named ask. The reason is that the harness fixes what those two
-reaches answer, and `null` is the mark that says nothing moved.
+`"1"` on every ask, the empty ask included. The reason is that the harness
+fixes what those two reaches answer. No reach ever changes its `seen`,
+and no describe here ever moves.
 
 **14.** With echo, marked and null, the object is the describe
-`{"asks":[]}` and `seen` is null. It is the same to every asker and names
-no `lang`. With silent, silence. The reason is that the harness lists no
-method a reach answers, so the describe lists none.
+`{"asks":[]}`. It is the same to every asker and names no `lang`. With
+silent, silence. The reason is that the harness lists no method a reach
+answers, so the describe lists none. So no entry names any named ask, and
+each reach answers one as the harness fixes: echo and marked its `args`,
+null the object `null`, silent silence.
 
 **15.** `{"object":<value>,"seen":<seen>}`, object first, with no
 whitespace between tokens. A word is `{"quo":"<word>"}`. The reason is that
@@ -181,7 +184,9 @@ the number for nothing.
 **26.** The kit gives them no meaning. `method` is sent as the JSON string
 text the caller gave, and `args` as the object text the caller gave, byte
 for byte. The reason is that their meaning is agreed between the two ends
-of a relation. A kit that read them would be one of those ends.
+of a relation. A kit that read them would be one of those ends. Its
+describe names no `lang`, so its asks mean what `SPEC.md` says of them and
+nothing more.
 
 ## What a kit reads
 

@@ -165,7 +165,7 @@ fn part_two() {
     }
     assert_eq!(
         b.req(&format!(r#""op":"send","ward":"{wb}","invitation":{inv}"#)),
-        r#""read":{"object":{"asks":[]},"seen":null}"#
+        r#""read":{"object":{"asks":[]},"seen":"1"}"#
     );
 
     // a ward the listener does not stand: 02, read as nothing

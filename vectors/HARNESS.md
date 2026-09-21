@@ -123,7 +123,8 @@ echo     a named ask: the object is the bytes of `args` exactly as they
          arrived, or silence where the kit does not read that `args`.
          the empty ask: the object is the describe {"asks":[]}.
          seen is null.
-marked   as echo, and on a named ask seen is the string "1".
+marked   as echo, and on every ask seen is the string "1", the empty
+         ask included.
 null     a named ask: the object is null. seen is null.
          the empty ask: as echo.
 silent   every ask: silence.

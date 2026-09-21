@@ -57,7 +57,8 @@ the visitor notices when something changed.
 **The list.** A visitor may step in and ask nothing in particular. Then
 the house may hand over the list of what this visitor may ask, and name
 the language it is written in. Another visitor may be handed another
-list. The small mark changes when the visitor's list does.
+list. A changed mark tells the visitor that the list it would be handed
+has changed.
 
 **One visit, one question.** When the answer is given, the visitor is
 gone. There is no line held open. The next question is a new visit. The
@@ -105,8 +106,8 @@ the door's, the red side is the **standing** that asks.
 and `at` may write on the card where the house is reached.
 
 **Stepping in with the first key** is the **knock**. It announces the
-visitor's own key in `next`, and the first knock the door answers binds
-it.
+visitor's own key in `next`, and the first knock the door makes a choice
+on binds it.
 
 **A key that keeps moving** is `next`, and the door's two signing
 keys, the one held and the one vouched for. Beside them stand two edge
@@ -130,8 +131,8 @@ knows.
 **The grey booth** is the **zero head**. What answers it is the kit's.
 
 **The fold between two houses** is a **carrier**, and it is not Quo's.
-One carrier over TCP is published beside the spec, so two strangers' kits
-can meet.
+Two carriers, over TCP and over the web, are published beside the spec,
+so two strangers' kits can meet.
 
 **What nobody can force** is the rule under all of it: Quo says what bytes
 mean when they are sent, and never that anyone must send them.

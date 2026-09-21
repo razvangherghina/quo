@@ -10,7 +10,7 @@ body:
     id: where
     attributes:
       label: Which document and which section
-      placeholder: SPEC.md, "The head"
+      placeholder: SPEC.md, "The zero head"
     validations:
       required: true
   - type: textarea
