@@ -59,10 +59,10 @@ node ../verifier/cli.js --two -- "$PWD/go/stand" -- "$PWD/rust/target/debug/stan
 ```
 
 The world is eight scenes of the five kits speaking to each other,
-narrated. Alice and Bob, both ways. A ring through every kit. The mesh
-of every pair. A front desk on the zero head. A stranger trying every
-door. A reply lost on the way. A card that says where, reached through
-its `at` over every carrier the two kits share.
+narrated. Alice and Bob. Dana and Eli, both ways. A ring through every
+kit. The mesh of every pair. A front desk on the zero head. A stranger
+trying every door. A reply lost on the way. A card that says where,
+reached through its `at` over every carrier the two kits share.
 
 ```bash
 node world.mjs

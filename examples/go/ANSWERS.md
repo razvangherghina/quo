@@ -111,8 +111,10 @@ answer is the kit's choice, with its reason. Each number is the number
     edge key, and the knock is dropped. When the asks after a move meet
     silence, a word or nothing, the standing keeps sending under the key
     and edge key it moved to. Reason: the door admits the key held and the
-    key vouched for, so the key just announced is admitted next, and a
-    standing that went back would announce a key the door already holds.
+    key vouched for, so the key just announced is admitted next, unless a
+    later ask moved the door past it. That happens when two replies in
+    flight are lost and the first is read late. The kit then hears silence
+    on that relation, which SPEC.md allows, and keeps no older key.
 23. **What the kit tells its own code.** A `Read` whose `Kind` is `object`,
     `silence`, `quo` (with `Word`) or `nothing`.
 

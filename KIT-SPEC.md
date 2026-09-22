@@ -25,8 +25,10 @@ of `SPEC.md`.
   arrive?** The zero head chapter leaves both to the door. With nothing
   answering it, an ask on the zero head is case 4.
 - **Question 4. How many asks does a door judge at once?** Whatever the
-  number, an ask is admitted only under a key the door holds or vouches
-  for when it makes its choice. The keys move as the move chapter says.
+  number, the door admits by what holds when it makes its choice. A knock
+  is admitted only on an heir still fresh. An ask is admitted only under a
+  key the door holds or vouches for.
+  The keys move as the move chapter says.
 - **Question 5. What does the kit call its parts, and its relations?** No
   name a kit gives crosses a door.
 

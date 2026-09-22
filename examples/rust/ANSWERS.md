@@ -145,8 +145,9 @@ the keys it moved from it keeps nothing, since the former signing key and
 the former edge key are dropped as the move is made. Where the asks after a
 move meet silence, the standing stays where it moved to. It asks again
 under the same keys with the next number. The reason is that a door admits
-the key held and the key vouched for. An ask under the key just announced
-is admitted whether or not the door made the move.
+the key held and the key vouched for. An object read means the door made
+the move, and one send at a time leaves no later move past it. So an ask
+under the key just announced is admitted.
 
 **23.** A `Read` enum: `Object{object, seen}`, `Silence`, `Word(String)`
 and `Nothing`. The reason is that the three words cross a door and the

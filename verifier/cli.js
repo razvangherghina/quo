@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 // One kit, judged as a door, an asker, a listener and a dialer:
-//   node quo/verifier/cli.js [--cwd DIR] [--only NAME[,NAME]] -- <stand program and its arguments>
+//   node verifier/cli.js [--cwd DIR] [--only NAME[,NAME]] -- <stand program and its arguments>
 // Two kits, a ward standing in the first and asked from the second through
 // the verifier:
-//   node quo/verifier/cli.js --two [--cwd DIR] -- <first program ...> -- <second program ...>
+//   node verifier/cli.js --two [--cwd DIR] -- <first program ...> -- <second program ...>
 // With --two, the first `--` opens the first program and the second `--`
 // opens the second. A program whose arguments hold `--` cannot be named here;
 // wrap it in a script. --cwd is the directory both programs run in.

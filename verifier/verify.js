@@ -431,7 +431,7 @@ export class Session {
       (r) => {
         if (!sameValue(r.object, args)) return `object is not the args: ${r.text.toString("utf8").slice(0, 160)}`;
         if (reach === "marked") return r.seen === "1" ? null : `marked seen ${J(r.seen)}, wanted "1"`;
-        if (!named && r.seen !== null) return `empty ask seen ${J(r.seen)}, wanted null`;
+        if (r.seen !== null) return `${named ? "named" : "empty"} ask seen ${J(r.seen)}, wanted null`;
         return null;
       },
     ];

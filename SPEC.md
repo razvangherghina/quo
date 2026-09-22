@@ -58,7 +58,7 @@ the move, a number is a count number.
 
 A choice is what a door gives an ask when it gives an object or a silence
 of its own. A refusal is what a door gives an ask it does not choose on:
-silence to a stranger, or a word. A door honours a number when it makes a
+silence, or a word. A door honours a number when it makes a
 choice on an ask that carries it.
 
 Silence is a reply whose reply text is the object `{"silence":true}`. A
@@ -117,6 +117,9 @@ label and no hash is applied before RFC 8032 takes them.
 
 An ephemeral secret is thirty-two drawn bytes, and they are the X25519
 scalar as RFC 7748 takes it, clamped by the function and not before.
+
+An agreement is the thirty-two bytes X25519 gives from one secret and one
+public key.
 
 A public key takes no seal when it is an X25519 point of small order. Its
 agreement with any secret is thirty-two zero bytes.
@@ -201,6 +204,9 @@ The end at the ward that made the heir is the occupant. The end at the
 other ward is the standing. Asks go from the standing to the occupant.
 Replies come back from the occupant to the standing.
 
+An edge key is thirty-two bytes. Each relation carries one edge key beside
+its signing keys. Both ends compute it. Neither end sends it.
+
 An end is what its ward keeps of the relation. The occupant is the
 signing keys and the edge keys the door holds for the heir, and the count.
 The standing is the invitation, the key it signs with, the edge key it
@@ -238,14 +244,8 @@ decapsulates.
 
 ## Sealing
 
-An agreement is the thirty-two bytes X25519 gives from one secret and one
-public key.
-
 The sender takes a fresh ephemeral key and agrees it with the padlock the
 box is sealed to.
-
-An edge key is thirty-two bytes. Each relation carries one edge key beside
-its signing keys. Both ends compute it. Neither end sends it.
 
 The agreement as it stands, with nothing concatenated to it, goes to
 HKDF-SHA-256 under `quo-seal`. The result seals the head of an ask and the
@@ -303,12 +303,10 @@ bytes exactly as they stand in the box.
 The signature of a reply is by the ward's signing key over the thirty-two
 bytes of the lid the reply is sealed to, then the reply text. The lid is
 signed and is not in the reply's body. The lid a reply is sealed to is the
-lid whose secret opens it, so a reader checks the signature over the lid of
+lid whose secret opens it. A reader checks the signature over the lid of
 its own ask.
 
-On every head the signature is checked under the key `by` names. On a head
-that names an heir, `by` is owed to be a key the door admits or a key kept at
-removal, and an ask by any other key is case 7.
+On every head the signature is checked under the key `by` names.
 
 A signature is checked against the bytes as they were received. It is never
 checked against a re-serialisation of what those bytes parsed to.
@@ -424,9 +422,13 @@ An ask signed by a key kept at removal is not admitted, and is answered `removed
 How long a door keeps the keys kept at removal is its own. Past that, the
 holder of those keys hears silence.
 
+On a head that names an heir, `by` is owed to be a key the door admits or a
+key kept at removal, and an ask by any other key is case 7.
+
 An ask is a stranger's when the door does not admit it, it is not signed by
-a key kept at removal, and it is not on the zero head. A stranger hears
-silence.
+a key kept at removal, and it is not on the zero head. An ask on the zero
+head is a stranger's when nothing answers it or its signature fails. A
+stranger hears silence.
 
 ## The replies
 

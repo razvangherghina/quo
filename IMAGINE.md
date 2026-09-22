@@ -51,8 +51,7 @@ not know the word. To the porter, every booth is a booth.
 
 **Asking.** Whoever steps into a booth simply asks. On the other side, the
 house decides whether to come to the mirror at all. It answers, or says
-nothing. With an answer may come a small mark the house alone makes, so
-the visitor notices when something changed.
+nothing. With an answer may come a small mark the house alone makes.
 
 **The list.** A visitor may step in and ask nothing in particular. Then
 the house may hand over the list of what this visitor may ask, and name

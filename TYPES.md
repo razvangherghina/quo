@@ -282,7 +282,7 @@ keys among its own keys. A field it does not name carries no meaning.
 type Entry {
   "A string. Two methods are one when their strings are equal after escapes are read."
   method: String!
-  "Text for whoever reads the entry. Quo reads nothing of it."
+  "Any value for whoever reads the entry. Quo reads nothing of it."
   description: Value
   "What the method takes. Quo reads nothing of it."
   args: Value
@@ -474,7 +474,7 @@ enum StandingState {
   UNUSED
   "Its knock brought no object back. The door may have bound the heir or not."
   KNOCKED
-  "It knows the door admits a key of its own: an object or a word came back."
+  "It knows the door admits a key of its own: an object or repeated came back."
   BOUND
   "It heard removed. The door stopped holding the relation."
   REMOVED
@@ -545,7 +545,7 @@ enum CaseGroup {
 | 10 | the heir is fresh, and `next` is `null` or the heir itself | `unannounced` | no | no |
 | 11 | the number is one the door does not honour | `repeated` | no | no |
 | 12 | an object came back | an `Answer` | yes, on a relation | a knock, or a number above the highest |
-| 13 | silence came back, on a named ask or the empty ask | silence | yes | as case 12 |
+| 13 | silence came back, on a named ask or the empty ask | silence | yes, on a relation | as case 12 |
 
 A stranger's silence is sealed to the lid the ask came with and signed by
 the ward. Its reply text and its length are the same for cases 1 to 8 and
