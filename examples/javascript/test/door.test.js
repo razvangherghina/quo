@@ -201,6 +201,32 @@ test("a reply's signature covers the lid, then the reply text", () => {
   assert.equal(readReply(write(Buffer.concat([draw(32), text])), lid, signPub).kind, "silence");
 });
 
+test("a reply's at: written by the reach moved, read as an invitation's is", () => {
+  const { w, inv, s } = setup(reaches.moved);
+  const signPub = fromHex(inv.ward.slice(0, 64));
+  const knock = s.ask("m", '{"k":1}');
+  const lid = s.last.lidSecret;
+  const opened = openReply(w.arrive(knock), lid);
+  assert.equal(opened.text.toString(), '{"object":{"k":1},"seen":null,"at":["tcp://127.0.0.1:9"]}');
+  // The standing reads that object and moves on it.
+  assert.equal(read(s, w.arrive(s.ask(undefined, undefined))).object, '{"asks":[]}');
+  assert.equal(s.phase, "bound");
+  const write = (text) => {
+    const e = xSecret(draw(32));
+    const body = Buffer.concat([Buffer.from(text), sign(w.signer, Buffer.concat([lid.pub, Buffer.from(text)]))]);
+    return Buffer.concat([e.pub, seal(hkdf(agree(e, lid.pub), "quo-seal", 44), body, e.pub)]);
+  };
+  const kind = (text) => readReply(write(text), lid, signPub).kind;
+  // An at that is no array reads as absent, a skipped entry skips, and the reply is still an object.
+  for (const at of ['["tcp://127.0.0.1:9"]', '[5,"no scheme",null,"TCP://127.0.0.1:9"]', '"tcp://127.0.0.1:9"', "null", "[]"]) {
+    assert.equal(kind(`{"at":${at},"object":1,"seen":null}`), "object", at);
+  }
+  // Beside silence or a word, or twice, at is a field beside the shape.
+  assert.equal(kind('{"silence":true,"at":[]}'), "silence");
+  assert.equal(kind('{"quo":"repeated","at":[]}'), "silence");
+  assert.equal(kind('{"object":1,"seen":null,"at":[],"at":[]}'), "silence");
+});
+
 test("follow is shared by both ends", () => {
   const e = draw(32);
   const a = draw(32);

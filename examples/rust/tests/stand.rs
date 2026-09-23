@@ -231,6 +231,16 @@ fn addresses_and_at() {
     b.req(&format!(r#""op":"route","far":"{wa}","at":"tcp://{dead}""#));
     assert_eq!(b.req(&format!(r#""op":"send","ward":"{wb}","invitation":{inv}"#)), r#""read":{"nothing":true}"#);
 
+    // a reply's at is read and kept, and its addresses are dialed in place of the invitation's
+    let wm = field(&a.req(r#""op":"ward","seed":"moving""#), "ward");
+    let moved = invitation(&a.req(&format!(r#""op":"invite","ward":"{wm}","heir":"m","reach":"moved""#)));
+    assert!(moved.ends_with(&tail), "{moved}");
+    assert_eq!(
+        b.req(&format!(r#""op":"send","ward":"{wb}","invitation":{moved},"method":"m""#)),
+        r#""read":{"object":{},"seen":null,"at":["tcp://127.0.0.1:9"]}"#
+    );
+    assert_eq!(b.req(&format!(r#""op":"send","ward":"{wb}","invitation":{moved}"#)), r#""read":{"nothing":true}"#);
+
     assert_eq!(a.close(), 0);
     assert_eq!(b.close(), 0);
 }

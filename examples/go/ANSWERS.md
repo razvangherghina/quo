@@ -8,10 +8,11 @@ answer is the kit's choice, with its reason. Each number is the number
 ## What stands behind a door
 
 1. **What stands behind a door.** One `Target` per heir and one per ward
-   for the zero head: a Go function handed the method, the parsed args and
-   the args' bytes as they arrived, answering an object with its `seen` or
-   silence. The kit provides four, `echo`, `marked`, `null` and `silent`,
-   the names `vectors/HARNESS.md` sends. Reason: a function is the smallest
+   for the zero head. A target is a Go function handed the method and the
+   args' bytes as they arrived. It answers silence, or an object with its
+   `seen` and any addresses its reply's `at` carries. The kit provides five,
+   `echo`, `marked`, `moved`, `null` and `silent`, the names
+   `vectors/HARNESS.md` sends. Reason: a function is the smallest
    thing that can stand behind a door, and the harness names nothing more.
 2. **The way back to what made the ward.** None. A target is a plain
    function, holds no reference to the ward or the kit, and nothing removes
@@ -64,14 +65,16 @@ answer is the kit's choice, with its reason. Each number is the number
 13. **`seen`.** `null`, except behind `marked`, which writes `"1"` on
     every ask, the empty ask included, as the harness fixes. Neither ever
     changes, and neither does the describe.
-14. **The empty ask.** Behind `echo`, `marked` and `null`, the describe
-    `{"asks":[]}`, the same to every asker and with no `lang`. Behind
-    `silent`, silence. So no entry names any named ask, and each target
-    answers one as the harness fixes: `echo` and `marked` its `args`,
-    `null` the object `null`, `silent` silence.
+14. **The empty ask.** Behind `echo`, `marked`, `moved` and `null`, the
+    describe `{"asks":[]}`, the same to every asker and with no `lang`.
+    Behind `silent`, silence. So no entry names any named ask, and each
+    target answers one as the harness fixes. `echo`, `marked` and `moved`
+    answer its `args`, `null` the object `null`, `silent` silence.
 15. **Reply text.** `{"object":<value>,"seen":<seen>}`, in that order, with
-    no whitespace of its own. `echo` writes the args' bytes exactly as they
-    arrived, whitespace included. A word is `{"quo":"<word>"}`.
+    no whitespace of its own. Where the target hands addresses, `,"at":[...]`
+    follows `seen`, each address quoted, in the target's order. `echo`
+    writes the args' bytes exactly as they arrived, whitespace included. A
+    word is `{"quo":"<word>"}`.
 16. **Padding.** None is written. Every text is read with the whitespace
     RFC 8259 allows.
 17. **Time of a refusal.** Not equalised. Every stranger's case seals the
@@ -158,6 +161,16 @@ answer is the kit's choice, with its reason. Each number is the number
       heard costs at worst a `repeated` and never a second choice. The ask
       reads nothing when no address answered.
     - An `at` that is not an array is read as absent.
+    - The kit keeps nothing from the `at` a reply carries. Whatever that
+      `at` holds, the reply reads as an object, and `read` answers no `at`.
+      It never replaces or adds to a route or an invitation's addresses.
+      Reason: a reply that came back already reached the ward, and this
+      kit learns addresses from `route` and the invitation alone.
+    - The door writes `at` in a reply only where its target hands
+      addresses. Of the five, only `moved` does, writing
+      `["tcp://127.0.0.1:9"]` on every object as the harness fixes. The
+      door never writes its listeners' addresses in a reply. Reason: its
+      invitations already carry them, and no ward here moves.
     - Once the program holds listeners, every invitation it mints carries
       `at` with each listener's address, `tcp` first, then `http`, then
       `ws`. With no listener, it writes no `at`. Reason: TCP carries the
@@ -167,7 +180,7 @@ answer is the kit's choice, with its reason. Each number is the number
 ## What is not the kit's either
 
 26. **`method` and `args`.** The kit reads them only to hand them to a
-    target. The four targets ignore `method` except to tell a named ask
+    target. The five targets ignore `method` except to tell a named ask
     from the empty one. Its describe names no `lang`, so its asks mean
     what `SPEC.md` says of them and nothing more.
 
@@ -178,7 +191,7 @@ answer is the kit's choice, with its reason. Each number is the number
     allows, of any length the size admits and any nesting: containers
     there are checked against the grammar without recursion and never
     parsed further. Lone surrogates, noncharacters and repeated keys there
-    are taken. `echo` and `marked` answer every such `args` with its bytes
+    are taken. `echo`, `marked` and `moved` answer every such `args` with its bytes
     as they arrived; nothing is refused beyond the grammar. A read `object`
     is handed on as its bytes as they arrived. Among a payload's or a reply
     text's own keys, a lone surrogate is kept as its code unit, so two keys

@@ -69,7 +69,7 @@ of `SPEC.md`.
   So is what an entry's `description` and `args` say, and what a door
   answers a named ask that no entry names.
 - **Question 15. How is a reply text other than silence written?** The field
-  order of `{ object, seen }` and the whitespace between tokens are the
+  order of `{ object, seen, at? }` and the whitespace between tokens are the
   kit's. Silence alone is fixed to sixteen bytes.
 - **Question 16. Does the kit pad what it seals with whitespace, and how
   much?** Every kit reads padding.
@@ -108,17 +108,21 @@ of `SPEC.md`.
   over the web, its post
   and its held line, are published. Any other is the kit's.
 - **Question 25. How does the kit learn where a ward is reached? Does
-  it write `at` in its invitations, and with which addresses? How does
-  it try the addresses it reads, and which does it refuse to try?** A
+  it write `at` in its invitations and in its replies, and with which
+  addresses? What does it do with an `at` a reply carries? How does it
+  try the addresses it reads, and which does it refuse to try?** A
   ward's name is its public key. An invitation goes anywhere, and whoever
   carried it may have written its `at`. An
   invitation may carry addresses in `at`, the first the minting side's
-  preference, and a kit may learn others its own way. Four things are
-  the kit's. Which source it trusts first. Whether it tries addresses
-  one after another or at once. How long it gives each. Whether it
-  carries a box to the next address after one that gave nothing or may
-  have heard it. A door honours a number once, whichever address
-  carried it.
+  preference, and a kit may learn others its own way. A reply may carry
+  `at` too, signed by the ward with the reply. These are the kit's.
+  Which source it trusts first. When its door writes `at` in a reply.
+  Which replies it takes an `at` from, whether that `at` replaces or
+  joins the addresses it held, and what a later reply with none means.
+  Whether it tries addresses one after another or at once. How long it
+  gives each. Whether it carries a box to the next address after one that gave
+  nothing or may have heard it. A door honours a number once, whichever
+  address carried it.
 
 ## What is not the kit's either
 
@@ -133,8 +137,8 @@ of `SPEC.md`.
 - **Question 27. How deep, how long and how strange a JSON text does the kit
   read where Quo reads nothing, and what does it answer beyond that?**
   Where Quo reads nothing is inside `args`, inside `object` beyond what a
-  describe names, the string of `method`, and every field the spec does
-  not name. Nesting, lone
+  describe names, and the string of `method`. So is an entry of `at` that
+  is not a string, and every field the spec does not name. Nesting, lone
   surrogates, noncharacters and repeated keys there are JSON's to allow and
   the kit's to take or refuse. What a door answers
   there is a choice, and silence is one.

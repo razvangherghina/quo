@@ -7,8 +7,8 @@ code is `src/quo.zig` (keys, values, the door, the standing), `src/tcp.zig`
 ## What stands behind a door
 
 **Question 1. What stands behind a door, and how does the kit hand it an arrival?**
-A `Reach`, one of the four behaviours the harness names: `echo`, `marked`,
-`null` and `silent`. The door hands it three things: whether the ask is
+A `Reach`, one of the five behaviours the harness names: `echo`, `marked`,
+`moved`, `null` and `silent`. The door hands it two things: whether the ask is
 named, and the bytes of `args` as they arrived, if present. It gives back a
 reply text, or null for a chosen silence. Reason: this kit exists to be
 judged, and the harness names nothing else. A hook for arbitrary code would
@@ -89,15 +89,17 @@ reach, where every ask gets `"1"`, the empty ask included, as the harness
 fixes. No `seen` ever changes, and no describe here ever moves.
 
 **Question 14. What does the empty ask answer, and to whom?**
-Under `echo`, `marked` and `null`: the describe `{"asks":[]}`, the same to
-every asker and with no `lang`. Under `silent`: silence. So no entry names
-any named ask, and each reach answers one as the harness fixes: `echo` and
-`marked` its `args`, `null` the object `null`, `silent` silence.
+Under `echo`, `marked`, `moved` and `null`: the describe `{"asks":[]}`, the
+same to every asker and with no `lang`. Under `silent`: silence. So no entry
+names any named ask, and each reach answers one as the harness fixes:
+`echo`, `marked` and `moved` its `args`, `null` the object `null`, `silent`
+silence.
 
 **Question 15. How is a reply text other than silence written?**
 `{"object":…,"seen":…}`, in that order, with no whitespace of the kit's own.
-Under `echo`, the object is the bytes of `args` exactly as they arrived,
-inner whitespace included. A word is `{"quo":"…"}`.
+Under `moved`, `,"at":[…]` follows `seen`. Under `echo`, `marked` and
+`moved`, the object is the bytes of `args` exactly as they arrived, inner
+whitespace included. A word is `{"quo":"…"}`.
 
 **Question 16. Does the kit pad what it seals with whitespace, and how much?**
 No. The kit writes no padding and reads any padding RFC 8259 allows.
@@ -196,7 +198,7 @@ connection per address per `send`, closed after the answer. Reason: one
 carrier proves the frames, and the web's two forms would each be a second
 listener and dialer that no other part of this kit uses.
 
-**Question 25. How does the kit learn where a ward is reached? Does it write `at` in its invitations, and with which addresses? How does it try the addresses it reads, and which does it refuse to try?**
+**Question 25. How does the kit learn where a ward is reached? Does it write `at` in its invitations and in its replies, and with which addresses? What does it do with an `at` a reply carries? How does it try the addresses it reads, and which does it refuse to try?**
 Two ways. A `route` names one `tcp` address for a far ward, and replaces
 the one before. An invitation's `at` names the rest. Where a ward has a
 route, `send` dials the route alone. Where it has none, `send` reads the
@@ -223,6 +225,20 @@ every invitation it gives carries `at` with that listener's one address,
 listener is the one place this program is reached, and trying in order
 keeps the minting side's preference and sends each box to one address at
 a time.
+
+The door writes `at` in a reply under the `moved` reach alone, on every
+object, as the one address `tcp://127.0.0.1:9` the harness fixes. Under
+every other reach, and on silence and on a word, it writes none. Reason:
+the listener's address already travels in the invitation. This kit never
+moves a ward to another address, so an `at` of its own would repeat what
+its asker holds.
+
+A reply's `at` is read for the shape alone. Whatever value it holds, an
+object read with it is still an object and moves the standing as any
+object does. The standing keeps no address from it, and `read` and `send`
+report no `at`. Nothing a reply carries replaces a route or an
+invitation's `at`. Reason: every `send` is handed its invitation and looks
+up its route afresh, so a kept address would have no reader.
 
 ## What is not the kit's either
 

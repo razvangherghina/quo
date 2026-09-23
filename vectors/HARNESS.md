@@ -105,32 +105,37 @@ nothing, as the answer to its last `ask` on that invitation. The answer
 `read` is what the kit read:
 
 ```
-{ object, seen }     an object came back
-{ silence: true }    silence came back
-{ quo: word }        a word came back
-{ nothing: true }    nothing came back
+{ object, seen, at? }  an object came back
+{ silence: true }      silence came back
+{ quo: word }          a word came back
+{ nothing: true }      nothing came back
 ```
 
-`object` is the value the kit read, and `seen` the `seen` it read.
+`object` is the value the kit read, and `seen` the `seen` it read. `at`
+is present only for a kit that keeps addresses from a reply's `at`. It
+holds those it kept, in their order, and is absent where the reply
+carried no array.
 
 ### What answers behind a door
 
 `reach` names what answers behind that door. How a kit provides it is the
-kit's own. The verifier sends these four and no other:
+kit's own. The verifier sends these five and no other:
 
 ```
 echo     a named ask: the object is the bytes of `args` exactly as they
          arrived, or silence where the kit does not read that `args`.
          the empty ask: the object is the describe {"asks":[]}.
-         seen is null.
+         seen is null, and no at is written.
 marked   as echo, and on every ask seen is the string "1", the empty
          ask included.
+moved    as echo, and every object carries at, the array
+         ["tcp://127.0.0.1:9"].
 null     a named ask: the object is null. seen is null.
          the empty ask: as echo.
 silent   every ask: silence.
 ```
 
-A `reach` that is none of the four, and that the kit does not provide, is
+A `reach` that is none of the five, and that the kit does not provide, is
 answered `not reached`.
 
 `reach` on `ward` names what answers the zero head at that ward. With no
@@ -180,8 +185,9 @@ ward anywhere, and is not held to `no such ward`.
 **`send`** makes that ward ask, as a standing, on the relation
 `invitation` names, and carry the box to the ward the invitation names.
 Where that ward has a route, the kit dials the route alone. Where it has
-none, a kit that reads `at` dials the addresses in the invitation's `at`,
-as it tries them, and a kit that does not read `at` delivers nothing.
+none, a kit that reads `at` dials the addresses it holds for that ward,
+as it tries them. It holds them from the invitation's `at` or a
+reply's. A kit that does not read `at` delivers nothing.
 With neither, the ask is not delivered. The first `send` on an
 invitation is a knock. The answer `read` is what the kit read, as in part
 one. How long the kit waits is its own, and `{ nothing: true }` is the

@@ -17,11 +17,13 @@ type Ask struct {
 	Args   []byte
 }
 
-// An Answer is an object and its seen, or silence.
+// An Answer is an object with its seen and the addresses its reply's `at`
+// carries, or silence.
 type Answer struct {
 	Silence bool
-	Object  []byte  // JSON text of a value
-	Seen    *string // nil for null
+	Object  []byte   // JSON text of a value
+	Seen    *string  // nil for null
+	At      []string // nil for no `at`
 }
 
 // A Target answers an arrival.
@@ -53,6 +55,13 @@ var Targets = map[string]Target{
 		}
 		return ans
 	},
+	"moved": func(a Ask) Answer {
+		ans := echoOf(a)
+		if !ans.Silence {
+			ans.At = []string{"tcp://127.0.0.1:9"}
+		}
+		return ans
+	},
 	"null": func(a Ask) Answer {
 		if a.Method == nil {
 			return Answer{Object: describeNone}
@@ -63,8 +72,9 @@ var Targets = map[string]Target{
 }
 
 // replyText writes an answer as a reply text: silence as its sixteen bytes,
-// an object as {"object":...,"seen":...}. Where there is no value to write,
-// the reply is silence.
+// an object as {"object":...,"seen":...}, or {"object":...,"seen":...,"at":[...]}
+// when the answer carries addresses. Where there is no value to write, the
+// reply is silence.
 func replyText(a Answer) []byte {
 	if a.Silence {
 		return silenceText
@@ -76,7 +86,18 @@ func replyText(a Answer) []byte {
 	if a.Seen != nil {
 		seen = Quote(*a.Seen)
 	}
-	return slices.Concat([]byte(`{"object":`), a.Object, []byte(`,"seen":`), seen, []byte("}"))
+	text := slices.Concat([]byte(`{"object":`), a.Object, []byte(`,"seen":`), seen)
+	if a.At != nil {
+		text = append(text, `,"at":[`...)
+		for i, at := range a.At {
+			if i > 0 {
+				text = append(text, ',')
+			}
+			text = append(text, Quote(at)...)
+		}
+		text = append(text, ']')
+	}
+	return append(text, '}')
 }
 
 // ---- the door ----

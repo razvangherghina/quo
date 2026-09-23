@@ -73,7 +73,7 @@ pub fn read_frame(r: &mut impl Read) -> io::Result<Frame> {
 
 /// Read `tcp://host:port`, the scheme in any case, into the `host:port` a socket dials.
 /// The host is a name, an IPv4 address, or an IPv6 address in brackets; the port is
-/// decimal. Anything else, a path, a query, a fragment or user information among it,
+/// decimal, from 1 to 65535. Anything else, a path, a query, a fragment or user information among it,
 /// is no tcp address.
 pub fn tcp_address(s: &str) -> Option<String> {
     let (scheme, rest) = s.split_once("://")?;
@@ -91,7 +91,7 @@ pub fn tcp_address(s: &str) -> Option<String> {
     if host.is_empty() || port.is_empty() || !port.bytes().all(|b| b.is_ascii_digit()) {
         return None;
     }
-    let port: u16 = port.parse().ok()?;
+    let port: u16 = port.parse().ok().filter(|p| *p != 0)?;
     if !host.starts_with('[') && !reg_name(host) {
         return None;
     }
@@ -239,6 +239,7 @@ mod tests {
             "tcp://h:",
             "tcp://:1",
             "tcp://h:65536",
+            "tcp://h:0",
             "tcp://h:1/",
             "tcp://h:1/p",
             "tcp://h:1?q",

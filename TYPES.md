@@ -255,6 +255,12 @@ type Answer {
   that asker would hear has moved, its lang included.
   """
   seen: String
+  """
+  Where the ward that signed the reply is reached, read as an
+  invitation's at is. It may be absent. An at that is no array is read
+  as absent, and the reply is still an Answer.
+  """
+  at: [Address!]
 }
 
 """

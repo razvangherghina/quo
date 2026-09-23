@@ -7,10 +7,10 @@ is followed by its reason.
 ## What stands behind a door
 
 1. **What stands behind a door.** A reach: a function from the well-formed
-   payload to a reply text, or to `None` for silence. The kit holds four,
-   `echo`, `marked`, `null` and `silent`. It hands the reach the payload
-   after the door has chosen to answer. Reason: the harness names these
-   four, and one function shape is enough for all of them.
+   payload to a reply text, or to `None` for silence. The kit holds five,
+   `echo`, `marked`, `moved`, `null` and `silent`. It hands the reach the
+   payload after the door has chosen to answer. Reason: the harness names
+   these five, and one function shape is enough for all of them.
 2. **The way back to what made a ward.** None. A reach gets the payload and
    nothing else. The `Ward` object holds its own seed, and only the program
    that built it can reach it. Reason: nothing behind the door here needs a
@@ -69,16 +69,18 @@ is followed by its reason.
 13. **`seen`.** Always `null`, except `"1"` from `marked` on every ask, the
     empty ask included, as the harness fixes. Reason: nothing behind these
     doors moves, so no `seen` ever changes.
-14. **The empty ask.** `echo`, `marked` and `null` answer the describe
-    `{"asks":[]}`, the same to every asker and with no `lang`. `silent`
-    answers silence. So no entry names any named ask, and each reach
-    answers one as the harness fixes: `echo` and `marked` its `args`,
-    `null` the object `null`, `silent` silence. Reason: the harness says
-    so.
+14. **The empty ask.** `echo`, `marked`, `moved` and `null` answer the
+    describe `{"asks":[]}`, the same to every asker and with no `lang`.
+    `silent` answers silence. So no entry names any named ask, and each
+    reach answers one as the harness fixes: `echo`, `marked` and `moved`
+    its `args`, `null` the object `null`, `silent` silence. Reason: the
+    harness says so.
 15. **Reply text.** `{"object":<object>,"seen":<seen>}` with no whitespace
-    between the kit's own tokens. From `echo` and `marked`, `object` is the
-    bytes of `args` exactly as they arrived. A word is `{"quo":"<word>"}`.
-    Reason: the shortest form, and echo keeps the bytes.
+    between the kit's own tokens, and `,"at":[...]` before the closing
+    brace where the reach gives an `at`. From `echo`, `marked` and
+    `moved`, `object` is the bytes of `args` exactly as they arrived. A
+    word is `{"quo":"<word>"}`. Reason: the shortest form, and echo keeps
+    the bytes.
 16. **Padding.** None when writing. Padding is read everywhere. Reason: the
     kit hides no lengths.
 17. **Time per refusal.** No effort is made. Refusals that fail earlier
@@ -125,9 +127,13 @@ is followed by its reason.
     moved from as the key held, so the standing needs no copy of it.
     Silence is a choice the door made, so it says the ask was read.
 23. **What the kit tells its own code.** `Standing.take` returns
-    `("object", value, raw, seen)`, `("silence",)`, `("word", w)` or
-    `("nothing",)`. The harness gets `{object, seen}`, `{silence: true}`,
-    `{quo: w}` or `{nothing: true}`. Reason: four outcomes, four tags.
+    `("object", value, raw, seen, at)`, `("silence",)`, `("word", w)` or
+    `("nothing",)`, where `at` is the addresses kept from the reply's `at`
+    or `None` where it reads as absent. The harness gets
+    `{object, seen, at?}`, `{silence: true}`, `{quo: w}` or
+    `{nothing: true}`, with `at` present wherever the reply's `at` is an
+    array, even one from which nothing was kept. Reason: four outcomes,
+    four tags.
 
 ## What a kit carries
 
@@ -147,24 +153,38 @@ is followed by its reason.
     nothing beyond the standard library, while the held line would need a
     WebSocket written by hand. A connection per ask means ids never collide.
 25. **Where a ward is reached.** From the harness's `route`, a table from
-    ward pk to one address held in memory, and from an invitation's `at`.
-    The kit learns no address any other way. Where a route names the ward,
-    the kit dials the route alone. Otherwise it reads `at` when it is an
-    array, skips every entry that is not a string, not a URI, or not a
-    `tcp`, `http` or `https` address as its carrier writes it, and tries
-    the rest one after another in the order written. It moves to the next
+    ward pk to one address held in memory, from an invitation's `at`, and
+    from the `at` of an object reply. The kit learns no address any other
+    way. It reads either `at` only when it is an array, and skips every
+    entry that is not a string, not a URI, or not a `tcp`, `http` or
+    `https` address as its carrier writes it. Where a route names the
+    ward, the kit dials the route alone. Otherwise it tries the addresses
+    the standing kept from a reply, then the invitation's that are not
+    among them, one after another in the order written. A standing keeps
+    a reply's addresses only from an object it moves on. They replace the
+    ones it kept from an earlier reply and stand ahead of the
+    invitation's, which they never replace. It moves to the next
     when an address gives nothing, of any kind, and stops at the first
     reply. Each try waits as question 21 says. With no address left, the
     read is `nothing`. It carries the same box to the next address after
     one that gave nothing, whether or not that address may have heard it.
     Once the program holds listeners, every invitation it mints carries
-    their addresses in `at`, the post first, then TCP.
+    their addresses in `at`, the post first, then TCP. The door writes
+    `at` in a reply only where its reach gives one, which `moved` alone
+    does, on every object. It never writes its listeners there.
     Reason: a route is the harness's own word and beats what an invitation
     carries, since whoever carried the invitation may have written its
-    `at`. The order in `at` is the minting side's preference, so trying in
-    that order honours it. A door honours a number once, whichever address
-    carried it, so a second address costs nothing but the wait. The post
-    goes first because it reaches where TCP cannot.
+    `at`. A reply's `at` is signed by the ward, and the latest object the
+    standing moved on is the freshest word it has, so it goes first. A
+    reply to an ask it did not move on may be late, so its `at` is not
+    kept. The invitation's addresses stay behind it, so a reply address
+    that fails costs one try and loses nothing. The order in `at` is the
+    preference of the side that wrote it, so trying in that order honours
+    it. A door honours a number once, whichever address carried it, so a
+    second address costs nothing but the wait. The post goes first
+    because it reaches where TCP cannot. Every holder of an invitation
+    already has the listeners' addresses, so the door has no cause to
+    repeat them in a reply.
 
 ## What is not the kit's either
 
@@ -177,7 +197,8 @@ is followed by its reason.
 
 27. **What is read inside `args`, and inside `object` beyond what a
     describe names.** The kit reads only a
-    payload's or a reply text's own keys. Every container below them is
+    payload's or a reply text's own keys, and the items of a reply's `at`
+    array, each a string or skipped. Every other container below them is
     checked against the grammar of RFC 8259, iteratively, with no bound on
     depth or length beyond the size, and its lone surrogates,
     noncharacters, repeated keys and numbers are taken as written. The door

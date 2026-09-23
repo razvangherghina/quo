@@ -98,7 +98,10 @@ def reading(r):
         # The raw text may hold whitespace, newlines included; the channel
         # carries it again with that whitespace removed.
         from quokit.values import minify
-        return {"object": Raw(minify(r[2].decode("utf-8"))), "seen": r[3]}
+        out = {"object": Raw(minify(r[2].decode("utf-8"))), "seen": r[3]}
+        if r[4] is not None:
+            out["at"] = r[4]
+        return out
     if r[0] == "word":
         return {"quo": r[1]}
     if r[0] == "nothing":
@@ -309,10 +312,13 @@ class Program:
                 with self.kit:
                     box = self.seal(pk, inv, method, args)
                     route = self.routes.get(inv["ward"])
+                    learned = self.standing(pk, inv)[0].at
                 if route is not None:
                     tries = [route]
                 else:
-                    tries = [a for a in map(address, inv.get("at", [])) if a is not None]
+                    # A reply's addresses first, then the invitation's, each once.
+                    written = learned + [s for s in inv.get("at", []) if s not in learned]
+                    tries = [a for a in map(address, written) if a is not None]
                 reply = None
                 for at in tries:
                     reply = dial(at, bytes.fromhex(inv["ward"]), box)

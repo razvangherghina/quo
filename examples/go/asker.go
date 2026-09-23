@@ -194,7 +194,9 @@ func readReplyText(text []byte) Read {
 		return true
 	}
 	switch {
-	case has("object", "seen"):
+	case has("object", "seen"), has("object", "seen", "at"):
+		// Whatever a reply's `at` holds, the reply is an object. This kit
+		// keeps nothing from it.
 		r := Read{Kind: "object", Object: o.Raw["object"]}
 		switch seen := o.M["seen"].(type) {
 		case nil:

@@ -7,11 +7,11 @@ kit does and why.
 
 **1.** Behind each ward's door stands one reach for each heir, and at most
 one more for the zero head, named when the heir or the ward is made. A
-reach is one of the four of `vectors/HARNESS.md`: echo, marked, null and
-silent. An arrival is handed over as `named`, whether `method` is present,
+reach is one of the five of `vectors/HARNESS.md`: echo, marked, moved, null
+and silent. An arrival is handed over as `named`, whether `method` is present,
 with the raw bytes of `args` and their depth. The reach returns a reply
 text or silence, and never sees the relation's number or keys. The reason
-is that the harness names these four and nothing more. A reach is the least
+is that the harness names these five and nothing more. A reach is the least
 a door can stand behind it and still be driven.
 
 **2.** Nothing behind a door has a way back to what made the ward, so no
@@ -83,18 +83,19 @@ everything puts no case on the wire.
 
 **13.** The kit writes `null`, except for the `marked` reach, which writes
 `"1"` on every ask, the empty ask included. The reason is that the harness
-fixes what those two reaches answer. No reach ever changes its `seen`,
+fixes the `seen` of every reach. No reach ever changes its `seen`,
 and no describe here ever moves.
 
-**14.** With echo, marked and null, the object is the describe
+**14.** With echo, marked, moved and null, the object is the describe
 `{"asks":[]}`. It is the same to every asker and names no `lang`. With
 silent, silence. The reason is that the harness lists no method a reach
 answers, so the describe lists none. So no entry names any named ask, and
-each reach answers one as the harness fixes: echo and marked its `args`,
-null the object `null`, silent silence.
+each reach answers one as the harness fixes: echo, marked and moved its
+`args`, null the object `null`, silent silence.
 
 **15.** `{"object":<value>,"seen":<seen>}`, object first, with no
-whitespace between tokens. A word is `{"quo":"<word>"}`. The reason is that
+whitespace between tokens. Under the moved reach, `,"at":[...]` follows
+`seen`. A word is `{"quo":"<word>"}`. The reason is that
 the order and the spacing are the kit's. The shortest spelling leaves least
 to write and least to get wrong.
 
@@ -149,7 +150,7 @@ the key held and the key vouched for. An object read means the door made
 the move, and one send at a time leaves no later move past it. So an ask
 under the key just announced is admitted.
 
-**23.** A `Read` enum: `Object{object, seen}`, `Silence`, `Word(String)`
+**23.** A `Read` enum: `Object{object, seen, at}`, `Silence`, `Word(String)`
 and `Nothing`. The reason is that the three words cross a door and the
 kit's own spelling for them does not. An enum says them to Rust alone.
 
@@ -163,14 +164,33 @@ route to an address of either, are `bad request`. The reason is that a box
 carries its own seal and its own signature, so TCP needs nothing under it.
 One carrier is enough to be judged as a carrier.
 
-**25.** The kit learns a ward's address two ways. The first is the `route`
-request, a map from ward pk to one `tcp://host:port` held in memory. The
-second is the `at` of the invitation a send is made on. A route is trusted
-first and is dialed alone. Once the program holds its listener, every
-invitation it mints carries that listener's `tcp://127.0.0.1:port` as the
-one address in `at`. Before that it writes no `at`.
+**25.** The kit learns a ward's address three ways. The first is the
+`route` request, a map from ward pk to one `tcp://host:port` held in
+memory. The second is the `at` of a reply, kept on the relation's standing.
+The third is the `at` of the invitation a send is made on. A route is
+trusted first and is dialed alone. Next come the addresses of the last
+reply that gave any, and last the invitation's. The reason for that order
+is that a route is the kit's own word, and a reply's `at` is signed by the
+ward. An invitation's `at` may have been written by whoever carried it.
 
-With no route, the kit tries the `tcp` addresses of `at` one after another,
+Once the program holds its listener, every invitation it mints carries
+that listener's `tcp://127.0.0.1:port` as the one address in `at`. Before
+that it writes no `at`. Its door writes `at` in a reply only under the
+moved reach, which writes `["tcp://127.0.0.1:9"]` on every object. No other
+reach writes one. The reason is that the harness fixes what moved writes,
+and a door that answers its own ward's listener gives an asker no address
+it lacked.
+
+A reply's `at` is read as an invitation's is. One that is no array reads
+as absent, and the reply is still an object. Of an array, the kit keeps the
+`tcp` addresses in their order and skips every other entry. Where it keeps
+at least one, those addresses replace the ones it dials for that relation.
+Where it keeps none, it dials what it dialed before. The reason is that a
+reply's `at` says where the ward that signed it is reached now. An `at`
+that names no address this kit dials tells it nowhere to go, so it forgets
+nothing for it.
+
+With no route, the kit tries the `tcp` addresses it holds one after another,
 in the order written. It skips every other scheme, every string that is no
 `tcp://host:port`, and every element that is not a string. It moves to the
 next address only where the one before delivered nothing for certain: the

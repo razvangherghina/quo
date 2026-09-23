@@ -162,7 +162,7 @@ fn handle(kit: &Shared, n: &Object, line: &[u8], op: &str, id: &str) -> Option<R
             };
             let mut st = st.lock().unwrap();
             let r = st.read(reply.as_deref()).ok_or(BAD)?;
-            Ok(format!("\"read\":{}", r.to_json()))
+            Ok(format!("\"read\":{}", learn(&mut st, r).to_json()))
         })(),
         "listen" => (|| {
             // This kit stands tcp alone.
@@ -197,6 +197,21 @@ fn handle(kit: &Shared, n: &Object, line: &[u8], op: &str, id: &str) -> Option<R
     })
 }
 
+/// Keep the `tcp` addresses of an object's `at`, in order, and skip every other entry.
+/// Where one is kept, they replace the addresses the standing dials.
+fn learn(st: &mut Standing, r: Read) -> Read {
+    match r {
+        Read::Object { object, seen, at: Some(at) } => {
+            let at: Vec<String> = at.into_iter().filter(|a| carrier::tcp_address(a).is_some()).collect();
+            if !at.is_empty() {
+                st.at = Some(at.clone());
+            }
+            Read::Object { object, seen, at: Some(at) }
+        }
+        r => r,
+    }
+}
+
 fn standing(kit: &Shared, w: &str, inv: Invitation) -> Result<Arc<Mutex<Standing>>, &'static str> {
     let mut k = kit.lock().unwrap();
     if !k.wards.contains_key(w) {
@@ -211,7 +226,7 @@ fn prepare_send(kit: &Shared, n: &Object, line: &[u8]) -> Result<impl FnOnce() -
     let inv = invitation(n, line)?;
     let (m, a) = method_args(n, line)?;
     let far = inv.ward;
-    let from_at: Vec<String> = inv.at.iter().filter_map(|a| carrier::tcp_address(a)).collect();
+    let from_at = inv.at.clone();
     let st = standing(kit, &w, inv)?;
     let kit = kit.clone();
     Ok(move || {
@@ -220,10 +235,12 @@ fn prepare_send(kit: &Shared, n: &Object, line: &[u8]) -> Result<impl FnOnce() -
         let Ok(bx) = st.ask(m.as_deref(), a.as_deref()) else {
             return format!("\"error\":\"{BAD}\"");
         };
-        // A route is dialed alone. Without one, the invitation's tcp addresses are
-        // tried in order, each only after the one before it delivered nothing.
+        // A route is dialed alone. Without one, the tcp addresses of the last reply's at,
+        // or else of this invitation's, are tried in order, each only after the one
+        // before it delivered nothing.
         let route = kit.lock().unwrap().routes.get(&hex(&far)).cloned();
-        let addresses = route.map(|r| vec![r]).unwrap_or(from_at);
+        let held = || st.at.as_ref().unwrap_or(&from_at).iter().filter_map(|a| carrier::tcp_address(a)).collect();
+        let addresses = route.map(|r| vec![r]).unwrap_or_else(held);
         let mut dialed = carrier::Dialed::Unsent;
         for at in &addresses {
             dialed = carrier::dial(at, &far, &bx, SEND_WAIT);
@@ -237,7 +254,10 @@ fn prepare_send(kit: &Shared, n: &Object, line: &[u8]) -> Result<impl FnOnce() -
                 Read::Nothing
             }
             carrier::Dialed::Nothing => st.read(None).expect("an ask was just made"),
-            carrier::Dialed::Reply(b) => st.read(Some(&b)).expect("an ask was just made"),
+            carrier::Dialed::Reply(b) => {
+                let r = st.read(Some(&b)).expect("an ask was just made");
+                learn(&mut st, r)
+            }
         };
         format!("\"read\":{}", r.to_json())
     })

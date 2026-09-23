@@ -154,7 +154,8 @@ six-character escape for that letter, are one name.
 
 Quo reads nothing inside `args`, nothing inside `object` but what the
 chapter on what may be asked names, nothing of `method` but that it is a
-string, and nothing of a field this document does not name. Every
+string, nothing inside an entry of `at` that is not a string, and nothing
+of a field this document does not name. Every
 JSON text is a value there, whatever its strings, its keys or its nesting.
 A door that will not read what stands there answers with a choice, silence
 among them, and never with a stranger's case: the number is spent and the
@@ -433,13 +434,19 @@ stranger hears silence.
 ## The replies
 
 ```
-reply = JSON { object, seen } | { silence: true } | { quo: word }
+reply = JSON { object, seen, at? } | { silence: true } | { quo: word }
 ```
 
 A reply text is one of three shapes, with no field beside its shape's.
 
-`{ object, seen }`: `object` is any JSON value. `seen` is always
+`{ object, seen, at? }`: `object` is any JSON value. `seen` is always
 present. It is a string the answering side chooses, or `null`.
+
+`at`, when present, is the addresses at which the ward that signed the
+reply is reached, the first the one that ward prefers. It is written and
+read as an invitation's `at` is. What
+makes an invitation's `at` read as absent, or an entry skipped, does the
+same here, and the reply is still an object.
 
 A `seen` different from the one its asker heard before means that the
 describe that asker would hear has moved, its `lang` included. The

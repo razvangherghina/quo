@@ -257,11 +257,12 @@ export function readReply(bytes) {
     if (w.type === "string" && ["removed", "unannounced", "repeated"].includes(w.value)) return { shape: "word", word: w.value };
     return { error: "quo is not one of the three words" };
   }
-  if (keys === "object,seen") {
+  if (keys === "object,seen" || keys === "at,object,seen") {
     const o = v.entries.get("object");
     const s = v.entries.get("seen");
     if (s.type !== "string" && s.type !== "null") return { error: "seen is neither a string nor null" };
-    return { shape: "object", object: o, seen: s.value };
+    const at = v.entries.get("at");
+    return { shape: "object", object: o, seen: s.value, ...(at ? { at } : {}) };
   }
   return { error: `fields ${keys} are none of the three shapes` };
 }

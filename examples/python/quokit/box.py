@@ -1,7 +1,8 @@
 """Keys, boxes, the payload's shape and the reply shapes."""
 
 from . import crypto as c
-from .values import Container, Invalid, JObj, Num, parse, json_string
+from .address import address
+from .values import Container, Invalid, JObj, Num, items, parse, json_string
 
 SIZE = 1048576
 ZERO32 = bytes(32)
@@ -56,7 +57,7 @@ def seal_ask(padlock, head, payload, signer_seed, edge, lid_secret, ciphertext=b
 
 
 def open_reply(box, lid_secret, ward_signing_pk):
-    """Returns (reading, agreement). reading is ('object', value, raw, seen),
+    """Returns (reading, agreement). reading is ('object', value, raw, seen, at),
     ('silence',) or ('word', w). Anything that fails reads as silence."""
     silence = (("silence",), None)
     if len(box) > SIZE or len(box) < 32 + 16 + 64:
@@ -84,17 +85,26 @@ def read_reply_text(text):
     if not isinstance(v, JObj):
         return ("silence",)
     keys = set(v)
-    if keys == {"object", "seen"}:
+    if keys in ({"object", "seen"}, {"object", "seen", "at"}):
         seen = v["seen"]
         if seen is not None and not isinstance(seen, str):
             return ("silence",)
         a, b = v.spans["object"]
-        return ("object", v["object"], s[a:b].encode("utf-8"), seen)
+        return ("object", v["object"], s[a:b].encode("utf-8"), seen, read_at(v, s))
     if keys == {"silence"} and v["silence"] is True:
         return ("silence",)
     if keys == {"quo"} and v["quo"] in WORDS:
         return ("word", v["quo"])
     return ("silence",)
+
+
+def read_at(v, text):
+    """The addresses kept from an object reply's `at`, in order, or None
+    where `at` reads as absent. An entry that is no address of a carrier
+    this kit stands is skipped."""
+    if not (isinstance(v.get("at"), Container) and v["at"].kind == "["):
+        return None
+    return [e for e in items(text, v.spans["at"][0]) if isinstance(e, str) and address(e) is not None]
 
 
 # ---- the payload ----
@@ -152,9 +162,12 @@ def well_formed(obj, text, head):
     return p
 
 
-def object_text(obj_raw, seen):
+def object_text(obj_raw, seen, at=None):
     s = b"null" if seen is None else json_string(seen).encode("utf-8")
-    return b'{"object":' + obj_raw + b',"seen":' + s + b"}"
+    text = b'{"object":' + obj_raw + b',"seen":' + s
+    if at is not None:
+        text += b',"at":[' + ",".join(json_string(a) for a in at).encode("utf-8") + b"]"
+    return text + b"}"
 
 
 def word_text(w):

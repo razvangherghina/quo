@@ -37,6 +37,9 @@ every answer to every question `KIT-SPEC.md` asks.
 - On a delivered ask, it accepts a reply and nothing.
 - On `seen`, it accepts any string and `null`, except where a `reach` of the
   harness fixes it.
+- On `at` in a reply, it accepts any array of addresses a door writes, and
+  none, except where a `reach` of the harness fixes it. As a reader, a kit
+  may keep any of the addresses in their order, or none.
 - On the empty ask, it accepts silence and every describe, whatever its
   entries and its `lang`. It reads nothing inside `description`, an
   entry's `args`, or a field `SPEC.md` does not name.
@@ -77,6 +80,8 @@ with `arrive`, and opens what comes back:
   text;
 - the reply text is one of the three shapes, and silence is the sixteen
   bytes;
+- an `at` a door writes on an object is an array of addresses, each
+  written as its carrier writes it;
 - an object that answers the empty ask is a describe, on a relation and on
   the zero head. An object of any other shape there is a departure;
 - the edge key that follows the reply is the one `SPEC.md` gives.
@@ -127,7 +132,10 @@ of the three words, nothing, and replies that read as silence. Among
 those are a reply and a word the ward signed over another ask's lid, and a
 reply signed over its reply text alone. Objects that are no describe come
 back to the empty ask, and the kit reads each as an object and moves on
-it.
+it. Objects carry `at` as an array of addresses, as an array holding
+entries a reader skips, as a string and as `null`, and the kit reads each
+as an object. An `at` beside silence or a word, and `at` twice, read as
+silence.
 
 It holds the number of every ask the kit sealed, and with them the highest
 the standing has moved on. It then checks, by the kit's next `ask`,

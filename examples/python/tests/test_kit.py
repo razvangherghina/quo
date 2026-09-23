@@ -171,6 +171,20 @@ class Values(unittest.TestCase):
         odd = b'{"object":{"k":1e400,"k":"\\udc00"},"seen":null}'
         self.assertEqual(read_reply_text(odd)[2], b'{"k":1e400,"k":"\\udc00"}')
 
+    def test_reply_at(self):
+        self.assertIsNone(read_reply_text(b'{"seen":null,"object":1}')[4])
+        r = read_reply_text(b'{"at":[5,"no scheme","tcp://127.0.0.1",{"a":[1]},"mailto:x@example.org",null,'
+                            b'"TCP://127.0.0.1:9","ws://127.0.0.1:9/quo", "\\u0068ttp://h/q"],"object":[],"seen":null}')
+        self.assertEqual((r[0], r[2], r[4]), ("object", b"[]", ["TCP://127.0.0.1:9", "http://h/q"]))
+        self.assertEqual(read_reply_text(b'{"object":1,"seen":null,"at":[]}')[4], [])
+        # an at that is no array reads as absent, and the reply is still an object
+        for at in (b'"tcp://127.0.0.1:9"', b"null", b"{}", b"7"):
+            r = read_reply_text(b'{"object":2,"seen":null,"at":' + at + b"}")
+            self.assertEqual((r[0], r[4]), ("object", None), at)
+        for text in (b'{"object":1,"seen":null,"at":[],"at":[]}', b'{"silence":true,"at":[]}',
+                     b'{"quo":"repeated","at":[]}'):
+            self.assertEqual(read_reply_text(text), ("silence",), text)
+
 
 class Door(unittest.TestCase):
     def setUp(self):
@@ -304,6 +318,25 @@ class Door(unittest.TestCase):
         self.assertEqual(st.take(early_reply)[0], "object")
         self.assertEqual((st.signer, st.edge), (signer, edge))
         self.bound()
+
+    def test_moved_at_is_kept_on_a_move(self):
+        w = self.ward
+        st = Standing(w.invite(REACHES["moved"]), self.src)
+        knock = st.next_box("echo", '{"m":1}')
+        reply = w.arrive(knock)
+        r = st.take(reply)
+        self.assertEqual((r[2], r[4]), (b'{"m":1}', ["tcp://127.0.0.1:9"]))
+        self.assertEqual(len(reply), len(b'{"object":{"m":1},"seen":null,"at":["tcp://127.0.0.1:9"]}') + 112)
+        self.assertEqual(st.at, ["tcp://127.0.0.1:9"])
+        # an object that moves nothing leaves the addresses kept
+        st.at = []
+        early = w.arrive(st.next_box("echo", "{}"))
+        early_pending = st.pending
+        st.take(w.arrive(st.next_box("echo", "{}")))
+        st.at = []
+        st.pending = early_pending
+        self.assertEqual(st.take(early)[4], ["tcp://127.0.0.1:9"])
+        self.assertEqual(st.at, [])
 
     def test_zero_head(self):
         signer = os.urandom(32)
@@ -498,6 +531,14 @@ class Harness(unittest.TestCase):
             inv4["at"] = web  # not an array: read as absent
             got = req({"id": "s4", "op": "send", "ward": me, "invitation": inv4})
             self.assertEqual(got, {"id": "s4", "read": {"nothing": True}})
+
+            # a reply's at is read, and dialed before the invitation's
+            inv5 = req({"id": "i5", "op": "invite", "ward": far, "heir": "m", "reach": "moved"})["invitation"]
+            inv5["at"] = [web]
+            got = req({"id": "s5", "op": "send", "ward": me, "invitation": inv5, "method": "e", "args": {"b": 1}})
+            self.assertEqual(got, {"id": "s5", "read": {"object": {"b": 1}, "seen": None, "at": ["tcp://127.0.0.1:9"]}})
+            got = req({"id": "s6", "op": "send", "ward": me, "invitation": inv5, "method": "e", "args": {"b": 2}})
+            self.assertEqual(got["read"]["object"], {"b": 2})
         finally:
             proc.stdin.close()
             self.assertEqual(proc.wait(30), 0)

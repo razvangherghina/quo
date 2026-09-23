@@ -14,15 +14,20 @@ const DESCRIBE_NONE: &[u8] = br#"{"asks":[]}"#;
 pub enum Reach {
     Echo,
     Marked,
+    Moved,
     Null,
     Silent,
 }
+
+/// The `at` the reach `moved` writes on every object, as the harness fixes it.
+const MOVED_AT: &[u8] = br#"["tcp://127.0.0.1:9"]"#;
 
 impl Reach {
     pub fn named(s: &str) -> Option<Reach> {
         match s {
             "echo" => Some(Reach::Echo),
             "marked" => Some(Reach::Marked),
+            "moved" => Some(Reach::Moved),
             "null" => Some(Reach::Null),
             "silent" => Some(Reach::Silent),
             _ => None,
@@ -37,7 +42,7 @@ impl Reach {
             // The describe every reach but silent gives the empty ask: no entry, no lang.
             _ if !named => (DESCRIBE_NONE.to_vec(), seen_of),
             Reach::Null => (b"null".to_vec(), "null"),
-            Reach::Echo | Reach::Marked => {
+            Reach::Echo | Reach::Marked | Reach::Moved => {
                 let obj = match args {
                     Some((n, src)) => {
                         // This kit echoes args nesting sixty-four deep at most,
@@ -56,6 +61,10 @@ impl Reach {
         t.extend_from_slice(&object);
         t.extend_from_slice(b",\"seen\":");
         t.extend_from_slice(seen.as_bytes());
+        if *self == Reach::Moved {
+            t.extend_from_slice(b",\"at\":");
+            t.extend_from_slice(MOVED_AT);
+        }
         t.push(b'}');
         Some(t)
     }
@@ -166,11 +175,7 @@ impl Invitation {
         let lock = f("lock", LOCK_EK_LEN).filter(|l| ek_valid(l))?;
         let mut w = [0u8; 64];
         w.copy_from_slice(&ward);
-        let at = n
-            .get("at")
-            .and_then(|a| json::elements(a.text(t)))
-            .map(|es| es.iter().filter_map(|e| e.as_str()).collect())
-            .unwrap_or_default();
+        let at = at_of(n.get("at"), t).unwrap_or_default();
         Some(Invitation { ward: w, heir: arr32(&heir), secret: arr32(&secret), lock, at })
     }
 
@@ -180,6 +185,12 @@ impl Invitation {
     pub fn padlock(&self) -> [u8; 32] {
         arr32(&self.ward[32..])
     }
+}
+
+/// The strings of an `at`, in order, or None where it is absent or no array.
+/// An element that is not a string is skipped; which strings are addresses is the carrier's to say.
+fn at_of(at: Option<&Node>, t: &[u8]) -> Option<Vec<String>> {
+    json::elements(at?.text(t)).map(|es| es.iter().filter_map(|e| e.as_str()).collect())
 }
 
 fn is_pk(n: &Node) -> Option<[u8; 32]> {
@@ -460,7 +471,8 @@ impl Door {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Read {
-    Object { object: String, seen: String },
+    /// `at` holds the strings of the reply's `at`, None where it carried none.
+    Object { object: String, seen: String, at: Option<Vec<String>> },
     Silence,
     Word(String),
     Nothing,
@@ -469,7 +481,11 @@ pub enum Read {
 impl Read {
     pub fn to_json(&self) -> String {
         match self {
-            Read::Object { object, seen } => format!("{{\"object\":{object},\"seen\":{seen}}}"),
+            Read::Object { object, seen, at: None } => format!("{{\"object\":{object},\"seen\":{seen}}}"),
+            Read::Object { object, seen, at: Some(at) } => {
+                let a: Vec<String> = at.iter().map(|s| json::quote(s)).collect();
+                format!("{{\"object\":{object},\"seen\":{seen},\"at\":[{}]}}", a.join(","))
+            }
             Read::Silence => "{\"silence\":true}".into(),
             Read::Word(w) => format!("{{\"quo\":{}}}", json::quote(w)),
             Read::Nothing => "{\"nothing\":true}".into(),
@@ -504,6 +520,9 @@ enum AskKind {
 
 pub struct Standing {
     pub inv: Invitation,
+    /// The addresses the last reply's `at` gave, which the carrier keeps and dials
+    /// in place of an invitation's.
+    pub at: Option<Vec<String>>,
     stage: Stage,
     seq: u64,
     pending: Option<Pending>,
@@ -517,7 +536,7 @@ pub enum AskError {
 
 impl Standing {
     pub fn new(inv: Invitation) -> Standing {
-        Standing { inv, stage: Stage::New, seq: 0, pending: None }
+        Standing { inv, at: None, stage: Stage::New, seq: 0, pending: None }
     }
 
     /// Seal the next ask. `method` and `args` are JSON text already held to the value rules.
@@ -662,14 +681,18 @@ pub fn read_reply(sign_pk: &[u8; 32], lid_secret: &[u8; 32], bx: &[u8]) -> Optio
     }
     let silence = Some((Read::Silence, agr));
     let Some(n) = json::object(text) else { return silence };
-    if n.has_only(&["object", "seen"]) {
+    if n.has_only(&["object", "seen"]) || n.has_only(&["object", "seen", "at"]) {
         let o = n.get("object")?;
         let s = n.get("seen")?;
         if !(s.is_null() || s.is_str()) {
             return silence;
         }
         return Some((
-            Read::Object { object: json::minify(o.text(text)), seen: json::minify(s.text(text)) },
+            Read::Object {
+                object: json::minify(o.text(text)),
+                seen: json::minify(s.text(text)),
+                at: at_of(n.get("at"), text),
+            },
             agr,
         ));
     }
@@ -725,7 +748,7 @@ mod tests {
         let r = d.arrive(&b);
         let text = br#"{"object":{"k":1},"seen":null}"#;
         assert_eq!(r.len(), text.len() + 112);
-        assert_eq!(s.read(Some(&r)).unwrap(), Read::Object { object: r#"{"k":1}"#.into(), seen: "null".into() });
+        assert_eq!(s.read(Some(&r)).unwrap(), Read::Object { object: r#"{"k":1}"#.into(), seen: "null".into(), at: None });
         let b2 = s.ask(Some(b"\"m\""), Some(args.as_bytes())).unwrap();
         assert_eq!(b2.len(), payload_len + 160);
     }
@@ -737,9 +760,9 @@ mod tests {
         for i in 0..5 {
             let a = format!("{{\"i\":{i}}}");
             let r = roundtrip(&mut d, &mut s, Some("go"), Some(&a));
-            assert_eq!(r, Read::Object { object: a, seen: "\"1\"".into() });
+            assert_eq!(r, Read::Object { object: a, seen: "\"1\"".into(), at: None });
         }
-        assert_eq!(roundtrip(&mut d, &mut s, None, None), Read::Object { object: r#"{"asks":[]}"#.into(), seen: "\"1\"".into() });
+        assert_eq!(roundtrip(&mut d, &mut s, None, None), Read::Object { object: r#"{"asks":[]}"#.into(), seen: "\"1\"".into(), at: None });
     }
 
     #[test]
@@ -827,7 +850,7 @@ mod tests {
         assert_eq!(roundtrip(&mut d, &mut s, Some("m"), Some(r#"{"k":1,"k":2}"#)), Read::Silence);
         assert_eq!(d.last_case, Some(Case::C13));
         let odd = r#"{"v":"\ud800","n":[-0,1e400]}"#;
-        assert_eq!(roundtrip(&mut d, &mut s, Some("m"), Some(odd)), Read::Object { object: odd.into(), seen: "null".into() });
+        assert_eq!(roundtrip(&mut d, &mut s, Some("m"), Some(odd)), Read::Object { object: odd.into(), seen: "null".into(), at: None });
     }
 
     #[test]
@@ -942,6 +965,43 @@ mod tests {
         ));
     }
 
+    /// A reply's `at` is read as an invitation's is, and beside silence or a word it is a field beside the shape.
+    #[test]
+    fn a_reply_at_is_read() {
+        let d = door(None);
+        let lid_secret = draw::<32>();
+        let lid = x25519_pub(&lid_secret);
+        let read = |text: &str| read_reply(&d.key.sign_pk, &lid_secret, &d.seal_reply(Some(lid), text.as_bytes()).0).unwrap().0;
+        let object = |o: &str, seen: &str, at: Option<Vec<&str>>| Read::Object {
+            object: o.into(),
+            seen: seen.into(),
+            at: at.map(|a| a.into_iter().map(String::from).collect()),
+        };
+        for (text, want) in [
+            (r#"{"object":{"k":1},"seen":"s2","at":["tcp://127.0.0.1:9","ws://h/q"]}"#, object(r#"{"k":1}"#, "\"s2\"", Some(vec!["tcp://127.0.0.1:9", "ws://h/q"]))),
+            (r#"{"at":[5,"no scheme",null,["q"]],"object":[],"seen":null}"#, object("[]", "null", Some(vec!["no scheme"]))),
+            (r#"{"object":2,"seen":null,"at":"tcp://h:1"}"#, object("2", "null", None)),
+            (r#"{"object":3,"seen":null,"at":null}"#, object("3", "null", None)),
+            (r#"{"object":1,"seen":null,"at":[],"at":[]}"#, Read::Silence),
+            (r#"{"object":1,"at":[]}"#, Read::Silence),
+            (r#"{"silence":true,"at":[]}"#, Read::Silence),
+            (r#"{"quo":"repeated","at":[]}"#, Read::Silence),
+        ] {
+            assert_eq!(read(text), want, "{text}");
+        }
+        assert_eq!(
+            object("1", "null", Some(vec!["tcp://h:1", "x\"y"])).to_json(),
+            r#"{"object":1,"seen":null,"at":["tcp://h:1","x\"y"]}"#
+        );
+        assert_eq!(object("1", "null", None).to_json(), r#"{"object":1,"seen":null}"#);
+
+        let mut d = door(None);
+        let mut s = pair(&mut d, "a", Reach::Moved);
+        let at = Some(vec!["tcp://127.0.0.1:9".to_string()]);
+        assert_eq!(roundtrip(&mut d, &mut s, None, None), Read::Object { object: r#"{"asks":[]}"#.into(), seen: "null".into(), at: at.clone() });
+        assert_eq!(roundtrip(&mut d, &mut s, Some("m"), Some(r#"{"k":1}"#)), Read::Object { object: r#"{"k":1}"#.into(), seen: "null".into(), at });
+    }
+
     fn zero_ask(padlock: &[u8; 32], signer: &[u8; 32], payload: &[u8]) -> (Vec<u8>, [u8; 32]) {
         let lid_secret = draw::<32>();
         let lid = x25519_pub(&lid_secret);
@@ -966,7 +1026,7 @@ mod tests {
         let mut d = door(Some(Reach::Echo));
         let (b, ls) = zero_ask(&d.key.padlock, &sk, payload.as_bytes());
         let r = d.arrive(&b);
-        assert_eq!(read_reply(&d.key.sign_pk, &ls, &r).unwrap().0, Read::Object { object: "{\"q\":2}".into(), seen: "null".into() });
+        assert_eq!(read_reply(&d.key.sign_pk, &ls, &r).unwrap().0, Read::Object { object: "{\"q\":2}".into(), seen: "null".into(), at: None });
         let r = d.arrive(&b);
         assert!(matches!(read_reply(&d.key.sign_pk, &ls, &r).unwrap().0, Read::Object { .. }));
 

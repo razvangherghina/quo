@@ -42,6 +42,34 @@ import {
 import { parseValue, readPayload, readReply, sameValue, whyNoDescribe } from "./value.js";
 
 const EMPTY_DESCRIBE = parseValue(Buffer.from('{"asks":[]}')).value;
+// The `at` HARNESS.md's reach `moved` writes on every object.
+const MOVED_AT = ["tcp://127.0.0.1:9"];
+
+/** Why an `at` a door wrote on an object is not an array of addresses, each as its carrier writes it, or null. */
+function whyNoAt(v) {
+  if (v.type !== "array") return "at is not an array";
+  for (const [n, e] of v.items.entries()) {
+    if (e.type !== "string" || !parseAddress(e.value)) return `entry ${n} of at is not an address`;
+    const why = carrierWritingOf(e.value);
+    if (why) return `entry ${n} of at is ${why}`;
+  }
+  return null;
+}
+
+/** The addresses a reader may keep from a reply's `at`: every address a carrier writes, in order. */
+function keepable(at) {
+  return at.filter((s) => typeof s === "string" && parseAddress(s) && ["tcp", "http", "https", "ws", "wss"].includes(parseAddress(s).scheme) && !carrierWritingOf(s));
+}
+
+/** Whether `got` holds some of `from`, in the order `from` gives them. */
+function inOrder(got, from) {
+  let i = 0;
+  for (const g of got) {
+    while (i < from.length && from[i] !== g) i++;
+    if (i++ >= from.length) return false;
+  }
+  return true;
+}
 
 export const SIZE = 1048576;
 const SILENCE = Buffer.from('{"silence":true}');
@@ -343,6 +371,8 @@ export class Session {
     if (rr.shape === "silence" && !text.equals(SILENCE)) {
       return { kind: "invalid", why: `silence written as ${J(text.toString("utf8"))}, not the sixteen bytes` };
     }
+    const noAt = rr.at && whyNoAt(rr.at);
+    if (noAt) return { kind: "invalid", why: `reply text: ${noAt}: ${text.toString("utf8").slice(0, 120)}` };
     return { ...rr, kind: rr.shape, agr, text, boxLen: rb.length };
   }
 
@@ -420,7 +450,13 @@ export class Session {
   wantFor(reach, o) {
     const named = o.method !== undefined;
     if (reach === "silent") return ["silence"];
-    if (reach === "null" && named) return ["object", (r) => (r.object.type === "null" && r.seen === null ? null : `wanted object null seen null, got ${r.text}`)];
+    // The reach `moved` writes MOVED_AT on every object, and every other reach writes no `at`.
+    const wantAt = (r) => {
+      const got = r.at ? r.at.items.map((e) => e.value) : undefined;
+      if (reach === "moved") return isDeepStrictEqual(got, MOVED_AT) ? null : `moved at ${J(got)}, wanted ${J(MOVED_AT)}`;
+      return got === undefined ? null : `at ${J(got)}, wanted none`;
+    };
+    if (reach === "null" && named) return ["object", (r) => (r.object.type === "null" && r.seen === null ? wantAt(r) : `wanted object null seen null, got ${r.text}`)];
     // Every reach but silent answers the empty ask with the describe {"asks":[]}.
     let args = named ? { type: "object", entries: new Map() } : EMPTY_DESCRIBE;
     if (named && o.args !== undefined) {
@@ -430,9 +466,9 @@ export class Session {
       "object",
       (r) => {
         if (!sameValue(r.object, args)) return `object is not the args: ${r.text.toString("utf8").slice(0, 160)}`;
-        if (reach === "marked") return r.seen === "1" ? null : `marked seen ${J(r.seen)}, wanted "1"`;
+        if (reach === "marked") return r.seen === "1" ? wantAt(r) : `marked seen ${J(r.seen)}, wanted "1"`;
         if (r.seen !== null) return `${named ? "named" : "empty"} ask seen ${J(r.seen)}, wanted null`;
-        return null;
+        return wantAt(r);
       },
     ];
   }
@@ -690,7 +726,7 @@ async function atOneMoment(s) {
 
 async function theReaches(s) {
   const w = await s.ward("the reaches");
-  for (const reach of [null, "echo", "marked", "null", "silent"]) {
+  for (const reach of [null, "echo", "marked", "moved", "null", "silent"]) {
     const name = reach ?? "default";
     let h;
     try {
@@ -718,7 +754,7 @@ async function theReaches(s) {
 
 async function theZeroHead(s) {
   const zero = (ward, o, want, label) => s.ask({ ward, reach: ward.reach, pkHex: null }, { zero: true, ward, signer: newKey(), next: null, seq: 1, ...o }, want, `zero head: ${label}`);
-  for (const reach of ["echo", "marked", "null", "silent"]) {
+  for (const reach of ["echo", "marked", "moved", "null", "silent"]) {
     let w;
     try {
       w = await s.ward(`zero head ${reach}`, reach);
@@ -1107,6 +1143,18 @@ const REPLIES = {
   "an object with seen null, padded and reordered": { text: ' {\n "seen" : null ,\t"object" : [1.5, {"k":"v"}] } ', read: { object: [1.5, { k: "v" }], seen: null } },
   "the object null": { text: '{"object":null,"seen":""}', read: { object: null, seen: "" } },
   "a box of exactly the size": { text: `{"object":"${big(SIZE)}","seen":null}`, read: { object: big(SIZE), seen: null } },
+  "an object with at": {
+    text: '{"object":{"k":1},"seen":"s2","at":["tcp://127.0.0.1:9","ws://127.0.0.1:9/quo"]}',
+    read: { object: { k: 1 }, seen: "s2" },
+    at: ["tcp://127.0.0.1:9", "ws://127.0.0.1:9/quo"],
+  },
+  "an object whose at holds what is skipped": {
+    text: '{"at":[5,"no scheme","tcp://127.0.0.1","mailto:x@example.org",null,"TCP://127.0.0.1:9"],"object":[],"seen":null}',
+    read: { object: [], seen: null },
+    at: [5, "no scheme", "tcp://127.0.0.1", "mailto:x@example.org", null, "TCP://127.0.0.1:9"],
+  },
+  "an object whose at is no array": { text: '{"object":2,"seen":null,"at":"tcp://127.0.0.1:9"}', read: { object: 2, seen: null }, at: "tcp://127.0.0.1:9" },
+  "an object whose at is null": { text: '{"object":3,"seen":null,"at":null}', read: { object: 3, seen: null }, at: null },
   silence: { text: '{"silence":true}', read: SIL },
   "silence padded": { text: ' { "silence" : true }\n', read: SIL },
   removed: word("removed"),
@@ -1139,6 +1187,9 @@ const REPLIES = {
   "seen a number": { text: '{"object":1,"seen":5}', read: SIL },
   "seen absent": { text: '{"object":1}', read: SIL },
   "a duplicate key": { text: '{"object":1,"object":2,"seen":null}', read: SIL },
+  "at twice": { text: '{"object":1,"seen":null,"at":[],"at":[]}', read: SIL },
+  "silence with at": { text: '{"silence":true,"at":[]}', read: SIL },
+  "a word with at": { text: '{"quo":"repeated","at":[]}', read: SIL },
   "a fourth word": { text: '{"quo":"gone"}', read: SIL },
   "silence false": { text: '{"silence":false}', read: SIL },
   "a reply text that is no JSON": { text: '{"object":1,', read: SIL },
@@ -1283,7 +1334,15 @@ export class AskerRun {
       : await s.stand.request({ op: "read", ward: this.ward.pk, invitation: rel.inv, reply: w ? hex(w.box) : null });
     if (!s.check(`${label}: read answers`, "read" in a, J(a).slice(0, 200), "harness")) throw new Lost();
     const shown = J(a.read).slice(0, 160);
-    s.check(`${label}: the kit reads ${name} as ${J(r.read).slice(0, 60)}`, isDeepStrictEqual(a.read, r.read), `read ${shown}`);
+    // `at` is read apart: a kit that reads it keeps some of the addresses a
+    // reply's array carries, in their order, and one that does not reports none.
+    const { at: kept, ...read } = a.read && typeof a.read === "object" ? a.read : { at: undefined };
+    s.check(`${label}: the kit reads ${name} as ${J(r.read).slice(0, 60)}`, isDeepStrictEqual(a.read && typeof a.read === "object" ? read : a.read, r.read), `read ${shown}`);
+    if (kept !== undefined) {
+      const from = Array.isArray(r.at) ? keepable(r.at) : [];
+      const ok = r.read.object !== undefined && Array.isArray(kept) && inOrder(kept, from);
+      s.check(`${label}: the at the kit keeps is addresses the reply's at carries, in order`, ok, `kept ${J(kept).slice(0, 160)}`);
+    }
     if (r.read.object !== undefined) {
       // The standing moves when an object comes back to an ask whose number is
       // above every ask it has moved on, and on nothing else. The verifier
@@ -1376,7 +1435,15 @@ export class AskerRun {
 async function theAsker(s) {
   const ward = await s.ward("the asker");
   const run = new AskerRun(s, ward, verifierWard("the verifier's ward"));
-  const objects = ["an object with seen", "an object with seen null, padded and reordered", "the object null"];
+  const objects = [
+    "an object with seen",
+    "an object with at",
+    "an object with seen null, padded and reordered",
+    "an object whose at holds what is skipped",
+    "the object null",
+    "an object whose at is no array",
+    "an object whose at is null",
+  ];
   const still = Object.keys(REPLIES).filter((k) => REPLIES[k].read.object === undefined);
   const long = ["silence", "an object with seen"];
   still.forEach((k, i) => long.push(k, objects[i % objects.length]));

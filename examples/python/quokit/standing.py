@@ -27,6 +27,7 @@ class Standing:
         self.seq = 0
         self.moved = 0           # the highest number this standing moved on
         self.pending = None      # (lid secret, key announced, edge sent under, number)
+        self.at = []             # the addresses kept from the last object it moved on
 
     def next_box(self, method=None, args=None):
         """The box of the next ask on this relation."""
@@ -70,7 +71,7 @@ class Standing:
 
     def take(self, reply):
         """Read the reply to the last box, or None for nothing. Moves only on an object.
-        Returns ('object', value, raw, seen), ('silence',), ('word', w) or ('nothing',)."""
+        Returns ('object', value, raw, seen, at), ('silence',), ('word', w) or ('nothing',)."""
         pending, self.pending = self.pending, None
         if reply is None or pending is None:
             return ("nothing",)
@@ -81,6 +82,8 @@ class Standing:
             self.signer = key
             self.edge = follow(edge, agr)
             self.phase = BOUND
+            if reading[4] is not None:
+                self.at = reading[4]
         return reading
 
 

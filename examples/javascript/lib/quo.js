@@ -73,11 +73,13 @@ export function judgePayload(bytes, headHex) {
 }
 
 // Writes a reply text. `object` is raw JSON text, vouched for by what stands behind the door.
-export function objectText(object, seen) {
-  return Buffer.from(`{"object":${object},"seen":${seen === null ? "null" : JSON.stringify(seen)}}`);
+// `at`, when given, is the addresses the ward is reached at, the preferred first.
+export function objectText(object, seen, at) {
+  const where = at === undefined ? "" : `,"at":${JSON.stringify(at)}`;
+  return Buffer.from(`{"object":${object},"seen":${seen === null ? "null" : JSON.stringify(seen)}${where}}`);
 }
 
-// What stands behind a door: a function of an arrival giving { object, seen } or null for silence.
+// What stands behind a door: a function of an arrival giving { object, seen, at? } or null for silence.
 // `args` arrives as the raw text of a JSON object, at any depth; `unread` marks args the kit does not read.
 // The describe every reach but silent gives the empty ask: no entry, no lang.
 const describeNone = '{"asks":[]}';
@@ -85,9 +87,14 @@ const echo = (seen) => (a) => {
   if (a.method === undefined) return { object: describeNone, seen };
   return a.unread ? null : { object: a.args ?? "{}", seen };
 };
+const moved = (a) => {
+  const out = echo(null)(a);
+  return out && { ...out, at: ["tcp://127.0.0.1:9"] };
+};
 export const reaches = {
   echo: echo(null),
   marked: echo("1"),
+  moved,
   null: (a) => ({ object: a.method === undefined ? describeNone : "null", seen: null }),
   silent: () => null,
 };
@@ -211,7 +218,7 @@ export class Ward {
   }
 
   answer(lid, out) {
-    return sealReply({ lid, text: out ? objectText(out.object, out.seen) : SILENCE, signer: this.signer });
+    return sealReply({ lid, text: out ? objectText(out.object, out.seen, out.at) : SILENCE, signer: this.signer });
   }
 
   // The standing side of this ward on one invitation.
@@ -241,7 +248,8 @@ export function readReply(box, lidSecret, signPub) {
   if (node.t !== "object") return { kind: "silence" };
   const keys = [...node.fields.keys()].sort().join(",");
   const f = node.fields;
-  if (keys === "object,seen") {
+  // An `at` beside an object never makes it no object. This kit keeps nothing of it.
+  if (keys === "object,seen" || keys === "at,object,seen") {
     const seen = f.get("seen");
     if (!(seen.t === "null" || seen.t === "string")) return { kind: "silence" };
     return { kind: "object", node: f.get("object"), text, seen: seen.v, agreement: r.agreement };

@@ -12,20 +12,25 @@ from .values import Invalid, JObj, parse
 DESCRIBE_NONE = b'{"asks":[]}'
 
 
-def reach_echo(p, marked=False):
+# The `at` the reach `moved` writes on every object.
+MOVED_AT = ["tcp://127.0.0.1:9"]
+
+
+def reach_echo(p, marked=False, at=None):
     seen = "1" if marked else None
     if not p.has_method:
-        return object_text(DESCRIBE_NONE, seen)
+        return object_text(DESCRIBE_NONE, seen, at)
     try:
         parse(p.args_raw)  # echo does not read args whose own keys repeat
     except Invalid:
         return None
-    return object_text(p.args_raw, seen)
+    return object_text(p.args_raw, seen, at)
 
 
 REACHES = {
     "echo": lambda p: reach_echo(p),
     "marked": lambda p: reach_echo(p, True),
+    "moved": lambda p: reach_echo(p, at=MOVED_AT),
     "null": lambda p: object_text(b"null" if p.has_method else DESCRIBE_NONE, None),
     "silent": lambda p: None,
 }

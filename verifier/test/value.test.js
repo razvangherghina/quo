@@ -41,6 +41,12 @@ test("a reply is one of three shapes", () => {
   assert.ok(readReply(b('{"object":1,"seen":null,"x":1}')).error);
   assert.ok(readReply(b('{"object":1,"object":2,"seen":null}')).error);
   assert.ok(!readReply(b(`{"object":${"[".repeat(500)}${"]".repeat(500)},"seen":null}`)).error);
+  assert.equal(readReply(b('{"object":1,"seen":null,"at":["tcp://h:1"]}')).at.type, "array");
+  assert.equal(readReply(b('{"object":1,"seen":null,"at":5}')).shape, "object");
+  assert.equal(readReply(b('{"object":1,"seen":null}')).at, undefined);
+  assert.ok(readReply(b('{"silence":true,"at":[]}')).error);
+  assert.ok(readReply(b('{"quo":"removed","at":[]}')).error);
+  assert.ok(readReply(b('{"object":1,"seen":null,"at":[],"at":[]}')).error);
 });
 
 test("the object that answers the empty ask is a describe or says why not", () => {

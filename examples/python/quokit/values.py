@@ -1,6 +1,7 @@
 """The value rules of SPEC.md, applied to the JSON text itself.
 
-Only a top-level object's own keys are read. Every container below them is
+Only a top-level object's own keys are read, and the items of an array
+`items` is asked for. Every container below them is
 checked against the grammar of RFC 8259 and nothing else: no depth, no
 repeated keys, no surrogate rule."""
 
@@ -156,6 +157,22 @@ def _object(s, i):
             return o, i + 1
         if c != ",":
             raise Invalid("object")
+        i += 1
+
+
+def items(text, start):
+    """The items of the array at `start` in a text `parse` took: a string
+    decoded, a container as a Container, a literal or a number as read."""
+    out = []
+    i = _ws(text, start + 1)
+    if text[i:i + 1] == "]":
+        return out
+    while True:
+        v, i = _member(text, _ws(text, i))
+        out.append(v)
+        i = _ws(text, i)
+        if text[i:i + 1] == "]":
+            return out
         i += 1
 
 

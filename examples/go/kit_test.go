@@ -206,21 +206,48 @@ func TestSilentAndNull(t *testing.T) {
 	}
 }
 
+// The reach `moved` writes `at` on every object, and the standing reads the
+// reply as an object and moves on it.
+func TestMovedWritesAt(t *testing.T) {
+	w, st := pair(t, "moved")
+	for i := range 3 {
+		m := "m"
+		sent, _ := st.Seal(&m, []byte(`{"i":1}`))
+		reply := w.Arrive(sent.Box)
+		text, _, err := openReply(reply, sent.lidSecret, st.wardSignPK)
+		if err != nil || string(text) != `{"object":{"i":1},"seen":null,"at":["tcp://127.0.0.1:9"]}` {
+			t.Fatalf("ask %d: reply text %s, %v", i, text, err)
+		}
+		if r := st.ReadReply(sent, reply); r.Kind != "object" || string(r.Object) != `{"i":1}` {
+			t.Fatalf("ask %d read %+v", i, r)
+		}
+	}
+}
+
 func TestReplyShapes(t *testing.T) {
 	for text, want := range map[string]string{
-		`{"silence":true}`:                     "silence",
-		` { "silence" : true }`:                "silence",
-		`{"quo":"repeated"}`:                   "quo",
-		`{"quo":"gone"}`:                       "silence",
-		`{"object":1,"seen":null}`:             "object",
-		`{"seen":"s","object":[1.5]}`:          "object",
-		`{"object":1}`:                         "silence",
-		`{"object":1,"seen":5}`:                "silence",
-		`{"object":-0,"seen":null}`:            "object",
-		`{"object":{"a":1,"a":2},"seen":null}`: "object",
-		`{"object":1,"object":1,"seen":null}`:  "silence",
-		`{"object":1,"seen":null,"x":1}`:       "silence",
-		`[1]`:                                  "silence",
+		`{"silence":true}`:                                    "silence",
+		` { "silence" : true }`:                               "silence",
+		`{"quo":"repeated"}`:                                  "quo",
+		`{"quo":"gone"}`:                                      "silence",
+		`{"object":1,"seen":null}`:                            "object",
+		`{"seen":"s","object":[1.5]}`:                         "object",
+		`{"object":1}`:                                        "silence",
+		`{"object":1,"seen":5}`:                               "silence",
+		`{"object":-0,"seen":null}`:                           "object",
+		`{"object":{"a":1,"a":2},"seen":null}`:                "object",
+		`{"object":1,"object":1,"seen":null}`:                 "silence",
+		`{"object":1,"seen":null,"x":1}`:                      "silence",
+		`[1]`:                                                 "silence",
+		`{"object":1,"seen":null,"at":["tcp://127.0.0.1:9"]}`: "object",
+		`{"at":[5,"no scheme",null,"TCP://127.0.0.1:9"],"object":1,"seen":null}`: "object",
+		`{"object":1,"seen":null,"at":"tcp://127.0.0.1:9"}`:                      "object",
+		`{"object":1,"seen":null,"at":null}`:                                     "object",
+		`{"object":1,"seen":null,"at":[],"at":[]}`:                               "silence",
+		`{"object":1,"seen":5,"at":[]}`:                                          "silence",
+		`{"object":1,"at":[]}`:                                                   "silence",
+		`{"silence":true,"at":[]}`:                                               "silence",
+		`{"quo":"repeated","at":[]}`:                                             "silence",
 	} {
 		if r := readReplyText([]byte(text)); r.Kind != want {
 			t.Errorf("%s read as %s", text, r.Kind)

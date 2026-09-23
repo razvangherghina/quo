@@ -561,11 +561,12 @@ pub fn writeCompact(w: *std.Io.Writer, raw: []const u8) !void {
 pub const Reach = enum {
     echo,
     marked,
+    moved,
     null_,
     silent,
 
     pub fn fromName(s: []const u8) ?Reach {
-        const names = [_]struct { []const u8, Reach }{ .{ "echo", .echo }, .{ "marked", .marked }, .{ "null", .null_ }, .{ "silent", .silent } };
+        const names = [_]struct { []const u8, Reach }{ .{ "echo", .echo }, .{ "marked", .marked }, .{ "moved", .moved }, .{ "null", .null_ }, .{ "silent", .silent } };
         for (names) |n| if (std.mem.eql(u8, s, n[0])) return n[1];
         return null;
     }
@@ -579,7 +580,7 @@ fn behind(a: Allocator, reach: Reach, named: bool, args: ?Json.Node) !?[]const u
         .silent => return null,
         // The describe every reach but silent gives the empty ask: no entry, no lang.
         .null_ => if (named) "null" else describe_none,
-        .echo, .marked => blk: {
+        .echo, .marked, .moved => blk: {
             if (!named) break :blk describe_none;
             const ar = args orelse break :blk "{}";
             // This kit does not read `args` whose own keys repeat a name: silence, by choice.
@@ -591,7 +592,8 @@ fn behind(a: Allocator, reach: Reach, named: bool, args: ?Json.Node) !?[]const u
         },
     };
     const seen = if (reach == .marked) "\"1\"" else "null";
-    return try std.fmt.allocPrint(a, "{{\"object\":{s},\"seen\":{s}}}", .{ object, seen });
+    const at = if (reach == .moved) ",\"at\":[\"tcp://127.0.0.1:9\"]" else "";
+    return try std.fmt.allocPrint(a, "{{\"object\":{s},\"seen\":{s}{s}}}", .{ object, seen, at });
 }
 
 // ---------------------------------------------------------------- the door
@@ -855,7 +857,9 @@ pub fn readText(a: Allocator, text: []const u8) !Read {
         else => return .silence,
     };
     if (n.kind != .object) return .silence;
-    if (n.keys.len == 2) {
+    // An `at` beside `object` and `seen` leaves the reply an object whatever it holds.
+    // This standing keeps no address from it.
+    if (n.keys.len == 2 or (n.keys.len == 3 and n.get("at") != null)) {
         const o = n.get("object") orelse return .silence;
         const s = n.get("seen") orelse return .silence;
         return switch (s.kind) {
@@ -1164,6 +1168,24 @@ fn expectObject(r: Read, object: []const u8, seen: ?[]const u8) !void {
     }
 }
 
+test "the reach moved writes at on every object, and the standing moves on it" {
+    var arena = std.heap.ArenaAllocator.init(testing.allocator);
+    defer arena.deinit();
+    const a = arena.allocator();
+    var ent: Entropy = .{ .fixed = true, .state = 9 };
+    var door = Door.init(testing.allocator, WardKeys.fromText("moved"), null);
+    defer door.deinit();
+    var st = try Standing.init(testing.allocator, try door.invite(&ent, "h", .moved));
+    defer st.deinit();
+    const p: Pair = .{ .a = a, .ent = &ent, .door = &door, .standing = &st };
+    for ([_]struct { ?[]const u8, ?[]const u8, []const u8 }{ .{ "\"m\"", "{\"k\":1}", "{\"k\":1}" }, .{ null, null, describe_none }, .{ "\"n\"", "{\"v\":[2]}", "{\"v\":[2]}" } }) |c| {
+        const reply = try p.arrive(try p.ask(c[0], c[1]));
+        const text = (try openReply(a, st.last.?.lid_secret, reply, st.ward_sign)).?.text;
+        try testing.expectEqualStrings(try std.fmt.allocPrint(a, "{{\"object\":{s},\"seen\":null,\"at\":[\"tcp://127.0.0.1:9\"]}}", .{c[2]}), text);
+        try expectObject(try st.read(a, reply), c[2], null);
+    }
+}
+
 test "a standing and a door: knock, asks, and a knock recovered" {
     var arena = std.heap.ArenaAllocator.init(testing.allocator);
     defer arena.deinit();
@@ -1319,6 +1341,13 @@ test "reply texts" {
     }
     try testing.expectEqualStrings("repeated", (try readText(a, " { \"quo\" : \"repeated\" } ")).word);
     try expectObject(try readText(a, "{\"seen\":\"s\",\"object\":[1.5]}"), "[1.5]", "\"s\"");
+    // An `at` of any value leaves an object an object, and beside any other shape is a field beside it.
+    for ([_][]const u8{ "[\"tcp://127.0.0.1:9\"]", "[5,\"no scheme\",null]", "\"tcp://127.0.0.1:9\"", "null", "{}" }) |at| {
+        try expectObject(try readText(a, try std.fmt.allocPrint(a, "{{\"at\":{s},\"object\":2,\"seen\":null}}", .{at})), "2", null);
+    }
+    for ([_][]const u8{ "{\"object\":1,\"seen\":null,\"at\":[],\"at\":[]}", "{\"object\":1,\"seen\":null,\"at\":[],\"x\":1}", "{\"object\":1,\"at\":[],\"x\":1}", "{\"silence\":true,\"at\":[]}", "{\"quo\":\"repeated\",\"at\":[]}" }) |t| {
+        try testing.expect(try readText(a, t) == .silence);
+    }
     // Inside `object` the kit takes any JSON text.
     const odd = "{\"x\":-0,\"x\":\"\\udc00\",\"y\":1e400}";
     try expectObject(try readText(a, try std.fmt.allocPrint(a, "{{\"object\":{s},\"seen\":\"\\ud800\"}}", .{odd})), odd, "\"\\ud800\"");
