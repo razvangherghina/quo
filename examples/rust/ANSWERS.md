@@ -227,3 +227,9 @@ strings removed. On the channel, `method` and `args` are taken by the same
 grammar and sent byte for byte. The reason is that Quo reads nothing there.
 Refusing a text the grammar allows would put the kit's taste in front of
 the spec's silence.
+
+## What a kit shows
+
+**28.** The kit reads no domain's vouch and shows none. The stand program
+answers the harness alone, and has no person to show a domain to. The
+reason is that a vouch is read for a person, and here there is none.

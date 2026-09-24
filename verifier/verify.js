@@ -1290,7 +1290,7 @@ function writeReply(mine, t, r) {
  * With `at` set, every invitation it mints carries that `at`.
  */
 export class AskerRun {
-  constructor(s, ward, mine, via = null, at = undefined) {
+  constructor(s, ward, mine, via = null, at) {
     this.s = s;
     this.ward = ward;
     this.mine = mine;

@@ -247,7 +247,7 @@ export function readReply(bytes) {
   if (p.error) return { error: p.error };
   const v = p.value;
   if (v.type !== "object") return { error: "reply text is not an object" };
-  const keys = [...v.entries.keys()].toSorted().join(",");
+  const keys = [...v.entries.keys()].toSorted((a, b) => (a < b ? -1 : a > b ? 1 : 0)).join(",");
   if (keys === "silence") {
     const s = v.entries.get("silence");
     return s.type === "boolean" && s.value === true ? { shape: "silence" } : { error: "silence is not true" };

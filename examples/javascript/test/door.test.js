@@ -14,7 +14,7 @@ const read = (s, box) => {
   return r.kind === "object" ? { object: r.text.slice(r.node.s, r.node.e), seen: r.seen } : r;
 };
 
-test("box lengths", () => {
+void test("box lengths", () => {
   const { w, inv, s } = setup();
   const knock = s.ask("m", '{"a":1}');
   const payloadLen = knock.length - 1248;
@@ -25,14 +25,14 @@ test("box lengths", () => {
   assert.equal(s.ask("m", undefined).length - 160, Buffer.from(`{"to":"${inv.heir}","by":"${inv.heir}","next":"${inv.heir}","seq":2,"method":"m"}`).length);
 });
 
-test("knock, then asks, both tables walk", () => {
+void test("knock, then asks, both tables walk", () => {
   const { w, s } = setup(reaches.marked);
   assert.deepEqual(read(s, w.arrive(s.ask("m", '{"x": [1, 2]}'))), { object: '{"x": [1, 2]}', seen: "1" });
   assert.equal(s.phase, "bound");
   for (let i = 0; i < 5; i++) assert.deepEqual(read(s, w.arrive(s.ask(undefined, undefined))), { object: '{"asks":[]}', seen: "1" });
 });
 
-test("unannounced knock binds nothing", () => {
+void test("unannounced knock binds nothing", () => {
   const { w, inv } = setup();
   const heir = edSecret(fromHex(inv.secret));
   const payload = Buffer.from(`{"to":"${inv.heir}","by":"${inv.heir}","next":null,"seq":1}`);
@@ -42,7 +42,7 @@ test("unannounced knock binds nothing", () => {
   assert.equal(w.heirs.get(inv.heir).fresh, true);
 });
 
-test("replayed ask is repeated; replayed knock is a stranger's", () => {
+void test("replayed ask is repeated; replayed knock is a stranger's", () => {
   const { w, s } = setup();
   const knock = s.ask("m", undefined);
   read(s, w.arrive(knock));
@@ -53,7 +53,7 @@ test("replayed ask is repeated; replayed knock is a stranger's", () => {
   assert.equal(readReply(again, s.knock.lidSecret, s.wardSign).kind, "silence");
 });
 
-test("silence on a knock: the probe finds the binding", () => {
+void test("silence on a knock: the probe finds the binding", () => {
   const { w, s } = setup(reaches.silent);
   assert.equal(read(s, w.arrive(s.ask("m"))).kind, "silence");
   w.heirs.get(s.inv.heir).reach = reaches.echo;
@@ -61,7 +61,7 @@ test("silence on a knock: the probe finds the binding", () => {
   assert.equal(read(s, w.arrive(s.ask("m"))).object, "{}");
 });
 
-test("knock not delivered: the same knock bytes go again and bind", () => {
+void test("knock not delivered: the same knock bytes go again and bind", () => {
   const { w, s } = setup();
   const knock = s.ask("m"); // never delivered
   assert.equal(read(s, null).kind, "nothing");
@@ -71,7 +71,7 @@ test("knock not delivered: the same knock bytes go again and bind", () => {
   assert.equal(read(s, w.arrive(s.ask("m"))).object, "{}");
 });
 
-test("knock heard, reply garbled: probe opens, then asks go on", () => {
+void test("knock heard, reply garbled: probe opens, then asks go on", () => {
   const { w, s } = setup();
   w.arrive(s.ask("m"));
   assert.equal(read(s, Buffer.alloc(200)).kind, "silence");
@@ -79,7 +79,7 @@ test("knock heard, reply garbled: probe opens, then asks go on", () => {
   assert.equal(read(s, w.arrive(s.ask("m"))).object, "{}");
 });
 
-test("knock not heard, reply garbled: probe fails, knock resent binds", () => {
+void test("knock not heard, reply garbled: probe fails, knock resent binds", () => {
   const { w, s } = setup();
   s.ask("m");
   assert.equal(read(s, Buffer.alloc(200)).kind, "silence");
@@ -88,7 +88,7 @@ test("knock not heard, reply garbled: probe fails, knock resent binds", () => {
   assert.equal(read(s, w.arrive(s.ask("m"))).object, "{}");
 });
 
-test("lost reply: door moved, standing did not, still admitted", () => {
+void test("lost reply: door moved, standing did not, still admitted", () => {
   const { w, s } = setup();
   read(s, w.arrive(s.ask("m")));
   w.arrive(s.ask("m"));
@@ -97,7 +97,7 @@ test("lost reply: door moved, standing did not, still admitted", () => {
   assert.equal(read(s, w.arrive(s.ask("m"))).object, "{}");
 });
 
-test("release: fresh is a stranger, spent hears removed", () => {
+void test("release: fresh is a stranger, spent hears removed", () => {
   const a = setup();
   a.w.release(a.inv.heir);
   assert.equal(read(a.s, a.w.arrive(a.s.ask("m"))).kind, "silence");
@@ -107,7 +107,7 @@ test("release: fresh is a stranger, spent hears removed", () => {
   assert.deepEqual(read(b.s, b.w.arrive(b.s.ask("m"))), { kind: "word", word: "removed" });
 });
 
-test("strangers: garbage, short, wrong key, zero head", () => {
+void test("strangers: garbage, short, wrong key, zero head", () => {
   const { w, inv, s } = setup(reaches.echo);
   const signPub = fromHex(inv.ward.slice(0, 64));
   const lid = xSecret(draw(32));
@@ -129,7 +129,7 @@ test("strangers: garbage, short, wrong key, zero head", () => {
   assert.equal(readReply(w.arrive(z.box), z.lidSecret, signPub).kind, "silence");
 });
 
-test("zero head answered, twice, and signature checked", () => {
+void test("zero head answered, twice, and signature checked", () => {
   const w = new Ward("zero", { zero: reaches.echo });
   const k = edSecret(draw(32));
   const signPub = w.signer.pub;
@@ -145,7 +145,7 @@ test("zero head answered, twice, and signature checked", () => {
   assert.equal(readReply(w.arrive(bad.box), bad.lidSecret, signPub).kind, "silence");
 });
 
-test("payload refusals", () => {
+void test("payload refusals", () => {
   const w = new Ward("p", { zero: reaches.echo });
   const k = edSecret(draw(32));
   const by = hex(k.pub);
@@ -182,7 +182,7 @@ test("payload refusals", () => {
   assert.equal(tryP(`  {"to":null,"by":"${by}","next":null,"seq":1}\n`), "object");
 });
 
-test("a reply's signature covers the lid, then the reply text", () => {
+void test("a reply's signature covers the lid, then the reply text", () => {
   const { w, inv, s } = setup();
   const signPub = fromHex(inv.ward.slice(0, 64));
   const ask = s.ask("m");
@@ -201,7 +201,7 @@ test("a reply's signature covers the lid, then the reply text", () => {
   assert.equal(readReply(write(Buffer.concat([draw(32), text])), lid, signPub).kind, "silence");
 });
 
-test("a reply's at: written by the reach moved, read as an invitation's is", () => {
+void test("a reply's at: written by the reach moved, read as an invitation's is", () => {
   const { w, inv, s } = setup(reaches.moved);
   const signPub = fromHex(inv.ward.slice(0, 64));
   const knock = s.ask("m", '{"k":1}');
@@ -227,7 +227,7 @@ test("a reply's at: written by the reach moved, read as an invitation's is", () 
   assert.equal(kind('{"object":1,"seen":null,"at":[],"at":[]}'), "silence");
 });
 
-test("follow is shared by both ends", () => {
+void test("follow is shared by both ends", () => {
   const e = draw(32);
   const a = draw(32);
   assert.equal(follow(e, a).length, 32);

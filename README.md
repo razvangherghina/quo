@@ -13,6 +13,8 @@ Quo's.
   the spec, and not part of it.
 - `CARRIER-WEB.md`: one way to carry the bytes over HTTP and WebSocket,
   where TCP cannot go. Published beside the spec, and not part of it.
+- `DOMAIN.md`: how a domain vouches that a ward is its own, with one file
+  at `/.well-known/quo`. Published beside the spec, and not part of it.
 - `IMAGINE.md`: a picture of Quo for a first reading. The spec decides, and
   the picture does not.
 - `TYPES.md`: the same spec read as types, for an exact reading. GraphQL

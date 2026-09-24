@@ -143,5 +143,16 @@ of `SPEC.md`.
   the kit's to take or refuse. What a door answers
   there is a choice, and silence is one.
 
+## What a kit shows
+
+- **Question 28. Does the kit read a domain's vouch? Which domain does
+  it check for a ward, and where does it learn that domain? When does it
+  read the file again, and how does it show a person what it found?**
+  `DOMAIN.md` says how a domain vouches for a ward, and a door reads none
+  of it. A domain may come with an invitation, from the host of an
+  address in `at`, or from the person. A reply over `https` or `wss`
+  shows the host that carried it, as `CARRIER-WEB.md` says, and that is
+  not a vouch.
+
 Everything a kit may choose is asked above. Everything else is `SPEC.md`,
 and this document decides none of it.

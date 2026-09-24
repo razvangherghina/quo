@@ -10,7 +10,7 @@ const lookup = (pk) =>
   pk === KNOWN ? { arrive: (box) => Buffer.from(box).reverse() } : pk === SILENT ? { arrive: () => null } : undefined;
 const urlOf = (scheme, s) => `${scheme}://127.0.0.1:${s.address().port}/`;
 
-test("the post: a reply, nothing, and what is not an ask", async () => {
+void test("the post: a reply, nothing, and what is not an ask", async () => {
   const server = await listenPost(lookup);
   const url = urlOf("http", server);
   const at = readAddress(url);
@@ -31,7 +31,7 @@ test("the post: a reply, nothing, and what is not an ask", async () => {
   assert.equal(await askPost(at, KNOWN, box), null);
 });
 
-test("the held line: replies, nothing, and a line that breaks", async () => {
+void test("the held line: replies, nothing, and a line that breaks", async () => {
   const server = await listenLine(lookup);
   const url = urlOf("ws", server);
   const at = readAddress(url);
@@ -58,7 +58,7 @@ test("the held line: replies, nothing, and a line that breaks", async () => {
   server.closeAllConnections();
 });
 
-test("wsReader reassembles fragments and refuses what RFC 6455 and the carrier refuse", () => {
+void test("wsReader reassembles fragments and refuses what RFC 6455 and the carrier refuse", () => {
   const masked = (b0, payload) => {
     const mask = Buffer.from([1, 2, 3, 4]);
     const body = Buffer.from(payload.map((x, i) => x ^ mask[i & 3]));

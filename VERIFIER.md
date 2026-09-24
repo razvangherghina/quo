@@ -345,3 +345,6 @@ Whatever a kit keeps, and how it keeps it, across a restart or across two
 copies of one ward. What a kit draws. How long a kit waits. How many
 arrivals a door judges at once, since a kit that judges one at a time
 answers two sent together as it answers two sent apart.
+
+A domain's vouch of `DOMAIN.md`. It is read for a person, and no door
+reads it, so no arrival shows whether a kit read one.

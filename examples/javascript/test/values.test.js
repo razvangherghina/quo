@@ -8,7 +8,7 @@ import { wardKeys, seedBytes } from "../lib/quo.js";
 const ok = (t, o) => assert.doesNotThrow(() => parse(t, o), t);
 const bad = (t, o) => assert.throws(() => parse(t, o), t);
 
-test("any number the grammar allows is a value, carried as written", () => {
+void test("any number the grammar allows is a value, carried as written", () => {
   for (const t of ["1", "1.0", "1e0", "-0", "-0.0", "1e400", "1e-400", "9007199254740993", "5e-324"]) {
     ok(t);
     assert.equal(compact(parse(`{"a":${t}}`).fields.get("a"), `{"a":${t}}`), t);
@@ -16,7 +16,7 @@ test("any number the grammar allows is a value, carried as written", () => {
   for (const t of ["01", "1.", ".5", "+1", "-", "1e", "Infinity"]) bad(t);
 });
 
-test("strings, keys, depth", () => {
+void test("strings, keys, depth", () => {
   ok('"\\ud83d\\ude00"');
   ok('"\\ud83d"');
   ok('"\\uffff"');
@@ -37,7 +37,7 @@ test("strings, keys, depth", () => {
   assert.throws(() => utf8(Buffer.from([0xff])));
 });
 
-test("ed25519 verify agrees with node on ordinary signatures and refuses the listed places", () => {
+void test("ed25519 verify agrees with node on ordinary signatures and refuses the listed places", () => {
   const k = edSecret(draw(32));
   const m = Buffer.from("hello");
   const s = sign(k, m);
@@ -66,7 +66,7 @@ test("ed25519 verify agrees with node on ordinary signatures and refuses the lis
   assert.ok(!verify(nonCanon, m, s));
 });
 
-test("the check of an encapsulation key", () => {
+void test("the check of an encapsulation key", () => {
   const ek = Buffer.from(lockPub(makeLock()));
   assert.ok(lockOk(ek));
   const bent = Buffer.from(ek);
@@ -75,7 +75,7 @@ test("the check of an encapsulation key", () => {
   assert.ok(!lockOk(bent));
 });
 
-test("the ward key", () => {
+void test("the ward key", () => {
   const seed = Buffer.alloc(32, 7);
   const k = wardKeys(seed);
   assert.equal(k.pk.length, 128);

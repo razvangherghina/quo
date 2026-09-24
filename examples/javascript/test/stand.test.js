@@ -45,7 +45,7 @@ function program() {
   return { req, raw, end, lines };
 }
 
-test("part one: errors", async () => {
+void test("part one: errors", async () => {
   const k = program();
   const w = (await k.req({ op: "ward", seed: "a" })).ward;
   assert.match(w, /^[0-9a-f]{128}$/);
@@ -67,7 +67,7 @@ test("part one: errors", async () => {
   assert.ok(k.lines.includes('{"id":null,"error":"bad request"}'));
 });
 
-test("part one: two programs, door and asker", async () => {
+void test("part one: two programs, door and asker", async () => {
   const door = program();
   const asker = program();
   const w = (await door.req({ op: "ward", seed: "door", reach: "null" })).ward;
@@ -91,7 +91,7 @@ test("part one: two programs, door and asker", async () => {
   assert.equal(await asker.end(), 0);
 });
 
-test("part two: carried over TCP", async () => {
+void test("part two: carried over TCP", async () => {
   const door = program();
   const asker = program();
   const w = (await door.req({ op: "ward", seed: "door2" })).ward;
@@ -119,7 +119,7 @@ test("part two: carried over TCP", async () => {
   assert.equal(await other.end(), 0);
 });
 
-test("part two: every scheme, and the invitation's at", async () => {
+void test("part two: every scheme, and the invitation's at", async () => {
   const door = program();
   const asker = program();
   const w = (await door.req({ op: "ward", seed: "door3" })).ward;

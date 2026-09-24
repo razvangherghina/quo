@@ -197,3 +197,9 @@ answer is the kit's choice, with its reason. Each number is the number
     text's own keys, a lone surrogate is kept as its code unit, so two keys
     are one name exactly when their code units are equal. Reason: reading
     nothing is the least code and the fewest refusals.
+
+## What a kit shows
+
+28. **A domain's vouch.** The kit reads none and shows none. `stand`
+    answers the harness alone, and has no person to show a domain to.
+    Reason: a vouch is read for a person, and here there is none.

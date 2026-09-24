@@ -265,3 +265,11 @@ standing reads any `object` it is given, repeated keys included, and hands
 it back as written with the whitespace between tokens taken out. Reason:
 the kit reads nothing it does not use, and a bound it does not need is a
 bound it would have to answer for.
+
+## What a kit shows
+
+**Question 28. Does the kit read a domain's vouch? Which domain does it check for a ward, and where does it learn that domain? When does it read the file again, and how does it show a person what it found?**
+
+The kit reads no vouch and shows none. The `stand` program answers the
+harness alone, and has no person to show a domain to. Reason: a vouch is
+read for a person, and here there is none.

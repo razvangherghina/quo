@@ -209,3 +209,9 @@ is followed by its reason.
     bytes that arrived. Reason: SPEC.md reads nothing there, so the kit
     builds nothing there, and echo declines only a shape it would not
     itself write as a payload's `args`.
+
+## What a kit shows
+
+28. **A domain's vouch.** The kit reads none and shows none. The `stand`
+    program answers the harness alone, and has no person to show a domain
+    to. Reason: a vouch is read for a person, and here there is none.

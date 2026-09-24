@@ -246,7 +246,7 @@ export function readReply(box, lidSecret, signPub) {
     return { kind: "silence" };
   }
   if (node.t !== "object") return { kind: "silence" };
-  const keys = [...node.fields.keys()].sort().join(",");
+  const keys = [...node.fields.keys()].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0)).join(",");
   const f = node.fields;
   // An `at` beside an object never makes it no object. This kit keeps nothing of it.
   if (keys === "object,seen" || keys === "at,object,seen") {

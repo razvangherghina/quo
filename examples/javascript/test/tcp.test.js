@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import * as net from "node:net";
 import { listen, frame, reader, ASK, REPLY, NOTHING, MAX_BODY } from "../lib/tcp.js";
 
-test("reader refuses what is not a frame", () => {
+void test("reader refuses what is not a frame", () => {
   const seen = [];
   const len = (n) => {
     const b = Buffer.alloc(4);
@@ -22,7 +22,7 @@ test("reader refuses what is not a frame", () => {
   assert.deepEqual(seen, [[REPLY, 7, 3], [NOTHING, 8, 0]]);
 });
 
-test("listener: unknown ward is nothing, a reply frame is ignored, garbage closes", async () => {
+void test("listener: unknown ward is nothing, a reply frame is ignored, garbage closes", async () => {
   const server = await listen(() => null);
   const { port } = server.address();
   const sock = net.connect({ host: "127.0.0.1", port });

@@ -78,3 +78,15 @@ the answer is a reply and never nothing.
 
 A post whose response never came may have been heard. How long a dialer
 waits is its own.
+
+## What a reply shows
+
+A reply that comes back over `https` or `wss`, from a host whose
+certificate the dialer checked, shows that the ward answers at that host.
+The reply is signed by the ward's signing key over the lid of the dialer's
+own ask, so no other ward wrote it. Every reply carries that signature, a
+stranger's silence included.
+
+It shows that the host carries asks to the ward. It does not show that the
+host names the ward its own, since a listener may carry asks to any ward.
+`DOMAIN.md` says how a domain names a ward its own.
