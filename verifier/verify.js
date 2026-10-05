@@ -860,10 +860,20 @@ async function theSignature(s) {
     ["y equal to p minus one with the sign bit set on x zero", leBytes((PRIME - 1n) | (1n << 255n))],
     ["a point of order eight", pointEncode(t8)],
     ["a point of order four", pointEncode(pointMul(2n, t8))],
+    ["the identity spelled with y equal to p plus one", leBytes(PRIME + 1n)],
+    ["a point of order four spelled with y equal to p", leBytes(PRIME)],
   ];
-  for (const [how, pk] of spellings) {
-    await zero({ signer: asKey(pk), sig: () => Buffer.concat([leBytes(1n), leBytes(0n)]) }, "stranger", `a small-order public key, ${how}`);
+  // R the identity and s = 0, on a number whose k is a multiple of eight: the
+  // equation holds under every one of these keys, so only the list refuses it.
+  for (const [i, [how, pk]] of spellings.entries()) {
+    const forged = numberFor(3000 + 100 * i, pk, leBytes(1n), 0n);
+    await zero({ signer: asKey(pk), raw: forged.payload, seq: forged.seq, sig: () => Buffer.concat([leBytes(1n), leBytes(0n)]) }, "stranger", `a small-order public key, ${how}, though the equation holds`);
   }
+
+  // The check is cofactorless: an R that carries a point of order eight beside
+  // rB breaks the equation by that point, which a cofactored check clears.
+  const rT8 = pointEncode(pointAdd(BASE, t8));
+  await zero({ sig: (p) => Buffer.concat([rT8, leBytes((1n + hramScalar(rT8, k.pk, p) * a) % L)]) }, "stranger", "an R with a component of order eight, which only a cofactored check takes");
 
   // The two the list does not hold: both are answered as the reach answers.
   await zero({ sig: (p) => withR(leBytes(1n), k.pk, a, p) }, "answer", "a small-order R, the identity, verifies");

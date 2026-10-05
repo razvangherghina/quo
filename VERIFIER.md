@@ -92,7 +92,9 @@ that provokes it. Every stranger's reply has one reply text and one length.
 It drives the signature check's whole failure list. An `s` at or above
 the group order. An `R` that does not decode, and an `R` that is not
 canonical. A public key that does not decode, and one whose y is at or
-above the prime. A small-order public key in each spelling.
+above the prime. A small-order public key in each spelling, with a
+signature whose equation holds. An `R` with a component of order eight, which a
+cofactored check takes and the cofactorless check refuses.
 
 It drives the two signatures that list does not hold: a small-order
 `R`, and a public key with a torsion component that is not

@@ -313,7 +313,9 @@ A signature is checked against the bytes as they were received. It is never
 checked against a re-serialisation of what those bytes parsed to.
 
 A signature is Ed25519 as RFC 8032 defines it, and is deterministic. The
-check is the cofactorless check of RFC 8032, `[s]B = R + [k]A`.
+check is the cofactorless check of RFC 8032, `[s]B = R + [k]A`. `k` is the
+SHA-512 digest RFC 8032 names, read as a little-endian integer and reduced
+modulo the group order.
 
 The check fails when the equation does not hold, and beside that in these
 places and in no other:

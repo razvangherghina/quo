@@ -55,27 +55,67 @@
       "refuses": true
     },
     {
-      "name": "a signature under an all-zero public key is silence",
-      "derived": "the message and signature of RFC 8032 TEST 2 under thirty-two zero bytes",
+      "name": "a forged signature under the identity as the public key is silence, though the equation holds",
+      "derived": "R the base point of RFC 8032 and s = 1, under the identity encoded canonically, over the ASCII bytes of a forged signature 0; [k]A is the identity whether k is reduced or not, so the equation holds",
+      "pk": "0100000000000000000000000000000000000000000000000000000000000000",
+      "message": "6120666f72676564207369676e61747572652030",
+      "signature": "58666666666666666666666666666666666666666666666666666666666666660100000000000000000000000000000000000000000000000000000000000000",
+      "refuses": true
+    },
+    {
+      "name": "a forged signature under the identity spelled with the sign bit set on x zero is silence, though the equation holds",
+      "derived": "as the forged signature under the identity, the public key spelled with the sign bit set",
+      "pk": "0100000000000000000000000000000000000000000000000000000000000080",
+      "message": "6120666f72676564207369676e61747572652030",
+      "signature": "58666666666666666666666666666666666666666666666666666666666666660100000000000000000000000000000000000000000000000000000000000000",
+      "refuses": true
+    },
+    {
+      "name": "a forged signature under the identity spelled with y unreduced is silence, though the equation holds",
+      "derived": "as the forged signature under the identity, the public key spelled with y = p + 1",
+      "pk": "eeffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f",
+      "message": "6120666f72676564207369676e61747572652030",
+      "signature": "58666666666666666666666666666666666666666666666666666666666666660100000000000000000000000000000000000000000000000000000000000000",
+      "refuses": true
+    },
+    {
+      "name": "a forged signature under the point of order two is silence, though the equation holds",
+      "derived": "R the base point and s = 1, under y = p - 1 encoded canonically, over the ASCII bytes of a forged signature 4, whose k is even reduced or not, so the equation holds",
+      "pk": "ecffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f",
+      "message": "6120666f72676564207369676e61747572652034",
+      "signature": "58666666666666666666666666666666666666666666666666666666666666660100000000000000000000000000000000000000000000000000000000000000",
+      "refuses": true
+    },
+    {
+      "name": "a forged signature under the point of order two spelled with the sign bit set on x zero is silence, though the equation holds",
+      "derived": "R the base point and s = 1, under y = p - 1 spelled with the sign bit set, over the ASCII bytes of a forged signature 1, whose k is even reduced or not, so the equation holds",
+      "pk": "ecffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "message": "6120666f72676564207369676e61747572652031",
+      "signature": "58666666666666666666666666666666666666666666666666666666666666660100000000000000000000000000000000000000000000000000000000000000",
+      "refuses": true
+    },
+    {
+      "name": "a forged signature under an all-zero public key is silence, though the equation holds",
+      "derived": "R the base point and s = 1, under thirty-two zero bytes, which encode a point of order four, over the ASCII bytes of a forged signature 3, whose k is a multiple of four reduced or not, so the equation holds",
       "pk": "0000000000000000000000000000000000000000000000000000000000000000",
-      "message": "72",
-      "signature": "92a009a9f0d4cab8720e820b5f642540a2b27b5416503f8fb3762223ebdb69da085ac1e43e15996e458f3613d0f11d8c387b2eaeb4302aeeb00d291612bb0c00",
+      "message": "6120666f72676564207369676e61747572652033",
+      "signature": "58666666666666666666666666666666666666666666666666666666666666660100000000000000000000000000000000000000000000000000000000000000",
       "refuses": true
     },
     {
-      "name": "a signature under a small-order public key is silence",
-      "derived": "the message and signature of RFC 8032 TEST 2 under the encoding of a point of order eight",
-      "pk": "26e8958fc2b227b045c3f489f2ef98f0d5dfac05d3c63339b13802886d53fc05",
-      "message": "72",
-      "signature": "92a009a9f0d4cab8720e820b5f642540a2b27b5416503f8fb3762223ebdb69da085ac1e43e15996e458f3613d0f11d8c387b2eaeb4302aeeb00d291612bb0c00",
-      "refuses": true
-    },
-    {
-      "name": "a zero signature under a public key whose y equals p is silence",
-      "derived": "the message of RFC 8032 TEST 2, sixty-four zero bytes, and the prime p as y, which spells the small-order point y = 0",
+      "name": "a forged signature under a public key whose y equals p is silence, though the equation holds",
+      "derived": "R the base point and s = 1, under the prime p as y, which spells a point of order four, over the ASCII bytes of a forged signature 7, whose k is a multiple of four reduced or not, so the equation holds",
       "pk": "edffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f",
-      "message": "72",
-      "signature": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+      "message": "6120666f72676564207369676e61747572652037",
+      "signature": "58666666666666666666666666666666666666666666666666666666666666660100000000000000000000000000000000000000000000000000000000000000",
+      "refuses": true
+    },
+    {
+      "name": "a forged signature under a point of order eight is silence, though the equation holds",
+      "derived": "R the base point and s = 1, under the encoding of a point of order eight, over the ASCII bytes of a forged signature 136, whose k is a multiple of eight reduced or not, so the equation holds",
+      "pk": "26e8958fc2b227b045c3f489f2ef98f0d5dfac05d3c63339b13802886d53fc05",
+      "message": "6120666f72676564207369676e617475726520313336",
+      "signature": "58666666666666666666666666666666666666666666666666666666666666660100000000000000000000000000000000000000000000000000000000000000",
       "refuses": true
     },
     {
@@ -110,11 +150,19 @@
       "refuses": true
     },
     {
-      "name": "a public key with a torsion component that is not small-order verifies",
-      "derived": "the scalar a of RFC 8032 TEST 1 times the base point plus a point of order eight as the public key, the message of TEST 2, R = rB for the least r whose k is a multiple of eight, and s = r + k a",
+      "name": "a public key with a torsion component that is not small-order verifies, k reduced modulo the group order",
+      "derived": "the scalar a of RFC 8032 TEST 1 times the base point plus a point of order eight as the public key, the message of TEST 2, R = rB for the least r whose k reduced modulo the group order is a multiple of eight, and s = r + k a; k left unreduced is not a multiple of eight here, so the equation fails under it",
       "pk": "9158312a9a8d6e3b34c891d6d61444f8b8211c5117ebad15bdb0bd68b07e0245",
       "message": "72",
       "signature": "58666666666666666666666666666666666666666666666666666666666666665a88f45af384b96d22d2b29cdbd318066dc6391a4f2e9bd6002740c2e91d620a"
+    },
+    {
+      "name": "a signature whose R carries a component of order eight is silence, though the cofactored equation holds",
+      "derived": "the key of RFC 8032 TEST 1 and the message of TEST 2, R the base point plus the point of order eight of the small-order record, and s = 1 + k a; [s]B and R + [k]A differ by that point, which [8] clears",
+      "pk": "d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a",
+      "message": "72",
+      "signature": "da99e28ba529cdde35a25fba9059e78ecaee239f99755b9b1aa4f65df00803e2ce485c4a44efce9897bc72e3cf4715094e1e5d7d595ed35816d90d11845e6802",
+      "refuses": true
     },
     {
       "name": "an X25519 pair, Alice",
