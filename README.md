@@ -36,4 +36,4 @@ version until 1.0.0, when it is frozen once.
 
 Quo is read at <https://quo.systems>.
 
-Apache-2.0, held by Razvan Gherghina. `spec@quo.systems`.
+Apache-2.0, held by Razvan Gherghina. <spec@quo.systems>.
