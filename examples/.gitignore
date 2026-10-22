@@ -1,7 +1,0 @@
-# What a kit's build writes beside its source.
-go/stand
-zig/zig-out/
-zig/.zig-cache/
-rust/target/
-__pycache__/
-node_modules/

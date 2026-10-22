@@ -2,22 +2,22 @@
 // line to a kit's listener in any of them. Every ask that reaches a hold
 // goes to the one waiter `nextAsk` holds; an ask nobody waits for is
 // answered with nothing.
-import http from "node:http";
-import { createServer } from "node:net";
+import http from 'node:http';
+import { createServer } from 'node:net';
 
-import { Line, nothingFrame } from "./frame.js";
-import { isClientKey, offered } from "./websocket.js";
-import { MAX_POST, MIN_POST, PostLine, PostUp, switching, WsLine, WsServerLine } from "./web.js";
+import { Line, nothingFrame } from './frame.js';
+import { isClientKey, offered } from './websocket.js';
+import { MAX_POST, MIN_POST, PostLine, PostUp, switching, WsLine, WsServerLine } from './web.js';
 
 /** The schemes the harness names, in the order the verifier judges them. */
-export const SCHEMES = ["tcp", "http", "ws"];
+export const SCHEMES = ['tcp', 'http', 'ws'];
 /** The path and query of every web address a hold answers at. */
-export const HOLD_PATH = "/quo/in?w=1";
+export const HOLD_PATH = '/quo/in?w=1';
 
 /** A line to a listener at `at`: frames over tcp or the held line, requests over the post. */
 export function dial(scheme, at) {
-  if (scheme === "tcp") return Line.dial(at);
-  if (scheme === "ws") return WsLine.dial(at);
+  if (scheme === 'tcp') return Line.dial(at);
+  if (scheme === 'ws') return WsLine.dial(at);
   return Promise.resolve(new PostUp(at));
 }
 
@@ -38,7 +38,7 @@ export class Hold {
     this.lines.push(line);
     line.onFrame = (f) => {
       if (line.firstKind === null) line.firstKind = f.kind;
-      if (f.kind !== "ask") {
+      if (f.kind !== 'ask') {
         this.odd.push(`a ${f.kind} frame from the kit`);
         return;
       }
@@ -71,22 +71,28 @@ export class Hold {
   ws() {
     const server = http.createServer((req, res) => {
       this.odd.push(`a ${req.method} request with no upgrade`);
-      res.writeHead(426, { connection: "close" });
+      res.writeHead(426, { connection: 'close' });
       res.end();
     });
-    server.on("upgrade", (req, socket, head) => {
+    server.on('upgrade', (req, socket, head) => {
       const line = new WsServerLine(socket);
       this.accept(line);
-      const key = req.headers["sec-websocket-key"];
-      const handshake = req.method === "GET" && /^websocket$/i.test(req.headers.upgrade ?? "") && isClientKey(key) && req.headers["sec-websocket-version"] === "13";
+      const key = req.headers['sec-websocket-key'];
+      const handshake =
+        req.method === 'GET' &&
+        /^websocket$/i.test(req.headers.upgrade ?? '') &&
+        isClientKey(key) &&
+        req.headers['sec-websocket-version'] === '13';
       const refuse = (why) => {
-        socket.end("HTTP/1.1 400 Bad Request\r\nConnection: close\r\n\r\n");
+        socket.end('HTTP/1.1 400 Bad Request\r\nConnection: close\r\n\r\n');
         line.bad = why;
         line.poke();
       };
-      if (!handshake) return refuse("an opening handshake RFC 6455 does not write");
-      if (req.url !== HOLD_PATH) return refuse(`a held line opened to ${req.url}, not to ${HOLD_PATH}`);
-      if (!offered(req.headers["sec-websocket-protocol"]).includes("quo")) return refuse("a held line that does not offer the subprotocol quo");
+      if (!handshake) return refuse('an opening handshake RFC 6455 does not write');
+      if (req.url !== HOLD_PATH)
+        return refuse(`a held line opened to ${req.url}, not to ${HOLD_PATH}`);
+      if (!offered(req.headers['sec-websocket-protocol']).includes('quo'))
+        return refuse('a held line that does not offer the subprotocol quo');
       socket.write(switching(key, true));
       line.start(head);
     });
@@ -104,10 +110,10 @@ export class Hold {
         line.poke();
       };
       if (req.url !== HOLD_PATH) return refuse(404, `a request to ${req.url}, not to ${HOLD_PATH}`);
-      if (req.method !== "POST") return refuse(405, `a ${req.method} request, not a POST`);
+      if (req.method !== 'POST') return refuse(405, `a ${req.method} request, not a POST`);
       const chunks = [];
       let len = 0;
-      req.on("data", (c) => {
+      req.on('data', (c) => {
         if (line.bad) return;
         len += c.length;
         if (len > MAX_POST) {
@@ -116,26 +122,27 @@ export class Hold {
         }
         chunks.push(c);
       });
-      req.on("end", () => {
+      req.on('end', () => {
         if (line.bad) return;
         if (len < MIN_POST) return refuse(400, `a body of ${len} bytes, shorter than ${MIN_POST}`);
         const body = Buffer.concat(chunks);
         line.bytes = len;
-        line.firstKind = "ask";
-        line.took({ kind: "ask", id: ++this.n, pk: body.subarray(0, 64), box: body.subarray(64) });
+        line.firstKind = 'ask';
+        line.took({ kind: 'ask', id: ++this.n, pk: body.subarray(0, 64), box: body.subarray(64) });
       });
     });
   }
 
-  static async listen(scheme = "tcp") {
+  static async listen(scheme = 'tcp') {
     const h = new Hold(scheme);
     h.server = h[scheme]();
     await new Promise((res, rej) => {
-      h.server.once("error", rej);
-      h.server.listen(0, "127.0.0.1", res);
+      h.server.once('error', rej);
+      h.server.listen(0, '127.0.0.1', res);
     });
     const port = h.server.address().port;
-    h.at = scheme === "tcp" ? `tcp://127.0.0.1:${port}` : `${scheme}://127.0.0.1:${port}${HOLD_PATH}`;
+    h.at =
+      scheme === 'tcp' ? `tcp://127.0.0.1:${port}` : `${scheme}://127.0.0.1:${port}${HOLD_PATH}`;
     return h;
   }
 

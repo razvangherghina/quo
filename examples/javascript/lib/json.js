@@ -3,7 +3,7 @@
 // Objects carry `fields`: a Map from key to node. Arrays carry `items`.
 // Below `depth` levels a container is checked against the grammar and kept as raw text alone, t "raw".
 
-const decoder = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true });
+const decoder = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true });
 
 export class NotValue extends Error {}
 
@@ -16,12 +16,12 @@ export function utf8(bytes) {
   try {
     return decoder.decode(bytes);
   } catch {
-    return fail("not utf-8");
+    return fail('not utf-8');
   }
 }
 
 const WS = new Set([0x20, 0x09, 0x0a, 0x0d]);
-const ESC = { '"': '"', "\\": "\\", "/": "/", b: "\b", f: "\f", n: "\n", r: "\r", t: "\t" };
+const ESC = { '"': '"', '\\': '\\', '/': '/', b: '\b', f: '\f', n: '\n', r: '\r', t: '\t' };
 const NUMBER = /-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?/y;
 
 // `unique`: refuse two keys of one name among the root object's own keys.
@@ -33,7 +33,7 @@ export function parse(text, { unique = true, depth: nodeDepth = 2 } = {}) {
     while (i < n && WS.has(text.charCodeAt(i))) i++;
   };
   const literal = (word, v, t) => {
-    if (!text.startsWith(word, i)) fail("token");
+    if (!text.startsWith(word, i)) fail('token');
     const s = i;
     i += word.length;
     return { t, v, s, e: i };
@@ -42,53 +42,53 @@ export function parse(text, { unique = true, depth: nodeDepth = 2 } = {}) {
     const s = i;
     NUMBER.lastIndex = i;
     const r = NUMBER.exec(text);
-    if (!r) fail("token");
+    if (!r) fail('token');
     i += r[0].length;
-    return { t: "number", v: Number(r[0]), s, e: i };
+    return { t: 'number', v: Number(r[0]), s, e: i };
   };
   const string = () => {
     const s = i++;
-    let out = "";
+    let out = '';
     let run = i;
     for (;;) {
-      if (i >= n) fail("unterminated");
+      if (i >= n) fail('unterminated');
       const ch = text.charCodeAt(i);
       if (ch === 0x22) break;
-      if (ch < 0x20) fail("control");
+      if (ch < 0x20) fail('control');
       if (ch !== 0x5c) {
         i++;
         continue;
       }
       out += text.slice(run, i);
       const esc = text[i + 1];
-      if (esc === "u") {
+      if (esc === 'u') {
         const h = text.slice(i + 2, i + 6);
-        if (!/^[0-9a-fA-F]{4}$/.test(h)) fail("escape");
+        if (!/^[0-9a-fA-F]{4}$/.test(h)) fail('escape');
         out += String.fromCharCode(parseInt(h, 16));
         i += 6;
       } else if (esc !== undefined && Object.hasOwn(ESC, esc)) {
         out += ESC[esc];
         i += 2;
-      } else fail("escape");
+      } else fail('escape');
       run = i;
     }
     out += text.slice(run, i++);
-    return { t: "string", v: out, s, e: i };
+    return { t: 'string', v: out, s, e: i };
   };
   const scalar = () => {
     const c = text[i];
     if (c === '"') return string();
-    if (c === "t") return literal("true", true, "boolean");
-    if (c === "f") return literal("false", false, "boolean");
-    if (c === "n") return literal("null", null, "null");
+    if (c === 't') return literal('true', true, 'boolean');
+    if (c === 'f') return literal('false', false, 'boolean');
+    if (c === 'n') return literal('null', null, 'null');
     return number();
   };
   const key = () => {
     ws();
-    if (text[i] !== '"') fail("key");
+    if (text[i] !== '"') fail('key');
     const k = string();
     ws();
-    if (text[i++] !== ":") fail("colon");
+    if (text[i++] !== ':') fail('colon');
     return k;
   };
   // A container checked against the grammar with an explicit stack, at any depth.
@@ -97,28 +97,28 @@ export function parse(text, { unique = true, depth: nodeDepth = 2 } = {}) {
     const stack = [];
     for (;;) {
       ws();
-      if (i >= n) fail("end");
+      if (i >= n) fail('end');
       const c = text[i];
-      if (c === "{" || c === "[") {
+      if (c === '{' || c === '[') {
         i++;
         ws();
-        if (text[i] === (c === "{" ? "}" : "]")) i++;
+        if (text[i] === (c === '{' ? '}' : ']')) i++;
         else {
           stack.push(c);
-          if (c === "{") key();
+          if (c === '{') key();
           continue;
         }
       } else scalar();
       for (;;) {
-        if (stack.length === 0) return { t: "raw", s, e: i };
+        if (stack.length === 0) return { t: 'raw', s, e: i };
         ws();
         const top = stack[stack.length - 1];
-        if (text[i] === ",") {
+        if (text[i] === ',') {
           i++;
-          if (top === "{") key();
+          if (top === '{') key();
           break;
         }
-        if (text[i] !== (top === "{" ? "}" : "]")) fail("container");
+        if (text[i] !== (top === '{' ? '}' : ']')) fail('container');
         stack.pop();
         i++;
       }
@@ -126,13 +126,13 @@ export function parse(text, { unique = true, depth: nodeDepth = 2 } = {}) {
   };
   const value = (level) => {
     ws();
-    if (i >= n) fail("end");
+    if (i >= n) fail('end');
     const c = text[i];
-    if (c !== "{" && c !== "[") return scalar();
+    if (c !== '{' && c !== '[') return scalar();
     if (level >= nodeDepth) return raw();
-    const obj = c === "{";
-    const close = obj ? "}" : "]";
-    const node = obj ? { t: "object", fields: new Map(), s: i } : { t: "array", items: [], s: i };
+    const obj = c === '{';
+    const close = obj ? '}' : ']';
+    const node = obj ? { t: 'object', fields: new Map(), s: i } : { t: 'array', items: [], s: i };
     i++;
     ws();
     if (text[i] === close) {
@@ -144,32 +144,32 @@ export function parse(text, { unique = true, depth: nodeDepth = 2 } = {}) {
         const k = key().v;
         const v = value(level + 1);
         if (node.fields.has(k)) {
-          if (unique && level === 0) fail("duplicate key");
+          if (unique && level === 0) fail('duplicate key');
           node.repeated = true;
           node.fields.delete(k);
         }
         node.fields.set(k, v);
       } else node.items.push(value(level + 1));
       ws();
-      if (text[i] === ",") {
+      if (text[i] === ',') {
         i++;
         continue;
       }
-      if (text[i] !== close) fail("container");
+      if (text[i] !== close) fail('container');
       node.e = ++i;
       return node;
     }
   };
   const root = value(0);
   ws();
-  if (i !== n) fail("trailing");
+  if (i !== n) fail('trailing');
   return root;
 }
 
 // The raw text of a node with the whitespace between tokens removed.
 export function compact(node, text) {
   const src = text.slice(node.s, node.e);
-  let out = "";
+  let out = '';
   let inString = false;
   let run = 0;
   for (let j = 0; j < src.length; j++) {
@@ -188,12 +188,12 @@ export function compact(node, text) {
 
 // A plain JS value of a node. Objects have a null prototype so any key is safe.
 export function toJS(node) {
-  if (node.t === "object") {
+  if (node.t === 'object') {
     const o = Object.create(null);
     for (const [k, v] of node.fields) o[k] = toJS(v);
     return o;
   }
-  if (node.t === "array") return node.items.map(toJS);
-  if (node.t === "raw") return undefined;
+  if (node.t === 'array') return node.items.map(toJS);
+  if (node.t === 'raw') return undefined;
   return node.v;
 }

@@ -1,8 +1,9 @@
 name: check
 
 # The verifier's own tests, which replay `vectors/arithmetic.json` and
-# hold the checker to `SPEC.md`. They need Node and nothing else: there is
-# no build here, no dependency, and no install step.
+# hold the checker to `SPEC.md`, each under five seconds: the public copy of the
+# gate's tests. They need Node and nothing else: there is no build here, no
+# dependency, and no install step. No lab is played here.
 
 on:
   push:
@@ -22,4 +23,4 @@ jobs:
         with:
           node-version: '24'
 
-      - run: node --test verifier/test/*.test.js
+      - run: node --test --test-timeout=5000 verifier/test/*.test.js vectors/test/*.test.js

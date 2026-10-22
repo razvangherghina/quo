@@ -2,14 +2,14 @@
 // stream is not a frame as soon as its bytes say so, and reads nothing after
 // it. The held line of CARRIER-WEB.md carries the same bodies with no length
 // in front, so a body is taken apart here once for both.
-import { connect } from "node:net";
+import { connect } from 'node:net';
 
-import { tcpAddress } from "./address.js";
+import { tcpAddress } from './address.js';
 
 export const ASK = 0;
 export const REPLY = 1;
 export const NOTHING = 2;
-export const KINDS = ["ask", "reply", "nothing"];
+export const KINDS = ['ask', 'reply', 'nothing'];
 export const MAX_BODY = 1048645;
 
 const head = (length) => {
@@ -122,6 +122,8 @@ export class FrameLine {
   }
 
   poke() {
+    // A snapshot: a watcher may remove itself as it runs.
+    // oxlint-disable-next-line unicorn/no-useless-spread
     for (const w of [...this.watchers]) w();
   }
 
@@ -148,7 +150,7 @@ export class FrameLine {
   /** Takes the first queued frame with this id that is not an ask; `{ closed }` when the line closes first. */
   answer(id, ms) {
     return this.until(() => {
-      const i = this.frames.findIndex((f) => f.id === id && f.kind !== "ask");
+      const i = this.frames.findIndex((f) => f.id === id && f.kind !== 'ask');
       if (i >= 0) return this.frames.splice(i, 1)[0];
       if (this.closed) return { closed: true };
       return undefined;
@@ -169,7 +171,7 @@ export class Line extends FrameLine {
     super();
     this.socket = socket;
     this.reader = new FrameReader();
-    socket.on("data", (d) => {
+    socket.on('data', (d) => {
       this.bytes += d.length;
       for (const f of this.reader.push(d)) this.took(f);
       if (this.reader.bad) {
@@ -178,11 +180,11 @@ export class Line extends FrameLine {
       }
       this.poke();
     });
-    socket.on("close", () => {
+    socket.on('close', () => {
       this.closed = true;
       this.poke();
     });
-    socket.on("error", () => {});
+    socket.on('error', () => {});
   }
 
   /** Dials a `tcp` address. */
@@ -195,12 +197,12 @@ export class Line extends FrameLine {
         socket.destroy();
         reject(new Error(`no connection to ${at} within ${ms / 1000}s`));
       }, ms);
-      socket.once("connect", () => {
+      socket.once('connect', () => {
         clearTimeout(t);
         socket.setNoDelay(true);
         resolve(new Line(socket));
       });
-      socket.once("error", (e) => {
+      socket.once('error', (e) => {
         clearTimeout(t);
         reject(e);
       });

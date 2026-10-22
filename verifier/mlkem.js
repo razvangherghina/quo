@@ -1,7 +1,7 @@
 // ML-KEM-768 of FIPS 203. The verifier holds a lock of its own and
 // encapsulates to a kit's lock, and it draws its own d, z and m. It reads
 // nothing of how a kit draws them.
-import { createHash, randomBytes } from "node:crypto";
+import { createHash, randomBytes } from 'node:crypto';
 
 const N = 256;
 const Q = 3329;
@@ -11,8 +11,8 @@ const ETA2 = 2;
 const DU = 10;
 const DV = 4;
 
-const sha3_256 = (b) => createHash("sha3-256").update(b).digest();
-const sha3_512 = (b) => createHash("sha3-512").update(b).digest();
+const sha3_256 = (b) => createHash('sha3-256').update(b).digest();
+const sha3_512 = (b) => createHash('sha3-512').update(b).digest();
 const shake = (alg, b, len) => createHash(alg, { outputLength: len }).update(b).digest();
 
 const G = (b) => {
@@ -80,8 +80,8 @@ function mul(f, g) {
     const a1 = f[2 * i + 1];
     const b0 = g[2 * i];
     const b1 = g[2 * i + 1];
-    h[2 * i] = ((a0 * b0) % Q + (((a1 * b1) % Q) * MZETAS[i]) % Q) % Q;
-    h[2 * i + 1] = ((a0 * b1) % Q + ((a1 * b0) % Q)) % Q;
+    h[2 * i] = (((a0 * b0) % Q) + ((((a1 * b1) % Q) * MZETAS[i]) % Q)) % Q;
+    h[2 * i + 1] = (((a0 * b1) % Q) + ((a1 * b0) % Q)) % Q;
   }
   return h;
 }
@@ -119,7 +119,7 @@ const decompress = (f, d) => f.map((y) => Math.floor((y * Q * 2 + 2 ** d) / 2 **
 
 function sampleNTT(seed) {
   for (let len = 1008; ; len *= 2) {
-    const s = shake("shake128", seed, len);
+    const s = shake('shake128', seed, len);
     const a = [];
     for (let p = 0; p + 3 <= len && a.length < N; p += 3) {
       const d1 = s[p] + 256 * (s[p + 1] % 16);
@@ -146,7 +146,7 @@ function cbd(b, eta) {
   return f;
 }
 
-const prf = (s, n, eta) => shake("shake256", Buffer.concat([s, Buffer.from([n])]), 64 * eta);
+const prf = (s, n, eta) => shake('shake256', Buffer.concat([s, Buffer.from([n])]), 64 * eta);
 
 function matrix(rho) {
   const a = [];
@@ -249,6 +249,6 @@ export function decaps(dk, c) {
   const z = dk.subarray(768 * K + 64);
   const m = pkeDecrypt(dkPke, c);
   const [key, r] = G(Buffer.concat([m, h]));
-  const reject = shake("shake256", Buffer.concat([z, c]), 32);
+  const reject = shake('shake256', Buffer.concat([z, c]), 32);
   return pkeEncrypt(ek, m, r).equals(c) ? Buffer.from(key) : reject;
 }

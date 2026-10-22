@@ -12,15 +12,39 @@ judge, and a count is never a failure.
 The verifier prints one line per check and a summary. It exits `0` when
 no check failed, and `1` when a check failed or it was run wrongly.
 
+## Running it
+
+One kit, a stand program, with Node 24 and nothing else:
+
+```bash
+node verifier/cli.js [--cwd DIR] [--only NAME[,NAME]] -- <stand program>
+```
+
+`--cwd DIR` is the folder the stand program runs in. `--only` judges the
+scenarios named and no other, by the names the verifier prints between
+brackets, such as `the size` or `strangers`. A stand program that cannot
+start is a failed run, never a hang.
+
+Two kits, the first asked from the second through the verifier, as
+"Two kits" below says:
+
+```bash
+node verifier/cli.js --two [--cwd DIR] -- <first program> -- <second program>
+```
+
+The first `--` opens the first program and the second `--` the second. A
+program whose own arguments hold `--` cannot be named here; wrap it in a
+script. `--cwd` is the folder both run in.
+
 ## What the verifier holds
 
 The verifier holds the six algorithms and `SPEC.md`. It holds no kit, and
 no bytes any kit produced.
 
-It reaches a kit through `vectors/HARNESS.md`. Requests go over the
-kit's stdin and stdout, with boxes as hex. Where the kit carries bytes,
-it reaches it through the frames of `CARRIER-TCP.md` and the post and
-held line of `CARRIER-WEB.md`.
+It reaches a kit through `vectors/HARNESS.md`. Requests go over
+the kit's stdin and stdout, with boxes as hex. Where the kit carries
+bytes, it reaches it through the frames of `CARRIER-TCP.md` and the post
+and held line of `CARRIER-WEB.md`.
 
 It holds that seam as well as Quo. It drives every error `HARNESS.md` names,
 and holds the kit to that vocabulary and to the order in which two errors
@@ -152,11 +176,11 @@ A kit that answers `ask` with `bad request` is judged as a door alone.
 ## The kit as a carrier
 
 A kit that answers `listen`, `route` and `send` of part two of
-`vectors/HARNESS.md` is judged on `CARRIER-TCP.md` and `CARRIER-WEB.md` as
-well. The verifier asks for each scheme the harness names, `tcp`, `http`
-and `ws`, one at a time. A scheme a kit answers with `bad request` is one
-it does not stand, and the kit is judged without it. A kit that stands
-none is judged without a carrier.
+`vectors/HARNESS.md` is judged on `CARRIER-TCP.md` and
+`CARRIER-WEB.md` as well. The verifier asks for each scheme the harness
+names, `tcp`, `http` and `ws`, one at a time. A scheme a kit answers with `bad
+request` is one it does not stand, and the kit is judged without it. A kit
+that stands none is judged without a carrier.
 
 Every address a kit answers is taken apart as its carrier writes it. A
 `tcp` address is `tcp://host:port`. An `http` or `ws` address is a URI with
@@ -330,9 +354,10 @@ through `at`.
 A vector is one precomputed case a kit checks itself against without
 running the verifier. A vector is a convenience and is not the authority.
 
-`vectors/arithmetic.json` is the one file of vectors. It pins the six
-algorithms, each record taken from the standard that publishes it or built
-on one and saying how. The verifier's own tests replay every record.
+`vectors/arithmetic.json` is the one file of vectors. It pins
+the six algorithms, each record taken from the standard that publishes it
+or built on one and saying how. The verifier's own tests replay every
+record.
 
 ## What no check derives
 

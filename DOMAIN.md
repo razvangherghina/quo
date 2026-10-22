@@ -20,6 +20,10 @@ its body. Every other response vouches for nothing. A redirect is not
 followed, so the file always comes from the domain it vouches for. The
 response's `Content-Type` is not read.
 
+The server answers with the header `Access-Control-Allow-Origin: *`, as the
+CORS protocol of the Fetch standard writes it, and a reader in a page of any
+origin reads the file.
+
 The body is a value, as the chapter on values of `SPEC.md` reads one. A
 body above 1,048,576 bytes vouches for nothing.
 

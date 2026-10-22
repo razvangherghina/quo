@@ -1,10 +1,22 @@
 // Sealing and opening every box of SPEC.md.
-import { agree, draw, xSecret, hkdf, seal, open, isZero, sign, encapsulate, ZERO32, SIZE } from "./crypto.js";
+import {
+  agree,
+  draw,
+  xSecret,
+  hkdf,
+  seal,
+  open,
+  isZero,
+  sign,
+  encapsulate,
+  ZERO32,
+  SIZE,
+} from './crypto.js';
 
 export const CT_LEN = 1088;
-export const edgeSealKey = (a, edge) => hkdf(Buffer.concat([a, edge]), "quo-edge-seal", 44);
-export const follow = (edge, agreement) => hkdf(Buffer.concat([edge, agreement]), "quo-edge", 32);
-export const knockEdge = (ss) => hkdf(ss, "quo-lock", 32);
+export const edgeSealKey = (a, edge) => hkdf(Buffer.concat([a, edge]), 'quo-edge-seal', 44);
+export const follow = (edge, agreement) => hkdf(Buffer.concat([edge, agreement]), 'quo-edge', 32);
+export const knockEdge = (ss) => hkdf(ss, 'quo-lock', 32);
 
 // A fresh ephemeral key that takes a seal with `pub`.
 export function ephemeralTo(pub) {
@@ -18,9 +30,9 @@ export function ephemeralTo(pub) {
 // Returns { box, lid (the ephemeral secret), edge (the edge key it was sent under) }.
 export function sealAsk({ padlock, head, edge, lockEk, payload, signer }) {
   const e = ephemeralTo(padlock);
-  if (!e) throw new Error("padlock takes no seal");
+  if (!e) throw new Error('padlock takes no seal');
   const lid = e.eph.pub;
-  const sealedHead = seal(hkdf(e.a, "quo-seal", 44), head, lid);
+  const sealedHead = seal(hkdf(e.a, 'quo-seal', 44), head, lid);
   let ct = Buffer.alloc(0);
   if (lockEk) {
     const k = encapsulate(lockEk);
@@ -36,9 +48,12 @@ export function sealAsk({ padlock, head, edge, lockEk, payload, signer }) {
 // The signature covers the lid, then the reply text. The lid is not in the body.
 export function sealReply({ lid, text, signer }) {
   const e = ephemeralTo(lid);
-  if (!e) throw new Error("lid takes no seal");
+  if (!e) throw new Error('lid takes no seal');
   const body = Buffer.concat([text, sign(signer, Buffer.concat([lid, text]))]);
-  return { box: Buffer.concat([e.eph.pub, seal(hkdf(e.a, "quo-seal", 44), body, e.eph.pub)]), agreement: e.a };
+  return {
+    box: Buffer.concat([e.eph.pub, seal(hkdf(e.a, 'quo-seal', 44), body, e.eph.pub)]),
+    agreement: e.a,
+  };
 }
 
 // A lid nobody holds.
@@ -54,7 +69,7 @@ export function openReply(box, lidSecret) {
   const pk = box.subarray(0, 32);
   const a = agree(lidSecret, pk);
   if (isZero(a)) return null;
-  const body = open(hkdf(a, "quo-seal", 44), box.subarray(32), pk);
+  const body = open(hkdf(a, 'quo-seal', 44), box.subarray(32), pk);
   if (!body || body.length < 64) return null;
   return {
     text: body.subarray(0, body.length - 64),

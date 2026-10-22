@@ -20,16 +20,18 @@ Quo's.
 - `TYPES.md`: the same spec read as types, for an exact reading. GraphQL
   is its notation and nothing more: nothing in Quo runs over it. The spec
   decides, and the types do not.
-- `VERIFIER.md` and `verifier/`: a checker any kit may run. It says where a
-  kit departs from `SPEC.md`, and nothing about whether the kit is good.
-  Passing it is necessary and never sufficient.
-  `node verifier/cli.js -- <stand program>`, with Node 24 and nothing else.
-  A stand program is one executable answering the requests of
-  `vectors/HARNESS.md` on stdin and stdout.
-- `vectors/HARNESS.md`: those requests in full. `vectors/arithmetic.json`:
-  the six algorithms against their own standards.
-- `examples/`: kits in several languages, each written cold from these
-  documents, each one example among equals. None is a reference.
+- `VERIFIER.md` and `verifier/`: a checker any kit may run. It
+  says where a kit departs from `SPEC.md`, and nothing about whether the
+  kit is good. Passing it is necessary and never sufficient.
+  `node verifier/cli.js -- <stand program>`, with Node 24 and
+  nothing else. A stand program is one executable answering the requests
+  of `vectors/HARNESS.md` on stdin and stdout.
+- `vectors/`: `HARNESS.md`, those requests in full, and
+  `arithmetic.json`, the six algorithms against their own standards.
+- `examples/go`, `examples/zig`, `examples/python`, `examples/javascript`,
+  `examples/rust`: kits in several languages, each written cold from these
+  documents, each one example among equals. None is a reference. Each
+  has its `README.md`.
 
 Anyone may write a kit. No list of kits is part of Quo. The spec has no
 version until 1.0.0, when it is frozen once.

@@ -1,25 +1,25 @@
-import assert from "node:assert/strict";
-import { test } from "node:test";
+import assert from 'node:assert/strict';
+import { test } from 'node:test';
 
-import { parseValue, readPayload, readReply, whyNoDescribe } from "../value.js";
+import { parseValue, readPayload, readReply, whyNoDescribe } from '../value.js';
 
-const b = (s) => Buffer.from(s, "utf8");
+const b = (s) => Buffer.from(s, 'utf8');
 
-test("every number of the JSON grammar is a value", () => {
-  for (const lit of ["0", "-0", "1.0", "1e23", "1e400", "1e-400", "9007199254740993", "-0.0e0"]) {
+test('Values. Every number of the JSON grammar is a value', () => {
+  for (const lit of ['0', '-0', '1.0', '1e23', '1e400', '1e-400', '9007199254740993', '-0.0e0']) {
     assert.equal(parseValue(b(lit)).error, undefined, lit);
   }
-  for (const lit of ["01", "1.", ".5", "+1", "1e", "-"]) assert.ok(parseValue(b(lit)).error, lit);
+  for (const lit of ['01', '1.', '.5', '+1', '1e', '-']) assert.ok(parseValue(b(lit)).error, lit);
 });
 
-test("depth counts containers from the value written", () => {
-  assert.equal(parseValue(b("1")).depth, 0);
-  assert.equal(parseValue(b("[]")).depth, 1);
-  assert.equal(parseValue(b("[[]]")).depth, 2);
-  assert.equal(parseValue(b(`{"a":${"[".repeat(3)}${"]".repeat(3)}}`)).depth, 4);
+test('Values. Depth counts containers from the value written', () => {
+  assert.equal(parseValue(b('1')).depth, 0);
+  assert.equal(parseValue(b('[]')).depth, 1);
+  assert.equal(parseValue(b('[[]]')).depth, 2);
+  assert.equal(parseValue(b(`{"a":${'['.repeat(3)}${']'.repeat(3)}}`)).depth, 4);
 });
 
-test("strings, keys and bytes", () => {
+test('Values. Strings, keys and bytes', () => {
   assert.ok(parseValue(b('{"a":1,"\\u0061":2}')).error);
   assert.ok(!parseValue(b('{"a":{"k":1,"k":2}}')).error);
   assert.ok(!parseValue(b('"\\ud800"')).error);
@@ -27,29 +27,29 @@ test("strings, keys and bytes", () => {
   assert.ok(!parseValue(b('"\\ud83d\\ude00"')).error);
   assert.ok(!parseValue(b('"\\uffff"')).error);
   assert.ok(parseValue(Buffer.from([0x22, 0xff, 0x22])).error);
-  assert.ok(parseValue(b("﻿{}")).error);
-  assert.ok(!parseValue(b(" \t\r\n{} \n")).error);
+  assert.ok(parseValue(b('﻿{}')).error);
+  assert.ok(!parseValue(b(' \t\r\n{} \n')).error);
 });
 
-test("a reply is one of three shapes", () => {
-  assert.equal(readReply(b('{"silence":true}')).shape, "silence");
-  assert.equal(readReply(b('{"quo":"removed"}')).word, "removed");
+test('The replies. A reply is one of three shapes', () => {
+  assert.equal(readReply(b('{"silence":true}')).shape, 'silence');
+  assert.equal(readReply(b('{"quo":"removed"}')).word, 'removed');
   assert.ok(readReply(b('{"quo":"gone"}')).error);
-  assert.equal(readReply(b('{"seen":null,"object":{}}')).shape, "object");
+  assert.equal(readReply(b('{"seen":null,"object":{}}')).shape, 'object');
   assert.ok(readReply(b('{"object":{}}')).error);
   assert.ok(readReply(b('{"object":1,"seen":2}')).error);
   assert.ok(readReply(b('{"object":1,"seen":null,"x":1}')).error);
   assert.ok(readReply(b('{"object":1,"object":2,"seen":null}')).error);
-  assert.ok(!readReply(b(`{"object":${"[".repeat(500)}${"]".repeat(500)},"seen":null}`)).error);
-  assert.equal(readReply(b('{"object":1,"seen":null,"at":["tcp://h:1"]}')).at.type, "array");
-  assert.equal(readReply(b('{"object":1,"seen":null,"at":5}')).shape, "object");
+  assert.ok(!readReply(b(`{"object":${'['.repeat(500)}${']'.repeat(500)},"seen":null}`)).error);
+  assert.equal(readReply(b('{"object":1,"seen":null,"at":["tcp://h:1"]}')).at.type, 'array');
+  assert.equal(readReply(b('{"object":1,"seen":null,"at":5}')).shape, 'object');
   assert.equal(readReply(b('{"object":1,"seen":null}')).at, undefined);
   assert.ok(readReply(b('{"silence":true,"at":[]}')).error);
   assert.ok(readReply(b('{"quo":"removed","at":[]}')).error);
   assert.ok(readReply(b('{"object":1,"seen":null,"at":[],"at":[]}')).error);
 });
 
-test("the object that answers the empty ask is a describe or says why not", () => {
+test('What may be asked. The object that answers the empty ask is a describe or says why not', () => {
   const object = (s) => readReply(b(`{"object":${s},"seen":null}`)).object;
   for (const yes of [
     '{"asks":[]}',
@@ -61,9 +61,9 @@ test("the object that answers the empty ask is a describe or says why not", () =
     assert.equal(whyNoDescribe(object(yes)), null, yes);
   }
   for (const no of [
-    "null",
-    "{}",
-    "[]",
+    'null',
+    '{}',
+    '[]',
     '{"asks":{}}',
     '{"asks":null}',
     '{"asks":[],"lang":null}',
@@ -81,13 +81,13 @@ test("the object that answers the empty ask is a describe or says why not", () =
   }
 });
 
-test("a payload is well formed or says why not", () => {
-  const pk = "ab".repeat(32);
+test('The payload. A payload is well formed or says why not', () => {
+  const pk = 'ab'.repeat(32);
   const base = `"to":"${pk}","by":"${pk}","next":null`;
   const ok = readPayload(b(`{${base},"seq":1,"method":"m","args":{"a":[1]}}`));
   assert.equal(ok.error, undefined);
   assert.equal(ok.seq, 1);
-  assert.equal(ok.method, "m");
+  assert.equal(ok.method, 'm');
   assert.equal(readPayload(b(`{ ${base} , "seq" : 2 }`)).method, undefined);
   for (const no of [
     `{${base}}`,
@@ -98,14 +98,17 @@ test("a payload is well formed or says why not", () => {
     `{${base},"seq":"1"}`,
     `{${base},"seq":1,"method":null}`,
     `{${base},"seq":1,"args":[]}`,
-    `{"to":"${"0".repeat(64)}","by":"${pk}","next":null,"seq":1}`,
+    `{"to":"${'0'.repeat(64)}","by":"${pk}","next":null,"seq":1}`,
     `{"to":null,"by":"${pk.toUpperCase()}","next":null,"seq":1}`,
     `{"to":null,"by":"${pk}","seq":1}`,
     `{${base},"seq":1,"seq":1}`,
-    "[1]",
+    '[1]',
   ]) {
     assert.ok(readPayload(b(no)).error, no);
   }
-  assert.equal(readPayload(b(`{${base},"seq":1,"x":${"[".repeat(200)}${"]".repeat(200)}}`)).error, undefined);
+  assert.equal(
+    readPayload(b(`{${base},"seq":1,"x":${'['.repeat(200)}${']'.repeat(200)}}`)).error,
+    undefined,
+  );
   assert.equal(readPayload(b(`{${base},"seq":1,"args":{"k":"\\ud800","k":-0}}`)).error, undefined);
 });

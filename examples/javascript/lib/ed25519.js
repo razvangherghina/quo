@@ -1,6 +1,6 @@
 // Ed25519 verification as SPEC.md's signature chapter pins it: RFC 8032,
 // cofactorless, strict decoding, small-order public keys refused.
-import { createHash } from "node:crypto";
+import { createHash } from 'node:crypto';
 
 const P = 2n ** 255n - 19n;
 const L = 2n ** 252n + 27742317777372353535851937790883648493n;
@@ -51,9 +51,14 @@ const mul = (k, pt) => {
   }
   return r;
 };
-const same = ([X1, Y1, Z1], [X2, Y2, Z2]) => mod(X1 * Z2 - X2 * Z1) === 0n && mod(Y1 * Z2 - Y2 * Z1) === 0n;
+const same = ([X1, Y1, Z1], [X2, Y2, Z2]) =>
+  mod(X1 * Z2 - X2 * Z1) === 0n && mod(Y1 * Z2 - Y2 * Z1) === 0n;
 
-const B = decode(Uint8Array.from(Buffer.from("5866666666666666666666666666666666666666666666666666666666666666", "hex")));
+const B = decode(
+  Uint8Array.from(
+    Buffer.from('5866666666666666666666666666666666666666666666666666666666666666', 'hex'),
+  ),
+);
 
 // RFC 8032 5.1.3, with y at or above p refused. Returns null when it does not decode.
 export function decode(bytes) {
@@ -89,7 +94,7 @@ export function verify(pk, msg, sig) {
   if (!R) return false;
   const A = decode(pk);
   if (!A || smallOrder(A)) return false;
-  const h = createHash("sha512").update(sig.subarray(0, 32)).update(pk).update(msg).digest();
+  const h = createHash('sha512').update(sig.subarray(0, 32)).update(pk).update(msg).digest();
   const k = mod(leInt(h), L);
   return same(mul(s, B), add(R, mul(k, A)));
 }

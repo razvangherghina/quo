@@ -11,21 +11,21 @@ import {
   diffieHellman,
   hkdfSync,
   sign,
-} from "node:crypto";
+} from 'node:crypto';
 
 export const ZERO32 = Buffer.alloc(32);
 
-export const sha256 = (b) => createHash("sha256").update(b).digest();
-const sha512 = (b) => createHash("sha512").update(b).digest();
+export const sha256 = (b) => createHash('sha256').update(b).digest();
+const sha512 = (b) => createHash('sha512').update(b).digest();
 
 /** HKDF-SHA-256 with the zero-length salt; the label is the ASCII info. */
 export function hkdf(ikm, label, len) {
-  const info = typeof label === "string" ? Buffer.from(label, "ascii") : label;
-  return Buffer.from(hkdfSync("sha256", ikm, Buffer.alloc(0), info, len));
+  const info = typeof label === 'string' ? Buffer.from(label, 'ascii') : label;
+  return Buffer.from(hkdfSync('sha256', ikm, Buffer.alloc(0), info, len));
 }
 
 export function aesSeal(key44, aad, plain) {
-  const c = createCipheriv("aes-256-gcm", key44.subarray(0, 32), key44.subarray(32, 44));
+  const c = createCipheriv('aes-256-gcm', key44.subarray(0, 32), key44.subarray(32, 44));
   c.setAAD(aad);
   return Buffer.concat([c.update(plain), c.final(), c.getAuthTag()]);
 }
@@ -34,7 +34,7 @@ export function aesSeal(key44, aad, plain) {
 export function aesOpen(key44, aad, sealed) {
   if (sealed.length < 16) return null;
   try {
-    const d = createDecipheriv("aes-256-gcm", key44.subarray(0, 32), key44.subarray(32, 44));
+    const d = createDecipheriv('aes-256-gcm', key44.subarray(0, 32), key44.subarray(32, 44));
     d.setAAD(aad);
     d.setAuthTag(sealed.subarray(sealed.length - 16));
     return Buffer.concat([d.update(sealed.subarray(0, sealed.length - 16)), d.final()]);
@@ -45,8 +45,8 @@ export function aesOpen(key44, aad, sealed) {
 
 // ---------- X25519 ----------
 
-const X_PKCS8 = Buffer.from("302e020100300506032b656e04220420", "hex");
-const X_SPKI = Buffer.from("302a300506032b656e032100", "hex");
+const X_PKCS8 = Buffer.from('302e020100300506032b656e04220420', 'hex');
+const X_SPKI = Buffer.from('302a300506032b656e032100', 'hex');
 const P = 2n ** 255n - 19n;
 
 const mod = (a, m = P) => ((a % m) + m) % m;
@@ -60,8 +60,8 @@ function powmod(b, e, m = P) {
   }
   return r;
 }
-const le = (b) => BigInt("0x" + (Buffer.from(b).reverse().toString("hex") || "0"));
-const toLe = (n, len = 32) => Buffer.from(n.toString(16).padStart(len * 2, "0"), "hex").reverse();
+const le = (b) => BigInt('0x' + (Buffer.from(b).reverse().toString('hex') || '0'));
+const toLe = (n, len = 32) => Buffer.from(n.toString(16).padStart(len * 2, '0'), 'hex').reverse();
 
 /** RFC 7748 ladder, used to recognise a point that takes no seal. */
 function ladder(k, u) {
@@ -97,32 +97,40 @@ export function takesNoSeal(pub) {
 }
 
 export function x25519Pub(secret) {
-  const k = createPrivateKey({ key: Buffer.concat([X_PKCS8, secret]), format: "der", type: "pkcs8" });
-  return createPublicKey(k).export({ format: "der", type: "spki" }).subarray(-32);
+  const k = createPrivateKey({
+    key: Buffer.concat([X_PKCS8, secret]),
+    format: 'der',
+    type: 'pkcs8',
+  });
+  return createPublicKey(k).export({ format: 'der', type: 'spki' }).subarray(-32);
 }
 
 /** The agreement of a secret and a public key; thirty-two zeros for a point of small order. */
 export function x25519(secret, pub) {
   if (takesNoSeal(pub)) return Buffer.from(ZERO32);
-  const k = createPrivateKey({ key: Buffer.concat([X_PKCS8, secret]), format: "der", type: "pkcs8" });
-  const p = createPublicKey({ key: Buffer.concat([X_SPKI, pub]), format: "der", type: "spki" });
+  const k = createPrivateKey({
+    key: Buffer.concat([X_PKCS8, secret]),
+    format: 'der',
+    type: 'pkcs8',
+  });
+  const p = createPublicKey({ key: Buffer.concat([X_SPKI, pub]), format: 'der', type: 'spki' });
   return diffieHellman({ privateKey: k, publicKey: p });
 }
 
 // ---------- Ed25519 ----------
 
-const E_PKCS8 = Buffer.from("302e020100300506032b657004220420", "hex");
+const E_PKCS8 = Buffer.from('302e020100300506032b657004220420', 'hex');
 export const L = 2n ** 252n + 27742317777372353535851937790883648493n;
 const D = mod(-121665n * powmod(121666n, P - 2n));
 const SQRT_M1 = powmod(2n, (P - 1n) / 4n);
 
 export function edPub(seed) {
-  const k = createPrivateKey({ key: Buffer.concat([E_PKCS8, seed]), format: "der", type: "pkcs8" });
-  return createPublicKey(k).export({ format: "der", type: "spki" }).subarray(-32);
+  const k = createPrivateKey({ key: Buffer.concat([E_PKCS8, seed]), format: 'der', type: 'pkcs8' });
+  return createPublicKey(k).export({ format: 'der', type: 'spki' }).subarray(-32);
 }
 
 export function edSign(seed, msg) {
-  const k = createPrivateKey({ key: Buffer.concat([E_PKCS8, seed]), format: "der", type: "pkcs8" });
+  const k = createPrivateKey({ key: Buffer.concat([E_PKCS8, seed]), format: 'der', type: 'pkcs8' });
   return sign(null, msg, k);
 }
 

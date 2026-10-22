@@ -1,7 +1,7 @@
 // Quo over the web (CARRIER-WEB.md): the post and the held line, each as listener and dialer.
-import * as http from "node:http";
-import { createHash } from "node:crypto";
-import { frame, readBody, ASK, REPLY, NOTHING, MAX_BODY } from "./tcp.js";
+import * as http from 'node:http';
+import { createHash } from 'node:crypto';
+import { frame, readBody, ASK, REPLY, NOTHING, MAX_BODY } from './tcp.js';
 
 const MIN_POST = 65;
 const MAX_POST = 1048640;
@@ -9,7 +9,7 @@ const WAIT_MS = 5000;
 
 // What the ward pk names answers the box: { known, reply }.
 function deliver(lookup, pk, box, log) {
-  const ward = lookup(Buffer.from(pk).toString("hex"));
+  const ward = lookup(Buffer.from(pk).toString('hex'));
   if (!ward) return { known: false, reply: null };
   try {
     return { known: true, reply: ward.arrive(Buffer.from(box)) };
@@ -21,27 +21,27 @@ function deliver(lookup, pk, box, log) {
 
 const started = (server, host) =>
   new Promise((resolve, reject) => {
-    server.once("error", reject);
+    server.once('error', reject);
     server.listen(0, host, () => resolve(server));
   });
 
 // ---- The post ----
 
-export function listenPost(lookup, { host = "127.0.0.1", log = () => {} } = {}) {
+export function listenPost(lookup, { host = '127.0.0.1', log = () => {} } = {}) {
   const server = http.createServer((req, res) => {
-    req.on("error", () => {});
+    req.on('error', () => {});
     const refuse = (status) => {
-      res.writeHead(status, { "content-length": 0, connection: "close" });
+      res.writeHead(status, { 'content-length': 0, connection: 'close' });
       res.end();
     };
-    if (req.method !== "POST") {
+    if (req.method !== 'POST') {
       req.resume();
       return refuse(405);
     }
     const chunks = [];
     let length = 0;
     let over = false;
-    req.on("data", (d) => {
+    req.on('data', (d) => {
       if (over) return;
       length += d.length;
       if (length > MAX_POST) {
@@ -52,18 +52,21 @@ export function listenPost(lookup, { host = "127.0.0.1", log = () => {} } = {}) 
       }
       chunks.push(d);
     });
-    req.on("end", () => {
+    req.on('end', () => {
       if (over) return;
       if (length < MIN_POST) return refuse(400);
       const body = Buffer.concat(chunks);
       const { known, reply } = deliver(lookup, body.subarray(0, 64), body.subarray(64), log);
       if (!known) return refuse(404);
       if (!reply) return refuse(204);
-      res.writeHead(200, { "content-type": "application/octet-stream", "content-length": reply.length });
+      res.writeHead(200, {
+        'content-type': 'application/octet-stream',
+        'content-length': reply.length,
+      });
       res.end(reply);
     });
   });
-  server.on("upgrade", (_req, sock) => sock.destroy());
+  server.on('upgrade', (_req, sock) => sock.destroy());
   return started(server, host);
 }
 
@@ -71,9 +74,9 @@ export function listenPost(lookup, { host = "127.0.0.1", log = () => {} } = {}) 
 export async function askPost(at, wardPkHex, box, timeoutMs = WAIT_MS) {
   try {
     const res = await fetch(at.url, {
-      method: "POST",
-      body: Buffer.concat([Buffer.from(wardPkHex, "hex"), box]),
-      redirect: "manual",
+      method: 'POST',
+      body: Buffer.concat([Buffer.from(wardPkHex, 'hex'), box]),
+      redirect: 'manual',
       signal: AbortSignal.timeout(timeoutMs),
     });
     const body = Buffer.from(await res.arrayBuffer());
@@ -85,7 +88,7 @@ export async function askPost(at, wardPkHex, box, timeoutMs = WAIT_MS) {
 
 // ---- The held line: WebSocket of RFC 6455 ----
 
-const GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+const GUID = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11';
 const OP_TEXT = 1;
 const OP_BINARY = 2;
 const OP_CLOSE = 8;
@@ -167,24 +170,32 @@ export function wsReader(onMessage, onControl) {
   };
 }
 
-export function listenLine(lookup, { host = "127.0.0.1", log = () => {} } = {}) {
+export function listenLine(lookup, { host = '127.0.0.1', log = () => {} } = {}) {
   const server = http.createServer((req, res) => {
     req.resume();
-    res.writeHead(426, { "content-length": 0, connection: "close" });
+    res.writeHead(426, { 'content-length': 0, connection: 'close' });
     res.end();
   });
-  server.on("upgrade", (req, sock, head) => {
-    sock.on("error", () => {});
-    const key = req.headers["sec-websocket-key"];
-    const offered = (req.headers["sec-websocket-protocol"] ?? "").split(",").map((p) => p.trim());
-    const upgrade = (req.headers.upgrade ?? "").toLowerCase() === "websocket";
-    if (req.method !== "GET" || !upgrade || !key || req.headers["sec-websocket-version"] !== "13" || !offered.includes("quo")) {
-      sock.end("HTTP/1.1 400 Bad Request\r\nconnection: close\r\ncontent-length: 0\r\n\r\n");
+  server.on('upgrade', (req, sock, head) => {
+    sock.on('error', () => {});
+    const key = req.headers['sec-websocket-key'];
+    const offered = (req.headers['sec-websocket-protocol'] ?? '').split(',').map((p) => p.trim());
+    const upgrade = (req.headers.upgrade ?? '').toLowerCase() === 'websocket';
+    if (
+      req.method !== 'GET' ||
+      !upgrade ||
+      !key ||
+      req.headers['sec-websocket-version'] !== '13' ||
+      !offered.includes('quo')
+    ) {
+      sock.end('HTTP/1.1 400 Bad Request\r\nconnection: close\r\ncontent-length: 0\r\n\r\n');
       return;
     }
-    const accept = createHash("sha1").update(key + GUID).digest("base64");
+    const accept = createHash('sha1')
+      .update(key + GUID)
+      .digest('base64');
     sock.write(
-      "HTTP/1.1 101 Switching Protocols\r\nupgrade: websocket\r\nconnection: Upgrade\r\n" +
+      'HTTP/1.1 101 Switching Protocols\r\nupgrade: websocket\r\nconnection: Upgrade\r\n' +
         `sec-websocket-accept: ${accept}\r\nsec-websocket-protocol: quo\r\n\r\n`,
     );
     let closing = false;
@@ -215,7 +226,7 @@ export function listenLine(lookup, { host = "127.0.0.1", log = () => {} } = {}) 
       if (!feed(d)) close(1002);
     };
     if (head.length) take(head);
-    sock.on("data", take);
+    sock.on('data', take);
   });
   return started(server, host);
 }
@@ -229,20 +240,20 @@ export class LineDialer {
   line(url) {
     let l = this.lines.get(url);
     if (l) return l;
-    const ws = new WebSocket(url, "quo");
-    ws.binaryType = "arraybuffer";
+    const ws = new WebSocket(url, 'quo');
+    ws.binaryType = 'arraybuffer';
     l = { ws, pending: new Map(), next: 1 };
     l.open = new Promise((resolve) => {
-      ws.addEventListener("open", () => resolve(ws.protocol === "quo"));
-      ws.addEventListener("close", () => resolve(false));
+      ws.addEventListener('open', () => resolve(ws.protocol === 'quo'));
+      ws.addEventListener('close', () => resolve(false));
     });
     const end = () => {
       if (this.lines.get(url) === l) this.lines.delete(url);
       for (const p of l.pending.values()) p(null);
       l.pending.clear();
     };
-    ws.addEventListener("message", (e) => {
-      const f = typeof e.data === "string" ? null : readBody(Buffer.from(e.data));
+    ws.addEventListener('message', (e) => {
+      const f = typeof e.data === 'string' ? null : readBody(Buffer.from(e.data));
       if (!f) return ws.close(1002);
       if (f.kind === ASK) return;
       const p = l.pending.get(f.id);
@@ -250,8 +261,8 @@ export class LineDialer {
       l.pending.delete(f.id);
       p(f.kind === REPLY ? Buffer.from(f.rest) : null);
     });
-    ws.addEventListener("close", end);
-    ws.addEventListener("error", () => {});
+    ws.addEventListener('close', end);
+    ws.addEventListener('error', () => {});
     this.lines.set(url, l);
     return l;
   }
@@ -274,7 +285,7 @@ export class LineDialer {
           return done(null);
         }
         if (l.ws.readyState !== WebSocket.OPEN) return done(null);
-        l.ws.send(frame(ASK, id, Buffer.concat([Buffer.from(wardPkHex, "hex"), box])).subarray(4));
+        l.ws.send(frame(ASK, id, Buffer.concat([Buffer.from(wardPkHex, 'hex'), box])).subarray(4));
       });
     });
   }

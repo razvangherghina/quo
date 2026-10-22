@@ -1,5 +1,5 @@
 // Quo over TCP (CARRIER-TCP.md): frames, a listener and a dialer.
-import * as net from "node:net";
+import * as net from 'node:net';
 
 export const MAX_BODY = 1048645;
 export const ASK = 0;
@@ -49,12 +49,12 @@ export function reader(onFrame) {
 }
 
 // A listener answering for the wards `lookup(pkHex)` returns. `door.arrive(box)` gives a reply box or null.
-export function listen(lookup, { host = "127.0.0.1", port = 0, log = () => {} } = {}) {
+export function listen(lookup, { host = '127.0.0.1', port = 0, log = () => {} } = {}) {
   const server = net.createServer((sock) => {
-    sock.on("error", () => {});
+    sock.on('error', () => {});
     const feed = reader((kind, id, rest) => {
       if (kind !== ASK) return; // read, nothing said, the connection stands
-      const ward = lookup(rest.subarray(0, 64).toString("hex"));
+      const ward = lookup(rest.subarray(0, 64).toString('hex'));
       let reply = null;
       if (ward) {
         try {
@@ -65,12 +65,12 @@ export function listen(lookup, { host = "127.0.0.1", port = 0, log = () => {} } 
       }
       sock.write(reply ? frame(REPLY, id, reply) : frame(NOTHING, id, Buffer.alloc(0)));
     });
-    sock.on("data", (d) => {
+    sock.on('data', (d) => {
       if (!feed(d)) sock.destroy();
     });
   });
   return new Promise((resolve, reject) => {
-    server.once("error", reject);
+    server.once('error', reject);
     server.listen(port, host, () => resolve(server));
   });
 }
@@ -99,11 +99,11 @@ export class Dialer {
       c.pending.delete(id);
       p(kind === REPLY ? Buffer.from(rest) : null);
     });
-    sock.on("data", (d) => {
+    sock.on('data', (d) => {
       if (!feed(d)) sock.destroy();
     });
-    sock.on("error", close);
-    sock.on("close", close);
+    sock.on('error', close);
+    sock.on('close', close);
     this.conns.set(at, c);
     return c;
   }
@@ -121,7 +121,7 @@ export class Dialer {
         clearTimeout(t);
         resolve(r);
       });
-      c.sock.write(frame(ASK, id, Buffer.concat([Buffer.from(wardPkHex, "hex"), box])));
+      c.sock.write(frame(ASK, id, Buffer.concat([Buffer.from(wardPkHex, 'hex'), box])));
     });
   }
 
