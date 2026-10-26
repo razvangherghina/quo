@@ -34,7 +34,7 @@ Quo's.
   has its `README.md`.
 
 Anyone may write a kit. No list of kits is part of Quo. The spec has no
-version until 1.0.0, when it is frozen once.
+version before 1.0.0.
 
 Quo is read at <https://quo.systems>.
 
