@@ -30,8 +30,9 @@ answering the requests of `../vectors/HARNESS.md` on stdin and stdout.
 node --test 'verifier/test/*.test.js'
 ```
 
-The gate runs these, each under five seconds. Two of them start the
-JavaScript kit's stand program: `verify.test.js` and `carried.test.js`.
+The gate runs these, each under five seconds. Three of them start the
+JavaScript kit's stand program: `verify.test.js`, `carried.test.js` and
+`cli.test.js`.
 
 One file of tests stands beside each file above that a test can reach: the
 algorithms replay every record of `../vectors/arithmetic.json`, and

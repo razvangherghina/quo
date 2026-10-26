@@ -8,7 +8,7 @@ answer to every question of `KIT-SPEC.md`.
 | Fact | This kit |
 | --- | --- |
 | Toolchain | Python 3.9 or later |
-| Depends on | `cryptography` |
+| Depends on | `cryptography` 48 or later |
 | Carries | `tcp`, `http` |
 | Build | none |
 | Stand program | `stand` |
