@@ -26,6 +26,12 @@ test('The verifier. --only judges the scenarios named alone, --cwd is where the 
   assert.ok(!r.stdout.includes('[the move]'), 'only the size was judged');
 });
 
+test('The verifier. --only with a name no scenario carries is a run done wrongly and exits 1', () => {
+  const r = run('--cwd', kit, '--only', 'no such scenario', '--', './stand');
+  assert.equal(r.status, 1);
+  assert.match(r.stderr, /no scenario is named no such scenario/);
+});
+
 test('The verifier. A stand program that does not exist fails the run and exits 1', () => {
   const r = run('--cwd', kit, '--only', 'the size', '--', './no-such-stand');
   assert.equal(r.status, 1);

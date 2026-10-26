@@ -7,14 +7,14 @@ answer to every question of `KIT-SPEC.md`.
 
 | Fact | This kit |
 | --- | --- |
-| Toolchain | Rust 1.98, edition 2021 |
+| Toolchain | Rust 1.98 or later, edition 2021 |
 | Depends on | the algorithms' crates |
 | Carries | `tcp` |
-| Build | `cargo build` |
+| Build | `cargo build`, which fetches the crates from crates.io the first time |
 | Stand program | `target/debug/stand` |
 | Its own tests | `cargo test` |
 
-From this folder, the verifier judges the stand program after its build:
+From this folder, once its build has run, the verifier judges the stand program:
 
 ```bash
 node ../../verifier/cli.js --cwd . -- ./target/debug/stand

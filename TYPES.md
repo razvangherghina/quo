@@ -53,7 +53,8 @@ and each is said in a sentence where it matters.
 - **Order.** A door meets its cases in order, and the first met answers.
   A table holds that order.
 - **Arithmetic.** The six algorithms, the labels and the signature check
-  are not typed. The last chapter names the spec chapter for each.
+  are not typed. The last chapter shows, for each chapter of the spec,
+  what is typed and what is not.
 
 ## Values
 

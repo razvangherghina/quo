@@ -22,7 +22,8 @@ node verifier/cli.js [--cwd DIR] [--only NAME[,NAME]] -- <stand program>
 
 `--cwd DIR` is the folder the stand program runs in. `--only` judges the
 scenarios named and no other, by the names the verifier prints between
-brackets, such as `the size` or `strangers`. A stand program that cannot
+brackets, such as `the size` or `strangers`; a name that is no scenario's
+is a run done wrongly. A stand program that cannot
 start is a failed run, never a hang.
 
 Two kits, the first asked from the second through the verifier, as

@@ -14,7 +14,7 @@ answer to every question of `KIT-SPEC.md`.
 | Stand program | `stand` |
 | Its own tests | `go test ./...` |
 
-From this folder, the verifier judges the stand program after its build:
+From this folder, once its build has run, the verifier judges the stand program:
 
 ```bash
 node ../../verifier/cli.js --cwd . -- ./stand

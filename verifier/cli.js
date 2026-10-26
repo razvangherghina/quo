@@ -53,4 +53,7 @@ process.stdout.write(`${counts}\n`);
 process.stdout.write(
   `${results.length} checks, ${results.length - failed.length} passed, ${failed.length} failed (${by('protocol')} protocol, ${by('carrier')} carrier, ${by('harness')} harness)\n`,
 );
-process.exit(failed.length === 0 ? 0 : 1);
+// A name `--only` gives that no scenario carries is a run done wrongly, never a pass.
+const unknown = (only ?? []).filter((name) => !results.some((r) => r.scenario === name));
+for (const name of unknown) process.stderr.write(`no scenario is named ${name}\n`);
+process.exit(failed.length === 0 && unknown.length === 0 ? 0 : 1);
