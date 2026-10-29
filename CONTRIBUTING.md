@@ -1,4 +1,4 @@
-# Contributing to Quo
+# Taking part in Quo
 
 Quo is a protocol. This repository holds the spec, the questions the spec
 leaves to a kit, two carriers published beside it, a verifier, the
@@ -37,15 +37,16 @@ the smallest stand program that shows it.
 The verifier is a method offered, not part of Quo. Passing it is
 necessary and never sufficient.
 
-## About pull requests
+## Talking about Quo
 
-The spec is written by hand and changes rarely. A pull request that
-arrives without discussion usually cannot be merged as written, however
-good it is. Open an issue first.
+A question, an idea, a kit you wrote, or anything that is not a defect:
+open a discussion. It is read, and what it changes is said there.
 
-This is not a closed door. It is an honest description of how the work
-runs, so that nobody spends an evening on a patch that was never going
-to land.
+## Who writes it
+
+Everything in this repository is written by its holder alone, and pull
+requests are not taken, however good. This is not a closed door: an
+issue or a discussion is read, and a good argument moves the spec.
 
 ## Before 1.0.0
 
@@ -59,6 +60,4 @@ Do not open a public issue for a security problem. See
 
 ## License
 
-By contributing, you agree that your contributions are licensed under the
-Apache License, Version 2.0, the same terms as the rest of this
-repository.
+Everything here is under the Apache License, Version 2.0.
