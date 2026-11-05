@@ -16,7 +16,7 @@ anyone must speak. Silence is open at every moment, and a kit that answers
 once and never again still speaks Quo.
 
 This document is the whole of Quo and stands on nothing but the standards
-it names.
+it names. Its last chapter, Proposals, stands apart from that whole.
 
 ## Terms
 
@@ -717,3 +717,51 @@ nothing means not delivered.
 
 Quo names no carrier and no port. A carrier's own document names the
 scheme its addresses are written in, and how they are written.
+
+## Proposals
+
+This chapter binds nothing. No kit, verifier or vector leans on it, and it
+is no part of the whole of Quo.
+
+Each proposal is written as the chapter it will become, and names the
+document it would enter. A proposal built moves to its place with its
+proof. A proposal refused goes whole.
+
+### A link opens a person's home
+
+This proposal would enter a new document beside `SPEC.md`, as `DOMAIN.md`
+stands.
+
+A person's home is the kit that person chose. A link is a URL a page offers
+that opens a person's home.
+
+A page's card is the ward pk of the page's ward and the addresses at which
+that ward is reached. A link carries the page's card. A link carries a
+reference to the visit, and that reference is good once.
+
+A link carries no invitation. A secret a link carries is written after the
+`#` of the URL.
+
+A home claims links. In a browser, it claims a scheme of a site's own, which
+browsers name with the prefix `web+`, as `web+quo:`. On a phone, it claims
+an app link.
+
+Two questions stay open. One is how a phone chooses among the apps that
+claim a custom scheme: any app may claim one, and an app link belongs to
+one domain. The other is the words: they are to be Quo's, not a shop's or a
+home's.
+
+### Quo is registered among the well-known URIs
+
+This proposal would enter `DOMAIN.md`, in the chapter on the file.
+
+The URI suffix `quo` stands in IANA's registry of well-known URIs, as
+RFC 8615 asks of every name used under `/.well-known/`. Its change
+controller is Quo's owners. Its specification document is `DOMAIN.md`. Its
+status is permanent.
+
+The registration is filed when Quo is 1.0.0, from the `DOMAIN.md` that 1.0.0
+publishes.
+
+One question stays open: whether the request goes as provisional before
+then.

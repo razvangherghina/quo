@@ -33,6 +33,10 @@ Quo's.
   documents, each one example among equals. None is a reference. Each
   has its `README.md`.
 
+Each of `verifier/`, `vectors/` and the kits holds a `library.svg`, a
+picture of what the folder holds. Its first line stamps the folder as the
+repository that authors it names it, and is no part of the picture.
+
 Anyone may write a kit. No list of kits is part of Quo. The spec has no
 version before 1.0.0.
 

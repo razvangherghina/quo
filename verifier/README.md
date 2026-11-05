@@ -30,11 +30,12 @@ answering the requests of `../vectors/HARNESS.md` on stdin and stdout.
 node --test 'verifier/test/*.test.js'
 ```
 
-The gate runs these, each under five seconds. Three of them start the
+Each of these runs under five seconds. Three of them start the
 JavaScript kit's stand program: `verify.test.js`, `carried.test.js` and
 `cli.test.js`.
 
-One file of tests stands beside each file above that a test can reach: the
+One file of tests stands beside each file above that a test can reach, and
+`mlkem.js` is reached through `primitives.test.js` and the vectors' own: the
 algorithms replay every record of `../vectors/arithmetic.json`, and
 `test/verify.test.js` holds the proof that the verifier can fail, a kit
 wrong on purpose (`test/bad-stand.js`) failed where it is wrong and the same kit
