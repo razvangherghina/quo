@@ -67,7 +67,7 @@ pub const Stand = struct {
         if (id == null) return writeError(out, null, "bad request");
         self.dispatch(a, node, id.?, out) catch |e| {
             const msg = switch (e) {
-                error.BadRequest, error.TooLarge => "bad request",
+                error.BadRequest, error.TooLarge, error.NoSeal => "bad request",
                 error.NoSuchOp => "no such op",
                 error.WardStood => "ward stood",
                 error.NoSuchWard => "no such ward",
@@ -440,6 +440,25 @@ test "the requests and their errors" {
     try testing.expectEqual(@as(usize, 20 + 2 * (16 + 112) + 3), rep.len);
     try testing.expectEqualStrings("{\"id\":\"11\",\"error\":\"no such ward\"}\n", try run(&stand, a, try std.fmt.allocPrint(a, "{{\"id\":\"11\",\"op\":\"arrive\",\"ward\":\"{s}\",\"box\":\"00\"}}", .{"a" ** 128})));
     try testing.expectEqualStrings("{\"id\":\"12\",\"error\":\"bad request\"}\n", try run(&stand, a, try std.fmt.allocPrint(a, "{{\"id\":\"12\",\"op\":\"arrive\",\"ward\":\"{s}\",\"box\":\"abc\"}}", .{"a" ** 128})));
+}
+
+test "a padlock that takes no seal cannot be asked, and the program stands" {
+    var arena = std.heap.ArenaAllocator.init(testing.allocator);
+    defer arena.deinit();
+    const a = arena.allocator();
+    var stand: Stand = .{ .gpa = testing.allocator };
+    defer stand.deinit();
+
+    const asker = try run(&stand, a, "{\"id\":\"1\",\"op\":\"ward\",\"seed\":\"asker\"}");
+    const asker_pk = asker[18 .. 18 + 128];
+    const door = try run(&stand, a, "{\"id\":\"2\",\"op\":\"ward\",\"seed\":\"door\"}");
+    const door_pk = door[18 .. 18 + 128];
+    const inv_line = try run(&stand, a, try std.fmt.allocPrint(a, "{{\"id\":\"3\",\"op\":\"invite\",\"ward\":\"{s}\",\"heir\":\"h\"}}", .{door_pk}));
+    const inv_at = std.mem.indexOf(u8, inv_line, "{\"ward\"").?;
+    const inv = try a.dupe(u8, inv_line[inv_at .. inv_line.len - 2]);
+    @memset(inv[9 + 64 .. 9 + 128], '0');
+    const got = try run(&stand, a, try std.fmt.allocPrint(a, "{{\"id\":\"4\",\"op\":\"ask\",\"ward\":\"{s}\",\"invitation\":{s}}}", .{ asker_pk, inv }));
+    try testing.expectEqualStrings("{\"id\":\"4\",\"error\":\"bad request\"}\n", got);
 }
 
 test "listen and route stand tcp alone, and send reaches a ward through at" {

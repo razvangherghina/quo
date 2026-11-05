@@ -84,11 +84,11 @@ class Ward:
 
     # ---- replies ----
 
-    def _seal_reply(self, text, lid):
+    def _seal_reply(self, text, lid, edge):
         eph = self.source.draw(32)
         rpk = c.x25519_public(eph)
         agr = c.agree(eph, lid)
-        k, n = c.key_nonce(agr, "quo-seal")
+        k, n = c.key_nonce(agr + edge, "quo-edge-seal")
         body = text + c.ed_sign(self.key.sign_seed, lid + text)
         return rpk + c.gcm_seal(k, n, body, rpk), agr
 
@@ -100,7 +100,7 @@ class Ward:
             lid = self.source.draw(32)
             if not c.takes_seal(lid):
                 lid = c.x25519_public(self.source.draw(32))
-        return self._seal_reply(SILENCE, lid)[0]
+        return self._seal_reply(SILENCE, lid, ZERO_EDGE)[0]
 
     # ---- the door ----
 
@@ -165,7 +165,7 @@ class Ward:
                 return self._stranger(box, 4, True)
             if not c.ed_verify(p.by, payload, sig):
                 return self._stranger(box, 5, True)
-            return self._answer(self.zero_reach(p), lid)[0]
+            return self._answer(self.zero_reach(p), lid, edge)[0]
 
         # 6
         if heir is None and kept is None:
@@ -182,21 +182,23 @@ class Ward:
             return self._stranger(box, 8, True)
         # 9
         if kept is not None:
-            return self._seal_reply(word_text("removed"), lid)[0]
+            return self._seal_reply(word_text("removed"), lid, edge)[0]
         announced = p.next if p.next not in (None, heir.pk, p.by) else None
         # 10
         if heir.fresh and announced is None:
-            return self._seal_reply(word_text("unannounced"), lid)[0]
+            return self._seal_reply(word_text("unannounced"), lid, edge)[0]
         # 11
         if not heir.fresh and p.seq <= heir.highest:
-            return self._seal_reply(word_text("repeated"), lid)[0]
+            return self._seal_reply(word_text("repeated"), lid, edge)[0]
         # 12, 13
-        reply, ragr = self._answer(heir.reach(p), lid)
+        reply, ragr = self._answer(heir.reach(p), lid, edge)
         self._move(heir, p, announced, edge, ragr)
         return reply
 
-    def _answer(self, text, lid):
-        return self._seal_reply(SILENCE if text is None else text, lid)
+    def _answer(self, text, lid, edge):
+        if text is None:
+            return self._seal_reply(SILENCE, lid, ZERO_EDGE)
+        return self._seal_reply(text, lid, edge)
 
     def _move(self, heir, p, announced, edge, ragr):
         if heir.fresh:

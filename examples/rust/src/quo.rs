@@ -35,30 +35,17 @@ impl Reach {
     }
 
     /// The reply text chosen, or None for silence.
-    fn answer(&self, named: bool, args: Option<(&Node, &[u8])>) -> Option<Vec<u8>> {
-        let seen_of = if *self == Reach::Marked { "\"1\"" } else { "null" };
-        let (object, seen): (Vec<u8>, &str) = match self {
+    fn answer(&self, named: bool, args: Option<&[u8]>) -> Option<Vec<u8>> {
+        let seen = if *self == Reach::Marked { "\"1\"" } else { "null" };
+        let object = match self {
             Reach::Silent => return None,
             // The describe every reach but silent gives the empty ask: no entry, no lang.
-            _ if !named => (DESCRIBE_NONE.to_vec(), seen_of),
-            Reach::Null => (b"null".to_vec(), "null"),
-            Reach::Echo | Reach::Marked | Reach::Moved => {
-                let obj = match args {
-                    Some((n, src)) => {
-                        // This kit echoes args nesting sixty-four deep at most,
-                        // with no key repeated in any object.
-                        if n.depth > 64 || !json::keys_unique_throughout(n.text(src)) {
-                            return None;
-                        }
-                        n.text(src).to_vec()
-                    }
-                    None => b"{}".to_vec(),
-                };
-                (obj, seen_of)
-            }
+            _ if !named => DESCRIBE_NONE,
+            Reach::Null => b"null",
+            Reach::Echo | Reach::Marked | Reach::Moved => args.unwrap_or(b"{}"),
         };
         let mut t = b"{\"object\":".to_vec();
-        t.extend_from_slice(&object);
+        t.extend_from_slice(object);
         t.extend_from_slice(b",\"seen\":");
         t.extend_from_slice(seen.as_bytes());
         if *self == Reach::Moved {
@@ -106,12 +93,12 @@ pub enum Case {
     C11,
     C12,
     C13,
-    ZeroAnswered,
 }
 
 enum Verdict {
     Silence(Case),
-    Word(&'static str, Case),
+    /// A word, with the edge key the ask came under.
+    Word(&'static str, Case, [u8; 32]),
     Choice {
         text: Option<Vec<u8>>,
         mv: Option<Move>,
@@ -239,7 +226,8 @@ impl Door {
         true
     }
 
-    fn seal_reply(&self, lid: Option<[u8; 32]>, text: &[u8]) -> (Vec<u8>, [u8; 32]) {
+    /// Seal a reply under `edge`. It returns the box and the reply's agreement.
+    fn seal_reply(&self, lid: Option<[u8; 32]>, edge: &[u8; 32], text: &[u8]) -> (Vec<u8>, [u8; 32]) {
         let lid = match lid {
             Some(l) if takes_seal(&l) => l,
             _ => {
@@ -251,18 +239,16 @@ impl Door {
                 }
             }
         };
-        loop {
-            let eph = draw::<32>();
-            let eph_pk = x25519_pub(&eph);
-            let Some(agr) = agree(&eph, &lid) else { continue };
-            let mut over = lid.to_vec();
-            over.extend_from_slice(text);
-            let mut body = text.to_vec();
-            body.extend_from_slice(&ed_sign(&self.key.sign_secret, &over));
-            let mut out = eph_pk.to_vec();
-            out.extend(seal_with(&agr, "quo-seal", &eph_pk, &body));
-            return (out, agr);
-        }
+        let eph = draw::<32>();
+        let eph_pk = x25519_pub(&eph);
+        let agr = agree(&eph, &lid).expect("the lid takes a seal");
+        let mut over = lid.to_vec();
+        over.extend_from_slice(text);
+        let mut body = text.to_vec();
+        body.extend_from_slice(&ed_sign(&self.key.sign_secret, &over));
+        let mut out = eph_pk.to_vec();
+        out.extend(seal_with(&edge_ikm(&agr, edge), "quo-edge-seal", &eph_pk, &body));
+        (out, agr)
     }
 
     /// An ask's box in, a reply's box out. This door always answers.
@@ -271,21 +257,21 @@ impl Door {
         match self.judge(bx) {
             Verdict::Silence(c) => {
                 self.last_case = Some(c);
-                self.seal_reply(lid, SILENCE).0
+                self.seal_reply(lid, &ZERO, SILENCE).0
             }
-            Verdict::Word(w, c) => {
+            Verdict::Word(w, c, under) => {
                 self.last_case = Some(c);
                 let t = format!("{{\"quo\":\"{w}\"}}");
-                self.seal_reply(lid, t.as_bytes()).0
+                self.seal_reply(lid, &under, t.as_bytes()).0
             }
             Verdict::Choice { text, mv } => {
-                self.last_case = Some(match (&mv, &text) {
-                    (None, _) => Case::ZeroAnswered,
-                    (_, Some(_)) => Case::C12,
-                    (_, None) => Case::C13,
-                });
-                let t = text.as_deref().unwrap_or(SILENCE);
-                let (out, agr) = self.seal_reply(lid, t);
+                let under = mv.as_ref().map_or(ZERO, |m| m.under);
+                let (case, edge, t) = match &text {
+                    Some(t) => (Case::C12, under, &t[..]),
+                    None => (Case::C13, ZERO, SILENCE),
+                };
+                self.last_case = Some(case);
+                let (out, agr) = self.seal_reply(lid, &edge, t);
                 if let Some(m) = mv {
                     self.apply(m, &agr);
                 }
@@ -407,7 +393,7 @@ impl Door {
         };
         let args = match p.get("args") {
             None => None,
-            Some(a) if a.is_obj() => Some((a, payload)),
+            Some(a) if a.is_obj() => Some(a.text(payload)),
             Some(_) => return S(Case::C3),
         };
 
@@ -440,20 +426,20 @@ impl Door {
         }
         // Case 9.
         if let Via::Removed(_) = via {
-            return Verdict::Word("removed", Case::C9);
+            return Verdict::Word("removed", Case::C9, under);
         }
         let announced = next.filter(|k| *k != head && *k != by);
         match &via {
             Via::Fresh => {
                 // Case 10.
                 if announced.is_none() {
-                    return Verdict::Word("unannounced", Case::C10);
+                    return Verdict::Word("unannounced", Case::C10, under);
                 }
             }
             Via::Spent(k) => {
                 // Case 11: this door honours only numbers above the highest.
                 if seq <= k.highest {
-                    return Verdict::Word("repeated", Case::C11);
+                    return Verdict::Word("repeated", Case::C11, under);
                 }
             }
             _ => {}
@@ -632,7 +618,7 @@ impl Standing {
         let p = self.pending.as_mut()?;
         let (r, agr) = match reply {
             None => (Read::Nothing, None),
-            Some(b) => match read_reply(&self.inv.sign_pk(), &p.lid_secret, b) {
+            Some(b) => match read_reply(&self.inv.sign_pk(), &p.lid_secret, &p.sent_edge, b) {
                 Some((r, a)) => (r, Some(a)),
                 None => (Read::Silence, None),
             },
@@ -661,15 +647,17 @@ impl Standing {
     }
 }
 
-/// Open and read a reply's box. None where it reads as silence without opening;
+/// Open and read a reply's box under the edge key its ask was sent under. Silence
+/// sealed under the zero edge key does not open there, and reads as silence as any
+/// reply that does not open. None where it reads as silence without opening;
 /// Some((read, agreement)) otherwise.
-pub fn read_reply(sign_pk: &[u8; 32], lid_secret: &[u8; 32], bx: &[u8]) -> Option<(Read, [u8; 32])> {
+pub fn read_reply(sign_pk: &[u8; 32], lid_secret: &[u8; 32], edge: &[u8; 32], bx: &[u8]) -> Option<(Read, [u8; 32])> {
     if bx.len() > SIZE || bx.len() < 32 + 16 + 65 {
         return None;
     }
     let eph = arr32(&bx[..32]);
     let agr = agree(lid_secret, &eph)?;
-    let pt = open_with(&agr, "quo-seal", &eph, &bx[32..])?;
+    let pt = open_with(&edge_ikm(&agr, edge), "quo-edge-seal", &eph, &bx[32..])?;
     if pt.len() <= 64 {
         return None;
     }
@@ -729,8 +717,6 @@ mod tests {
     fn ward_key_shape() {
         let w = WardKey::from_seed(&seed_from_text("x"));
         assert_eq!(w.pk_hex().len(), 128);
-        assert_eq!(seed_from_bytes(&[7u8; 32]), [7u8; 32]);
-        assert_eq!(seed_from_bytes(b"abc"), sha256(b"abc"));
     }
 
     #[test]
@@ -836,21 +822,14 @@ mod tests {
     }
 
     #[test]
-    fn echo_depth() {
+    fn echo_takes_any_args() {
         let mut d = door(None);
         let mut s = pair(&mut d, "a", Reach::Echo);
-        let deep65 = format!("{{\"a\":{}{}}}", "[".repeat(64), "]".repeat(64));
-        assert_eq!(roundtrip(&mut d, &mut s, Some("m"), Some(&deep65)), Read::Silence);
-        assert_eq!(d.last_case, Some(Case::C13));
-        let deep64 = format!("{{\"a\":{}{}}}", "[".repeat(63), "]".repeat(63));
-        assert!(matches!(roundtrip(&mut d, &mut s, Some("m"), Some(&deep64)), Read::Object { .. }));
-        let deep1000 = format!("{{\"a\":{}{}}}", "[".repeat(1000), "]".repeat(1000));
-        assert_eq!(roundtrip(&mut d, &mut s, Some("m"), Some(&deep1000)), Read::Silence);
-        assert_eq!(d.last_case, Some(Case::C13));
-        assert_eq!(roundtrip(&mut d, &mut s, Some("m"), Some(r#"{"k":1,"k":2}"#)), Read::Silence);
-        assert_eq!(d.last_case, Some(Case::C13));
-        let odd = r#"{"v":"\ud800","n":[-0,1e400]}"#;
-        assert_eq!(roundtrip(&mut d, &mut s, Some("m"), Some(odd)), Read::Object { object: odd.into(), seen: "null".into(), at: None });
+        let deep = format!("{{\"a\":{}{}}}", "[".repeat(1000), "]".repeat(1000));
+        for args in [&deep, r#"{"k":1,"k":2}"#, r#"{"v":"\ud800","n":[-0,1e400]}"#] {
+            let r = roundtrip(&mut d, &mut s, Some("m"), Some(args));
+            assert_eq!(r, Read::Object { object: args.to_string(), seen: "null".into(), at: None });
+        }
     }
 
     #[test]
@@ -930,6 +909,18 @@ mod tests {
         }
     }
 
+    /// A reply's box, sealed under `edge` to `lid` and signed by the door over `over`.
+    fn reply_box(d: &Door, lid: &[u8; 32], edge: &[u8; 32], text: &[u8], over: &[u8]) -> Vec<u8> {
+        let eph = draw::<32>();
+        let eph_pk = x25519_pub(&eph);
+        let agr = agree(&eph, lid).unwrap();
+        let mut body = text.to_vec();
+        body.extend_from_slice(&ed_sign(&d.key.sign_secret, over));
+        let mut bx = eph_pk.to_vec();
+        bx.extend(seal_with(&edge_ikm(&agr, edge), "quo-edge-seal", &eph_pk, &body));
+        bx
+    }
+
     /// A reply is signed over the lid it is sealed to and then the reply text.
     /// Signed over the text alone, or over another ask's lid, it reads as silence.
     #[test]
@@ -940,29 +931,57 @@ mod tests {
         let lid = x25519_pub(&lid_secret);
         let other = x25519_pub(&draw::<32>());
         for over in [text.to_vec(), [&other[..], &text[..]].concat()] {
-            let eph = draw::<32>();
-            let eph_pk = x25519_pub(&eph);
-            let agr = agree(&eph, &lid).unwrap();
-            let mut body = text.to_vec();
-            body.extend_from_slice(&ed_sign(&d.key.sign_secret, &over));
-            let mut bx = eph_pk.to_vec();
-            bx.extend(seal_with(&agr, "quo-seal", &eph_pk, &body));
-            assert!(read_reply(&d.key.sign_pk, &lid_secret, &bx).is_none());
+            let bx = reply_box(&d, &lid, &ZERO, text, &over);
+            assert!(read_reply(&d.key.sign_pk, &lid_secret, &ZERO, &bx).is_none());
         }
-        let mut bx = Vec::new();
-        {
-            let eph = draw::<32>();
-            let eph_pk = x25519_pub(&eph);
-            let agr = agree(&eph, &lid).unwrap();
-            let mut body = text.to_vec();
-            body.extend_from_slice(&ed_sign(&d.key.sign_secret, &[&lid[..], &text[..]].concat()));
-            bx.extend_from_slice(&eph_pk);
-            bx.extend(seal_with(&agr, "quo-seal", &eph_pk, &body));
-        }
+        let bx = reply_box(&d, &lid, &ZERO, text, &[&lid[..], &text[..]].concat());
         assert!(matches!(
-            read_reply(&d.key.sign_pk, &lid_secret, &bx).unwrap().0,
+            read_reply(&d.key.sign_pk, &lid_secret, &ZERO, &bx).unwrap().0,
             Read::Object { .. }
         ));
+    }
+
+    /// An object or a word is sealed under the edge key the ask came under. Under
+    /// any other key, the zero edge key among them, it reads as silence.
+    #[test]
+    fn reply_body_is_sealed_under_the_edge_key() {
+        let d = door(None);
+        let lid_secret = draw::<32>();
+        let lid = x25519_pub(&lid_secret);
+        let edge = draw::<32>();
+        for text in [&br#"{"object":1,"seen":null}"#[..], br#"{"quo":"repeated"}"#] {
+            let over = [&lid[..], text].concat();
+            let read = |sealed: &[u8; 32]| read_reply(&d.key.sign_pk, &lid_secret, &edge, &reply_box(&d, &lid, sealed, text, &over));
+            assert!(!matches!(read(&edge).unwrap().0, Read::Silence));
+            assert!(read(&ZERO).is_none());
+        }
+    }
+
+    /// The door seals an object and a word under the key the ask came under, and
+    /// silence, chosen or a stranger's, under the zero edge key.
+    #[test]
+    fn the_door_seals_each_reply_under_its_edge_key() {
+        let mut d = door(None);
+        let mut s = pair(&mut d, "a", Reach::Echo);
+        let k = s.ask(Some(b"\"m\""), None).unwrap();
+        let ls = s.pending.as_ref().unwrap().lid_secret;
+        let edge = s.pending.as_ref().unwrap().sent_edge;
+        let opens = |r: &[u8], e: &[u8; 32]| {
+            let agr = agree(&ls, &arr32(&r[..32])).unwrap();
+            open_with(&edge_ikm(&agr, e), "quo-edge-seal", &r[..32], &r[32..]).is_some()
+        };
+        let object = d.arrive(&k);
+        assert!(opens(&object, &edge) && !opens(&object, &ZERO));
+        let stranger = d.arrive(&k);
+        assert!(opens(&stranger, &ZERO) && !opens(&stranger, &edge));
+
+        let mut s = pair(&mut d, "b", Reach::Silent);
+        let k = s.ask(Some(b"\"m\""), None).unwrap();
+        let ls = s.pending.as_ref().unwrap().lid_secret;
+        let chosen = d.arrive(&k);
+        assert_eq!(d.last_case, Some(Case::C13));
+        let agr = agree(&ls, &arr32(&chosen[..32])).unwrap();
+        assert!(open_with(&edge_ikm(&agr, &ZERO), "quo-edge-seal", &chosen[..32], &chosen[32..]).is_some());
     }
 
     /// A reply's `at` is read as an invitation's is, and beside silence or a word it is a field beside the shape.
@@ -971,7 +990,7 @@ mod tests {
         let d = door(None);
         let lid_secret = draw::<32>();
         let lid = x25519_pub(&lid_secret);
-        let read = |text: &str| read_reply(&d.key.sign_pk, &lid_secret, &d.seal_reply(Some(lid), text.as_bytes()).0).unwrap().0;
+        let read = |text: &str| read_reply(&d.key.sign_pk, &lid_secret, &ZERO, &d.seal_reply(Some(lid), &ZERO, text.as_bytes()).0).unwrap().0;
         let object = |o: &str, seen: &str, at: Option<Vec<&str>>| Read::Object {
             object: o.into(),
             seen: seen.into(),
@@ -1026,9 +1045,9 @@ mod tests {
         let mut d = door(Some(Reach::Echo));
         let (b, ls) = zero_ask(&d.key.padlock, &sk, payload.as_bytes());
         let r = d.arrive(&b);
-        assert_eq!(read_reply(&d.key.sign_pk, &ls, &r).unwrap().0, Read::Object { object: "{\"q\":2}".into(), seen: "null".into(), at: None });
+        assert_eq!(read_reply(&d.key.sign_pk, &ls, &ZERO, &r).unwrap().0, Read::Object { object: "{\"q\":2}".into(), seen: "null".into(), at: None });
         let r = d.arrive(&b);
-        assert!(matches!(read_reply(&d.key.sign_pk, &ls, &r).unwrap().0, Read::Object { .. }));
+        assert!(matches!(read_reply(&d.key.sign_pk, &ls, &ZERO, &r).unwrap().0, Read::Object { .. }));
 
         let (b, _) = zero_ask(&d.key.padlock, &[6u8; 32], payload.as_bytes());
         d.arrive(&b);
@@ -1048,7 +1067,7 @@ mod tests {
             let p = payload.replace(from, to);
             let (b, _) = zero_ask(&d.key.padlock, &sk, p.as_bytes());
             d.arrive(&b);
-            assert_eq!(d.last_case, Some(Case::ZeroAnswered), "{p}");
+            assert_eq!(d.last_case, Some(Case::C12), "{p}");
         }
         for (from, to) in [("\"seq\":1", "\"seq\":0"), ("\"seq\":1", "\"seq\":1.5"), ("\"seq\":1", "\"seq\":1.0"),
             ("\"seq\":1", "\"seq\":1e0"),("\"seq\":1", "\"seq\":true"),
@@ -1078,7 +1097,7 @@ mod tests {
         b.extend(ct);
         b.extend(seal_with(&edge_ikm(&agr, &e), "quo-edge-seal", &lid, &body));
         let r = d.arrive(&b);
-        assert_eq!(read_reply(&inv.sign_pk(), &ls, &r).unwrap().0, Read::Word("unannounced".into()));
+        assert_eq!(read_reply(&inv.sign_pk(), &ls, &e, &r).unwrap().0, Read::Word("unannounced".into()));
         // the heir is still fresh: a real knock binds
         let mut s = Standing::new(inv);
         assert!(matches!(roundtrip(&mut d, &mut s, None, None), Read::Object { .. }));

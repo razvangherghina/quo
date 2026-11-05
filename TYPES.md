@@ -213,6 +213,8 @@ type ReplyBox {
   """
   The reply text, then the ward's signature. The signature covers the
   lid of the ask, then the reply text. The lid is signed and not sent.
+  Sealed under the agreement and the edge key the ask came under, or the
+  zero edge key when the reply is silence.
   """
   body: Sealed!
 }

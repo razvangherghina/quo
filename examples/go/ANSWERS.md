@@ -32,17 +32,18 @@ answer is the kit's choice, with its reason. Each number is the number
    A relation at the door is named by the name `invite` gave; at the
    standing by the asking ward, the far ward pk and the heir pk. The
    carriers' parts are `address`, `frame`, `dialed` (a line a dialer holds)
-   and `wsConn` (one end of a held line).
+   and `wsConn` (one end of a held line). Reason: each is the word
+   `SPEC.md` or a carrier's document uses, and no name crosses a door.
 
 ## What a kit keeps
 
 6. **Seed and lock.** The seed is text from `ward`, hashed with SHA-256, and
-   is not kept once the ward's keys are derived. The lock is drawn with
-   `mlkem.GenerateKey768` when the ward stands, once. The ward keeps the
+   is not kept once the ward's keys are derived. A ward holds one lock, drawn
+   with `mlkem.GenerateKey768` when the ward stands. The ward keeps the
    heir pk and never the heir secret: it is drawn, put in the invitation,
    and dropped. Reason: what is not kept cannot leak.
-7. **Drawn bytes.** `crypto/rand` for heir secrets, ephemeral secrets, lids
-   nobody holds and the lock; `crypto/mlkem` draws its own for
+7. **Drawn bytes.** `crypto/rand` for heir secrets, ephemeral secrets and
+   lids nobody holds; `crypto/mlkem` draws its own for the lock and for
    encapsulation. Reason: the operating system is the only honest source.
 8. **What a door keeps.** In memory, per heir: its pk, fresh or spent,
    released or not, the key held, the key vouched for, the open and offered
@@ -50,9 +51,13 @@ answer is the kit's choice, with its reason. Each number is the number
    a restart. Reason: the harness names no restart, and a door that forgets
    departs from nothing.
 9. **When a door stops holding a heir.** Only on `release`. The name is
-   freed at once and may be invited again as a new heir.
+   freed at once and may be invited again as a new heir. Reason: `release`
+   is the one request that names it, and no target here has a reason of its
+   own.
 10. **Keys kept at removal.** For as long as the program runs. Every ask by
-    one of them, under a kept edge key, hears `removed`.
+    one of them, under a kept edge key, hears `removed`. Reason: the heir
+    itself keeps them, and forgetting them sooner asks a clock nothing here
+    needs.
 11. **Numbers below the highest.** None. Every number at or below the
     highest honoured hears `repeated`. Reason: one integer per relation, no
     window to keep.
@@ -61,46 +66,61 @@ answer is the kit's choice, with its reason. Each number is the number
 
 12. **Does the door answer.** Always, with a reply. A listener gives
     nothing only for a ward pk the program does not stand: a nothing frame
-    on tcp and the held line, status 204 on the post.
+    on tcp and the held line, status 204 on the post. Reason: a door that
+    always writes leaves its asker one thing to read, and nothing keeps its
+    one meaning, not delivered.
 13. **`seen`.** `null`, except behind `marked`, which writes `"1"` on
     every ask, the empty ask included, as the harness fixes. Neither ever
-    changes, and neither does the describe.
+    changes, and neither does the describe. Reason: a describe that never
+    moves gives `seen` nothing to say.
 14. **The empty ask.** Behind `echo`, `marked`, `moved` and `null`, the
     describe `{"asks":[]}`, the same to every asker and with no `lang`.
     Behind `silent`, silence. So no entry names any named ask, and each
     target answers one as the harness fixes. `echo`, `marked` and `moved`
-    answer its `args`, `null` the object `null`, `silent` silence.
+    answer its `args`, `null` the object `null`, `silent` silence. Reason:
+    the harness fixes each, and no target here has a method to list.
 15. **Reply text.** `{"object":<value>,"seen":<seen>}`, in that order, with
     no whitespace of its own. Where the target hands addresses, `,"at":[...]`
     follows `seen`, each address quoted, in the target's order. `echo`
     writes the args' bytes exactly as they arrived, whitespace included. A
-    word is `{"quo":"<word>"}`.
+    word is `{"quo":"<word>"}`. Reason: the fewest bytes that hold the shape,
+    and an object is carried as it arrived.
 16. **Padding.** None is written. Every text is read with the whitespace
-    RFC 8259 allows.
+    RFC 8259 allows. Reason: padding hides a length, and nothing here has a
+    length to hide.
 17. **Time of a refusal.** Not equalised. Every stranger's case seals the
     same sixteen bytes, but cases that end earlier return earlier. Reason:
     this kit is an example, and a timing floor is a deployment's choice.
 18. **Its own eyes.** Nothing is logged per arrival. stderr carries only a
     failure to write an answer or to open a listener, and what Go's HTTP
-    server says of its own connections.
+    server says of its own connections. Reason: stdout is the harness's, and
+    no eyes read this kit's arrivals.
 
 ## What a kit asks
 
 19. **Invitations.** Handed in and out as the harness's JSON object. The
-    minting ward keeps no copy. The standing checks the four fields' hex,
+    minting ward keeps no copy. The standing reads it as a value, so two keys
+    of one name among its own keys are no invitation. It checks the four
+    fields' hex,
     that the secret gives the heir pk, that the lock passes FIPS 203's
     encapsulation key check, which `crypto/mlkem` makes, and that the
     padlock takes a seal, and refuses anything else as `bad request`. `at`
     is read as question 25 says, and nothing in it refuses an invitation.
+    Reason: the harness is the one route here, and a knock on an invitation
+    that cannot bind is better refused before it is sealed.
 20. **A knock that brought no object back.** After nothing, the knock is
     sent again as the same bytes. After silence, a word or a reply that did
     not open, the standing asks under the key the knock announced and the
     knock's edge key. After each further non-object it alternates between
-    the two. Each retry happens only when asked to ask again.
+    the two. Each retry happens only when asked to ask again. Reason: nothing
+    says the door may not have heard, so the same bytes cost least. A reply
+    says it heard, and only the question under the knock's keys tells whether
+    it bound.
 21. **How long an asker waits.** Five seconds to reach an address, TLS
     and the WebSocket handshake included, then ten seconds for the reply to
     an ask, then nothing. A closed connection is nothing at once. Each
-    address in `at` is given the same, one after another.
+    address in `at` is given the same, one after another. Reason: long enough
+    for a door across the world, short enough that a `send` always answers.
 22. **Numbering, announcing, and two sends on one relation.** Numbers come
     from one counter per relation, raised once per sealed ask and never
     reused, and the knock carries the number one. Every ask announces in
@@ -110,16 +130,20 @@ answer is the kit's choice, with its reason. Each number is the number
     key, announced key and edge key, so two sends in flight read their
     replies apart. The standing keeps the highest number it moved on, so a
     late object to an older ask moves nothing. Of the keys it moved from it
-    keeps nothing: the ask that moved it replaces the signing key and the
-    edge key, and the knock is dropped. When the asks after a move meet
-    silence, a word or nothing, the standing keeps sending under the key
-    and edge key it moved to. Reason: the door admits the key held and the
+    keeps nothing beyond the invitation it stands on: the ask that moved it
+    replaces the signing key and the edge key, and the knock is dropped.
+    When the asks after a move meet silence, a word or nothing, the standing
+    keeps sending under the key and edge key it moved to. Reason: the door
+    admits the key held and the
     key vouched for, so the key just announced is admitted next, unless a
     later ask moved the door past it. That happens when two replies in
     flight are lost and the first is read late. The kit then hears silence
     on that relation, which SPEC.md allows, and keeps no older key.
 23. **What the kit tells its own code.** A `Read` whose `Kind` is `object`,
-    `silence`, `quo` (with `Word`) or `nothing`.
+    `silence`, `quo` (with `Word`) or `nothing`. Reason: these are the four
+    things `read` answers, spelled as the harness spells them. A reply that
+    reads as silence is told as silence, and which rule it broke is told to
+    nobody.
 
 ## What a kit carries
 
@@ -130,16 +154,19 @@ answer is the kit's choice, with its reason. Each number is the number
       `127.0.0.1` at a port the system chooses, plain. A web listener
       answers at every path, and its address is written with the path `/`.
       The post answers 405 to a method other than `POST`, 400 to a body
-      under sixty-five bytes, 413 to one over 1,048,640, 204 for nothing and
-      200 with the reply's box. It sends no CORS headers, so it answers no
-      page of another origin. The held line refuses a handshake that does
+      under sixty-five bytes, 413 to one over 1,048,640, 204 for a ward pk
+      it does not stand and 200 with the reply's box. It carries every other
+      ask, so no status says it did not. It sends no CORS headers, so it
+      answers no page of another origin. The held line refuses a handshake
+      that does
       not offer `quo`, and closes with status 1002 on bytes RFC 6455
       refuses, 1003 on a text message, 1009 on a message longer than the
       largest body, and 1008 on any other message that is no frame. It
       answers pings and never pings.
     - As a dialer, `tcp`, `http`, `https`, `ws` and `wss`, the secure two
-      inside TLS under the system's roots, since the harness counts them as
-      the same carrier. It keeps one line per address on tcp and the held
+      inside TLS, checking the certificate against the system's roots and
+      the address's host, since the harness counts them as the same
+      carrier. It keeps one line per address on tcp and the held
       line, dials it again after it closes, and numbers its asks per line.
       Each post is one request that follows no redirect. Reason: the
       standard library holds HTTP and TLS, and RFC 6455 is small enough to
@@ -163,7 +190,8 @@ answer is the kit's choice, with its reason. Each number is the number
     - An `at` that is not an array is read as absent.
     - The kit keeps nothing from the `at` a reply carries. Whatever that
       `at` holds, the reply reads as an object, and `read` answers no `at`.
-      It never replaces or adds to a route or an invitation's addresses.
+      It never replaces or adds to a route or an invitation's addresses,
+      and a later reply with no `at` means nothing.
       Reason: a reply that came back already reached the ward, and this
       kit learns addresses from `route` and the invitation alone.
     - The door writes `at` in a reply only where its target hands
@@ -182,17 +210,20 @@ answer is the kit's choice, with its reason. Each number is the number
 26. **`method` and `args`.** The kit reads them only to hand them to a
     target. The five targets ignore `method` except to tell a named ask
     from the empty one. Its describe names no `lang`, so its asks mean
-    what `SPEC.md` says of them and nothing more.
+    what `SPEC.md` says of them and nothing more. Reason: a method means what
+    two ends agree, and no two ends of this kit agree on any.
 
 ## What a kit reads
 
-27. **JSON inside `args`, and inside `object` beyond what a describe
-    names.** Any JSON text RFC 8259's grammar
-    allows, of any length the size admits and any nesting: containers
-    there are checked against the grammar without recursion and never
-    parsed further. Lone surrogates, noncharacters and repeated keys there
-    are taken. `echo`, `marked` and `moved` answer every such `args` with its bytes
-    as they arrived; nothing is refused beyond the grammar. A read `object`
+27. **JSON where Quo reads nothing.** Inside `args`, inside `object` beyond
+    what a describe names, the string of `method`, an entry of `at` that is
+    not a string, and every field the spec does not name: any JSON text RFC
+    8259's grammar allows, of any length the size admits and any nesting.
+    Containers there are checked against the grammar without recursion and
+    never parsed further. Lone surrogates, noncharacters and repeated keys
+    there are taken. `echo`, `marked` and `moved` answer every such `args`
+    with its bytes as they arrived; nothing is refused beyond the grammar,
+    so a door here never answers silence for what stands there. A read `object`
     is handed on as its bytes as they arrived. Among a payload's or a reply
     text's own keys, a lone surrogate is kept as its code unit, so two keys
     are one name exactly when their code units are equal. Reason: reading

@@ -123,20 +123,19 @@ func (r request) hexOf(k string, n int) (string, bool) {
 	return s, ok && len(s) == n && isLowerHex(s)
 }
 
-// invitation reads the request's invitation, and the addresses its `at`
-// holds that this kit can dial, in their order. An `at` that is not an
-// array is absent, and an entry that is no address this kit stands is
-// skipped.
+// invitation reads the request's invitation, a value as SPEC.md reads one,
+// and the addresses its `at` holds that this kit can dial, in their order. An
+// `at` that is not an array is absent, and an entry that is no address this
+// kit stands is skipped.
 func (r request) invitation() (*Standing, []*address, bool) {
-	var fields map[string]json.RawMessage
-	raw, ok := r["invitation"]
-	if !ok || json.Unmarshal(raw, &fields) != nil || fields == nil {
+	v, err := Parse(r["invitation"])
+	o, ok := v.(*Obj)
+	if err != nil || !ok {
 		return nil, nil, false
 	}
-	f := request(fields)
 	var inv Invitation
 	for key, to := range map[string]*string{"ward": &inv.Ward, "heir": &inv.Heir, "secret": &inv.Secret, "lock": &inv.Lock} {
-		if *to, ok = f.str(key); !ok {
+		if *to, ok = o.M[key].(string); !ok {
 			return nil, nil, false
 		}
 	}
@@ -145,7 +144,7 @@ func (r request) invitation() (*Standing, []*address, bool) {
 		return nil, nil, false
 	}
 	var entries []json.RawMessage
-	json.Unmarshal(f["at"], &entries)
+	json.Unmarshal(o.Raw["at"], &entries)
 	var at []*address
 	for _, e := range entries {
 		var text string
@@ -288,16 +287,9 @@ func (k *Kit) handle(line []byte) {
 			return
 		}
 		box, _ := hex.DecodeString(boxHex)
-		k.mu.Lock()
-		w := k.wards[pk]
-		k.mu.Unlock()
-		if w == nil {
-			fail(eNoSuchWard)
-			return
-		}
 		reply := k.Arrive(pk, box)
 		if reply == nil {
-			k.answer(map[string]any{"id": id, "reply": nil})
+			fail(eNoSuchWard)
 			return
 		}
 		k.answer(map[string]any{"id": id, "reply": hex.EncodeToString(reply)})
@@ -317,12 +309,7 @@ func (k *Kit) handle(line []byte) {
 			return
 		}
 		st := k.standing(pk, fresh)
-		sent, err := st.Seal(method, args)
-		if err != nil {
-			k.mu.Unlock()
-			fail(eBadRequest)
-			return
-		}
+		sent := st.Seal(method, args)
 		if op == "ask" {
 			st.last = sent
 			k.mu.Unlock()
@@ -363,9 +350,7 @@ func (k *Kit) handle(line []byte) {
 		if !isNull {
 			box, _ = hex.DecodeString(replyHex)
 		}
-		sent := st.last
-		st.last = nil
-		k.readAnswer(id, st.ReadReply(sent, box))
+		k.readAnswer(id, st.ReadReply(st.last, box))
 
 	case "listen":
 		scheme, ok := req.optStr("scheme")

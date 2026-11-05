@@ -2,6 +2,7 @@
 import * as net from 'node:net';
 
 export const MAX_BODY = 1048645;
+export const WAIT_MS = 5000;
 export const ASK = 0;
 export const REPLY = 1;
 export const NOTHING = 2;
@@ -10,7 +11,7 @@ export function frame(kind, id, rest) {
   const head = Buffer.alloc(9);
   head.writeUInt32BE(5 + rest.length, 0);
   head[4] = kind;
-  head.writeUInt32BE(id >>> 0, 5);
+  head.writeUInt32BE(id, 5);
   return Buffer.concat([head, rest]);
 }
 
@@ -49,7 +50,7 @@ export function reader(onFrame) {
 }
 
 // A listener answering for the wards `lookup(pkHex)` returns. `door.arrive(box)` gives a reply box or null.
-export function listen(lookup, { host = '127.0.0.1', port = 0, log = () => {} } = {}) {
+export function listen(lookup, { log = () => {} } = {}) {
   const server = net.createServer((sock) => {
     sock.on('error', () => {});
     const feed = reader((kind, id, rest) => {
@@ -71,7 +72,7 @@ export function listen(lookup, { host = '127.0.0.1', port = 0, log = () => {} } 
   });
   return new Promise((resolve, reject) => {
     server.once('error', reject);
-    server.listen(port, host, () => resolve(server));
+    server.listen(0, '127.0.0.1', () => resolve(server));
   });
 }
 
@@ -109,14 +110,14 @@ export class Dialer {
   }
 
   // Resolves to a reply box, or null for nothing. `at` is a tcp address read by lib/address.js.
-  ask(at, wardPkHex, box, timeoutMs = 5000) {
+  ask(at, wardPkHex, box) {
     const c = this.conn(at);
     const id = c.next++ >>> 0;
     return new Promise((resolve) => {
       const t = setTimeout(() => {
         c.pending.delete(id);
         resolve(null);
-      }, timeoutMs);
+      }, WAIT_MS);
       c.pending.set(id, (r) => {
         clearTimeout(t);
         resolve(r);

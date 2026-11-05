@@ -200,10 +200,8 @@ async function handle(bytes) {
 let pending = Buffer.alloc(0);
 const take = (line) => {
   const p = handle(line);
-  if (p && typeof p.then === "function") {
-    inFlight.add(p);
-    p.finally(() => inFlight.delete(p));
-  }
+  inFlight.add(p);
+  p.finally(() => inFlight.delete(p));
 };
 process.stdin.on("data", (chunk) => {
   pending = Buffer.concat([pending, chunk]);

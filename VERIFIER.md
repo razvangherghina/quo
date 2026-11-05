@@ -100,7 +100,9 @@ It writes every ask itself, keeps each ask's lid secret, delivers the box
 with `arrive`, and opens what comes back:
 
 - the reply's length is its reply text plus one hundred and twelve;
-- the reply opens under `quo-seal` from the lid;
+- the reply opens under `quo-edge-seal` from the lid, over the edge key the
+  ask came under for an object or a word, and over the zero edge key for
+  silence;
 - the signature is the ward's signing key over the lid, then the reply
   text;
 - the reply text is one of the three shapes, and silence is the sixteen
@@ -156,8 +158,9 @@ last move was asked under, which a door may still hold.
 The verifier answers with a reply it writes, delivers it with `read`, and
 checks what the kit says it read. It answers with objects, silence, each
 of the three words, nothing, and replies that read as silence. Among
-those are a reply and a word the ward signed over another ask's lid, and a
-reply signed over its reply text alone. Objects that are no describe come
+those are a reply and a word the ward signed over another ask's lid, a
+reply signed over its reply text alone, and an object and a word sealed
+under the zero edge key. Objects that are no describe come
 back to the empty ask, and the kit reads each as an object and moves on
 it. Objects carry `at` as an array of addresses, as an array holding
 entries a reader skips, as a string and as `null`, and the kit reads each

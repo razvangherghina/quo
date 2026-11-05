@@ -6,7 +6,7 @@ const HOST = String.raw`(\[[0-9A-Fa-f:.]+\]|[A-Za-z0-9\-._~!$&'()*+,;=%]+)`;
 const TCP = new RegExp(String.raw`^tcp://${HOST}:(\d+)$`, 'i');
 
 // The schemes this kit dials, and those it listens on.
-export const DIALED = ['tcp', 'http', 'https', 'ws', 'wss'];
+const DIALED = ['tcp', 'http', 'https', 'ws', 'wss'];
 export const LISTENED = ['tcp', 'http', 'ws'];
 
 // Reads one address. Returns { scheme, host, port, url } or null when it is no address this kit dials.

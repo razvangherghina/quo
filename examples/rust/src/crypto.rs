@@ -143,16 +143,6 @@ pub fn seed_from_text(t: &str) -> [u8; 32] {
     sha256(t.as_bytes())
 }
 
-pub fn seed_from_bytes(b: &[u8]) -> [u8; 32] {
-    if b.len() == 32 {
-        let mut s = [0u8; 32];
-        s.copy_from_slice(b);
-        s
-    } else {
-        sha256(b)
-    }
-}
-
 pub struct WardKey {
     pub sign_secret: [u8; 32],
     pub sign_pk: [u8; 32],

@@ -21,6 +21,7 @@ func TestAddresses(t *testing.T) {
 		"http://example.org":        "example.org:80",
 		"ws://127.0.0.1:9/quo":      "127.0.0.1:9",
 		"wss://[::1]/":              "[::1]:443",
+		"http://127.0.0.1:0/":       "127.0.0.1:0",
 	}
 	for s, hostPort := range good {
 		a, ok := parseAddress(s)
@@ -38,6 +39,24 @@ func TestAddresses(t *testing.T) {
 		if _, ok := parseAddress(s); ok {
 			t.Errorf("%s should be no address", s)
 		}
+	}
+}
+
+func TestAnInvitationHasNoTwoKeysOfOneName(t *testing.T) {
+	w := NewWard(SeedOfText("keys"))
+	inv, _ := w.Invite("h", Targets["echo"])
+	text, _ := json.Marshal(inv)
+	for raw, want := range map[string]bool{
+		string(text): true,
+		strings.Replace(string(text), `"heir"`, `"heir":"","heir"`, 1):      false,
+		strings.Replace(string(text), `"heir"`, `"\u0068eir":"","heir"`, 1): false,
+	} {
+		if _, _, ok := (request{"invitation": []byte(raw)}).invitation(); ok != want {
+			t.Errorf("%.40s read as %v", raw, ok)
+		}
+	}
+	if _, _, ok := (request{}).invitation(); ok {
+		t.Error("no invitation read as one")
 	}
 }
 
@@ -84,10 +103,7 @@ func relationOver(t *testing.T, k *Kit, w *Ward, at []*address) []Read {
 	var reads []Read
 	for range 2 {
 		m := "m"
-		sent, err := st.Seal(&m, []byte(`{"a":1}`))
-		if err != nil {
-			t.Fatal(err)
-		}
+		sent := st.Seal(&m, []byte(`{"a":1}`))
 		reads = append(reads, st.ReadReply(sent, k.carryFirst(at, wardPK, sent.Box)))
 	}
 	return reads

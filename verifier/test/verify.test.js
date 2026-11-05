@@ -1,11 +1,24 @@
 // The verifier's own helpers, and the proof that it can fail: a kit wrong on purpose is failed, and the
 // same kit unaltered is passed.
 import assert from 'node:assert/strict';
+import { randomBytes } from 'node:crypto';
 import { join } from 'node:path';
 import { test } from 'node:test';
 
-import { aesOpen, edVerify, hkdf, x25519, x25519Pub } from '../primitives.js';
-import { follow, nest, newKey, payloadBytes, sealAsk, SIZE, verify, wardKeys } from '../verify.js';
+import { aesOpen, edPub, edVerify, hkdf, x25519, x25519Pub } from '../primitives.js';
+import {
+  follow,
+  nest,
+  newKey,
+  payloadBytes,
+  sealAsk,
+  Session,
+  SIZE,
+  verify,
+  Verifier,
+  wardKeys,
+  writeReply,
+} from '../verify.js';
 
 const kit = join(import.meta.dirname, '../../examples/javascript');
 const stand = join(kit, 'stand');
@@ -51,6 +64,32 @@ test('The box. A box the verifier seals opens under the keys the spec derives, h
     aesOpen(hkdf(Buffer.concat([agr, edge]), 'quo-edge-seal', 44), lid, box.subarray(32 + 32 + 16)),
     body,
   );
+});
+
+test('Sealing. An object or a word opens under the edge key of its ask, silence under the zero edge key, and neither under the other', () => {
+  const lidSecret = randomBytes(32);
+  const edge = randomBytes(32);
+  const signSeed = randomBytes(32);
+  const ward = { signPk: edPub(signSeed) };
+  const t = { lid: x25519Pub(lidSecret), edge };
+  const opened = (text, zeroEdge) => {
+    const { box } = writeReply({ signSeed }, t, { text, zeroEdge });
+    return new Session(new Verifier(), null, 'sealing').open(
+      ward,
+      box.toString('hex'),
+      lidSecret,
+      edge,
+    ).kind;
+  };
+  const object = '{"object":1,"seen":null}';
+  const word = '{"quo":"repeated"}';
+  const silence = '{"silence":true}';
+  assert.equal(opened(object, false), 'object');
+  assert.equal(opened(word, false), 'word');
+  assert.equal(opened(silence, true), 'silence');
+  assert.equal(opened(object, true), 'invalid');
+  assert.equal(opened(word, true), 'invalid');
+  assert.equal(opened(silence, false), 'invalid');
 });
 
 test('The edge key. A key follows from the edge key and an agreement, and is thirty-two bytes', () => {

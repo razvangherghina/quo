@@ -29,16 +29,10 @@ class PostListener:
                 arrive = door(body[:64].hex())
                 if arrive is None:
                     return self.answer(404)
-                reply = arrive(body[64:])
-                if reply is None:
-                    self.answer(204)
-                else:
-                    self.answer(200, reply)
+                self.answer(200, arrive(body[64:]))
 
             def answer(self, status, body=b""):
                 self.send_response(status)
-                if body:
-                    self.send_header("Content-Type", "application/octet-stream")
                 self.send_header("Content-Length", str(len(body)))
                 self.end_headers()
                 self.wfile.write(body)
@@ -67,8 +61,7 @@ def post(at, ward_pk, box, wait):
     kind = http.client.HTTPSConnection if at.scheme == "https" else http.client.HTTPConnection
     conn = kind(at.host, at.port, timeout=wait)
     try:
-        conn.request("POST", at.target, body=ward_pk + box,
-                     headers={"Content-Type": "application/octet-stream"})
+        conn.request("POST", at.target, body=ward_pk + box)
         res = conn.getresponse()
         body = res.read(SIZE + 1)
         return body if res.status == 200 and body else None

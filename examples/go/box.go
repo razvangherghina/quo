@@ -61,11 +61,12 @@ func openWith(keyNonce, ct, aad []byte) ([]byte, bool) {
 	return p, err == nil
 }
 
-// sealKN is the key and nonce under quo-seal: an ask's head, a reply's body.
-func sealKN(agreement []byte) []byte { return kdf(agreement, labelSeal, 44) }
+// headKN is the key and nonce under quo-seal: an ask's head.
+func headKN(agreement []byte) []byte { return kdf(agreement, labelSeal, 44) }
 
-// askBodyKN is the key and nonce of an ask's body under an edge key.
-func askBodyKN(agreement, edge []byte) []byte {
+// bodyKN is the key and nonce of a body under an edge key, an ask's or a
+// reply's.
+func bodyKN(agreement, edge []byte) []byte {
 	return kdf(slices.Concat(agreement, edge), labelEdgeSeal, 44)
 }
 
@@ -108,27 +109,32 @@ func takesSeal(pk []byte) bool {
 	return err == nil
 }
 
-// sealAsk seals an ask's box to a padlock. ct is nil on an ask that is not a
-// knock. It answers the box and the lid's secret.
-func sealAsk(padlock, head, ct, edge, payload []byte, signer ed25519.PrivateKey) (box, lidSecret []byte, err error) {
+// sealAsk seals an ask's box to a padlock that takes a seal. ct is nil on an
+// ask that is not a knock. It answers the box and the lid's secret.
+func sealAsk(padlock, head, ct, edge, payload []byte, signer ed25519.PrivateKey) (box, lidSecret []byte) {
 	lidSecret = draw(32)
 	lid := x25519Pub(lidSecret)
 	agr, err := x25519(lidSecret, padlock)
 	if err != nil {
-		return nil, nil, err
+		panic("a padlock that takes no seal reached an ask")
 	}
 	body := slices.Concat(payload, ed25519.Sign(signer, payload))
 	box = slices.Concat(lid,
-		sealWith(sealKN(agr), head, lid),
+		sealWith(headKN(agr), head, lid),
 		ct,
-		sealWith(askBodyKN(agr, edge), body, lid))
-	return box, lidSecret, nil
+		sealWith(bodyKN(agr, edge), body, lid))
+	return box, lidSecret
 }
 
 // sealReply seals a reply text to a lid that takes a seal, signed by the
 // ward over the lid and then the reply text. The lid is signed and is not in
-// the body. It answers the box and the reply's agreement.
-func sealReply(lid, text []byte, sign ed25519.PrivateKey) (box, agr []byte) {
+// the body. The body is sealed under the edge key the ask came under, and
+// under the zero edge key when the reply is silence. It answers the box and
+// the reply's agreement.
+func sealReply(lid, text, cameUnder []byte, sign ed25519.PrivateKey) (box, agr []byte) {
+	if slices.Equal(text, silenceText) {
+		cameUnder = zero32
+	}
 	eph := draw(32)
 	ephPK := x25519Pub(eph)
 	a, err := x25519(eph, lid)
@@ -136,15 +142,16 @@ func sealReply(lid, text []byte, sign ed25519.PrivateKey) (box, agr []byte) {
 		panic("a lid that takes no seal reached a reply")
 	}
 	body := slices.Concat(text, ed25519.Sign(sign, slices.Concat(lid, text)))
-	return slices.Concat(ephPK, sealWith(sealKN(a), body, ephPK)), a
+	return slices.Concat(ephPK, sealWith(bodyKN(a, cameUnder), body, ephPK)), a
 }
 
 var errNoOpen = errors.New("does not open")
 
-// openReply opens a reply as the asker. It answers the reply text and the
-// reply's agreement, or errNoOpen for a reply that reads as silence before
-// its text is read.
-func openReply(box, lidSecret, wardSignPK []byte) (text, agreement []byte, err error) {
+// openReply opens a reply as the asker, under the edge key its ask was sent
+// under. It answers the reply text and the reply's agreement, or errNoOpen
+// for a reply that reads as silence before its text is read. Silence under
+// the zero edge key is one of those, and an object or a word under it another.
+func openReply(box, lidSecret, sentUnder, wardSignPK []byte) (text, agreement []byte, err error) {
 	if len(box) > boxSize || len(box) < pkSize+tagSize+sigSize {
 		return nil, nil, errNoOpen
 	}
@@ -153,7 +160,7 @@ func openReply(box, lidSecret, wardSignPK []byte) (text, agreement []byte, err e
 	if err != nil {
 		return nil, nil, errNoOpen
 	}
-	body, ok := openWith(sealKN(agr), box[pkSize:], eph)
+	body, ok := openWith(bodyKN(agr, sentUnder), box[pkSize:], eph)
 	if !ok || len(body) < sigSize {
 		return nil, nil, errNoOpen
 	}

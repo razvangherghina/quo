@@ -29,17 +29,6 @@ func kdf(ikm []byte, label string, n int) []byte {
 	return out
 }
 
-// SeedOf takes a seed as SPEC.md takes one: thirty-two bytes are the seed,
-// any other length is hashed with SHA-256 first.
-func SeedOf(b []byte) [32]byte {
-	var s [32]byte
-	if len(b) == 32 {
-		copy(s[:], b)
-		return s
-	}
-	return sha256.Sum256(b)
-}
-
 // SeedOfText takes text as a seed. Text is hashed whatever its length.
 func SeedOfText(t string) [32]byte { return sha256.Sum256([]byte(t)) }
 

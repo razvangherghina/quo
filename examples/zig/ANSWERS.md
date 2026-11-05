@@ -126,7 +126,9 @@ that reads an invitation reads it through one function, which holds the
 lock to 2368 lowercase hex and to the modulus check of FIPS 203 section
 7.2, every twelve-bit coefficient of the first 1152 bytes below q = 3329.
 A lock that check refuses is no invitation, and the kit answers `bad
-request` to the `ask` or `send` that hands it one.
+request` to the `ask` or `send` that hands it one. A padlock of small order
+takes no seal, so the `ask` or `send` that would seal to it answers `bad
+request` too.
 
 **Question 20. How does a standing recover a knock that brought no object back?**
 It alternates. After the knock, the next ask is sealed under the standing's
@@ -181,6 +183,10 @@ has not moved.
 **Question 23. What does the kit tell its own code on silence, on a word, and on nothing?**
 The union `Read`, with four tags: `object` (the raw object text and the
 `seen` token), `silence`, `word` (one of the three strings), and `nothing`.
+A reply is opened under the edge key its ask went under and no other. A
+silence sealed under the zero edge key does not open there, and reads as
+silence with every other reply that does not open. Reason: both read the
+same, so a second try under the zero edge key would tell the code nothing.
 
 ## What a kit carries
 
@@ -244,27 +250,30 @@ up its route afresh, so a kept address would have no reader.
 
 **Question 26. What do `method` and `args` mean, and what does a `lang` name?**
 Nothing to the door. The reach looks only at whether `method` is present.
-`echo` and `marked` return `args` as they arrived. Its describe names no
-`lang`, so its asks mean what `SPEC.md` says of them and nothing more.
+`echo`, `marked` and `moved` return `args` as they arrived. Its describe
+names no `lang`, so its asks mean what `SPEC.md` says of them and nothing more.
 
 ## What a kit reads
 
 **Question 27. How deep, how long and how strange a JSON text does the kit read where Quo reads nothing, and what does it answer beyond that?**
-Any depth and any length the size allows. The kit reads into nodes only the
-outer object of a payload or a reply text (and two levels of a harness
-line). Inside `args`, and inside `object` beyond what a describe names, it
-holds the text to the RFC 8259 grammar
-with a loop and a stack of brackets, not recursion, so depth costs one byte
-of heap per level. Numbers are carried as written, whatever their size.
-Lone surrogates, noncharacters and repeated keys there are taken and
-carried as written. A lone surrogate escape in a key the kit does read is
-kept as its own three bytes, so two different lone surrogates are two
-names. One choice beyond that: `echo` and `marked` answer silence, a
-choice that moves the keys, to `args` whose own keys repeat a name. The
-standing reads any `object` it is given, repeated keys included, and hands
-it back as written with the whitespace between tokens taken out. Reason:
-the kit reads nothing it does not use, and a bound it does not need is a
-bound it would have to answer for.
+Any depth and any length the size allows, so nothing lies beyond it. The
+kit reads into nodes only the outer object of a payload or a reply text
+(and two levels of a harness line). Inside `args`, inside `object` beyond
+what a describe names, in an entry of `at` that is not a string, and in
+every field `SPEC.md` does not name, it holds the text to the RFC 8259
+grammar with a loop and a stack of brackets, not recursion, so depth costs
+one byte of heap per level. Numbers are carried as written, whatever their
+size. Lone surrogates, noncharacters and repeated keys there are taken and
+carried as written, so `echo`, `marked` and `moved` give back `args` whose
+own keys repeat a name as they give back any other. A lone surrogate escape
+in a key the kit does read is kept as its own three bytes, so two different
+lone surrogates are two names. The standing reads any `object` it is given,
+repeated keys included, and hands it back as written with the whitespace
+between tokens taken out. As an asker, the harness line is one of the two
+levels it reads, so an `ask` or a `send` whose `args` repeat a name among
+their own keys is a request it does not serve, and answers `bad request`.
+Reason: the kit reads nothing it does not use, and a bound it does not need
+is a bound it would have to answer for.
 
 ## What a kit shows
 

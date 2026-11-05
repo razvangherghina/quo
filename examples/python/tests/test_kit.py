@@ -12,12 +12,12 @@ sys.path.insert(0, HERE)
 from quokit import crypto as c  # noqa: E402
 from quokit.address import address  # noqa: E402
 from quokit.web import post  # noqa: E402
-from quokit.box import (SILENCE, ZERO_EDGE, WardKey, open_reply, payload_text,  # noqa: E402
+from quokit.box import (SILENCE, ZERO_EDGE, WardKey, knock_edge, open_reply, payload_text,  # noqa: E402
                         read_reply_text, seal_ask)
 from quokit.carrier import ASK, NOTHING, REPLY, dial, frame  # noqa: E402
 from quokit.door import REACHES, Ward  # noqa: E402
 from quokit.entropy import OsSource  # noqa: E402
-from quokit.standing import BOUND, KNOCKED, Standing, zero_ask  # noqa: E402
+from quokit.standing import BOUND, KNOCKED, Standing  # noqa: E402
 from quokit.values import Invalid, parse  # noqa: E402
 
 SMALL_ORDER = [
@@ -28,6 +28,41 @@ SMALL_ORDER = [
     bytes.fromhex("ecffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"),
     bytes.fromhex("edffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"),
 ]
+
+
+def written(to, by, nxt, seq=1, method=None, args=None):
+    """A payload the kit's standing never writes: on the zero head, or announcing nothing."""
+    fields = {"to": to and to.hex(), "by": by.hex(), "next": nxt and nxt.hex(), "seq": seq}
+    if method is not None:
+        fields["method"] = method
+    if args is not None:
+        fields["args"] = json.loads(args)
+    return json.dumps(fields, separators=(",", ":")).encode()
+
+
+def unannounced(st, signer, edge):
+    """An ask on the relation announcing nothing: its box and its lid's secret."""
+    st.seq += 1
+    lid_secret = os.urandom(32)
+    payload = written(st.heir_pk, c.ed_public(signer), None, st.seq, "echo", "{}")
+    return seal_ask(st.padlock, st.heir_pk, payload, signer, edge, lid_secret), lid_secret
+
+
+def ward_reply(ward, text, lid_secret, edge, signed=None):
+    """A reply the ward wrote, sealed to the lid under `edge`, signed over `signed` then the text."""
+    eph = os.urandom(32)
+    rpk = c.x25519_public(eph)
+    lid = c.x25519_public(lid_secret)
+    k, n = c.key_nonce(c.agree(eph, lid) + edge, "quo-edge-seal")
+    body = text + c.ed_sign(ward.key.sign_seed, (lid if signed is None else signed) + text)
+    return rpk + c.gcm_seal(k, n, body, rpk)
+
+
+def reply_text(box, lid_secret, edge):
+    """The reply text of a box opened under `edge` alone, or None where it does not open."""
+    k, n = c.key_nonce(c.agree(lid_secret, box[:32]) + edge, "quo-edge-seal")
+    body = c.gcm_open(k, n, box[32:], box[:32])
+    return None if body is None else body[:-64]
 
 
 class Keys(unittest.TestCase):
@@ -200,7 +235,7 @@ class Door(unittest.TestCase):
         return r
 
     def test_sizes(self):
-        payload = payload_text(None, os.urandom(32), None, 1)
+        payload = written(None, os.urandom(32), None)
         box = seal_ask(self.ward.key.padlock, bytes(32), payload, os.urandom(32), ZERO_EDGE, os.urandom(32))
         self.assertEqual(len(box), len(payload) + 160)
         knock = self.st.next_box("echo", '{"v":1}')
@@ -230,7 +265,8 @@ class Door(unittest.TestCase):
         self.assertEqual((r[0], r[2], r[3]), ("object", b'{"asks":[]}', None))
         # an ask announcing nothing keeps the held key; asking under the vouched one moves it
         held = st.signer
-        r = st.take(w.arrive(st.ask("echo", "{}", held, st.edge, announce=False)))
+        box, lid_secret = unannounced(st, held, st.edge)
+        self.assertEqual(open_reply(w.arrive(box), lid_secret, self.sign, st.edge)[0][0], "object")
         self.assertEqual(heir.held, c.ed_public(held))
         self.bound()
         self.assertEqual(heir.held, c.ed_public(held))
@@ -250,7 +286,11 @@ class Door(unittest.TestCase):
 
     def test_unannounced_leaves_fresh(self):
         w, st = self.ward, self.st
-        self.assertEqual(st.take(w.arrive(st.knock("echo", "{}", announce=False))), ("word", "unannounced"))
+        shared, ct = c.mlkem_encaps(st.lock)
+        edge, lid_secret = knock_edge(shared), os.urandom(32)
+        box = seal_ask(st.padlock, st.heir_pk, written(st.heir_pk, st.heir_pk, None), st.heir_secret,
+                       edge, lid_secret, ct)
+        self.assertEqual(open_reply(w.arrive(box), lid_secret, self.sign, edge)[0], ("word", "unannounced"))
         self.assertTrue(w.heirs[st.heir_pk].fresh)
         self.bound()
 
@@ -339,39 +379,93 @@ class Door(unittest.TestCase):
         self.assertEqual(st.at, [])
 
     def test_zero_head(self):
-        signer = os.urandom(32)
-        box, ls = zero_ask(self.ward.key.padlock, signer, self.src, "echo", '{"z":1}')
-        self.assertEqual(open_reply(self.ward.arrive(box), ls, self.sign)[0], ("silence",))
+        signer, ls = os.urandom(32), os.urandom(32)
+        payload = written(None, c.ed_public(signer), None, 1, "echo", '{"z":1}')
+        box = seal_ask(self.ward.key.padlock, bytes(32), payload, signer, ZERO_EDGE, ls)
+        self.assertEqual(reply_text(self.ward.arrive(box), ls, ZERO_EDGE), SILENCE)
         w = Ward("door", self.src, zero_reach=REACHES["marked"])
         for _ in range(2):
-            r = open_reply(w.arrive(box), ls, self.sign)[0]
+            r = open_reply(w.arrive(box), ls, self.sign, ZERO_EDGE)[0]
             self.assertEqual((r[0], r[2], r[3]), ("object", b'{"z":1}', "1"))
+
+    def test_object_and_word_are_sealed_under_the_ask_edge_key(self):
+        w, st = self.ward, self.st
+        knock = st.next_box("echo", '{"a":1}')
+        lid_secret, _, edge, _ = st.pending
+        reply = w.arrive(knock)
+        self.assertEqual(reply_text(reply, lid_secret, edge), b'{"object":{"a":1},"seen":null}')
+        self.assertIsNone(reply_text(reply, lid_secret, ZERO_EDGE))
+        st.take(reply)
+        st.seq = 0
+        box = st.next_box("echo", "{}")
+        lid_secret, _, edge, _ = st.pending
+        reply = w.arrive(box)
+        self.assertEqual(reply_text(reply, lid_secret, edge), b'{"quo":"repeated"}')
+        self.assertIsNone(reply_text(reply, lid_secret, ZERO_EDGE))
+
+    def test_a_word_of_removal_is_sealed_under_the_kept_key(self):
+        w, st = self.ward, self.st
+        self.bound()
+        w.release(st.heir_pk)
+        box = st.next_box("echo", "{}")
+        lid_secret, _, edge, _ = st.pending
+        self.assertEqual(reply_text(w.arrive(box), lid_secret, edge), b'{"quo":"removed"}')
+
+    def test_every_silence_is_sealed_under_the_zero_edge_key(self):
+        w, st = self.ward, self.st
+        self.bound()
+        # a stranger's: a key the door does not admit
+        box = st.ask("echo", "{}", os.urandom(32), st.edge)
+        lid_secret = st.pending[0]
+        reply = w.arrive(box)
+        self.assertEqual(reply_text(reply, lid_secret, ZERO_EDGE), SILENCE)
+        self.assertIsNone(reply_text(reply, lid_secret, st.edge))
+        # a chosen one: echo declines, and the keys still move
+        heir = w.heirs[st.heir_pk]
+        was = heir.offered
+        box = st.next_box("echo", '{"k":1,"k":2}')
+        lid_secret = st.pending[0]
+        reply = w.arrive(box)
+        self.assertEqual(reply_text(reply, lid_secret, ZERO_EDGE), SILENCE)
+        self.assertEqual(heir.open, st.edge)
+        self.assertNotEqual(heir.offered, was)
+        self.assertEqual(st.take(reply), ("silence",))
+        self.bound()
+
+    def test_object_or_word_under_the_zero_edge_key_reads_as_silence(self):
+        w, st = self.ward, self.st
+        self.bound()
+        for text in (b'{"object":1,"seen":null}', b'{"quo":"repeated"}'):
+            st.next_box("echo", "{}")
+            lid_secret, _, edge, _ = st.pending
+            self.assertEqual(open_reply(ward_reply(w, text, lid_secret, edge), lid_secret, self.sign, edge)[0][0],
+                             read_reply_text(text)[0])
+            forged = ward_reply(w, text, lid_secret, ZERO_EDGE)
+            signer, at_edge = st.signer, st.edge
+            self.assertEqual(st.take(forged), ("silence",))
+            self.assertEqual((st.signer, st.edge), (signer, at_edge))
 
     def test_reply_signature_covers_the_lid(self):
         w, st = self.ward, self.st
         self.bound()
-        box = st.next_box("echo", '{"a":1}')
-        lid_secret = st.pending[0]
-        reply = w.arrive(box)
-        self.assertEqual(open_reply(reply, lid_secret, self.sign)[0][0], "object")
-        # the same reply read against another ask's lid is silence
-        self.assertEqual(open_reply(reply, os.urandom(32), self.sign)[0], ("silence",))
-        # a reply signed over its reply text alone is silence
-        eph = os.urandom(32)
-        rpk = c.x25519_public(eph)
-        k, n = c.key_nonce(c.agree(eph, c.x25519_public(lid_secret)), "quo-seal")
-        body = SILENCE + c.ed_sign(w.key.sign_seed, SILENCE)
-        alone = rpk + c.gcm_seal(k, n, body, rpk)
-        self.assertEqual(open_reply(alone, lid_secret, self.sign)[0], ("silence",))
+        st.next_box("echo", '{"a":1}')
+        lid_secret, _, edge, _ = st.pending
+        text = b'{"object":1,"seen":null}'
+        self.assertEqual(open_reply(ward_reply(w, text, lid_secret, edge), lid_secret, self.sign, edge)[0][0],
+                         "object")
+        other = c.x25519_public(os.urandom(32))
+        for signed in (other, b""):
+            reply = ward_reply(w, text, lid_secret, edge, signed=signed)
+            self.assertEqual(open_reply(reply, lid_secret, self.sign, edge)[0], ("silence",))
 
     def test_unopened_lids(self):
         for junk in [b"", b"x" * 10, SMALL_ORDER[1] + b"y" * 100]:
             self.assertEqual(len(self.ward.arrive(junk)), 128)
         lid_secret = os.urandom(32)
         box = c.x25519_public(lid_secret) + os.urandom(100)
-        self.assertEqual(open_reply(self.ward.arrive(box), lid_secret, self.sign)[0], ("silence",))
+        self.assertEqual(reply_text(self.ward.arrive(box), lid_secret, ZERO_EDGE), SILENCE)
         big = c.x25519_public(lid_secret) + bytes(1048576)
-        self.assertEqual(open_reply(self.ward.arrive(big), lid_secret, self.sign)[0], ("silence",))
+        self.assertEqual(reply_text(self.ward.arrive(big), lid_secret, ZERO_EDGE), SILENCE)
 
 
 class Addresses(unittest.TestCase):

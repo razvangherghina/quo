@@ -1,11 +1,10 @@
 // Quo over the web (CARRIER-WEB.md): the post and the held line, each as listener and dialer.
 import * as http from 'node:http';
 import { createHash } from 'node:crypto';
-import { frame, readBody, ASK, REPLY, NOTHING, MAX_BODY } from './tcp.js';
+import { frame, readBody, ASK, REPLY, NOTHING, MAX_BODY, WAIT_MS } from './tcp.js';
 
 const MIN_POST = 65;
 const MAX_POST = 1048640;
-const WAIT_MS = 5000;
 
 // What the ward pk names answers the box: { known, reply }.
 function deliver(lookup, pk, box, log) {
@@ -19,15 +18,15 @@ function deliver(lookup, pk, box, log) {
   }
 }
 
-const started = (server, host) =>
+const started = (server) =>
   new Promise((resolve, reject) => {
     server.once('error', reject);
-    server.listen(0, host, () => resolve(server));
+    server.listen(0, '127.0.0.1', () => resolve(server));
   });
 
 // ---- The post ----
 
-export function listenPost(lookup, { host = '127.0.0.1', log = () => {} } = {}) {
+export function listenPost(lookup, { log = () => {} } = {}) {
   const server = http.createServer((req, res) => {
     req.on('error', () => {});
     const refuse = (status) => {
@@ -59,25 +58,20 @@ export function listenPost(lookup, { host = '127.0.0.1', log = () => {} } = {}) 
       const { known, reply } = deliver(lookup, body.subarray(0, 64), body.subarray(64), log);
       if (!known) return refuse(404);
       if (!reply) return refuse(204);
-      res.writeHead(200, {
-        'content-type': 'application/octet-stream',
-        'content-length': reply.length,
-      });
       res.end(reply);
     });
   });
-  server.on('upgrade', (_req, sock) => sock.destroy());
-  return started(server, host);
+  return started(server);
 }
 
 // Resolves to a reply box, or null for nothing.
-export async function askPost(at, wardPkHex, box, timeoutMs = WAIT_MS) {
+export async function askPost(at, wardPkHex, box) {
   try {
     const res = await fetch(at.url, {
       method: 'POST',
       body: Buffer.concat([Buffer.from(wardPkHex, 'hex'), box]),
       redirect: 'manual',
-      signal: AbortSignal.timeout(timeoutMs),
+      signal: AbortSignal.timeout(WAIT_MS),
     });
     const body = Buffer.from(await res.arrayBuffer());
     return res.status === 200 && body.length > 0 ? body : null;
@@ -96,7 +90,7 @@ const OP_PING = 9;
 const OP_PONG = 10;
 
 // A server's frame: unmasked, final.
-export function wsFrame(opcode, payload) {
+function wsFrame(opcode, payload) {
   const n = payload.length;
   const head = n < 126 ? Buffer.alloc(2) : n < 65536 ? Buffer.alloc(4) : Buffer.alloc(10);
   head[0] = 0x80 | opcode;
@@ -170,7 +164,7 @@ export function wsReader(onMessage, onControl) {
   };
 }
 
-export function listenLine(lookup, { host = '127.0.0.1', log = () => {} } = {}) {
+export function listenLine(lookup, { log = () => {} } = {}) {
   const server = http.createServer((req, res) => {
     req.resume();
     res.writeHead(426, { 'content-length': 0, connection: 'close' });
@@ -228,7 +222,7 @@ export function listenLine(lookup, { host = '127.0.0.1', log = () => {} } = {}) 
     if (head.length) take(head);
     sock.on('data', take);
   });
-  return started(server, host);
+  return started(server);
 }
 
 // A dialer of the held line: one WebSocket per address, many asks at once.
@@ -268,7 +262,7 @@ export class LineDialer {
   }
 
   // Resolves to a reply box, or null for nothing. `at` is a ws or wss address read by lib/address.js.
-  async ask(at, wardPkHex, box, timeoutMs = WAIT_MS) {
+  async ask(at, wardPkHex, box) {
     const l = this.line(at.url);
     const id = l.next++ >>> 0;
     return new Promise((resolve) => {
@@ -277,7 +271,7 @@ export class LineDialer {
         l.pending.delete(id);
         resolve(r);
       };
-      const t = setTimeout(() => done(null), timeoutMs);
+      const t = setTimeout(() => done(null), WAIT_MS);
       l.pending.set(id, done);
       l.open.then((ok) => {
         if (!ok) {

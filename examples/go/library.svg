@@ -1,4 +1,4 @@
-<!-- drawn from public/examples/go/ sha256:90f918408d4e -->
+<!-- drawn from public/examples/go/ sha256:eeb3571fbcc3 -->
 <svg xmlns="http://www.w3.org/2000/svg" width="100%" style="height:auto" viewBox="0 0 1200 640" role="img" aria-label="The Go kit">
 <title>The Go kit</title>
 <desc>The Go kit stands tcp, http, ws; 10 source files; 20 tests of its own; answers all 28 questions of KIT-SPEC.md.</desc>

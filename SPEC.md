@@ -39,6 +39,9 @@ thirty-two bytes. Its public key is the heir pk.
 A head is thirty-two bytes inside an ask's box: an heir pk, or thirty-two
 zero bytes. The head of thirty-two zero bytes is the zero head.
 
+An edge key is thirty-two bytes. The edge key of thirty-two zero bytes is the
+zero edge key.
+
 An ephemeral key is an X25519 key pair used for one box and for nothing
 after it. The public key of an ephemeral key is an ephemeral pk. The
 ephemeral pk of an ask's box is the lid.
@@ -205,8 +208,8 @@ The end at the ward that made the heir is the occupant. The end at the
 other ward is the standing. Asks go from the standing to the occupant.
 Replies come back from the occupant to the standing.
 
-An edge key is thirty-two bytes. Each relation carries one edge key beside
-its signing keys. Both ends compute it. Neither end sends it.
+A relation carries edge keys beside its signing keys. Both ends compute them.
+Neither end sends one.
 
 An end is what its ward keeps of the relation. The occupant is the
 signing keys and the edge keys the door holds for the heir, and the count.
@@ -245,15 +248,18 @@ decapsulates.
 
 ## Sealing
 
-The sender takes a fresh ephemeral key and agrees it with the padlock the
+The sender takes a fresh ephemeral key and agrees it with the public key the
 box is sealed to.
 
 The agreement as it stands, with nothing concatenated to it, goes to
-HKDF-SHA-256 under `quo-seal`. The result seals the head of an ask and the
-body of a reply.
+HKDF-SHA-256 under `quo-seal`. The result seals the head of an ask.
 
-The body of an ask is sealed under `quo-edge-seal` over sixty-four bytes:
-the agreement, then the edge key the ask is sent under.
+The body of an ask and the body of a reply are sealed under `quo-edge-seal`
+over sixty-four bytes: the agreement, then an edge key.
+
+The edge key of an ask's body is the edge key the ask is sent under. The edge
+key of a reply's body is the edge key the ask came under when the reply is an
+object or a word. It is the zero edge key when the reply is silence.
 
 Each of these HKDF calls gives forty-four bytes. The first thirty-two are
 the AES-256 key. The last twelve are the nonce.
@@ -269,7 +275,8 @@ An all-zero agreement is a box that does not open.
 An ask's box is sealed to the ward's padlock.
 
 A reply's box is sealed to the lid of the ask and to nothing else. It is
-opened with the lid's secret.
+opened with the lid's secret, under the edge key the ask was sent under and
+under no other.
 
 An ask's box is one hundred and sixty bytes longer than its payload:
 thirty-two of ephemeral pk, forty-eight of sealed head, sixteen of tag and
@@ -293,8 +300,8 @@ The edge key that follows a reply is HKDF-SHA-256 under `quo-edge` over
 sixty-four bytes: the edge key the ask came under, then that agreement,
 thirty-two bytes out.
 
-The zero edge key is thirty-two zero bytes. Every ask on the zero head is
-sent under it. The zero edge key never moves.
+Every ask on the zero head is sent under the zero edge key. The zero edge key
+never moves.
 
 ## The signature
 

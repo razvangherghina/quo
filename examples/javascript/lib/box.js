@@ -9,7 +9,6 @@ import {
   isZero,
   sign,
   encapsulate,
-  ZERO32,
   SIZE,
 } from './crypto.js';
 
@@ -19,7 +18,7 @@ export const follow = (edge, agreement) => hkdf(Buffer.concat([edge, agreement])
 export const knockEdge = (ss) => hkdf(ss, 'quo-lock', 32);
 
 // A fresh ephemeral key that takes a seal with `pub`.
-export function ephemeralTo(pub) {
+function ephemeralTo(pub) {
   const eph = xSecret(draw(32));
   const a = agree(eph, pub);
   if (isZero(a)) return null;
@@ -44,14 +43,13 @@ export function sealAsk({ padlock, head, edge, lockEk, payload, signer }) {
   return { box: Buffer.concat([lid, sealedHead, ct, sealedBody]), lidSecret: e.eph, edge };
 }
 
-// A reply's box, sealed to `lid`. Returns the box and the reply's agreement.
+// A reply's box, sealed to `lid` over `edge`. Returns the box and the reply's agreement.
 // The signature covers the lid, then the reply text. The lid is not in the body.
-export function sealReply({ lid, text, signer }) {
+export function sealReply({ lid, text, edge, signer }) {
   const e = ephemeralTo(lid);
-  if (!e) throw new Error('lid takes no seal');
   const body = Buffer.concat([text, sign(signer, Buffer.concat([lid, text]))]);
   return {
-    box: Buffer.concat([e.eph.pub, seal(hkdf(e.a, 'quo-seal', 44), body, e.eph.pub)]),
+    box: Buffer.concat([e.eph.pub, seal(edgeSealKey(e.a, edge), body, e.eph.pub)]),
     agreement: e.a,
   };
 }
@@ -63,14 +61,16 @@ export function nobodyLid() {
   return xSecret(draw(32)).pub;
 }
 
-// Opens a reply box with the lid's secret. Returns { text, sig, agreement } or null.
-export function openReply(box, lidSecret) {
+// Opens a reply box with the lid's secret, over the edge key its ask was sent under.
+// A door's silence is sealed over the zero edge key, and so does not open here: it reads as silence.
+// Returns { text, sig, lid, agreement } or null.
+export function openReply(box, { lidSecret, edge }) {
   if (box.length > SIZE || box.length < 32 + 16 + 64) return null;
   const pk = box.subarray(0, 32);
   const a = agree(lidSecret, pk);
   if (isZero(a)) return null;
-  const body = open(hkdf(a, 'quo-seal', 44), box.subarray(32), pk);
-  if (!body || body.length < 64) return null;
+  const body = open(edgeSealKey(a, edge), box.subarray(32), pk);
+  if (!body) return null;
   return {
     text: body.subarray(0, body.length - 64),
     sig: body.subarray(body.length - 64),
@@ -78,5 +78,3 @@ export function openReply(box, lidSecret) {
     agreement: a,
   };
 }
-
-export { ZERO32 };

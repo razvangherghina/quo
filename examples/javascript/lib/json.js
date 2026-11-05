@@ -5,7 +5,7 @@
 
 const decoder = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true });
 
-export class NotValue extends Error {}
+class NotValue extends Error {}
 
 const fail = (why) => {
   throw new NotValue(why);
@@ -143,11 +143,7 @@ export function parse(text, { unique = true, depth: nodeDepth = 2 } = {}) {
       if (obj) {
         const k = key().v;
         const v = value(level + 1);
-        if (node.fields.has(k)) {
-          if (unique && level === 0) fail('duplicate key');
-          node.repeated = true;
-          node.fields.delete(k);
-        }
+        if (unique && level === 0 && node.fields.has(k)) fail('duplicate key');
         node.fields.set(k, v);
       } else node.items.push(value(level + 1));
       ws();

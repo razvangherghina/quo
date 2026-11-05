@@ -35,8 +35,6 @@ def gcm_seal(key, nonce, plain, aad):
 
 
 def gcm_open(key, nonce, sealed, aad):
-    if len(sealed) < 16:
-        return None
     try:
         return AESGCM(key).decrypt(nonce, sealed, aad)
     except InvalidTag:

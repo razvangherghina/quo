@@ -10,8 +10,8 @@ import (
 // ---- what stands behind a door ----
 
 // An Ask is what a target is handed: an admitted ask on a heir, or an ask on
-// the zero head. Method is nil on the empty ask. Args is nil when absent, and
-// Args is its bytes exactly as they arrived, nil when absent.
+// the zero head. Method is nil on the empty ask. Args is its bytes exactly as
+// they arrived, nil when absent.
 type Ask struct {
 	Method *string
 	Args   []byte
@@ -73,13 +73,9 @@ var Targets = map[string]Target{
 
 // replyText writes an answer as a reply text: silence as its sixteen bytes,
 // an object as {"object":...,"seen":...}, or {"object":...,"seen":...,"at":[...]}
-// when the answer carries addresses. Where there is no value to write, the
-// reply is silence.
+// when the answer carries addresses.
 func replyText(a Answer) []byte {
 	if a.Silence {
-		return silenceText
-	}
-	if _, err := Parse(a.Object); err != nil {
 		return silenceText
 	}
 	seen := []byte("null")
@@ -110,14 +106,9 @@ type payload struct {
 	ask          Ask
 }
 
-// Arrive is the door: bytes in, bytes out. This door always answers.
-func (w *Ward) Arrive(box []byte) []byte {
-	return w.judge(box)
-}
-
 // silenceTo is a stranger's silence, sealed to lid.
 func (w *Ward) silenceTo(lid []byte) []byte {
-	out, _ := sealReply(lid, silenceText, w.Sign)
+	out, _ := sealReply(lid, silenceText, zero32, w.Sign)
 	return out
 }
 
@@ -129,13 +120,14 @@ func nobodysLid() []byte {
 	return x25519Pub(draw(32))
 }
 
-func (w *Ward) word(lid []byte, word string) []byte {
-	out, _ := sealReply(lid, []byte(`{"quo":"`+word+`"}`), w.Sign)
+func (w *Ward) word(lid, cameUnder []byte, word string) []byte {
+	out, _ := sealReply(lid, []byte(`{"quo":"`+word+`"}`), cameUnder, w.Sign)
 	return out
 }
 
-// judge walks the thirteen cases in the order SPEC.md gives them.
-func (w *Ward) judge(box []byte) []byte {
+// Arrive is the door: bytes in, bytes out. It walks the thirteen cases in the
+// order SPEC.md gives them, and always answers.
+func (w *Ward) Arrive(box []byte) []byte {
 	// Case 1 before the head opens: the reply is sealed to the first
 	// thirty-two bytes where they take a seal, else to a lid nobody holds.
 	unopened := func() []byte {
@@ -152,7 +144,7 @@ func (w *Ward) judge(box []byte) []byte {
 	if !ok {
 		return unopened()
 	}
-	head, ok := openWith(sealKN(agr), box[pkSize:pkSize+headSeal], lid)
+	head, ok := openWith(headKN(agr), box[pkSize:pkSize+headSeal], lid)
 	if !ok {
 		return unopened()
 	}
@@ -179,12 +171,12 @@ func (w *Ward) judge(box []byte) []byte {
 			return stranger()
 		}
 		cameUnder = knockEdge(ss)
-		if body, ok = openWith(askBodyKN(agr, cameUnder), rest[ctSize:], lid); !ok {
+		if body, ok = openWith(bodyKN(agr, cameUnder), rest[ctSize:], lid); !ok {
 			return stranger()
 		}
 	case held:
 		for _, k := range [][]byte{h.open, h.offered} {
-			if b, ok := openWith(askBodyKN(agr, k), rest, lid); ok {
+			if b, ok := openWith(bodyKN(agr, k), rest, lid); ok {
 				body, cameUnder = b, k
 				break
 			}
@@ -193,7 +185,7 @@ func (w *Ward) judge(box []byte) []byte {
 			return stranger()
 		}
 	default: // the zero head, or a heir not held
-		if body, ok = openWith(askBodyKN(agr, zero32), rest, lid); !ok {
+		if body, ok = openWith(bodyKN(agr, zero32), rest, lid); !ok {
 			return stranger()
 		}
 		cameUnder = zero32
@@ -219,7 +211,7 @@ func (w *Ward) judge(box []byte) []byte {
 		if w.reach == nil || !Verify(pl.by, text, sig) {
 			return stranger()
 		}
-		out, _ := sealReply(lid, replyText(w.reach(pl.ask)), w.Sign)
+		out, _ := sealReply(lid, replyText(w.reach(pl.ask)), cameUnder, w.Sign)
 		return out
 	}
 	// Case 6.
@@ -242,20 +234,20 @@ func (w *Ward) judge(box []byte) []byte {
 	}
 	// Case 9.
 	if h.removed {
-		return w.word(lid, "removed")
+		return w.word(lid, cameUnder, "removed")
 	}
 	// Case 10.
 	announces := pl.next != nil && !bytes.Equal(pl.next, h.PK) && !bytes.Equal(pl.next, pl.by)
 	if !h.spent && !announces {
-		return w.word(lid, "unannounced")
+		return w.word(lid, cameUnder, "unannounced")
 	}
 	// Case 11. This door honours no number at or below the highest.
 	if h.spent && pl.seq <= h.highest {
-		return w.word(lid, "repeated")
+		return w.word(lid, cameUnder, "repeated")
 	}
 
 	// Cases 12 and 13: a choice.
-	out, ragr := sealReply(lid, replyText(h.reach(pl.ask)), w.Sign)
+	out, ragr := sealReply(lid, replyText(h.reach(pl.ask)), cameUnder, w.Sign)
 	h.highest = pl.seq
 	if !h.spent {
 		h.spent = true

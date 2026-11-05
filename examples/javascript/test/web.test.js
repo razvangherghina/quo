@@ -1,5 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import * as http from 'node:http';
 import { listenPost, askPost, listenLine, LineDialer, wsReader } from '../lib/web.js';
 import { readAddress } from '../lib/address.js';
 
@@ -105,4 +106,27 @@ void test('wsReader reassembles fragments and refuses what RFC 6455 and the carr
   big[1] = 0xff;
   big.writeBigUInt64BE(1048646n, 2);
   assert.equal(one(big), false, 'above the largest body');
+});
+
+void test('the post answers an upgrade request with a status, as any request that is no POST', async () => {
+  const server = await listenPost(() => null);
+  const { port } = server.address();
+  const status = await new Promise((resolve) => {
+    const req = http.request({
+      port,
+      headers: { connection: 'upgrade', upgrade: 'websocket' },
+    });
+    req.on('response', (res) => {
+      res.resume();
+      resolve(res.statusCode);
+    });
+    req.on('upgrade', (_res, sock) => {
+      sock.destroy();
+      resolve('upgraded');
+    });
+    req.on('error', () => resolve('closed'));
+    req.end();
+  });
+  server.close();
+  assert.equal(status, 405);
 });

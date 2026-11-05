@@ -85,10 +85,7 @@ func pair(t *testing.T, reach string) (*Ward, *Standing) {
 
 func round(t *testing.T, w *Ward, st *Standing, method string, args string) Read {
 	t.Helper()
-	sent, err := st.Seal(&method, []byte(args))
-	if err != nil {
-		t.Fatal(err)
-	}
+	sent := st.Seal(&method, []byte(args))
 	return st.ReadReply(sent, w.Arrive(sent.Box))
 }
 
@@ -105,7 +102,7 @@ func TestRelation(t *testing.T) {
 	}
 	// the same box again is a number the door has honoured
 	m := "m"
-	sent, _ := st.Seal(&m, nil)
+	sent := st.Seal(&m, nil)
 	if r := st.ReadReply(sent, w.Arrive(sent.Box)); r.Kind != "object" {
 		t.Fatalf("read %+v", r)
 	}
@@ -121,12 +118,12 @@ func TestRelation(t *testing.T) {
 func TestKnockLostThenRecovered(t *testing.T) {
 	w, st := pair(t, "echo")
 	m := "m"
-	knock, _ := st.Seal(&m, nil)
+	knock := st.Seal(&m, nil)
 	w.Arrive(knock.Box) // the door binds, the reply is lost
 	if r := st.ReadReply(knock, nil); r.Kind != "nothing" {
 		t.Fatal(r)
 	}
-	again, _ := st.Seal(&m, nil)
+	again := st.Seal(&m, nil)
 	if !bytes.Equal(again.Box, knock.Box) {
 		t.Fatal("after nothing, the knock is sent again as the same bytes")
 	}
@@ -145,8 +142,8 @@ func TestALateReplyMovesNothing(t *testing.T) {
 	w, st := pair(t, "echo")
 	round(t, w, st, "m", `{}`)
 	m := "m"
-	early, _ := st.Seal(&m, nil)
-	late, _ := st.Seal(&m, nil)
+	early := st.Seal(&m, nil)
+	late := st.Seal(&m, nil)
 	earlyReply, lateReply := w.Arrive(early.Box), w.Arrive(late.Box)
 	if r := st.ReadReply(late, lateReply); r.Kind != "object" {
 		t.Fatal(r)
@@ -173,8 +170,8 @@ func TestAReplySignedOverAnythingElseReadsAsSilence(t *testing.T) {
 	w, st := pair(t, "echo")
 	round(t, w, st, "m", `{}`)
 	m := "m"
-	sent, _ := st.Seal(&m, nil)
-	other, _ := st.Seal(&m, nil)
+	sent := st.Seal(&m, nil)
+	other := st.Seal(&m, nil)
 	text := []byte(`{"object":1,"seen":null}`)
 	lid := x25519Pub(sent.lidSecret)
 	for name, signedOver := range map[string][]byte{
@@ -188,10 +185,97 @@ func TestAReplySignedOverAnythingElseReadsAsSilence(t *testing.T) {
 			t.Fatal(err)
 		}
 		body := slices.Concat(text, ed25519.Sign(w.Sign, signedOver))
-		box := slices.Concat(ephPK, sealWith(sealKN(agr), body, ephPK))
+		box := slices.Concat(ephPK, sealWith(bodyKN(agr, sent.under), body, ephPK))
 		if r := st.ReadReply(sent, box); r.Kind != "silence" {
 			t.Errorf("a reply signed over %s read %+v", name, r)
 		}
+	}
+}
+
+// A reply's body is sealed under the edge key the ask came under, and under
+// the zero edge key when the reply is silence.
+func TestAReplyIsSealedUnderItsEdgeKey(t *testing.T) {
+	opens := func(sent *Sent, reply, under []byte, st *Standing) string {
+		text, _, err := openReply(reply, sent.lidSecret, under, st.wardSignPK)
+		if err != nil {
+			return ""
+		}
+		return string(text)
+	}
+	m := "m"
+
+	w, st := pair(t, "echo")
+	knock := st.Seal(&m, []byte(`{}`))
+	reply := w.Arrive(knock.Box)
+	if got := opens(knock, reply, knock.under, st); got != `{"object":{},"seen":null}` {
+		t.Errorf("an object under the ask's edge key opened to %q", got)
+	}
+	if got := opens(knock, reply, zero32, st); got != "" {
+		t.Errorf("an object opened under the zero edge key to %q", got)
+	}
+	st.ReadReply(knock, reply)
+
+	sent := st.Seal(&m, nil)
+	st.ReadReply(sent, w.Arrive(sent.Box))
+	reply = w.Arrive(sent.Box)
+	if got := opens(sent, reply, sent.under, st); got != `{"quo":"repeated"}` {
+		t.Errorf("a word under the ask's edge key opened to %q", got)
+	}
+
+	w, st = pair(t, "silent")
+	knock = st.Seal(&m, []byte(`{}`))
+	reply = w.Arrive(knock.Box)
+	if got := opens(knock, reply, zero32, st); got != string(silenceText) {
+		t.Errorf("a chosen silence under the zero edge key opened to %q", got)
+	}
+	if got := opens(knock, reply, knock.under, st); got != "" {
+		t.Errorf("a chosen silence opened under the ask's edge key to %q", got)
+	}
+
+	forged := slices.Clone(knock.Box)
+	forged[len(forged)-1] ^= 1
+	if got := opens(knock, w.Arrive(forged), zero32, st); got != string(silenceText) {
+		t.Errorf("a stranger's silence under the zero edge key opened to %q", got)
+	}
+}
+
+// Only an object under the ask's edge key moves the standing: an object or a
+// word under the zero edge key reads as silence and moves nothing, and
+// silence reads as silence under either key.
+func TestTheStandingReadsAReplyUnderItsEdgeKey(t *testing.T) {
+	w, st := pair(t, "echo")
+	round(t, w, st, "m", `{}`)
+	m := "m"
+	for _, c := range []struct {
+		text  string
+		under []byte
+	}{
+		{`{"object":1,"seen":null}`, zero32},
+		{`{"quo":"repeated"}`, zero32},
+		{`{"silence":true}`, zero32},
+		{`{"silence":true}`, nil},
+	} {
+		sent := st.Seal(&m, nil)
+		under := c.under
+		if under == nil {
+			under = sent.under
+		}
+		reply, _ := sealReply(x25519Pub(sent.lidSecret), []byte(c.text), under, w.Sign)
+		key, edge := st.key, st.edge
+		if r := st.ReadReply(sent, reply); r.Kind != "silence" {
+			t.Errorf("%s read %+v", c.text, r)
+		}
+		if !key.Equal(st.key) || !bytes.Equal(edge, st.edge) {
+			t.Errorf("%s moved the standing", c.text)
+		}
+	}
+}
+
+// Inside `args` Quo reads nothing, so a repeated key there is taken.
+func TestARepeatedKeyInsideArgsIsAnswered(t *testing.T) {
+	w, st := pair(t, "echo")
+	if r := round(t, w, st, "m", `{"a":1,"a":2}`); r.Kind != "object" || string(r.Object) != `{"a":1,"a":2}` {
+		t.Fatalf("read %+v", r)
 	}
 }
 
@@ -212,9 +296,9 @@ func TestMovedWritesAt(t *testing.T) {
 	w, st := pair(t, "moved")
 	for i := range 3 {
 		m := "m"
-		sent, _ := st.Seal(&m, []byte(`{"i":1}`))
+		sent := st.Seal(&m, []byte(`{"i":1}`))
 		reply := w.Arrive(sent.Box)
-		text, _, err := openReply(reply, sent.lidSecret, st.wardSignPK)
+		text, _, err := openReply(reply, sent.lidSecret, sent.under, st.wardSignPK)
 		if err != nil || string(text) != `{"object":{"i":1},"seen":null,"at":["tcp://127.0.0.1:9"]}` {
 			t.Fatalf("ask %d: reply text %s, %v", i, text, err)
 		}

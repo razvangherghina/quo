@@ -1,12 +1,12 @@
 """Quo over TCP: the frames, a listener, and a dialer."""
 
-import os
 import socket
 import struct
 import threading
 
 ASK, REPLY, NOTHING = 0, 1, 2
 LARGEST = 1048645
+ONE_ASK = 1  # the id of the one ask a dialed connection carries
 
 
 class NotAFrame(Exception):
@@ -59,7 +59,7 @@ def _close(sock):
 
 class Listener:
     """Answers asks for the wards `door(pk)` finds. `door(pk)` returns a
-    function from a box to a reply box or None, or None for no such ward."""
+    function from a box to a reply box, or None for no such ward."""
 
     def __init__(self, door, log):
         self.door, self.log = door, log
@@ -97,8 +97,7 @@ class Listener:
 
     def _answer(self, conn, wlock, fid, rest):
         arrive = self.door(rest[:64].hex())
-        reply = arrive(rest[64:]) if arrive is not None else None
-        out = frame(NOTHING, fid) if reply is None else frame(REPLY, fid, reply)
+        out = frame(NOTHING, fid) if arrive is None else frame(REPLY, fid, arrive(rest[64:]))
         try:
             with wlock:
                 conn.sendall(out)
@@ -108,20 +107,19 @@ class Listener:
 
 def dial(at, ward_pk, box, wait):
     """Carry one ask to a tcp Address. Returns the reply box, or None for nothing."""
-    fid = struct.unpack(">I", os.urandom(4))[0]
     try:
         sock = socket.create_connection((at.host, at.port), timeout=wait)
     except (OSError, ValueError):
         return None
     try:
         sock.settimeout(wait)
-        sock.sendall(frame(ASK, fid, ward_pk + box))
+        sock.sendall(frame(ASK, ONE_ASK, ward_pk + box))
         while True:
             f = read_frame(sock)
             if f is None:
                 return None
             kind, got, rest = f
-            if kind == ASK or got != fid:
+            if kind == ASK or got != ONE_ASK:
                 continue
             return rest if kind == REPLY else None
     except (OSError, NotAFrame):

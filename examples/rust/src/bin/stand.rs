@@ -1,7 +1,7 @@
 //! `stand`: HARNESS.md part one and part two on stdin and stdout.
 
 use quokit::carrier;
-use quokit::crypto::{hex, seed_from_text, sha256, unhex};
+use quokit::crypto::{hex, seed_from_text, unhex};
 use quokit::json::{self, Object};
 use quokit::quo::{Door, Invitation, Reach, Read, Standing};
 use std::collections::HashMap;
@@ -60,7 +60,7 @@ fn invitation(n: &Object, line: &[u8]) -> Result<Invitation, &'static str> {
 }
 
 fn standing_key(ward: &str, inv: &Invitation) -> String {
-    format!("{ward}/{}/{}/{}/{}", hex(&inv.ward), hex(&inv.heir), hex(&inv.secret), hex(&sha256(&inv.lock)))
+    format!("{ward}/{}/{}", hex(&inv.ward), hex(&inv.heir))
 }
 
 /// `method` and `args` from the line, as the raw text the caller gave.

@@ -18,8 +18,6 @@ pub struct Node {
     pub kind: Kind,
     pub start: usize,
     pub end: usize,
-    /// Containers on the deepest path, this node included when it is one.
-    pub depth: usize,
 }
 
 impl Node {
@@ -104,22 +102,6 @@ pub fn object(bytes: &[u8]) -> Option<Object> {
     Some(Object { fields })
 }
 
-/// Whether no object anywhere in a JSON text repeats a key. It recurses, so
-/// it is called only on a text whose depth is already known to be small.
-pub fn keys_unique_throughout(bytes: &[u8]) -> bool {
-    fn walk(b: &[u8]) -> Option<bool> {
-        match b.first()? {
-            b'{' => {
-                let o = object(b)?;
-                Some(o.fields.iter().all(|(_, v)| walk(v.text(b)) == Some(true)))
-            }
-            b'[' => Some(elements(b)?.iter().all(|v| walk(v.text(b)) == Some(true))),
-            _ => Some(true),
-        }
-    }
-    walk(bytes) == Some(true)
-}
-
 /// One JSON text that is one array, its elements kept as spans.
 pub fn elements(bytes: &[u8]) -> Option<Vec<Node>> {
     let mut p = P::new(bytes)?;
@@ -149,15 +131,6 @@ pub fn elements(bytes: &[u8]) -> Option<Vec<Node>> {
     }
     p.end()?;
     Some(out)
-}
-
-/// One JSON text of any kind.
-pub fn value(bytes: &[u8]) -> Option<Node> {
-    let mut p = P::new(bytes)?;
-    p.ws();
-    let n = p.value()?;
-    p.end()?;
-    Some(n)
 }
 
 struct P<'a> {
@@ -192,32 +165,38 @@ impl<'a> P<'a> {
     }
 
     /// One value. A container is read by the grammar alone, without
-    /// recursion, and kept as its span and depth.
+    /// recursion, and kept as its span.
     fn value(&mut self) -> Option<Node> {
         let start = self.i;
-        let (kind, depth) = match self.peek()? {
+        let kind = match self.peek()? {
             b'n' => {
                 self.lit(b"null")?;
-                (Kind::Null, 0)
+                Kind::Null
             }
             b't' => {
                 self.lit(b"true")?;
-                (Kind::Bool, 0)
+                Kind::Bool
             }
             b'f' => {
                 self.lit(b"false")?;
-                (Kind::Bool, 0)
+                Kind::Bool
             }
-            b'"' => (Kind::Str(self.string()?), 0),
+            b'"' => Kind::Str(self.string()?),
             b'-' | b'0'..=b'9' => {
                 self.number()?;
-                (Kind::Num, 0)
+                Kind::Num
             }
-            b'[' => (Kind::Arr, self.container()?),
-            b'{' => (Kind::Obj, self.container()?),
+            b'[' => {
+                self.container()?;
+                Kind::Arr
+            }
+            b'{' => {
+                self.container()?;
+                Kind::Obj
+            }
             _ => return None,
         };
-        Some(Node { kind, start, end: self.i, depth })
+        Some(Node { kind, start, end: self.i })
     }
 
     fn scalar(&mut self) -> Option<()> {
@@ -228,16 +207,13 @@ impl<'a> P<'a> {
     }
 
     /// A container and everything in it, with a stack of the closers awaited.
-    /// Returns its depth.
-    fn container(&mut self) -> Option<usize> {
+    fn container(&mut self) -> Option<()> {
         let mut stack: Vec<u8> = Vec::new();
-        let mut deepest = 0;
         let mut opener = self.peek()?;
         loop {
             // Here `opener` is `[` or `{` at self.i: open it.
             self.i += 1;
             stack.push(if opener == b'[' { b']' } else { b'}' });
-            deepest = deepest.max(stack.len());
             self.ws();
             let mut empty = self.peek()? == *stack.last()?;
             loop {
@@ -269,7 +245,7 @@ impl<'a> P<'a> {
                 }
                 // After a member or a closed container: a comma or a closer.
                 loop {
-                    let Some(&close) = stack.last() else { return Some(deepest) };
+                    let Some(&close) = stack.last() else { return Some(()) };
                     self.ws();
                     match self.peek()? {
                         b',' => {
@@ -432,8 +408,13 @@ pub fn quote(s: &str) -> String {
 mod tests {
     use super::*;
 
+    /// Whether one JSON text of any kind reads, as an array's one element.
+    fn value(t: &[u8]) -> bool {
+        elements(&[b"[", t, b"]"].concat()).is_some_and(|e| e.len() == 1)
+    }
+
     fn val(t: &str) -> bool {
-        value(t.as_bytes()).is_some()
+        value(t.as_bytes())
     }
 
     #[test]
@@ -452,16 +433,13 @@ mod tests {
         assert!(object(br#"{"a":1,"a":2}"#).is_none());
         assert!(object(br#"{"a":1,"a":2}"#).is_none());
         assert!(object(br#"{"a":{"k":1,"k":2}}"#).is_some());
-        assert!(!keys_unique_throughout(br#"{"a":[1,{"k":1,"k":2}]}"#));
-        assert!(keys_unique_throughout(br#"{"a":[1,{"k":1}],"b":{"k":[]}}"#));
-        assert!(keys_unique_throughout(b"[]"));
         assert!(object(br#"{"\ud800":1,"\udc00":2}"#).is_some());
         assert!(object(br#"{"\ud800":1,"\ud800":2}"#).is_none());
         assert!(val(r#""\ud800""#));
         assert!(val(r#""😀""#));
-        assert!(value(b"\"\xff\"").is_none());
-        assert!(value(b"\"\xed\xa0\x80\"").is_none());
-        assert!(value(b"\"a\x01\"").is_none());
+        assert!(!value(b"\"\xff\""));
+        assert!(!value(b"\"\xed\xa0\x80\""));
+        assert!(!value(b"\"a\x01\""));
         assert!(val(" \n{ } \t"));
         assert!(object(b"[1]").is_none());
         for bad in ["[1,]", r#"{"a":1,}"#, r#"{"a" 1}"#, "[1 2]", "[", "[[]", "[]]", r#"{"a":[}"#, "{1:2}"] {
@@ -473,12 +451,8 @@ mod tests {
     }
 
     #[test]
-    fn depth() {
-        let d = |n: usize| "[".repeat(n) + &"]".repeat(n);
-        assert_eq!(value(d(64).as_bytes()).unwrap().depth, 64);
-        assert_eq!(value(d(500_000).as_bytes()).unwrap().depth, 500_000);
-        assert_eq!(value(b"1").unwrap().depth, 0);
-        assert_eq!(value(br#"{"a":[{},[1]],"b":{}}"#).unwrap().depth, 3);
+    fn any_depth() {
+        assert!(val(&("[".repeat(500_000) + &"]".repeat(500_000))));
     }
 
     #[test]

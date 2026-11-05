@@ -56,9 +56,11 @@ def seal_ask(padlock, head, payload, signer_seed, edge, lid_secret, ciphertext=b
     return lid + c.gcm_seal(hk, hn, head, lid) + ciphertext + c.gcm_seal(bk, bn, body, lid)
 
 
-def open_reply(box, lid_secret, ward_signing_pk):
+def open_reply(box, lid_secret, ward_signing_pk, edge):
     """Returns (reading, agreement). reading is ('object', value, raw, seen, at),
-    ('silence',) or ('word', w). Anything that fails reads as silence."""
+    ('silence',) or ('word', w). `edge` is the edge key the ask was sent under,
+    the one key an object or a word is sealed under. Anything else, a door's
+    silence among it, does not open here and reads as silence."""
     silence = (("silence",), None)
     if len(box) > SIZE or len(box) < 32 + 16 + 64:
         return silence
@@ -67,7 +69,7 @@ def open_reply(box, lid_secret, ward_signing_pk):
     agr = c.agree(lid_secret, rpk)
     if agr is None:
         return silence
-    k, n = c.key_nonce(agr, "quo-seal")
+    k, n = c.key_nonce(agr + edge, "quo-edge-seal")
     body = c.gcm_open(k, n, box[32:], rpk)
     if body is None or len(body) <= 64:
         return silence
@@ -121,7 +123,7 @@ def is_number(v):
 
 
 class Payload:
-    __slots__ = ("to", "by", "next", "seq", "method", "has_method", "args_raw")
+    __slots__ = ("by", "next", "seq", "has_method", "args_raw")
 
 
 def well_formed(obj, text, head):
@@ -144,8 +146,7 @@ def well_formed(obj, text, head):
         return None
     p = Payload()
     p.has_method = "method" in obj
-    p.method = obj.get("method")
-    if p.has_method and not isinstance(p.method, str):
+    if p.has_method and not isinstance(obj["method"], str):
         return None
     if "args" in obj:
         args = obj["args"]
@@ -155,7 +156,6 @@ def well_formed(obj, text, head):
         p.args_raw = text[a:b].encode("utf-8")
     else:
         p.args_raw = b"{}"
-    p.to = to
     p.by = bytes.fromhex(obj["by"])
     p.next = None if nx is None else bytes.fromhex(nx)
     p.seq = obj["seq"].integer
@@ -177,9 +177,9 @@ def word_text(w):
 def payload_text(to, by, nxt, seq, method=None, args=None):
     """A payload the kit writes. `args` is raw JSON text or None."""
     parts = [
-        '"to":' + ("null" if to is None else '"%s"' % to.hex()),
+        '"to":"%s"' % to.hex(),
         '"by":"%s"' % by.hex(),
-        '"next":' + ("null" if nxt is None else '"%s"' % nxt.hex()),
+        '"next":"%s"' % nxt.hex(),
         '"seq":%d' % seq,
     ]
     if method is not None:

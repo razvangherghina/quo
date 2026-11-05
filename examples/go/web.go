@@ -53,8 +53,6 @@ func (k *Kit) servePost(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNoContent)
 		return
 	}
-	w.Header().Set("Content-Type", "application/octet-stream")
-	w.WriteHeader(http.StatusOK)
 	w.Write(reply)
 }
 

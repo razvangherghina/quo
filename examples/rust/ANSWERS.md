@@ -9,8 +9,7 @@ kit does and why.
 one more for the zero head, named when the heir or the ward is made. A
 reach is one of the five of `vectors/HARNESS.md`: echo, marked, moved, null
 and silent. An arrival is handed over as `named`, whether `method` is present,
-with the raw bytes of `args` and their depth. The reach returns a reply
-text or silence, and never sees the relation's number or keys. The reason
+with the raw bytes of `args`. The reach returns a reply text or silence, and never sees the relation's number or keys. The reason
 is that the harness names these five and nothing more. A reach is the least
 a door can stand behind it and still be driven.
 
@@ -20,8 +19,8 @@ and dropped. Only the derived keys stay in the `Door`, and the program that
 stood the ward holds the door in its map. The reason is that a reach needs
 no such edge, and what is never made needs no removal.
 
-**3.** The `reach` given on `ward` answers the zero head, and a ward holds
-at most one. Without one, nothing answers, and a zero-head ask is case 4.
+**3.** The `reach` given on `ward`, any of the five, answers the zero head,
+and a ward holds at most one. Without one, nothing answers, and a zero-head ask is case 4.
 The same sealed bytes presented twice are answered twice, because the zero
 head keeps nothing: no key, no number and no record of an arrival. The
 reason is that the zero head is the one head a door holds no relation for.
@@ -34,8 +33,8 @@ two sent together as it answers two sent apart.
 
 **5.** `Door`, `Standing`, `Invitation`, `Reach` and `Read`. A relation is
 a `Heir` entry keyed by heir pk on the door's side, and a `Standing` keyed
-by the asking ward with the whole invitation on the asker's side. The
-reason is that no name a kit gives crosses a door. Each name is chosen for
+by the asking ward, the invited ward and the heir pk on the asker's side.
+The reason is that no name a kit gives crosses a door. Each name is chosen for
 the reader of this code.
 
 ## What a kit keeps
@@ -94,7 +93,7 @@ each reach answers one as the harness fixes: echo, marked and moved its
 `args`, null the object `null`, silent silence.
 
 **15.** `{"object":<value>,"seen":<seen>}`, object first, with no
-whitespace between tokens. Under the moved reach, `,"at":[...]` follows
+whitespace between its own tokens. Under the moved reach, `,"at":[...]` follows
 `seen`. A word is `{"quo":"<word>"}`. The reason is that
 the order and the spacing are the kit's. The shortest spelling leaves least
 to write and least to get wrong.
@@ -108,8 +107,9 @@ timing is equalised. The reason is that the time a case takes is on no
 wire, so the spec asks nothing of it.
 
 **18.** The case number of the last arrival, written to stderr on each
-arrive. The reason is that stderr crosses no door. A case named there says
-nothing to a stranger.
+arrive. Of a reply that reads as silence it keeps no rule broken. The reason
+is that stderr crosses no door. A case named there says nothing to a
+stranger.
 
 ## What a kit asks
 
@@ -124,9 +124,12 @@ key, with no ciphertext. Where that ask brings back silence or nothing, the
 ask after it is the knock again as the same bytes. The two alternate. A
 word on a recovery ask proves the knock bound, and recovery goes on under
 the announced key. A knock whose frame never left, or that was answered 02,
-is undone as if never sealed. The reason is that the two asks tell the two
-worlds apart. The recovery ask is heard only where the knock bound, and the
-knock again only where it did not.
+is undone, and only its number stays used. The reason is that the recovery
+ask opens only where the knock bound, and the knock again is heard only
+where it did not, so one of the two reaches the door in either world. An
+object or a word says which world holds. Silence does not, since a door that
+chooses silence and a door that cannot open the box write the same reply, so
+the two go on alternating.
 
 **21.** Five seconds from each dial. Where `at` is tried, each address it
 dials gets its own five seconds. The reason is that no time is on the wire.
@@ -183,9 +186,11 @@ it lacked.
 
 A reply's `at` is read as an invitation's is. One that is no array reads
 as absent, and the reply is still an object. Of an array, the kit keeps the
-`tcp` addresses in their order and skips every other entry. Where it keeps
-at least one, those addresses replace the ones it dials for that relation.
-Where it keeps none, it dials what it dialed before. The reason is that a
+`tcp` addresses in their order and skips every other entry. It takes an `at`
+from every object it reads on the relation, whether or not that object
+moved the standing. Where it keeps at least one, those addresses replace the
+ones it dials for that relation. Where it keeps none, and where a later reply
+carries no `at`, it dials what it dialed before. The reason is that a
 reply's `at` says where the ward that signed it is reached now. An `at`
 that names no address this kit dials tells it nowhere to go, so it forgets
 nothing for it.
@@ -212,17 +217,15 @@ nothing more.
 ## What a kit reads
 
 **27.** The door reads `args`, and a field beside the six, by the grammar
-of RFC 8259 alone, at any depth. The scan is a loop over a stack of
-brackets. Only the duplicate-key check recurses, on a text already known to
-nest sixty-four containers deep at most. Any number the grammar allows,
-lone surrogates, noncharacters and repeated keys are all taken there. None
-of them makes a box a stranger's.
+of RFC 8259 alone, at any depth and at any length the size lets a box
+hold. The scan is a loop over a stack of brackets, so no depth exhausts it.
+Any number the grammar allows, lone surrogates, noncharacters and repeated
+keys are all taken there. None of them makes a box a stranger's.
 
-The echo and marked reaches echo `args` only where it nests sixty-four
-containers deep or fewer and no object in it repeats a key. Past that the
-reach chooses silence, and the choice moves the keys. The asker reads
-`object` the same way, at any depth, lone surrogates and repeated keys
-included. It hands it on as the text that came, with whitespace outside
+The echo, marked and moved reaches echo `args` whatever it holds, so nothing
+lies beyond what the kit reads, and nothing there is answered otherwise.
+The asker reads `object` the same way, at any depth, lone surrogates and
+repeated keys included. It hands it on as the text that came, with whitespace outside
 strings removed. On the channel, `method` and `args` are taken by the same
 grammar and sent byte for byte. The reason is that Quo reads nothing there.
 Refusing a text the grammar allows would put the kit's taste in front of

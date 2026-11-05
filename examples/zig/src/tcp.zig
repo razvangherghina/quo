@@ -108,13 +108,6 @@ pub fn writeFrame(a: Allocator, fd: c.fd_t, kind: u8, id: u32, pk: ?[64]u8, box:
     return writeAll(fd, out);
 }
 
-fn noSigpipe(fd: c.fd_t) void {
-    if (@hasDecl(c.SO, "NOSIGPIPE")) {
-        const one: c_int = 1;
-        _ = c.setsockopt(fd, c.SOL.SOCKET, c.SO.NOSIGPIPE, &one, @sizeOf(c_int));
-    }
-}
-
 /// A `tcp` address: the host as a socket takes it, brackets taken off, and the port.
 pub const Address = struct { host: []const u8, port: u16 };
 
@@ -128,14 +121,15 @@ pub fn parseAddress(s: []const u8) ?Address {
     const digits = auth[colon + 1 ..];
     if (digits.len == 0) return null;
     for (digits) |d| if (!std.ascii.isDigit(d)) return null;
-    // A port above a socket's sixteen bits names nothing a dialer can open.
     const port = std.fmt.parseInt(u16, digits, 10) catch return null;
+    if (port == 0) return null;
     const host = auth[0..colon];
     if (host.len == 0) return null;
     if (host[0] == '[') {
-        if (host.len < 3 or host[host.len - 1] != ']') return null;
+        if (host[host.len - 1] != ']') return null;
         const inner = host[1 .. host.len - 1];
-        for (inner) |ch| if (!(std.ascii.isHex(ch) or ch == ':' or ch == '.')) return null;
+        if (std.mem.indexOfScalar(u8, inner, '%') != null) return null;
+        _ = std.Io.net.Ip6Address.parse(inner, port) catch return null;
         return .{ .host = inner, .port = port };
     }
     var i: usize = 0;
@@ -169,7 +163,6 @@ pub fn dial(a: Allocator, at: Address) !?c.fd_t {
         const sa = ai.addr orelse continue;
         const fd = c.socket(@intCast(ai.family), @intCast(ai.socktype), @intCast(ai.protocol));
         if (fd < 0) continue;
-        noSigpipe(fd);
         if (c.connect(fd, sa, ai.addrlen) != 0) {
             _ = c.close(fd);
             continue;
@@ -229,7 +222,6 @@ pub const Listener = struct {
         while (true) {
             const conn = c.accept(self.fd, null, null);
             if (conn < 0) continue;
-            noSigpipe(conn);
             const one: c_int = 1;
             _ = c.setsockopt(conn, c.IPPROTO.TCP, c.TCP.NODELAY, &one, @sizeOf(c_int));
             const t = std.Thread.spawn(.{}, serve, .{ self, conn }) catch {
@@ -275,6 +267,7 @@ test "tcp addresses" {
         "tcp://h:80#f",       "tcp://u@h:80",          "tcp://[::1:80",
         "tcp://::1:80",       "ws://127.0.0.1:80",     "http://127.0.0.1:80",
         "zz://nowhere",       "tcp://h h:80",          "tcp://h:123456",
+        "tcp://h:0",          "tcp://[1]:80",          "tcp://[::1%25lo]:80",
     };
     for (not_ones) |s| try testing.expect(parseAddress(s) == null);
 }

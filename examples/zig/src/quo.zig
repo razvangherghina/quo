@@ -93,12 +93,6 @@ pub const WardKeys = struct {
         };
     }
 
-    /// Thirty-two bytes are the seed; any other length is hashed first.
-    pub fn fromBytes(b: []const u8) WardKeys {
-        if (b.len == 32) return fromSeed(b[0..32].*);
-        return fromText(b);
-    }
-
     /// Text is hashed as its UTF-8 bytes, whatever its length.
     pub fn fromText(text: []const u8) WardKeys {
         var h: [32]u8 = undefined;
@@ -206,8 +200,8 @@ pub fn sealAsk(a: Allocator, padlock: [32]u8, lid_secret: [32]u8, head: [32]u8, 
     return out;
 }
 
-/// Seals a reply text to a lid under a fresh ephemeral key, signed by the ward.
-pub fn sealReply(a: Allocator, ent: *Entropy, signer: KeyPair, lid: [32]u8, text: []const u8) !struct { box: []u8, agreement: [32]u8 } {
+/// Seals a reply text to a lid under a fresh ephemeral key and `edge`, signed by the ward.
+pub fn sealReply(a: Allocator, ent: *Entropy, signer: KeyPair, lid: [32]u8, edge: [32]u8, text: []const u8) !struct { box: []u8, agreement: [32]u8 } {
     const eph = ent.bytes(32);
     const ag = agree(eph, lid) orelse return error.NoSeal;
     const eph_pk = try X25519.recoverPublicKey(eph);
@@ -222,17 +216,20 @@ pub fn sealReply(a: Allocator, ent: *Entropy, signer: KeyPair, lid: [32]u8, text
     body[text.len..][0..64].* = sign(signer, signed);
     const out = try a.alloc(u8, 32 + body.len + 16);
     out[0..32].* = eph_pk;
-    seal(out[32..], body, &ag, "quo-seal", &eph_pk);
+    const ikm = cat(ag, edge);
+    seal(out[32..], body, &ikm, "quo-edge-seal", &eph_pk);
     return .{ .box = out, .agreement = ag };
 }
 
-/// Opens a reply with the lid's secret and checks the ward's signature. Null reads as silence.
-pub fn openReply(a: Allocator, lid_secret: [32]u8, box: []const u8, ward_sign_pk: [32]u8) !?struct { text: []u8, agreement: [32]u8 } {
+/// Opens a reply with the lid's secret under `edge` and checks the ward's signature. Null
+/// reads as silence, so a silence sealed under the zero edge key needs no second try.
+pub fn openReply(a: Allocator, lid_secret: [32]u8, edge: [32]u8, box: []const u8, ward_sign_pk: [32]u8) !?struct { text: []u8, agreement: [32]u8 } {
     if (box.len > size_limit or box.len < 32 + 16 + 64) return null;
     const eph = box[0..32].*;
     const ag = agree(lid_secret, eph) orelse return null;
     const body = try a.alloc(u8, box.len - 48);
-    if (!open(body, box[32..], &ag, "quo-seal", &eph)) return null;
+    const ikm = cat(ag, edge);
+    if (!open(body, box[32..], &ikm, "quo-edge-seal", &eph)) return null;
     const text = body[0 .. body.len - 64];
     // The signature is checked over the lid of this ask, then the reply text.
     const signed = try a.alloc(u8, 32 + text.len);
@@ -580,16 +577,7 @@ fn behind(a: Allocator, reach: Reach, named: bool, args: ?Json.Node) !?[]const u
         .silent => return null,
         // The describe every reach but silent gives the empty ask: no entry, no lang.
         .null_ => if (named) "null" else describe_none,
-        .echo, .marked, .moved => blk: {
-            if (!named) break :blk describe_none;
-            const ar = args orelse break :blk "{}";
-            // This kit does not read `args` whose own keys repeat a name: silence, by choice.
-            _ = Json.parse(a, ar.raw, 1) catch |e| switch (e) {
-                error.OutOfMemory => return e,
-                else => return null,
-            };
-            break :blk ar.raw;
-        },
+        .echo, .marked, .moved => if (!named) describe_none else if (args) |ar| ar.raw else "{}",
     };
     const seen = if (reach == .marked) "\"1\"" else "null";
     const at = if (reach == .moved) ",\"at\":[\"tcp://127.0.0.1:9\"]" else "";
@@ -649,7 +637,6 @@ const Move = struct {
     seq: u64,
     by_held: bool,
     announced: ?[32]u8,
-    edge: [32]u8,
 };
 
 pub const Door = struct {
@@ -713,17 +700,19 @@ pub const Door = struct {
         if (ag == null) {
             ent.fill(&lid);
             if (takesNoSeal(lid)) lid = try X25519.recoverPublicKey(ent.bytes(32));
-            return (try sealReply(a, ent, self.keys.sign, lid, silence_text)).box;
+            return (try sealReply(a, ent, self.keys.sign, lid, zero32, silence_text)).box;
         }
+        var came: [32]u8 = zero32;
         var move: ?Move = null;
-        const text = try self.judge(a, box, lid, ag.?, &move) orelse silence_text;
-        const r = try sealReply(a, ent, self.keys.sign, lid, text);
-        if (move) |m| self.apply(m, r.agreement);
+        const said = try self.judge(a, box, lid, ag.?, &came, &move);
+        // An object or a word goes under the edge key the ask came under, silence under the zero edge key.
+        const r = try sealReply(a, ent, self.keys.sign, lid, if (said != null) came else zero32, said orelse silence_text);
+        if (move) |m| self.apply(m, came, r.agreement);
         return r.box;
     }
 
     /// Moves the keys of a relation on a choice, as the tables of "The move" say.
-    fn apply(self: *Door, m: Move, reply_ag: [32]u8) void {
+    fn apply(self: *Door, m: Move, came: [32]u8, reply_ag: [32]u8) void {
         const h = self.heirs.getPtr(m.heir) orelse return;
         if (h.fresh) {
             h.held = m.announced.?;
@@ -735,12 +724,12 @@ pub const Door = struct {
             h.held = h.vouched.?;
             h.vouched = m.announced;
         }
-        h.open = m.edge;
-        h.offered = follow(m.edge, reply_ag);
+        h.open = came;
+        h.offered = follow(came, reply_ag);
         h.highest = m.seq;
     }
 
-    fn judge(self: *Door, a: Allocator, box: []const u8, lid: [32]u8, ag: [32]u8, move_out: *?Move) !?[]const u8 {
+    fn judge(self: *Door, a: Allocator, box: []const u8, lid: [32]u8, ag: [32]u8, came: *[32]u8, move_out: *?Move) !?[]const u8 {
         // Case 1: the box does not open.
         if (box.len > size_limit or box.len < 80) return null;
         var head: [32]u8 = undefined;
@@ -750,22 +739,21 @@ pub const Door = struct {
         const heir: ?*Heir = if (zero_head) null else self.heirs.getPtr(head);
 
         var body: []u8 = undefined;
-        var edge: [32]u8 = zero32;
         if (heir == null) {
             body = try openBody(a, rest, ag, zero32, lid) orelse return null;
         } else if (heir.?.fresh) {
             if (rest.len < ct_len) return null;
             const shared = self.lock.?.secret_key.decaps(rest[0..ct_len]) catch return null;
-            edge = knockEdge(shared);
-            body = try openBody(a, rest[ct_len..], ag, edge, lid) orelse return null;
+            came.* = knockEdge(shared);
+            body = try openBody(a, rest[ct_len..], ag, came.*, lid) orelse return null;
         } else {
             const h = heir.?;
             if (try openBody(a, rest, ag, h.open, lid)) |b| {
                 body = b;
-                edge = h.open;
+                came.* = h.open;
             } else if (try openBody(a, rest, ag, h.offered, lid)) |b| {
                 body = b;
-                edge = h.offered;
+                came.* = h.offered;
             } else return null;
         }
         if (body.len <= 64) return null;
@@ -821,7 +809,7 @@ pub const Door = struct {
         if (seq <= h.highest) return "{\"quo\":\"repeated\"}"; // case 11
         // Cases 12 and 13: a choice.
         const text = try behind(a, h.reach, method != null, args);
-        move_out.* = .{ .heir = h.pk, .seq = seq, .by_held = by_held, .announced = next, .edge = edge };
+        move_out.* = .{ .heir = h.pk, .seq = seq, .by_held = by_held, .announced = next };
         return text;
     }
 };
@@ -938,7 +926,7 @@ pub const Standing = struct {
         const lid_secret = ent.bytes(32);
         if (!self.spent) {
             if (self.knock_box) |kb| {
-                if (self.last == null or self.last.?.sent == .probe) {
+                if (self.last.?.sent == .probe) {
                     self.last = .{ .lid_secret = self.knock_lid_secret, .edge = self.knock_edge, .key = self.key, .sent = .knock, .seq = 1 };
                     return a.dupe(u8, kb);
                 }
@@ -974,14 +962,13 @@ pub const Standing = struct {
     pub fn read(self: *Standing, a: Allocator, box: ?[]const u8) !Read {
         const b = box orelse return .nothing;
         const last = self.last orelse return .silence;
-        const opened = try openReply(a, last.lid_secret, b, self.ward_sign) orelse return .silence;
+        const opened = try openReply(a, last.lid_secret, last.edge, b, self.ward_sign) orelse return .silence;
         const r = try readText(a, opened.text);
         if (r == .object and last.seq > self.moved) {
             self.moved = last.seq;
             self.key = last.key;
             self.edge = follow(last.edge, opened.agreement);
             self.spent = true;
-            self.last = null;
             if (self.knock_box) |kb| self.gpa.free(kb);
             self.knock_box = null;
         }
@@ -1072,9 +1059,13 @@ test "a reply's signature covers the lid it is sealed to" {
     const lid = try X25519.recoverPublicKey(lid_secret);
     const text = "{\"object\":1,\"seen\":null}";
 
-    const good = try sealReply(a, &ent, w.sign, lid, text);
-    const opened = (try openReply(a, lid_secret, good.box, w.sign.public_key.toBytes())).?;
+    const edge = [_]u8{4} ** 32;
+    const good = try sealReply(a, &ent, w.sign, lid, edge, text);
+    const opened = (try openReply(a, lid_secret, edge, good.box, w.sign.public_key.toBytes())).?;
     try testing.expectEqualStrings(text, opened.text);
+
+    // Under any other edge key it does not open.
+    try testing.expect(try openReply(a, lid_secret, zero32, good.box, w.sign.public_key.toBytes()) == null);
 
     // A signature over the reply text alone, and one over another ask's lid, read as silence.
     const other = try X25519.recoverPublicKey([_]u8{3} ** 32);
@@ -1088,8 +1079,9 @@ test "a reply's signature covers the lid it is sealed to" {
         body[text.len..][0..64].* = sign(w.sign, signed_over);
         const box = try a.alloc(u8, 32 + body.len + 16);
         box[0..32].* = eph_pk;
-        seal(box[32..], body, &ag, "quo-seal", &eph_pk);
-        try testing.expect(try openReply(a, lid_secret, box, w.sign.public_key.toBytes()) == null);
+        const ikm = cat(ag, edge);
+        seal(box[32..], body, &ikm, "quo-edge-seal", &eph_pk);
+        try testing.expect(try openReply(a, lid_secret, edge, box, w.sign.public_key.toBytes()) == null);
     }
 }
 
@@ -1097,8 +1089,6 @@ test "ward keys" {
     const w = WardKeys.fromText("alice");
     try testing.expect(isLowerHex(&w.wardPk(), 128));
     try testing.expectEqualSlices(u8, &w.wardPk(), &WardKeys.fromText("alice").wardPk());
-    const text32 = "0123456789abcdef0123456789abcdef";
-    try testing.expect(!std.mem.eql(u8, &WardKeys.fromText(text32).wardPk(), &WardKeys.fromBytes(text32).wardPk()));
 }
 
 test "the lock's modulus check" {
@@ -1180,7 +1170,7 @@ test "the reach moved writes at on every object, and the standing moves on it" {
     const p: Pair = .{ .a = a, .ent = &ent, .door = &door, .standing = &st };
     for ([_]struct { ?[]const u8, ?[]const u8, []const u8 }{ .{ "\"m\"", "{\"k\":1}", "{\"k\":1}" }, .{ null, null, describe_none }, .{ "\"n\"", "{\"v\":[2]}", "{\"v\":[2]}" } }) |c| {
         const reply = try p.arrive(try p.ask(c[0], c[1]));
-        const text = (try openReply(a, st.last.?.lid_secret, reply, st.ward_sign)).?.text;
+        const text = (try openReply(a, st.last.?.lid_secret, st.last.?.edge, reply, st.ward_sign)).?.text;
         try testing.expectEqualStrings(try std.fmt.allocPrint(a, "{{\"object\":{s},\"seen\":null,\"at\":[\"tcp://127.0.0.1:9\"]}}", .{c[2]}), text);
         try expectObject(try st.read(a, reply), c[2], null);
     }
@@ -1229,10 +1219,9 @@ test "a standing and a door: knock, asks, and a knock recovered" {
     try testing.expectEqualStrings("repeated", (try st2.read(a, try p2.arrive(box))).word);
     try expectObject(try p2.round("\"x\"", "{\"after\":\"repeat\"}"), "{\"after\":\"repeat\"}", null);
 
-    // Inside `args` the text is the kit's: odd numbers are echoed, repeated keys are silence by choice.
+    // Inside `args` the text is the kit's: odd numbers and repeated keys are echoed as they arrived.
     try expectObject(try p2.round("\"x\"", "{\"n\":[-0,1e400,\"\\ud800\",{\"k\":1,\"k\":2}]}"), "{\"n\":[-0,1e400,\"\\ud800\",{\"k\":1,\"k\":2}]}", null);
-    try testing.expect(try p2.round("\"x\"", "{\"k\":1,\"\\u006b\":2}") == .silence);
-    try expectObject(try p2.round("\"x\"", "{}"), "{}", null);
+    try expectObject(try p2.round("\"x\"", "{\"k\":1,\"\\u006b\":2}"), "{\"k\":1,\"\\u006b\":2}", null);
 
     // Release while spent: removed; while fresh: a stranger's.
     try testing.expect(door.release("h2"));
@@ -1269,7 +1258,7 @@ test "the move: vouched keys and edge keys" {
     const text = try std.fmt.allocPrint(a, "{{\"to\":\"{x}\",\"by\":\"{x}\",\"next\":\"{x}\",\"seq\":9}}", .{ &heir, &by, &k2.public_key.toBytes() });
     const lid_secret = [_]u8{5} ** 32;
     const box = try sealAsk(a, door.keys.padlock, lid_secret, heir, null, st.edge, text, sign(st.key, text));
-    const reply = (try openReply(a, lid_secret, try p.arrive(box), door.keys.sign.public_key.toBytes())).?;
+    const reply = (try openReply(a, lid_secret, st.edge, try p.arrive(box), door.keys.sign.public_key.toBytes())).?;
     try expectObject(try readText(a, reply.text), describe_none, null);
     try testing.expectEqualSlices(u8, &by, &h.held);
     try testing.expectEqualSlices(u8, &k2.public_key.toBytes(), &h.vouched.?);
@@ -1279,10 +1268,56 @@ test "the move: vouched keys and edge keys" {
     // K2 signs: it becomes held and nothing is vouched for.
     const text2 = try std.fmt.allocPrint(a, "{{\"to\":\"{x}\",\"by\":\"{x}\",\"next\":null,\"seq\":10}}", .{ &heir, &k2.public_key.toBytes() });
     const box2 = try sealAsk(a, door.keys.padlock, lid_secret, heir, null, h.offered, text2, sign(k2, text2));
-    const reply2 = (try openReply(a, lid_secret, try p.arrive(box2), door.keys.sign.public_key.toBytes())).?;
+    const reply2 = (try openReply(a, lid_secret, h.offered, try p.arrive(box2), door.keys.sign.public_key.toBytes())).?;
     try expectObject(try readText(a, reply2.text), describe_none, null);
     try testing.expectEqualSlices(u8, &k2.public_key.toBytes(), &h.held);
     try testing.expect(h.vouched == null);
+}
+
+test "a reply's edge key: the ask's for an object and a word, the zero edge key for silence" {
+    var arena = std.heap.ArenaAllocator.init(testing.allocator);
+    defer arena.deinit();
+    const a = arena.allocator();
+    var ent: Entropy = .{ .fixed = true, .state = 5 };
+    var door = Door.init(testing.allocator, WardKeys.fromText("edges"), null);
+    defer door.deinit();
+    const ward = door.keys.sign.public_key.toBytes();
+
+    // A chosen silence on a knock binds, and is sealed under the zero edge key all the same.
+    var st = try Standing.init(testing.allocator, try door.invite(&ent, "h", .silent));
+    defer st.deinit();
+    const p: Pair = .{ .a = a, .ent = &ent, .door = &door, .standing = &st };
+    const knock = try p.ask(null, null);
+    const last = st.last.?;
+    const chosen = try p.arrive(knock);
+    try testing.expect(try openReply(a, last.lid_secret, last.edge, chosen, ward) == null);
+    try testing.expectEqualStrings(silence_text, (try openReply(a, last.lid_secret, zero32, chosen, ward)).?.text);
+    try testing.expect(try st.read(a, chosen) == .silence);
+    const h = door.heirs.getPtr(st.heir).?;
+    try testing.expect(!h.fresh);
+    try testing.expectEqualSlices(u8, &last.edge, &h.open);
+
+    // A stranger's silence, the knock again on a spent heir, under the zero edge key too.
+    try testing.expectEqualStrings(silence_text, (try openReply(a, last.lid_secret, zero32, try p.arrive(knock), ward)).?.text);
+
+    // A word goes under the edge key the ask came under, and no other.
+    var st2 = try Standing.init(testing.allocator, try door.invite(&ent, "h2", .echo));
+    defer st2.deinit();
+    const p2: Pair = .{ .a = a, .ent = &ent, .door = &door, .standing = &st2 };
+    try expectObject(try p2.round("\"m\"", "{}"), "{}", null);
+    const box = try p2.ask("\"m\"", "{}");
+    const lid_secret = st2.last.?.lid_secret;
+    const under = st2.last.?.edge;
+    _ = try p2.arrive(box);
+    const word = try p2.arrive(box);
+    try testing.expectEqualStrings("{\"quo\":\"repeated\"}", (try openReply(a, lid_secret, under, word, ward)).?.text);
+    try testing.expect(try openReply(a, lid_secret, zero32, word, ward) == null);
+
+    // An object sealed under the zero edge key does not open for the asker, and reads as silence.
+    const hand = try p2.ask("\"m\"", "{}");
+    const lid = hand[0..32].*;
+    const forged = try sealReply(a, &ent, door.keys.sign, lid, zero32, "{\"object\":1,\"seen\":null}");
+    try testing.expect(try st2.read(a, forged.box) == .silence);
 }
 
 test "the zero head" {
@@ -1298,12 +1333,12 @@ test "the zero head" {
     const lid_secret = [_]u8{9} ** 32;
     const box = try sealAsk(a, door.keys.padlock, lid_secret, zero32, null, zero32, text, sign(k, text));
     for (0..2) |_| {
-        const r = (try openReply(a, lid_secret, try door.arrive(a, &ent, box), door.keys.sign.public_key.toBytes())).?;
+        const r = (try openReply(a, lid_secret, zero32, try door.arrive(a, &ent, box), door.keys.sign.public_key.toBytes())).?;
         try expectObject(try readText(a, r.text), "{\"q\":true}", "\"1\"");
     }
     const other = keyFrom([_]u8{8} ** 32);
     const forged = try sealAsk(a, door.keys.padlock, lid_secret, zero32, null, zero32, text, sign(other, text));
-    const r = (try openReply(a, lid_secret, try door.arrive(a, &ent, forged), door.keys.sign.public_key.toBytes())).?;
+    const r = (try openReply(a, lid_secret, zero32, try door.arrive(a, &ent, forged), door.keys.sign.public_key.toBytes())).?;
     try testing.expectEqualStrings(silence_text, r.text);
 }
 
@@ -1325,7 +1360,7 @@ test "the size, and strangers' silence of one length" {
         @memcpy(full[head.len + l ..], "\"}}");
         const box = try sealAsk(a, door.keys.padlock, lid_secret, zero32, null, zero32, full, sign(k, full));
         try testing.expectEqual(size_limit + i, box.len);
-        const r = (try openReply(a, lid_secret, try door.arrive(a, &ent, box), door.keys.sign.public_key.toBytes())).?;
+        const r = (try openReply(a, lid_secret, zero32, try door.arrive(a, &ent, box), door.keys.sign.public_key.toBytes())).?;
         if (i == 0) try expectObject(try readText(a, r.text), describe_none, null) else try testing.expectEqualStrings(silence_text, r.text);
     }
     try testing.expectEqual(silence_text.len + 112, (try door.arrive(a, &ent, "abc")).len);

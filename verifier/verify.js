@@ -401,18 +401,21 @@ export class Session {
    * bytes go in an ask frame instead of `arrive`, and `carry` answers as
    * `arrive` would, or `{ carrier }` with why the frames departed.
    */
-  async arrive(ward, box, lidSecret) {
+  async arrive(ward, box, lidSecret, edge) {
     const a = this.carry
       ? await this.carry(ward, box)
       : await this.stand.request({ op: 'arrive', ward: ward.pk, box: hex(box) });
     if (a.carrier) return { kind: 'error', carrier: true, why: a.carrier };
     if ('error' in a || !('reply' in a))
       return { kind: 'error', why: `harness answered ${J(a).slice(0, 200)}` };
-    return this.open(ward, a.reply, lidSecret);
+    return this.open(ward, a.reply, lidSecret, edge);
   }
 
-  /** Opens a reply's box, given as hex or null for nothing, under the lid's secret. */
-  open(ward, reply, lidSecret) {
+  /**
+   * Opens a reply's box, given as hex or null for nothing, under the lid's
+   * secret and `edge`, the edge key its ask was sealed under.
+   */
+  open(ward, reply, lidSecret, edge = ZERO32) {
     const a = { reply };
     this.v.arrivals++;
     if (a.reply === null) {
@@ -435,8 +438,15 @@ export class Session {
     // The reply's ephemeral key is judged only by the reply opening under the lid.
     const agr = x25519(lidSecret, replyEph);
     if (agr.equals(ZERO32)) return { kind: 'invalid', why: 'reply ephemeral pk takes no seal' };
-    const body = aesOpen(hkdf(agr, 'quo-seal', 44), replyEph, rb.subarray(32));
-    if (!body) return { kind: 'invalid', why: "reply does not open under the ask's lid" };
+    const under = (key) =>
+      aesOpen(hkdf(Buffer.concat([agr, key]), 'quo-edge-seal', 44), replyEph, rb.subarray(32));
+    const edged = under(edge);
+    const body = edged ?? under(ZERO32);
+    if (!body)
+      return {
+        kind: 'invalid',
+        why: "reply does not open under the ask's lid, its edge key or the zero edge key",
+      };
     if (body.length < 64) return { kind: 'invalid', why: 'reply body shorter than a signature' };
     const text = body.subarray(0, body.length - 64);
     // A reply is signed over the lid it is sealed to, then its reply text.
@@ -464,6 +474,13 @@ export class Session {
       return {
         kind: 'invalid',
         why: `silence written as ${J(text.toString('utf8'))}, not the sixteen bytes`,
+      };
+    }
+    // Silence takes the zero edge key, and an object or a word the key the ask came under.
+    if (!edge.equals(ZERO32) && (rr.shape === 'silence') === Boolean(edged)) {
+      return {
+        kind: 'invalid',
+        why: `${rr.shape} sealed under ${edged ? "the ask's edge key" : 'the zero edge key'}`,
       };
     }
     const noAt = rr.at && whyNoAt(rr.at);
@@ -640,7 +657,7 @@ export class Session {
       const [w, p] = this.wantFor(o.reach ?? heir.reach, o);
       [want, predicate] = want === 'chosen' ? ['chosen', p] : [w, p];
     }
-    const r = this.judge(await this.arrive(ward, box, lidSecret), want, label, predicate);
+    const r = this.judge(await this.arrive(ward, box, lidSecret, edge), want, label, predicate);
     if (r.kind === 'object') {
       // An object that answers the empty ask is a describe, whatever reach answered.
       const p = readPayload(payload);
@@ -929,7 +946,8 @@ async function theCount(s) {
  */
 async function atOneMoment(s) {
   const w = await s.ward('at one moment');
-  const together = (sealed) => Promise.all(sealed.map((x) => s.arrive(w, x.box, x.lidSecret)));
+  const together = (sealed) =>
+    Promise.all(sealed.map((x) => s.arrive(w, x.box, x.lidSecret, x.edge)));
   // Judges a pair of replies: at most one object, and beside it only what
   // `others` takes. Answers the index of the object, or -1.
   const one = (replies, label, others) => {
@@ -1985,8 +2003,15 @@ const REPLIES = {
     read: { object: 3, seen: null },
     at: null,
   },
-  silence: { text: '{"silence":true}', read: SIL },
-  'silence padded': { text: ' { "silence" : true }\n', read: SIL },
+  silence: { text: '{"silence":true}', read: SIL, zeroEdge: true },
+  'silence padded': { text: ' { "silence" : true }\n', read: SIL, zeroEdge: true },
+  "silence under the ask's edge key": { text: '{"silence":true}', read: SIL },
+  'an object under the zero edge key': {
+    text: '{"object":1,"seen":null}',
+    read: SIL,
+    zeroEdge: true,
+  },
+  'a word under the zero edge key': { ...word('repeated'), read: SIL, zeroEdge: true },
   removed: word('removed'),
   unannounced: word('unannounced'),
   repeated: word('repeated'),
@@ -2136,7 +2161,7 @@ function sameAsk(p, o) {
   return sameValue(got, want) ? null : 'args are not the args asked';
 }
 
-function writeReply(mine, t, r) {
+export function writeReply(mine, t, r) {
   if (r.none) return null;
   if (r.raw) return { box: rand(r.raw) };
   const eph = rand(32);
@@ -2155,7 +2180,9 @@ function writeReply(mine, t, r) {
     ? r.sig(mine, signed)
     : edSign(r.otherSigner ? rand(32) : mine.signSeed, signed);
   const body = Buffer.concat([text, sig]);
-  const box = Buffer.concat([ephPk, aesSeal(hkdf(agr, 'quo-seal', 44), ephPk, body)]);
+  const edge = r.zeroEdge ? ZERO32 : t.edge;
+  const sealed = hkdf(Buffer.concat([agr, edge]), 'quo-edge-seal', 44);
+  const box = Buffer.concat([ephPk, aesSeal(sealed, ephPk, body)]);
   if (r.flip) box[box.length - 1] ^= 1;
   return { box, agr };
 }

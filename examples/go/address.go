@@ -57,7 +57,8 @@ func parseAddress(s string) (*address, bool) {
 	port := u.Port()
 	if form == "tcp" {
 		// tcp://host:port, and nothing after the port
-		if u.Path != "" || u.RawQuery != "" || u.ForceQuery || port == "" {
+		n, err := strconv.Atoi(port)
+		if u.Path != "" || u.RawQuery != "" || u.ForceQuery || err != nil || len(port) > 5 || n < 1 || n > 65535 {
 			return nil, false
 		}
 	} else if port == "" {
@@ -65,9 +66,6 @@ func parseAddress(s string) (*address, bool) {
 		if a.secure {
 			port = "443"
 		}
-	}
-	if n, err := strconv.Atoi(port); err != nil || len(port) > 5 || n < 1 || n > 65535 {
-		return nil, false
 	}
 	a.hostPort = net.JoinHostPort(u.Hostname(), port)
 	return a, true

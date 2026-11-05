@@ -1,7 +1,7 @@
 """The standing's side of a relation: knock, ask, recover, and move on an object."""
 
 from . import crypto as c
-from .box import ZERO32, ZERO_EDGE, follow, knock_edge, open_reply, payload_text, seal_ask
+from .box import follow, knock_edge, open_reply, payload_text, seal_ask
 
 FRESH, KNOCKED, BOUND = "fresh", "knocked", "bound"
 
@@ -43,30 +43,27 @@ class Standing:
             return self.ask(method, args, self.own, self.knock_edge)
         return self.ask(method, args, self.signer, self.edge)
 
-    def knock(self, method=None, args=None, announce=True):
-        self.own = self.source.draw(32) if announce else None
-        nxt = c.ed_public(self.own) if announce else None
+    def knock(self, method=None, args=None):
+        self.own = self.source.draw(32)
         shared, ct = c.mlkem_encaps(self.lock)
         edge = knock_edge(shared)
         self.seq = 1
         lid_secret = self.source.draw(32)
-        payload = payload_text(self.heir_pk, self.heir_pk, nxt, 1, method, args)
+        payload = payload_text(self.heir_pk, self.heir_pk, c.ed_public(self.own), 1, method, args)
         box = seal_ask(self.padlock, self.heir_pk, payload, self.heir_secret, edge, lid_secret, ct)
         self.knock_edge, self.knock_box = edge, box
         self.pending = self.knock_pending = (lid_secret, self.own, edge, 1)
-        if announce:
-            self.phase = KNOCKED
+        self.phase = KNOCKED
         return box
 
-    def ask(self, method, args, signer, edge, announce=True):
+    def ask(self, method, args, signer, edge):
         # A number is spent by sending it, whatever comes back.
         self.seq += 1
-        new = self.source.draw(32) if announce else None
-        nxt = c.ed_public(new) if announce else None
+        new = self.source.draw(32)
         lid_secret = self.source.draw(32)
-        payload = payload_text(self.heir_pk, c.ed_public(signer), nxt, self.seq, method, args)
+        payload = payload_text(self.heir_pk, c.ed_public(signer), c.ed_public(new), self.seq, method, args)
         box = seal_ask(self.padlock, self.heir_pk, payload, signer, edge, lid_secret)
-        self.pending = (lid_secret, new or signer, edge, self.seq)
+        self.pending = (lid_secret, new, edge, self.seq)
         return box
 
     def take(self, reply):
@@ -76,7 +73,7 @@ class Standing:
         if reply is None or pending is None:
             return ("nothing",)
         lid_secret, key, edge, seq = pending
-        reading, agr = open_reply(reply, lid_secret, self.ward_signing)
+        reading, agr = open_reply(reply, lid_secret, self.ward_signing, edge)
         if reading[0] == "object" and seq > self.moved:
             self.moved = seq
             self.signer = key
@@ -85,9 +82,3 @@ class Standing:
             if reading[4] is not None:
                 self.at = reading[4]
         return reading
-
-
-def zero_ask(padlock, signer, source, method=None, args=None, seq=1):
-    lid_secret = source.draw(32)
-    payload = payload_text(None, c.ed_public(signer), None, seq, method, args)
-    return seal_ask(padlock, ZERO32, payload, signer, ZERO_EDGE, lid_secret), lid_secret

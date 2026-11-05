@@ -29,17 +29,16 @@ import {
   follow,
   CT_LEN,
 } from './box.js';
-import { utf8, parse, compact, NotValue } from './json.js';
+import { utf8, parse, compact } from './json.js';
 
 const MAX_COUNT = 2n ** 53n - 1n;
-export const SILENCE = Buffer.from('{"silence":true}');
-export const WORDS = ['removed', 'unannounced', 'repeated'];
+const SILENCE = Buffer.from('{"silence":true}');
+const WORDS = ['removed', 'unannounced', 'repeated'];
 const isPk = (s) => isHex(s, 64) && !/^0{64}$/.test(s);
 const isCount = (t) => /^[1-9]\d{0,15}$/.test(t) && BigInt(t) <= MAX_COUNT;
 
 export function seedBytes(seed) {
-  if ((Buffer.isBuffer(seed) || seed instanceof Uint8Array) && seed.length === 32)
-    return Buffer.from(seed);
+  if (seed instanceof Uint8Array && seed.length === 32) return Buffer.from(seed);
   if (typeof seed === 'string') return sha256(Buffer.from(seed, 'utf8'));
   return sha256(Buffer.from(seed));
 }
@@ -53,7 +52,6 @@ export function wardKeys(seed) {
 
 // An invitation read from a plain object. Returns null when it is no invitation.
 export function readInvitation(o) {
-  if (!o || typeof o !== 'object' || Array.isArray(o)) return null;
   const { ward, heir, secret, lock } = o;
   if (!isHex(ward, 128) || !isHex(heir, 64) || !isHex(secret, 64) || !isHex(lock, 2368))
     return null;
@@ -65,15 +63,14 @@ export function readInvitation(o) {
 }
 
 // The payload judged: case 2 or case 3, or the fields.
-export function judgePayload(bytes, headHex) {
+function judgePayload(bytes, headHex) {
   let node;
   let text;
   try {
     text = utf8(bytes);
     node = parse(text);
-  } catch (e) {
-    if (e instanceof NotValue) return { refuse: 2 };
-    throw e;
+  } catch {
+    return { refuse: 2 };
   }
   if (node.t !== 'object') return { refuse: 2 };
   const f = node.fields;
@@ -86,7 +83,6 @@ export function judgePayload(bytes, headHex) {
   if (!to || !by || !next || !seq) return { refuse: 3 };
   if (headHex === null ? to.t !== 'null' : to.t !== 'string' || to.v !== headHex)
     return { refuse: 3 };
-  if (headHex !== null && !isPk(to.v)) return { refuse: 3 };
   if (by.t !== 'string' || !isPk(by.v)) return { refuse: 3 };
   if (!(next.t === 'null' || (next.t === 'string' && isPk(next.v)))) return { refuse: 3 };
   if (seq.t !== 'number' || !isCount(text.slice(seq.s, seq.e))) return { refuse: 3 };
@@ -98,13 +94,12 @@ export function judgePayload(bytes, headHex) {
     seq: Number(text.slice(seq.s, seq.e)),
     method: method ? method.v : undefined,
     args: args ? text.slice(args.s, args.e) : undefined,
-    unread: args?.repeated === true, // this kit does not read args that repeat a key among its own keys
   };
 }
 
 // Writes a reply text. `object` is raw JSON text, vouched for by what stands behind the door.
 // `at`, when given, is the addresses the ward is reached at, the preferred first.
-export function objectText(object, seen, at) {
+function objectText(object, seen, at) {
   const where = at === undefined ? '' : `,"at":${JSON.stringify(at)}`;
   return Buffer.from(
     `{"object":${object},"seen":${seen === null ? 'null' : JSON.stringify(seen)}${where}}`,
@@ -112,17 +107,14 @@ export function objectText(object, seen, at) {
 }
 
 // What stands behind a door: a function of an arrival giving { object, seen, at? } or null for silence.
-// `args` arrives as the raw text of a JSON object, at any depth; `unread` marks args the kit does not read.
+// `args` arrives as the raw text of a JSON object, at any depth.
 // The describe every reach but silent gives the empty ask: no entry, no lang.
 const describeNone = '{"asks":[]}';
-const echo = (seen) => (a) => {
-  if (a.method === undefined) return { object: describeNone, seen };
-  return a.unread ? null : { object: a.args ?? '{}', seen };
-};
-const moved = (a) => {
-  const out = echo(null)(a);
-  return out && { ...out, at: ['tcp://127.0.0.1:9'] };
-};
+const echo = (seen) => (a) => ({
+  object: a.method === undefined ? describeNone : (a.args ?? '{}'),
+  seen,
+});
+const moved = (a) => ({ ...echo(null)(a), at: ['tcp://127.0.0.1:9'] });
 export const reaches = {
   echo: echo(null),
   marked: echo('1'),
@@ -158,15 +150,18 @@ export class Ward {
 
   release(heirHex) {
     const r = this.heirs.get(heirHex);
-    if (!r) return false;
     this.heirs.delete(heirHex);
     this.removed.set(heirHex, r.fresh ? null : { H: r.H, V: r.V, O: r.O, F: r.F });
-    return true;
   }
 
   refuse(lid, why) {
     this.log(`refused: ${why}`);
-    return sealReply({ lid: lid ?? nobodyLid(), text: SILENCE, signer: this.signer }).box;
+    return sealReply({
+      lid: lid ?? nobodyLid(),
+      text: SILENCE,
+      edge: ZERO32,
+      signer: this.signer,
+    }).box;
   }
 
   // The door: bytes in, bytes out. This door always answers.
@@ -209,12 +204,12 @@ export class Ward {
     const sig = body.subarray(body.length - 64);
     const p = judgePayload(text, heirHex);
     if (p.refuse) return this.refuse(lid, `case ${p.refuse}: payload`);
-    const arrival = { method: p.method, args: p.args, unread: p.unread, by: p.by, heir: heirHex };
+    const arrival = { method: p.method, args: p.args };
 
     if (zeroHead) {
       if (!this.zero) return this.refuse(lid, 'case 4: nothing answers the zero head');
       if (!verify(fromHex(p.by), text, sig)) return this.refuse(lid, 'case 5: signature');
-      return this.answer(lid, this.zero(arrival)).box;
+      return this.answer(lid, this.zero(arrival), under).box;
     }
     if (!rel && !kept) return this.refuse(lid, 'case 6: heir not held');
     let signedBy;
@@ -225,14 +220,14 @@ export class Ward {
     }
     if (!signedBy) return this.refuse(lid, 'case 7: key not admitted');
     if (!verify(fromHex(p.by), text, sig)) return this.refuse(lid, 'case 8: signature');
-    if (kept) return this.word(lid, 'removed');
+    if (kept) return this.word(lid, under, 'removed');
     const announces = p.next !== null && p.next !== heirHex && p.next !== p.by ? p.next : null;
-    if (rel.fresh && announces === null) return this.word(lid, 'unannounced');
+    if (rel.fresh && announces === null) return this.word(lid, under, 'unannounced');
     // This door honours no number below the highest, so every choice here is on a number above it.
-    if (!rel.fresh && !(p.seq > rel.high)) return this.word(lid, 'repeated');
+    if (!rel.fresh && !(p.seq > rel.high)) return this.word(lid, under, 'repeated');
 
     // A choice. This door judges one ask at a time: nothing moved since the checks.
-    const reply = this.answer(lid, rel.reach(arrival));
+    const reply = this.answer(lid, rel.reach(arrival), under);
     const nextEdge = follow(under, reply.agreement);
     if (rel.fresh) {
       Object.assign(rel, {
@@ -251,15 +246,18 @@ export class Ward {
     return reply.box;
   }
 
-  word(lid, w) {
+  word(lid, under, w) {
     this.log(`word: ${w}`);
-    return sealReply({ lid, text: Buffer.from(`{"quo":"${w}"}`), signer: this.signer }).box;
+    const text = Buffer.from(`{"quo":"${w}"}`);
+    return sealReply({ lid, text, edge: under, signer: this.signer }).box;
   }
 
-  answer(lid, out) {
+  // An object goes over the edge key the ask came under, a chosen silence over the zero edge key.
+  answer(lid, out, under) {
     return sealReply({
       lid,
       text: out ? objectText(out.object, out.seen, out.at) : SILENCE,
+      edge: out ? under : ZERO32,
       signer: this.signer,
     });
   }
@@ -273,10 +271,10 @@ export class Ward {
   }
 }
 
-// Reads a reply box. Returns { kind, ... }.
-export function readReply(box, lidSecret, signPub) {
+// Reads a reply box to the ask `sent`, its { lidSecret, edge }. Returns { kind, ... }.
+export function readReply(box, sent, signPub) {
   if (box === null) return { kind: 'nothing' };
-  const r = openReply(box, lidSecret);
+  const r = openReply(box, sent);
   if (!r) return { kind: 'silence' };
   // The ward's signing key over the lid of this ask, then the reply text.
   if (!verify(signPub, Buffer.concat([r.lid, r.text]), r.sig)) return { kind: 'silence' };
@@ -380,7 +378,7 @@ export class Standing {
   read(box) {
     const last = this.last;
     if (!last) return null;
-    const r = readReply(box, last.lidSecret, this.wardSign);
+    const r = readReply(box, last, this.wardSign);
     if (r.kind === 'object' && last.seq > this.moved) {
       this.moved = last.seq;
       this.phase = 'bound';

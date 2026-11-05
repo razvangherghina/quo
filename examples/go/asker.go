@@ -90,10 +90,10 @@ func pkHex(k ed25519.PrivateKey) string {
 // brought no object back, the standing alternates between asking under the
 // key the knock announced and the knock's edge key, and sending the knock
 // again as the same bytes.
-func (s *Standing) Seal(method *string, argsText []byte) (*Sent, error) {
+func (s *Standing) Seal(method *string, argsText []byte) *Sent {
 	if !s.bound && s.knock != nil && !s.probeNext {
 		s.probeNext = true
-		return s.knock, nil
+		return s.knock
 	}
 	sent := &Sent{announced: newKey()}
 	var ct []byte
@@ -119,15 +119,11 @@ func (s *Standing) Seal(method *string, argsText []byte) (*Sent, error) {
 		payload = slices.Concat(payload, []byte(`,"args":`), argsText)
 	}
 	payload = append(payload, '}')
-	box, lidSecret, err := sealAsk(s.padlock, s.heirPK, ct, sent.under, payload, sent.signer)
-	if err != nil {
-		return nil, err
-	}
-	sent.Box, sent.lidSecret = box, lidSecret
+	sent.Box, sent.lidSecret = sealAsk(s.padlock, s.heirPK, ct, sent.under, payload, sent.signer)
 	if sent.isKnock {
 		s.knock = sent
 	}
-	return sent, nil
+	return sent
 }
 
 // A Read is what the standing read: an object, silence, a word or nothing.
@@ -152,7 +148,7 @@ func (s *Standing) ReadReply(sent *Sent, box []byte) Read {
 	if sent == nil {
 		return Read{Kind: "silence"}
 	}
-	text, agr, err := openReply(box, sent.lidSecret, s.wardSignPK)
+	text, agr, err := openReply(box, sent.lidSecret, sent.under, s.wardSignPK)
 	if err != nil {
 		if sent.isKnock {
 			s.probeNext = true

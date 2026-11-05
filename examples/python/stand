@@ -185,13 +185,11 @@ class Program:
     # ---- part one ----
 
     def op_ward(self, req):
-        from quokit.crypto import sha256
         from quokit.door import Ward
         seed = string(req, "seed")
         reach = string(req, "reach", optional=True)
         self.reach(reach)
-        ward = Ward(sha256(seed.encode("utf-8")), self.source,
-                    self.reaches[reach] if reach is not None else None, log=log)
+        ward = Ward(seed, self.source, self.reaches[reach] if reach is not None else None, log=log)
         if ward.pk_hex in self.wards:
             raise Refused("ward stood")
         self.wards[ward.pk_hex] = ward
@@ -227,8 +225,7 @@ class Program:
         pk = hexstr(req, "ward", 128)
         box = hexstr(req, "box")
         ward = self.ward_of(pk)
-        reply = ward.arrive(bytes.fromhex(box))
-        return {"reply": None if reply is None else reply.hex()}
+        return {"reply": ward.arrive(bytes.fromhex(box)).hex()}
 
     def standing(self, pk, inv):
         from quokit.standing import Standing
