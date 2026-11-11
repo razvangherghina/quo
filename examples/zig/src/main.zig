@@ -438,8 +438,8 @@ test "the requests and their errors" {
 
     const rep = try run(&stand, a, try std.fmt.allocPrint(a, "{{\"id\":\"10\",\"op\":\"arrive\",\"ward\":\"{s}\",\"box\":\"00\"}}", .{pk}));
     try testing.expectEqual(@as(usize, 20 + 2 * (16 + 112) + 3), rep.len);
-    try testing.expectEqualStrings("{\"id\":\"11\",\"error\":\"no such ward\"}\n", try run(&stand, a, try std.fmt.allocPrint(a, "{{\"id\":\"11\",\"op\":\"arrive\",\"ward\":\"{s}\",\"box\":\"00\"}}", .{"a" ** 128})));
-    try testing.expectEqualStrings("{\"id\":\"12\",\"error\":\"bad request\"}\n", try run(&stand, a, try std.fmt.allocPrint(a, "{{\"id\":\"12\",\"op\":\"arrive\",\"ward\":\"{s}\",\"box\":\"abc\"}}", .{"a" ** 128})));
+    try testing.expectEqualStrings("{\"id\":\"11\",\"error\":\"no such ward\"}\n", try run(&stand, a, try std.fmt.allocPrint(a, "{{\"id\":\"11\",\"op\":\"arrive\",\"ward\":\"{s}\",\"box\":\"00\"}}", .{&@as([128]u8, @splat('a'))})));
+    try testing.expectEqualStrings("{\"id\":\"12\",\"error\":\"bad request\"}\n", try run(&stand, a, try std.fmt.allocPrint(a, "{{\"id\":\"12\",\"op\":\"arrive\",\"ward\":\"{s}\",\"box\":\"abc\"}}", .{&@as([128]u8, @splat('a'))})));
 }
 
 test "a padlock that takes no seal cannot be asked, and the program stands" {

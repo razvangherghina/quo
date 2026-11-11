@@ -7,7 +7,7 @@ answer to every question of `KIT-SPEC.md`.
 
 | Fact | This kit |
 | --- | --- |
-| Toolchain | Zig 0.16 |
+| Toolchain | Zig 0.17 |
 | Depends on | the standard library and libc |
 | Carries | `tcp` |
 | Build | `zig build` |

@@ -8,7 +8,7 @@ answer to every question of `KIT-SPEC.md`.
 | Fact | This kit |
 | --- | --- |
 | Toolchain | Python 3.9 or later |
-| Depends on | `cryptography` 48 or later, in a virtual environment: `python3 -m venv .venv && . .venv/bin/activate && pip install 'cryptography>=48'`, where Debian and Ubuntu need the `python3-venv` package first, as root: `apt-get update && apt-get install -y python3-venv` |
+| Depends on | `cryptography` 48 or later, in a virtual environment. On Debian and Ubuntu, first, as root: `apt-get update && apt-get install -y python3-venv`. Then: `python3 -m venv .venv && . .venv/bin/activate && pip install 'cryptography>=48'` |
 | Carries | `tcp`, `http` |
 | Build | none |
 | Stand program | `stand` |

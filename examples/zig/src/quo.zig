@@ -16,7 +16,7 @@ pub const size_limit: usize = 1_048_576;
 pub const ct_len: usize = 1088;
 pub const ek_len: usize = 1184;
 pub const max_count: u64 = 9_007_199_254_740_991;
-pub const zero32 = [_]u8{0} ** 32;
+pub const zero32 = @as([32]u8, @splat(0));
 pub const silence_text = "{\"silence\":true}";
 
 // ---------------------------------------------------------------- drawn bytes
@@ -89,7 +89,7 @@ pub const WardKeys = struct {
         return .{
             .sign = KeyPair.generateDeterministic(sign_seed) catch unreachable,
             .scalar = scalar,
-            .padlock = X25519.recoverPublicKey(scalar) catch unreachable,
+            .padlock = X25519.recoverPublicKey(scalar),
         };
     }
 
@@ -175,12 +175,12 @@ pub fn agree(secret: [32]u8, public: [32]u8) ?[32]u8 {
 
 /// A public key takes no seal when it is a point of small order.
 pub fn takesNoSeal(public: [32]u8) bool {
-    return agree([_]u8{0x55} ** 32, public) == null;
+    return agree(@as([32]u8, @splat(0x55)), public) == null;
 }
 
 /// Seals an ask (ct null) or a knock (ct set) to a padlock.
 pub fn sealAsk(a: Allocator, padlock: [32]u8, lid_secret: [32]u8, head: [32]u8, ct: ?*const [ct_len]u8, edge: [32]u8, payload: []const u8, sig: [64]u8) ![]u8 {
-    const lid = try X25519.recoverPublicKey(lid_secret);
+    const lid = X25519.recoverPublicKey(lid_secret);
     const ag = agree(lid_secret, padlock) orelse return error.NoSeal;
     const extra: usize = if (ct != null) ct_len else 0;
     const out = try a.alloc(u8, 80 + extra + payload.len + 64 + 16);
@@ -204,7 +204,7 @@ pub fn sealAsk(a: Allocator, padlock: [32]u8, lid_secret: [32]u8, head: [32]u8, 
 pub fn sealReply(a: Allocator, ent: *Entropy, signer: KeyPair, lid: [32]u8, edge: [32]u8, text: []const u8) !struct { box: []u8, agreement: [32]u8 } {
     const eph = ent.bytes(32);
     const ag = agree(eph, lid) orelse return error.NoSeal;
-    const eph_pk = try X25519.recoverPublicKey(eph);
+    const eph_pk = X25519.recoverPublicKey(eph);
     const body = try a.alloc(u8, text.len + 64);
     defer a.free(body);
     @memcpy(body[0..text.len], text);
@@ -234,7 +234,7 @@ pub fn openReply(a: Allocator, lid_secret: [32]u8, edge: [32]u8, box: []const u8
     // The signature is checked over the lid of this ask, then the reply text.
     const signed = try a.alloc(u8, 32 + text.len);
     defer a.free(signed);
-    signed[0..32].* = X25519.recoverPublicKey(lid_secret) catch return null;
+    signed[0..32].* = X25519.recoverPublicKey(lid_secret);
     @memcpy(signed[32..], text);
     if (!verify(ward_sign_pk, signed, body[body.len - 64 ..])) return null;
     return .{ .text = text, .agreement = ag };
@@ -699,7 +699,7 @@ pub const Door = struct {
         }
         if (ag == null) {
             ent.fill(&lid);
-            if (takesNoSeal(lid)) lid = try X25519.recoverPublicKey(ent.bytes(32));
+            if (takesNoSeal(lid)) lid = X25519.recoverPublicKey(ent.bytes(32));
             return (try sealReply(a, ent, self.keys.sign, lid, zero32, silence_text)).box;
         }
         var came: [32]u8 = zero32;
@@ -1028,7 +1028,7 @@ test "json text" {
 }
 
 test "the check" {
-    const kp = keyFrom([_]u8{7} ** 32);
+    const kp = keyFrom(@as([32]u8, @splat(7)));
     const pk = kp.public_key.toBytes();
     const sig = sign(kp, "hello");
     try testing.expect(verify(pk, "hello", &sig));
@@ -1043,7 +1043,7 @@ test "the check" {
     bad[32..64].* = .{ 0xed, 0xd3, 0xf5, 0x5c, 0x1a, 0x63, 0x12, 0x58, 0xd6, 0x9c, 0xf7, 0xa2, 0xde, 0xf9, 0xde, 0x14, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x10 };
     try testing.expect(!verify(pk, "hello", &bad));
     // R with the sign bit set on x = 0 is not the bytes its point encodes to.
-    var r_signed = [_]u8{0} ** 64;
+    var r_signed = @as([64]u8, @splat(0));
     r_signed[0] = 1;
     r_signed[31] = 0x80;
     try testing.expect(!verify(pk, "x", &r_signed));
@@ -1055,11 +1055,11 @@ test "a reply's signature covers the lid it is sealed to" {
     const a = arena.allocator();
     var ent: Entropy = .{ .fixed = true, .state = 11 };
     const w = WardKeys.fromText("replier");
-    const lid_secret = [_]u8{2} ** 32;
-    const lid = try X25519.recoverPublicKey(lid_secret);
+    const lid_secret = @as([32]u8, @splat(2));
+    const lid = X25519.recoverPublicKey(lid_secret);
     const text = "{\"object\":1,\"seen\":null}";
 
-    const edge = [_]u8{4} ** 32;
+    const edge = @as([32]u8, @splat(4));
     const good = try sealReply(a, &ent, w.sign, lid, edge, text);
     const opened = (try openReply(a, lid_secret, edge, good.box, w.sign.public_key.toBytes())).?;
     try testing.expectEqualStrings(text, opened.text);
@@ -1068,12 +1068,12 @@ test "a reply's signature covers the lid it is sealed to" {
     try testing.expect(try openReply(a, lid_secret, zero32, good.box, w.sign.public_key.toBytes()) == null);
 
     // A signature over the reply text alone, and one over another ask's lid, read as silence.
-    const other = try X25519.recoverPublicKey([_]u8{3} ** 32);
+    const other = X25519.recoverPublicKey(@as([32]u8, @splat(3)));
     const over_other = try std.fmt.allocPrint(a, "{s}{s}", .{ &other, text });
     for ([_][]const u8{ text, over_other }) |signed_over| {
         const eph = ent.bytes(32);
         const ag = agree(eph, lid).?;
-        const eph_pk = try X25519.recoverPublicKey(eph);
+        const eph_pk = X25519.recoverPublicKey(eph);
         const body = try a.alloc(u8, text.len + 64);
         @memcpy(body[0..text.len], text);
         body[text.len..][0..64].* = sign(w.sign, signed_over);
@@ -1120,10 +1120,10 @@ test "box sizes" {
     const a = arena.allocator();
     const w = WardKeys.fromText("w");
     const payload = "{\"x\":1}";
-    const ask_box = try sealAsk(a, w.padlock, [_]u8{3} ** 32, zero32, null, zero32, payload, [_]u8{0} ** 64);
+    const ask_box = try sealAsk(a, w.padlock, @as([32]u8, @splat(3)), zero32, null, zero32, payload, @as([64]u8, @splat(0)));
     try testing.expectEqual(payload.len + 160, ask_box.len);
-    const ct = [_]u8{0} ** ct_len;
-    const knock = try sealAsk(a, w.padlock, [_]u8{3} ** 32, zero32, &ct, zero32, payload, [_]u8{0} ** 64);
+    const ct = @as([ct_len]u8, @splat(0));
+    const knock = try sealAsk(a, w.padlock, @as([32]u8, @splat(3)), zero32, &ct, zero32, payload, @as([64]u8, @splat(0)));
     try testing.expectEqual(payload.len + 1248, knock.len);
 }
 
@@ -1253,10 +1253,10 @@ test "the move: vouched keys and edge keys" {
     try testing.expectEqualSlices(u8, &st.edge, &h.offered);
 
     // An ask by the held key announcing K2, written by hand under the offered key.
-    const k2 = keyFrom([_]u8{2} ** 32);
+    const k2 = keyFrom(@as([32]u8, @splat(2)));
     const by = st.key.public_key.toBytes();
     const text = try std.fmt.allocPrint(a, "{{\"to\":\"{x}\",\"by\":\"{x}\",\"next\":\"{x}\",\"seq\":9}}", .{ &heir, &by, &k2.public_key.toBytes() });
-    const lid_secret = [_]u8{5} ** 32;
+    const lid_secret = @as([32]u8, @splat(5));
     const box = try sealAsk(a, door.keys.padlock, lid_secret, heir, null, st.edge, text, sign(st.key, text));
     const reply = (try openReply(a, lid_secret, st.edge, try p.arrive(box), door.keys.sign.public_key.toBytes())).?;
     try expectObject(try readText(a, reply.text), describe_none, null);
@@ -1327,16 +1327,16 @@ test "the zero head" {
     var ent: Entropy = .{ .fixed = true, .state = 1 };
     var door = Door.init(testing.allocator, WardKeys.fromText("z"), .marked);
     defer door.deinit();
-    const k = keyFrom([_]u8{4} ** 32);
+    const k = keyFrom(@as([32]u8, @splat(4)));
     const signer_pk = std.fmt.bytesToHex(k.public_key.toBytes(), .lower);
     const text = try std.fmt.allocPrint(a, " {{ \"seq\" : 1, \"to\":null,\"by\":\"{s}\",\"next\":null,\"method\":\"m\",\"args\":{{\"q\":true}}}} ", .{&signer_pk});
-    const lid_secret = [_]u8{9} ** 32;
+    const lid_secret = @as([32]u8, @splat(9));
     const box = try sealAsk(a, door.keys.padlock, lid_secret, zero32, null, zero32, text, sign(k, text));
     for (0..2) |_| {
         const r = (try openReply(a, lid_secret, zero32, try door.arrive(a, &ent, box), door.keys.sign.public_key.toBytes())).?;
         try expectObject(try readText(a, r.text), "{\"q\":true}", "\"1\"");
     }
-    const other = keyFrom([_]u8{8} ** 32);
+    const other = keyFrom(@as([32]u8, @splat(8)));
     const forged = try sealAsk(a, door.keys.padlock, lid_secret, zero32, null, zero32, text, sign(other, text));
     const r = (try openReply(a, lid_secret, zero32, try door.arrive(a, &ent, forged), door.keys.sign.public_key.toBytes())).?;
     try testing.expectEqualStrings(silence_text, r.text);
@@ -1349,10 +1349,10 @@ test "the size, and strangers' silence of one length" {
     var ent: Entropy = .{ .fixed = true, .state = 3 };
     var door = Door.init(testing.allocator, WardKeys.fromText("s"), .null_);
     defer door.deinit();
-    const k = keyFrom([_]u8{6} ** 32);
+    const k = keyFrom(@as([32]u8, @splat(6)));
     const head = try std.fmt.allocPrint(a, "{{\"to\":null,\"by\":\"{x}\",\"next\":null,\"seq\":1,\"args\":{{\"v\":\"", .{&k.public_key.toBytes()});
     const fill = size_limit - 160 - head.len - 3;
-    const lid_secret = [_]u8{1} ** 32;
+    const lid_secret = @as([32]u8, @splat(1));
     for ([_]usize{ fill, fill + 1 }, 0..) |l, i| {
         const full = try a.alloc(u8, head.len + l + 3);
         @memcpy(full[0..head.len], head);
@@ -1364,7 +1364,7 @@ test "the size, and strangers' silence of one length" {
         if (i == 0) try expectObject(try readText(a, r.text), describe_none, null) else try testing.expectEqualStrings(silence_text, r.text);
     }
     try testing.expectEqual(silence_text.len + 112, (try door.arrive(a, &ent, "abc")).len);
-    try testing.expectEqual(silence_text.len + 112, (try door.arrive(a, &ent, &([_]u8{0} ** 100))).len);
+    try testing.expectEqual(silence_text.len + 112, (try door.arrive(a, &ent, &(@as([100]u8, @splat(0))))).len);
 }
 
 test "reply texts" {

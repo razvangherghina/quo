@@ -147,15 +147,15 @@ pub fn parseAddress(s: []const u8) ?Address {
 
 /// Opens a connection to the first of the host's socket addresses that takes one, or null.
 pub fn dial(a: Allocator, at: Address) !?c.fd_t {
-    const host = try a.dupeZ(u8, at.host);
+    const host = try a.dupeSentinel(u8, at.host, 0);
     defer a.free(host);
     var port_buf: [6]u8 = undefined;
-    const port = std.fmt.bufPrintZ(&port_buf, "{d}", .{at.port}) catch unreachable;
+    const port = std.fmt.bufPrintSentinel(&port_buf, "{d}", .{at.port}, 0) catch unreachable;
     var hints = std.mem.zeroes(c.addrinfo);
     hints.family = c.AF.UNSPEC;
     hints.socktype = c.SOCK.STREAM;
     var res: ?*c.addrinfo = null;
-    if (@intFromEnum(c.getaddrinfo(host, port, &hints, &res)) != 0) return null;
+    if (@backingInt(c.getaddrinfo(host, port, &hints, &res)) != 0) return null;
     const first = res orelse return null;
     defer c.freeaddrinfo(first);
     var it: ?*c.addrinfo = first;
@@ -288,7 +288,7 @@ test "a dialer reaches a listener by its address, and a nothing frame is nothing
     var buf: [32]u8 = undefined;
     const text = try std.fmt.bufPrint(&buf, "tcp://127.0.0.1:{d}", .{l.port});
     const at = parseAddress(text).?;
-    const pk = [_]u8{7} ** 64;
+    const pk = @as([64]u8, @splat(7));
     const got = (try exchange(testing.allocator, at, 1, pk, "box", 2000)).?;
     defer testing.allocator.free(got);
     try testing.expectEqualStrings("\x07box", got);
