@@ -116,7 +116,8 @@ stranger.
 **19.** The invitation is returned on the `invite` answer and nowhere else.
 The minting kit keeps no copy, only the heir pk. The reason is that a door
 reads no route from an invitation. The ward needs nothing of it but the
-name of the heir.
+name of the heir. The kit writes no link and reads none, and it answers no
+reference: the harness hands every invitation whole.
 
 **20.** After a knock that brought no object back, the next ask is a
 recovery ask. It is signed by the announced key, under the knock's edge

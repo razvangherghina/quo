@@ -1,6 +1,6 @@
 name: check
 
-# The verifier's own tests, which replay `vectors/arithmetic.json` and
+# The verifier's own tests, which replay the vectors of `vectors/` and
 # hold the checker to `SPEC.md`, each under five seconds. They need Node and
 # nothing else: there is no build here, no dependency, and no install step.
 

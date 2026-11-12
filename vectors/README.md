@@ -9,9 +9,12 @@ Data the verifier replays, and the seam it speaks through.
   or built on one and saying how. A kit may check itself against it without
   running the verifier; a vector is a convenience and is not the authority.
 
+- `link.json`: links of `LINK.md`, each with what a reader reads of it, and
+  texts that are no link.
+
 The verifier's tests replay every record
-(`verifier/test/arithmetic.test.js`), and
-`vectors/test/vectors.test.js` holds the shape of the file.
+(`verifier/test/arithmetic.test.js` and `verifier/test/link.test.js`), and
+`vectors/test/vectors.test.js` holds the shape of each file.
 
 ```bash
 node --test 'vectors/test/*.test.js'

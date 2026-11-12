@@ -358,10 +358,11 @@ through `at`.
 A vector is one precomputed case a kit checks itself against without
 running the verifier. A vector is a convenience and is not the authority.
 
-`vectors/arithmetic.json` is the one file of vectors. It pins
-the six algorithms, each record taken from the standard that publishes it
-or built on one and saying how. The verifier's own tests replay every
-record.
+`vectors/arithmetic.json` pins the six algorithms, each record taken from
+the standard that publishes it or built on one and saying how.
+`vectors/link.json` holds links of `LINK.md`, each with what a reader reads
+of it, and texts that are no link. The verifier's own tests replay every
+record of both.
 
 ## What no check derives
 
@@ -379,3 +380,7 @@ answers two sent together as it answers two sent apart.
 
 A domain's vouch of `DOMAIN.md`. It is read for a person, and no door
 reads it, so no arrival shows whether a kit read one.
+
+A link of `LINK.md`. Whether a kit writes one or reads one is its own, and
+what answers the zero head is behind the door. `vectors/link.json` is there
+for a kit that reads one.

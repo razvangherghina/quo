@@ -101,7 +101,8 @@ is followed by its reason.
     heir pk and the harness name. An invitation whose lock the library's
     FIPS 203 check refuses is no invitation, and `ask`, `read` or `send` on
     it answers `bad request`. Reason: a door reads no route from an
-    invitation, and the harness is the only holder here.
+    invitation, and the harness is the only holder here. So the kit writes
+    no link and reads none, and it answers no reference.
 20. **Recovering a knock that brought no object back.** The next ask on the
     relation goes under the announced key and the knock's edge key, with no
     ciphertext, and carries the new method and args. If that ask also

@@ -15,6 +15,9 @@ Quo's.
   where TCP cannot go. Published beside the spec, and not part of it.
 - `DOMAIN.md`: how a domain vouches that a ward is its own, with one file
   at `/.well-known/quo`. Published beside the spec, and not part of it.
+- `LINK.md`: how a short link stands for an invitation, and how its holder
+  asks the ward it names for that invitation. Published beside the spec,
+  and not part of it.
 - `IMAGINE.md`: a picture of Quo for a first reading. The spec decides, and
   the picture does not.
 - `TYPES.md`: the same spec read as types, for an exact reading. GraphQL
@@ -27,7 +30,8 @@ Quo's.
   nothing else. A stand program is one executable answering the requests
   of `vectors/HARNESS.md` on stdin and stdout.
 - `vectors/`: `HARNESS.md`, those requests in full, and
-  `arithmetic.json`, the six algorithms against their own standards.
+  `arithmetic.json`, the six algorithms against their own standards,
+  and `link.json`, links of `LINK.md` as a reader reads them.
 - `examples/go`, `examples/zig`, `examples/python`, `examples/javascript`,
   `examples/rust`: kits in several languages, each written cold from these
   documents, each one example among equals. None is a reference. Each

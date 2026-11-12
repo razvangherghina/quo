@@ -107,7 +107,9 @@ answer is the kit's choice, with its reason. Each number is the number
     padlock takes a seal, and refuses anything else as `bad request`. `at`
     is read as question 25 says, and nothing in it refuses an invitation.
     Reason: the harness is the one route here, and a knock on an invitation
-    that cannot bind is better refused before it is sealed.
+    that cannot bind is better refused before it is sealed. The kit writes
+    no link and reads none, and it answers no reference, since the harness
+    hands every invitation whole.
 20. **A knock that brought no object back.** After nothing, the knock is
     sent again as the same bytes. After silence, a word or a reply that did
     not open, the standing asks under the key the knock announced and the

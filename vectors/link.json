@@ -1,0 +1,248 @@
+{
+  "corpus": "quo",
+  "area": "link",
+  "note": "Links of LINK.md, each with what a reader reads of it. `text` is the link as written. `link` is null where the text is no link. Otherwise it holds the reference, the ward, and `at`: the decoded value of every address field that is not skipped, in the order written, before any of them is read as an address. A value that is no address a reader stands is still listed here, since which addresses a reader stands is its own.",
+  "links": [
+    {
+      "name": "a link with no query carries no address",
+      "text": "web+quo:abcdefghijklmnopqrstuvwx27@1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1fa0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0",
+      "link": {
+        "reference": "abcdefghijklmnopqrstuvwx27",
+        "ward": "1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1fa0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0",
+        "at": []
+      }
+    },
+    {
+      "name": "one address",
+      "text": "web+quo:abcdefghijklmnopqrstuvwx27@1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1fa0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0?at=wss%3A%2F%2Fexample.com%2Fquo",
+      "link": {
+        "reference": "abcdefghijklmnopqrstuvwx27",
+        "ward": "1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1fa0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0",
+        "at": ["wss://example.com/quo"]
+      }
+    },
+    {
+      "name": "two addresses, in the order written",
+      "text": "web+quo:abcdefghijklmnopqrstuvwx27@1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1fa0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0?at=tcp%3A%2F%2Fexample.com%3A9110&at=https%3A%2F%2Fexample.com%2Fquo",
+      "link": {
+        "reference": "abcdefghijklmnopqrstuvwx27",
+        "ward": "1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1fa0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0",
+        "at": ["tcp://example.com:9110", "https://example.com/quo"]
+      }
+    },
+    {
+      "name": "the scheme is read without regard to case",
+      "text": "WEB+Quo:abcdefghijklmnopqrstuvwx27@1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1fa0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0",
+      "link": {
+        "reference": "abcdefghijklmnopqrstuvwx27",
+        "ward": "1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1fa0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0",
+        "at": []
+      }
+    },
+    {
+      "name": "a field that is no address field is skipped, an empty one included",
+      "text": "web+quo:abcdefghijklmnopqrstuvwx27@1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1fa0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0?v=1&at=tcp%3A%2F%2Fexample.com%3A9110&x&&",
+      "link": {
+        "reference": "abcdefghijklmnopqrstuvwx27",
+        "ward": "1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1fa0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0",
+        "at": ["tcp://example.com:9110"]
+      }
+    },
+    {
+      "name": "an empty query",
+      "text": "web+quo:abcdefghijklmnopqrstuvwx27@1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1fa0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0?",
+      "link": {
+        "reference": "abcdefghijklmnopqrstuvwx27",
+        "ward": "1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1fa0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0",
+        "at": []
+      }
+    },
+    {
+      "name": "a field's name is read as written: AT is no address field",
+      "text": "web+quo:abcdefghijklmnopqrstuvwx27@1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1fa0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0?AT=tcp%3A%2F%2Fexample.com%3A9110",
+      "link": {
+        "reference": "abcdefghijklmnopqrstuvwx27",
+        "ward": "1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1fa0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0",
+        "at": []
+      }
+    },
+    {
+      "name": "hexadecimal digits of either case decode",
+      "text": "web+quo:abcdefghijklmnopqrstuvwx27@1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1fa0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0?at=tcp%3a%2f%2Fexample.com%3A9110",
+      "link": {
+        "reference": "abcdefghijklmnopqrstuvwx27",
+        "ward": "1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1fa0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0",
+        "at": ["tcp://example.com:9110"]
+      }
+    },
+    {
+      "name": "a character written plain is read as written",
+      "text": "web+quo:abcdefghijklmnopqrstuvwx27@1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1fa0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0?at=tcp://example.com:9110",
+      "link": {
+        "reference": "abcdefghijklmnopqrstuvwx27",
+        "ward": "1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1fa0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0",
+        "at": ["tcp://example.com:9110"]
+      }
+    },
+    {
+      "name": "a + is a +, and a = inside a value is part of it",
+      "text": "web+quo:abcdefghijklmnopqrstuvwx27@1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1fa0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0?at=a+b=c",
+      "link": {
+        "reference": "abcdefghijklmnopqrstuvwx27",
+        "ward": "1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1fa0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0",
+        "at": ["a+b=c"]
+      }
+    },
+    {
+      "name": "a second ? is part of the query",
+      "text": "web+quo:abcdefghijklmnopqrstuvwx27@1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1fa0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0?at=https%3A%2F%2Fexample.com%2Fquo?x",
+      "link": {
+        "reference": "abcdefghijklmnopqrstuvwx27",
+        "ward": "1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1fa0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0",
+        "at": ["https://example.com/quo?x"]
+      }
+    },
+    {
+      "name": "a value with a % that two hexadecimal digits do not follow is skipped",
+      "text": "web+quo:abcdefghijklmnopqrstuvwx27@1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1fa0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0?at=tcp%3A%2F%2Fexample.com%3A9110%zz&at=tcp%3A%2F%2Fexample.com%3A9111&at=%2",
+      "link": {
+        "reference": "abcdefghijklmnopqrstuvwx27",
+        "ward": "1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1fa0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0",
+        "at": ["tcp://example.com:9111"]
+      }
+    },
+    {
+      "name": "a value whose decoded bytes are not UTF-8 is skipped",
+      "text": "web+quo:abcdefghijklmnopqrstuvwx27@1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1fa0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0?at=%ff&at=%C3%A9",
+      "link": {
+        "reference": "abcdefghijklmnopqrstuvwx27",
+        "ward": "1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1fa0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0",
+        "at": ["é"]
+      }
+    },
+    {
+      "name": "a value that decodes to nothing is a value, and no address",
+      "text": "web+quo:abcdefghijklmnopqrstuvwx27@1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1fa0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0?at=",
+      "link": {
+        "reference": "abcdefghijklmnopqrstuvwx27",
+        "ward": "1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1fa0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0",
+        "at": [""]
+      }
+    },
+    {
+      "name": "a value written twice is read twice",
+      "text": "web+quo:abcdefghijklmnopqrstuvwx27@1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1fa0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0?at=tcp%3A%2F%2Fexample.com%3A9110&at=tcp%3A%2F%2Fexample.com%3A9110",
+      "link": {
+        "reference": "abcdefghijklmnopqrstuvwx27",
+        "ward": "1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1fa0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0",
+        "at": ["tcp://example.com:9110", "tcp://example.com:9110"]
+      }
+    },
+    {
+      "name": "a space and a letter outside ASCII, written plain, are read as written",
+      "text": "web+quo:abcdefghijklmnopqrstuvwx27@1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1fa0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0?at=a bé",
+      "link": {
+        "reference": "abcdefghijklmnopqrstuvwx27",
+        "ward": "1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1fa0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0",
+        "at": ["a bé"]
+      }
+    },
+    {
+      "name": "a decoded byte order mark is part of the value",
+      "text": "web+quo:abcdefghijklmnopqrstuvwx27@1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1fa0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0?at=%EF%BB%BFtcp%3A%2F%2Fexample.com%3A9110",
+      "link": {
+        "reference": "abcdefghijklmnopqrstuvwx27",
+        "ward": "1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1fa0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0",
+        "at": ["﻿tcp://example.com:9110"]
+      }
+    },
+    {
+      "name": "nothing in the reference is decoded: a % there is no link",
+      "text": "web+quo:%61bc@1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1fa0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0",
+      "link": null
+    },
+    {
+      "name": "a reference of one character",
+      "text": "web+quo:7@1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1fa0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0",
+      "link": {
+        "reference": "7",
+        "ward": "1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1fa0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0",
+        "at": []
+      }
+    },
+    {
+      "name": "a reference of sixty-four characters",
+      "text": "web+quo:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa@1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1fa0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0",
+      "link": {
+        "reference": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "ward": "1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1fa0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0",
+        "at": []
+      }
+    },
+    {
+      "name": "a reference of sixty-five characters is no link",
+      "text": "web+quo:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa@1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1fa0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0",
+      "link": null
+    },
+    {
+      "name": "an empty reference is no link",
+      "text": "web+quo:@1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1fa0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0",
+      "link": null
+    },
+    {
+      "name": "a capital in the reference is no link",
+      "text": "web+quo:ABCDEFGHIJKLMNOPQRSTUVWX27@1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1fa0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0",
+      "link": null
+    },
+    {
+      "name": "a reference with any other character is no link",
+      "text": "web+quo:abc-def@1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1fa0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0",
+      "link": null
+    },
+    {
+      "name": "a ward of 126 hex is no link",
+      "text": "web+quo:abcdefghijklmnopqrstuvwx27@1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1fa0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0",
+      "link": null
+    },
+    {
+      "name": "a ward of 130 hex is no link",
+      "text": "web+quo:abcdefghijklmnopqrstuvwx27@1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1fa0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a000",
+      "link": null
+    },
+    {
+      "name": "a ward in capitals is not hex, and no link",
+      "text": "web+quo:abcdefghijklmnopqrstuvwx27@1F1F1F1F1F1F1F1F1F1F1F1F1F1F1F1F1F1F1F1F1F1F1F1F1F1F1F1F1F1F1F1FA0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0",
+      "link": null
+    },
+    {
+      "name": "no ward is no link",
+      "text": "web+quo:abcdefghijklmnopqrstuvwx27",
+      "link": null
+    },
+    {
+      "name": "a text that holds a # is no link",
+      "text": "web+quo:abcdefghijklmnopqrstuvwx27@1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1fa0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0?at=tcp%3A%2F%2Fexample.com%3A9110#x",
+      "link": null
+    },
+    {
+      "name": "a # with no query is no link",
+      "text": "web+quo:abcdefghijklmnopqrstuvwx27@1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1fa0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0#",
+      "link": null
+    },
+    {
+      "name": "an authority is no link",
+      "text": "web+quo://abcdefghijklmnopqrstuvwx27@1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1fa0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0",
+      "link": null
+    },
+    {
+      "name": "another scheme is no link",
+      "text": "quo:abcdefghijklmnopqrstuvwx27@1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1fa0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0",
+      "link": null
+    },
+    {
+      "name": "text after the ward that opens no query is no link",
+      "text": "web+quo:abcdefghijklmnopqrstuvwx27@1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1fa0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0&at=tcp%3A%2F%2Fexample.com%3A9110",
+      "link": null
+    }
+  ]
+}

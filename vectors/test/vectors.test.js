@@ -38,3 +38,18 @@ test('The ward key. The seam document names the six requests a kit answers', () 
   for (const op of ['ward', 'invite', 'release', 'arrive', 'ask', 'read'])
     assert.ok(harness.includes(`op: "${op}"`), op);
 });
+
+test('Question 19. The links are one object of records, each named, none twice, each a text with a link or none', () => {
+  const { links, corpus, area, note } = JSON.parse(read('link.json'));
+  assert.equal(links.length, 33);
+  assert.equal(new Set(links.map((l) => l.name)).size, links.length, 'a name stands twice');
+  for (const field of [corpus, area, note]) assert.equal(typeof field, 'string');
+  for (const { name, text, link } of links) {
+    assert.equal(typeof name, 'string');
+    assert.equal(typeof text, 'string');
+    if (link === null) continue;
+    assert.deepEqual(Object.keys(link), ['reference', 'ward', 'at'], name);
+    assert.match(link.ward, /^[0-9a-f]{128}$/, name);
+    for (const value of link.at) assert.equal(typeof value, 'string', name);
+  }
+});

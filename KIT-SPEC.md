@@ -81,7 +81,11 @@ of `SPEC.md`.
 ## What a kit asks
 
 - **Question 19. How does an invitation reach its holder, and does the
-  minting kit keep a copy?** A door reads no route from an invitation.
+  minting kit keep a copy? Does the kit write a link, and does it read
+  one? Whom does it answer a reference, how long and how often?** A door
+  reads no route from an invitation. `LINK.md` says how a link stands for
+  an invitation and how its holder redeems it, and a door reads none of
+  it.
 - **Question 20. How does a standing recover a knock that brought no object
   back?** It may ask under its own key and the knock's edge key, or send the
   knock again as the same bytes. Which first, how often, and how long

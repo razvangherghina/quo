@@ -22,6 +22,7 @@ answering the requests of `../vectors/HARNESS.md` on stdin and stdout.
 | `web.js`, `websocket.js` | the post and the held line, and RFC 6455 |
 | `frame.js`, `address.js` | the frames of the line, and the addresses of a carrier |
 | `value.js` | the values, payloads and replies of the spec |
+| `link.js` | a link of `../LINK.md`, read |
 | `primitives.js`, `mlkem.js` | the six algorithms, written out |
 
 ## Tests
@@ -36,7 +37,8 @@ JavaScript kit's stand program: `verify.test.js`, `carried.test.js` and
 
 One file of tests stands beside each file above that a test can reach, and
 `mlkem.js` is reached through `primitives.test.js` and the vectors' own: the
-algorithms replay every record of `../vectors/arithmetic.json`, and
+algorithms replay every record of `../vectors/arithmetic.json`, the links
+every record of `../vectors/link.json`, and
 `test/verify.test.js` holds the proof that the verifier can fail, a kit
 wrong on purpose (`test/bad-stand.js`) failed where it is wrong and the same kit
 passed where it is not.

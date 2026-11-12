@@ -116,7 +116,7 @@ stderr.
 
 ## What a kit asks
 
-**Question 19. How does an invitation reach its holder, and does the minting kit keep a copy?**
+**Question 19. How does an invitation reach its holder, and does the minting kit keep a copy? Does the kit write a link, and does it read one? Whom does it answer a reference, how long and how often?**
 The `invite` answer carries it, and the harness takes it from there. The
 minting door keeps no copy: it keeps the heir pk and the name only. The
 asking side keeps what it needs in its `Standing`, keyed by the
@@ -128,7 +128,9 @@ lock to 2368 lowercase hex and to the modulus check of FIPS 203 section
 A lock that check refuses is no invitation, and the kit answers `bad
 request` to the `ask` or `send` that hands it one. A padlock of small order
 takes no seal, so the `ask` or `send` that would seal to it answers `bad
-request` too.
+request` too. The kit writes no link and reads none, and it answers no
+reference: the harness hands every invitation whole, so nothing here needs
+a short one.
 
 **Question 20. How does a standing recover a knock that brought no object back?**
 It alternates. After the knock, the next ask is sealed under the standing's
