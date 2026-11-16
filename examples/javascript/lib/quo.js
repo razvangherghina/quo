@@ -11,6 +11,7 @@ import {
   agree,
   open,
   verify,
+  sign,
   draw,
   makeLock,
   lockPub,
@@ -29,10 +30,11 @@ import {
   follow,
   CT_LEN,
 } from './box.js';
-import { utf8, parse, compact } from './json.js';
+import { utf8, parse, compact, toJS } from './json.js';
 
 const MAX_COUNT = 2n ** 53n - 1n;
 const SILENCE = Buffer.from('{"silence":true}');
+const INVITATION = Buffer.from('quo-invitation', 'ascii');
 const WORDS = ['removed', 'unannounced', 'repeated'];
 const isPk = (s) => isHex(s, 64) && !/^0{64}$/.test(s);
 const isCount = (t) => /^[1-9]\d{0,15}$/.test(t) && BigInt(t) <= MAX_COUNT;
@@ -50,15 +52,46 @@ export function wardKeys(seed) {
   return { signer, sealer, pk: hex(signer.pub) + hex(sealer.pub) };
 }
 
-// An invitation read from a plain object. Returns null when it is no invitation.
-export function readInvitation(o) {
-  const { ward, heir, secret, lock } = o;
+// The bytes an invitation's `sig` covers: `quo-invitation`, then the invitation text.
+const invitationSigned = (bytes) => Buffer.concat([INVITATION, bytes]);
+
+// An invitation read from its JSON text: the fields of its signed text, or null when it is
+// no invitation.
+export function readInvitation(json) {
+  let outer;
+  let node;
+  try {
+    outer = parse(json);
+  } catch {
+    return null;
+  }
+  // Its text and its sig, and no field beside them.
+  if (outer.t !== 'object' || outer.fields.size !== 2) return null;
+  const text = outer.fields.get('text');
+  const sig = outer.fields.get('sig');
+  if (text?.t !== 'string' || sig?.t !== 'string' || !isHex(sig.v, 128)) return null;
+  // A text that denotes a lone surrogate has no UTF-8 bytes.
+  if (!text.v.isWellFormed()) return null;
+  try {
+    node = parse(text.v);
+  } catch {
+    return null;
+  }
+  if (node.t !== 'object') return null;
+  const f = node.fields;
+  const [ward, heir, secret, lock] = ['ward', 'heir', 'secret', 'lock'].map((k) =>
+    f.get(k)?.t === 'string' ? f.get(k).v : undefined,
+  );
   if (!isHex(ward, 128) || !isHex(heir, 64) || !isHex(secret, 64) || !isHex(lock, 2368))
     return null;
+  const signed = invitationSigned(Buffer.from(text.v, 'utf8'));
+  if (!verify(fromHex(ward.slice(0, 64)), signed, fromHex(sig.v))) return null;
   if (!lockOk(fromHex(lock))) return null;
-  // An `at` that is not an array is read as absent; its entries are judged when dialed.
-  return Array.isArray(o.at)
-    ? { ward, heir, secret, lock, at: o.at }
+  // A field beside the five is ignored. An `at` that is not an array is read as absent;
+  // its entries are judged when dialed.
+  const at = f.get('at');
+  return at?.t === 'array'
+    ? { ward, heir, secret, lock, at: at.items.map(toJS) }
     : { ward, heir, secret, lock };
 }
 
@@ -138,14 +171,17 @@ export class Ward {
     this.standings = new Map();
   }
 
-  // Makes a heir and gives its invitation. The ward keeps the heir pk, not the secret.
-  // `at` is the addresses the ward is reached at, the preferred first; none writes no `at`.
-  invite(reach = reaches.echo, at = []) {
+  // Makes a heir and gives its invitation, signed by this ward. The ward keeps the heir pk,
+  // not the secret. `at`, when given, is written in the invitation text as given: the
+  // addresses the ward is reached at, the preferred first.
+  invite(reach = reaches.echo, at = undefined) {
     const heir = edSecret(draw(32));
     const heirHex = hex(heir.pub);
     this.heirs.set(heirHex, { fresh: true, reach });
-    const inv = { ward: this.pk, heir: heirHex, secret: hex(heir.seed), lock: this.lockHex };
-    return at.length ? { ...inv, at: [...at] } : inv;
+    const five = { ward: this.pk, heir: heirHex, secret: hex(heir.seed), lock: this.lockHex };
+    const text = JSON.stringify(at === undefined ? five : { ...five, at });
+    const sig = hex(sign(this.signer, invitationSigned(Buffer.from(text, 'utf8'))));
+    return { heir: heirHex, invitation: { text, sig } };
   }
 
   release(heirHex) {

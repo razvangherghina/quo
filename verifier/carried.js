@@ -781,7 +781,7 @@ class Dial {
     s.v.frames++;
     c(
       `the ask ${f.line.post ? 'post' : 'frame'} carries the far ward's pk`,
-      f.pk.equals(unhex(rel.inv.ward)),
+      f.pk.equals(unhex(rel.fields.ward)),
       `it carries ${hex(f.pk).slice(0, 24)}...`,
     );
     this.pending = { send, f };
@@ -1058,7 +1058,6 @@ function openHead(ward, box) {
   return aesOpen(hkdf(x25519(ward.scalar, lid), 'quo-seal', 44), lid, box.subarray(32, 80));
 }
 
-const invOf = (h) => ({ ward: h.ward.pk, heir: h.pkHex, secret: hex(h.secret), lock: hex(h.ek) });
 const object = (args) => ({ object: args, seen: null });
 
 /** One scheme both programs stand: the verifier's proxy, and its line to the first program's listener. */
@@ -1183,7 +1182,7 @@ class Pass {
     )
       throw new Abort('the second program takes no route');
     const h = await this.sA.invite(wA, "the second program's", 'echo');
-    return { wA, rel: { inv: invOf(h), heir: h, fresh: true } };
+    return { wA, rel: { inv: h.inv, heir: h, fresh: true } };
   }
 
   async plain() {
@@ -1252,7 +1251,7 @@ class Pass {
     await this.straight(`${p}: the ask after a reply never delivered`, rel);
 
     const h2 = await this.sA.invite(wA, 'knocked twice', 'echo');
-    const rel2 = { inv: invOf(h2), heir: h2, fresh: true };
+    const rel2 = { inv: h2.inv, heir: h2, fresh: true };
     label = `${p}: a knock delivered twice`;
     x = await this.catchSend(label, rel2);
     await this.forward(label, x.f);
@@ -1273,8 +1272,8 @@ class Pass {
   async throughAt() {
     const label = `${this.p}, at`;
     const wA = await this.sA.ward(`${this.p}, the door through at`);
-    const h = await this.sA.invite(wA, 'reached through at', 'echo');
-    const rel = { inv: { ...invOf(h), at: [this.proxy.at] }, heir: h, fresh: true };
+    const h = await this.sA.invite(wA, 'reached through at', 'echo', [this.proxy.at]);
+    const rel = { inv: h.inv, heir: h, fresh: true };
     const x = await this.catchSend(`${label}: a knock with no route`, rel, true);
     if (!x) {
       this.c(

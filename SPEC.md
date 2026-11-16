@@ -136,9 +136,9 @@ Every rule here is about the JSON text. No rule here is about what a
 language parses that text into. A text that breaks a rule is not a value.
 
 Whitespace that RFC 8259 allows, between tokens and around the value, is
-read wherever JSON text is read: a payload, a reply text, an invitation. A
-writer may pad what it seals with such whitespace. The signature covers the
-padding as it covers every byte.
+read wherever JSON text is read: a payload, a reply text, an invitation,
+an invitation text. A writer may pad what it seals or signs with such
+whitespace. The signature covers the padding as it covers every byte.
 
 Bytes that are not UTF-8 are no JSON text. They are never mended into JSON
 text. A byte order mark is not whitespace, and bytes that begin with one
@@ -148,12 +148,12 @@ A number is any number the grammar of RFC 8259 allows. Its text is carried
 as written. Quo reads no number but a count number. `-0`, `1e400` and
 `9007199254740993` are values.
 
-A payload, a reply text and an invitation have no duplicate keys among
-their own keys. Two keys are one name when the strings they denote are
-equal after escapes are read, compared code unit by code unit as RFC 8259
-section 8.3 compares them. An escaped lone surrogate is one code unit like
-any other. A key written as the letter `a`, and a key written as the
-six-character escape for that letter, are one name.
+A payload, a reply text, an invitation and an invitation text have no duplicate
+keys among their own keys. Two keys are one name when the strings they denote
+are equal after escapes are read, compared code unit by code unit as RFC 8259
+section 8.3 compares them. An escaped lone surrogate is one code unit like any
+other. A key written as the letter `a`, and a key written as the six-character
+escape for that letter, are one name.
 
 Quo reads nothing inside `args`, nothing inside `object` but what the
 chapter on what may be asked names, nothing of `method` but that it is a
@@ -169,11 +169,25 @@ keys move as on any choice.
 An invitation is a value of this shape:
 
 ```
-invitation = { ward, heir, secret, lock, at? }
+invitation      = { text, sig }
+invitation text = JSON { ward, heir, secret, lock, at? }
 ```
 
-`ward` is 128 hex, a ward pk. `heir` is 64 hex, an heir pk. `secret` is 64
-hex, the heir secret. `lock` is 2368 hex, the lock's encapsulation key.
+`text` is a string. The UTF-8 bytes of the string it denotes, its escapes
+read, are the invitation text. A `text` that denotes a lone surrogate has
+no UTF-8 bytes and is no invitation.
+
+`sig` is 128 hex, a signature. It is by the signing key of the ward the
+invitation text names, over the fourteen bytes `quo-invitation`, then the
+invitation text. It is checked as the chapter on the signature checks
+every signature, against the invitation text as `text` denotes it.
+
+An invitation whose signature fails is no invitation. A field beside
+`text` and `sig` makes no invitation.
+
+The invitation text is a value, and one object. `ward` is 128 hex, a ward
+pk. `heir` is 64 hex, an heir pk. `secret` is 64 hex, the heir secret.
+`lock` is 2368 hex, the lock's encapsulation key.
 
 An invitation goes anywhere. A door reads no route from it.
 
@@ -191,8 +205,9 @@ invitation no invitation.
 
 An address that reaches no door of that ward is not delivered.
 
-Nothing else is read from an invitation. A field beside the five is
-ignored, and an invitation with one is still an invitation.
+Nothing else is read from an invitation text. A field beside the five is
+ignored, and an invitation whose text has one is still an invitation. The
+signature covers it as it covers every byte.
 
 A shape other than this one is no invitation. A ward pk alone with a secret
 or a lock is no invitation. An heir with no secret is no invitation. A secret
@@ -313,6 +328,10 @@ bytes of the lid the reply is sealed to, then the reply text. The lid is
 signed and is not in the reply's body. The lid a reply is sealed to is the
 lid whose secret opens it. A reader checks the signature over the lid of
 its own ask.
+
+The signature of an invitation is its `sig`, as the chapter on the
+invitation says. The bytes it covers are the invitation text as `text`
+carries it, and they are the bytes received.
 
 On every head the signature is checked under the key `by` names.
 

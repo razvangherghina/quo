@@ -132,28 +132,42 @@ pub struct Invitation {
     pub lock: Vec<u8>,
     /// The strings of `at`, in order. Which of them this kit dials is the carrier's to say.
     pub at: Vec<String>,
+    /// The invitation text, as signed.
+    pub text: String,
+    pub sig: [u8; 64],
+}
+
+/// The bytes an invitation's `sig` covers: `quo-invitation`, then the invitation text.
+fn invitation_signed(text: &str) -> Vec<u8> {
+    [b"quo-invitation", text.as_bytes()].concat()
 }
 
 impl Invitation {
+    /// The invitation: its text as a string, and its signature.
     pub fn to_json(&self) -> String {
-        let at = if self.at.is_empty() {
-            String::new()
-        } else {
-            let a: Vec<String> = self.at.iter().map(|s| json::quote(s)).collect();
-            format!(",\"at\":[{}]", a.join(","))
-        };
-        format!(
-            "{{\"ward\":\"{}\",\"heir\":\"{}\",\"secret\":\"{}\",\"lock\":\"{}\"{at}}}",
-            hex(&self.ward),
-            hex(&self.heir),
-            hex(&self.secret),
-            hex(&self.lock)
-        )
+        format!("{{\"text\":{},\"sig\":\"{}\"}}", json::quote(&self.text), hex(&self.sig))
     }
 
-    /// Read an invitation from a JSON text. Fields beside the five are ignored.
+    /// Read an invitation: `text` and `sig` and no other field, the `sig` the
+    /// signature of the ward the text names over `quo-invitation` then the text.
+    pub fn from_json(v: &[u8]) -> Option<Invitation> {
+        let n = json::object(v)?;
+        if !n.has_only(&["text", "sig"]) {
+            return None;
+        }
+        // A text that denotes a lone surrogate has no UTF-8 bytes, and is no string here.
+        let text = n.get("text")?.as_str()?;
+        let sig = unhex(&n.get("sig")?.as_str()?, Some(64))?;
+        let mut s = [0u8; 64];
+        s.copy_from_slice(&sig);
+        let inv = Invitation::from_text(text, s)?;
+        ed_verify(&inv.sign_pk(), &invitation_signed(&inv.text), &inv.sig).then_some(inv)
+    }
+
+    /// Read an invitation text. Fields beside the five are ignored.
     /// An `at` that is not an array is absent, and an element that is not a string is skipped.
-    pub fn from_text(t: &[u8]) -> Option<Invitation> {
+    fn from_text(text: String, sig: [u8; 64]) -> Option<Invitation> {
+        let t = text.as_bytes();
         let n = json::object(t)?;
         let f = |k: &str, len: usize| -> Option<Vec<u8>> { unhex(&n.get(k)?.as_str()?, Some(len)) };
         let ward = f("ward", 64)?;
@@ -163,7 +177,7 @@ impl Invitation {
         let mut w = [0u8; 64];
         w.copy_from_slice(&ward);
         let at = at_of(n.get("at"), t).unwrap_or_default();
-        Some(Invitation { ward: w, heir: arr32(&heir), secret: arr32(&secret), lock, at })
+        Some(Invitation { ward: w, heir: arr32(&heir), secret: arr32(&secret), lock, at, text, sig })
     }
 
     pub fn sign_pk(&self) -> [u8; 32] {
@@ -205,14 +219,24 @@ impl Door {
         self.names.contains_key(name)
     }
 
-    /// Make a heir under `name` and give its invitation. The ward keeps the heir pk
-    /// and not the secret. `at` is written in the invitation as given.
-    pub fn invite(&mut self, name: &str, reach: Reach, at: Vec<String>) -> Invitation {
+    /// Make a heir under `name` and give its invitation, signed. The ward keeps the
+    /// heir pk and not the secret. `at`, the JSON text of an array, is written in the
+    /// invitation text as given.
+    pub fn invite(&mut self, name: &str, reach: Reach, at: Option<&str>) -> Invitation {
         let secret = draw::<32>();
         let pk = ed_pub(&secret);
         self.heirs.insert(pk, Heir { state: HeirState::Fresh, reach });
         self.names.insert(name.to_string(), pk);
-        Invitation { ward: self.key.pk_bytes(), heir: pk, secret, lock: self.lock.ek.clone(), at }
+        let at = at.map(|a| format!(",\"at\":{a}")).unwrap_or_default();
+        let text = format!(
+            "{{\"ward\":\"{}\",\"heir\":\"{}\",\"secret\":\"{}\",\"lock\":\"{}\"{at}}}",
+            self.key.pk_hex(),
+            hex(&pk),
+            hex(&secret),
+            hex(&self.lock.ek)
+        );
+        let sig = ed_sign(&self.key.sign_secret, &invitation_signed(&text));
+        Invitation::from_text(text, sig).expect("the ward writes an invitation text")
     }
 
     /// Stop holding the heir named `name`. A spent heir's keys are kept at removal.
@@ -703,7 +727,7 @@ mod tests {
     }
 
     fn pair(d: &mut Door, name: &str, reach: Reach) -> Standing {
-        Standing::new(d.invite(name, reach, vec![]))
+        Standing::new(d.invite(name, reach, None))
     }
 
     fn roundtrip(d: &mut Door, s: &mut Standing, method: Option<&str>, args: Option<&str>) -> Read {
@@ -832,27 +856,71 @@ mod tests {
         }
     }
 
+    /// An invitation whose text is `text`, signed by `d`'s ward.
+    fn signed_by(d: &Door, text: &str) -> String {
+        let sig = ed_sign(&d.key.sign_secret, &invitation_signed(text));
+        format!("{{\"text\":{},\"sig\":\"{}\"}}", json::quote(text), hex(&sig))
+    }
+
+    /// The text of `inv` with `field` laid in before its closing brace.
+    fn with_field(inv: &Invitation, field: &str) -> String {
+        format!("{},{field}}}", &inv.text[..inv.text.len() - 1])
+    }
+
+    #[test]
+    fn an_invitation_is_signed_by_its_ward() {
+        let mut d = door(None);
+        let inv = d.invite("a", Reach::Echo, None);
+        let read = Invitation::from_json(inv.to_json().as_bytes()).unwrap();
+        assert_eq!((read.text, read.heir), (inv.text.clone(), inv.heir));
+        assert!(ed_verify(&d.key.sign_pk, &[&b"quo-invitation"[..], inv.text.as_bytes()].concat(), &inv.sig));
+
+        let other = Door::new(&seed_from_text("other"), None);
+        let sig = hex(&inv.sig);
+        let five = inv.text.clone();
+        for bad in [
+            five.clone(),
+            format!("{{\"text\":{}}}", json::quote(&five)),
+            format!("{{\"text\":{},\"sig\":\"{}\"}}", json::quote(&with_field(&inv, "\"says\":1")), sig),
+            signed_by(&other, &five),
+            format!("{{\"text\":{},\"sig\":\"{}\"}}", json::quote(&five), hex(&ed_sign(&d.key.sign_secret, five.as_bytes()))),
+            format!("{{\"text\":{},\"sig\":\"{}\"}}", json::quote(&five), sig.to_uppercase()),
+            format!("{{\"text\":{},\"sig\":\"{}\",\"at\":[]}}", json::quote(&five), sig),
+            format!("{{\"text\":{},\"text\":{},\"sig\":\"{}\"}}", json::quote(&five), json::quote(&five), sig),
+            format!("{{\"text\":{five},\"sig\":\"{sig}\"}}"),
+            signed_by(&d, &format!("{five},")),
+            signed_by(&d, &format!("{{\"ward\":\"{}\",{}", d.key.pk_hex(), &five[1..])),
+            signed_by(&d, &format!("[{five}]")),
+            signed_by(&d, &format!("\u{feff}{five}")),
+            format!("{{\"text\":{},\"sig\":\"{}\"}}", json::quote(&with_field(&inv, "\"x\":\"LONE\"")).replace("LONE", "\\ud800"), sig),
+        ] {
+            assert!(Invitation::from_json(bad.as_bytes()).is_none(), "{bad}");
+        }
+        for good in [signed_by(&d, &with_field(&inv, "\"says\":\"John\"")), signed_by(&d, &format!(" \n{five}\t "))] {
+            assert!(Invitation::from_json(good.as_bytes()).is_some(), "{good}");
+        }
+    }
+
     #[test]
     fn a_lock_the_check_refuses_is_no_invitation() {
         let mut d = door(None);
-        let inv = d.invite("a", Reach::Echo, vec![]);
-        assert!(Invitation::from_text(inv.to_json().as_bytes()).is_some());
+        let inv = d.invite("a", Reach::Echo, None);
         let mut bad = inv.lock.clone();
         bad[0] = 0xff;
         bad[1] |= 0x0f;
-        let t = Invitation { lock: bad, ..inv }.to_json();
-        assert!(Invitation::from_text(t.as_bytes()).is_none());
+        let t = inv.text.replace(&hex(&inv.lock), &hex(&bad));
+        assert!(Invitation::from_json(signed_by(&d, &t).as_bytes()).is_none());
     }
 
     #[test]
     fn at_is_written_and_read() {
         let mut d = door(None);
-        let inv = d.invite("a", Reach::Echo, vec!["tcp://127.0.0.1:9".into(), "x\"y".into()]);
-        let read = Invitation::from_text(inv.to_json().as_bytes()).unwrap();
-        assert_eq!(read.at, inv.at);
-        assert!(!d.invite("b", Reach::Echo, vec![]).to_json().contains("\"at\""));
-        let base = inv.to_json();
-        let with = |at: &str| format!("{},\"at\":{at}}}", &base[..base.find(",\"at\"").unwrap()]);
+        let inv = d.invite("a", Reach::Echo, Some(r#"["tcp://127.0.0.1:9","x\"y"]"#));
+        let read = Invitation::from_json(inv.to_json().as_bytes()).unwrap();
+        assert_eq!(read.at, vec!["tcp://127.0.0.1:9", "x\"y"]);
+        assert_eq!(d.invite("e", Reach::Echo, Some("[]")).text.matches("\"at\":[]").count(), 1);
+        let bare = d.invite("b", Reach::Echo, None);
+        assert!(!bare.text.contains("\"at\""));
         for (at, want) in [
             ("\"tcp://h:1\"", vec![]),
             ("{}", vec![]),
@@ -860,7 +928,8 @@ mod tests {
             ("[]", vec![]),
             ("[1, null, \"tcp://h:1\", [\"q\"], \"not a uri\"]", vec!["tcp://h:1", "not a uri"]),
         ] {
-            let got = Invitation::from_text(with(at).as_bytes()).expect("still an invitation").at;
+            let t = signed_by(&d, &with_field(&bare, &format!("\"at\":{at}")));
+            let got = Invitation::from_json(t.as_bytes()).expect("still an invitation").at;
             assert_eq!(got, want, "{at}");
         }
     }
@@ -1083,7 +1152,7 @@ mod tests {
     #[test]
     fn unannounced_knock() {
         let mut d = door(None);
-        let inv = d.invite("a", Reach::Echo, vec![]);
+        let inv = d.invite("a", Reach::Echo, None);
         let (ct, ss) = encapsulate(&inv.lock).unwrap();
         let e = hkdf32(&ss, "quo-lock");
         let payload = format!("{{\"to\":\"{h}\",\"by\":\"{h}\",\"next\":\"{h}\",\"seq\":7}}", h = hex(&inv.heir));

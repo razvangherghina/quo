@@ -148,7 +148,8 @@ void test("part two: every scheme, and the invitation's at", async () => {
   assert.equal((await door.req({ op: 'listen', scheme: 'https' })).error, 'bad request');
   assert.equal((await door.req({ op: 'listen', scheme: 1 })).error, 'bad request');
   const plain = (await door.req({ op: 'invite', ward: w, heir: 'plain' })).invitation;
-  assert.equal(plain.at, undefined);
+  assert.deepEqual(Object.keys(plain), ['text', 'sig']);
+  assert.equal(JSON.parse(plain.text).at, undefined);
   const tcp = (await door.req({ op: 'listen' })).at;
   const http = (await door.req({ op: 'listen', scheme: 'http' })).at;
   const ws = (await door.req({ op: 'listen', scheme: 'ws' })).at;
@@ -161,10 +162,17 @@ void test("part two: every scheme, and the invitation's at", async () => {
     assert.equal((await asker.req({ op: 'route', far: w, at: bad })).error, 'bad request', bad);
   }
 
-  // Every invitation names the listeners, ws first, and `at` alone reaches the ward.
-  const inv = async (heir) => (await door.req({ op: 'invite', ward: w, heir })).invitation;
+  // An `at` given to invite is an array of strings.
+  for (const at of ['tcp://127.0.0.1:9', [9], null]) {
+    const r = await door.req({ op: 'invite', ward: w, heir: 'bad', at });
+    assert.equal(r.error, 'bad request', JSON.stringify(at));
+  }
+
+  // Where invite gives no `at`, the invitation names the listeners, ws first; where it gives
+  // one, the invitation carries it as given. `at` alone reaches the ward.
+  const inv = async (heir, at) => (await door.req({ op: 'invite', ward: w, heir, at })).invitation;
   const all = await inv('all');
-  assert.deepEqual(all.at, [ws, http, tcp]);
+  assert.deepEqual(JSON.parse(all.text).at, [ws, http, tcp]);
   const send = (invitation, args) =>
     asker.req({ op: 'send', ward: me, invitation, method: 'm', args });
   assert.deepEqual((await send(all, { a: 1 })).read, { object: { a: 1 }, seen: null });
@@ -173,7 +181,8 @@ void test("part two: every scheme, and the invitation's at", async () => {
     ['http', http],
     ['ws', ws],
   ]) {
-    const invitation = { ...(await inv(name)), at: ['gopher://h/', 'not a uri', at] };
+    const invitation = await inv(name, ['gopher://h/', 'not a uri', at]);
+    assert.deepEqual(JSON.parse(invitation.text).at, ['gopher://h/', 'not a uri', at]);
     assert.deepEqual(
       (await send(invitation, { name })).read,
       { object: { name }, seen: null },
@@ -188,11 +197,12 @@ void test("part two: every scheme, and the invitation's at", async () => {
 
   // An address that delivers nothing is passed over for the next.
   const dead = (await asker.req({ op: 'listen', scheme: 'http' })).at;
-  const past = { ...(await inv('past')), at: [dead, tcp] };
+  const past = await inv('past', [dead, tcp]);
   assert.deepEqual((await send(past, { p: 1 })).read, { object: { p: 1 }, seen: null });
 
-  // An `at` that is not an array is absent, and a route is dialed alone.
-  const lone = { ...(await inv('lone')), at: tcp };
+  // An empty `at` reaches nothing, and a route is dialed alone.
+  const lone = await inv('lone', []);
+  assert.deepEqual(JSON.parse(lone.text).at, []);
   assert.deepEqual((await send(lone, {})).read, { nothing: true });
   assert.equal((await asker.req({ op: 'route', far: w, at: dead })).routed, w);
   assert.deepEqual((await send(all, { b: 2 })).read, { nothing: true });

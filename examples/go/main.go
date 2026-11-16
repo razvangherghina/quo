@@ -9,6 +9,7 @@ import (
 	"os"
 	"slices"
 	"sync"
+	"unicode/utf8"
 )
 
 // Kit is everything one stand program holds.
@@ -91,7 +92,8 @@ const (
 	eNotReached = "not reached"
 )
 
-// request is one request line, its fields kept raw.
+// request is one request line, its fields kept raw. Every string in it is
+// read as value.go reads one, so a lone surrogate is kept and never mended.
 type request map[string]json.RawMessage
 
 func (r request) has(k string) bool { _, ok := r[k]; return ok }
@@ -102,11 +104,9 @@ func (r request) str(k string) (string, bool) {
 	if !ok {
 		return "", false
 	}
-	var s string
-	if err := json.Unmarshal(raw, &s); err != nil || bytes.Equal(bytes.TrimSpace(raw), []byte("null")) {
-		return "", false
-	}
-	return s, true
+	v, err := Parse(raw)
+	s, ok := v.(string)
+	return s, err == nil && ok
 }
 
 // optStr reads a field that may be absent, and is a string when present.
@@ -123,39 +123,31 @@ func (r request) hexOf(k string, n int) (string, bool) {
 	return s, ok && len(s) == n && isLowerHex(s)
 }
 
-// invitation reads the request's invitation, a value as SPEC.md reads one,
-// and the addresses its `at` holds that this kit can dial, in their order. An
-// `at` that is not an array is absent, and an entry that is no address this
-// kit stands is skipped.
+// invitation reads the request's invitation, as ReadInvitation reads one.
 func (r request) invitation() (*Standing, []*address, bool) {
-	v, err := Parse(r["invitation"])
-	o, ok := v.(*Obj)
-	if err != nil || !ok {
-		return nil, nil, false
+	s, at, err := ReadInvitation(r["invitation"])
+	return s, at, err == nil
+}
+
+// at reads invite's `at`, an array of strings, kept as the JSON text it came
+// as. Absent is nil.
+func (r request) at() ([]byte, bool) {
+	raw, present := r["at"]
+	if !present {
+		return nil, true
 	}
-	var inv Invitation
-	for key, to := range map[string]*string{"ward": &inv.Ward, "heir": &inv.Heir, "secret": &inv.Secret, "lock": &inv.Lock} {
-		if *to, ok = o.M[key].(string); !ok {
-			return nil, nil, false
-		}
+	entries, ok := Elements(raw)
+	if !ok {
+		return nil, false
 	}
-	s, err := ParseInvitation(inv)
-	if err != nil {
-		return nil, nil, false
-	}
-	var entries []json.RawMessage
-	json.Unmarshal(o.Raw["at"], &entries)
-	var at []*address
 	for _, e := range entries {
-		var text string
-		if json.Unmarshal(e, &text) != nil {
-			continue
-		}
-		if a, ok := parseAddress(text); ok {
-			at = append(at, a)
+		if v, err := Parse(e); err != nil {
+			return nil, false
+		} else if _, isStr := v.(string); !isStr {
+			return nil, false
 		}
 	}
-	return s, at, true
+	return raw, true
 }
 
 // asked reads method and args of an ask or a send. args is kept as the
@@ -184,11 +176,11 @@ func (k *Kit) handle(line []byte) {
 		k.answer(map[string]any{"id": nil, "error": eBadRequest})
 		return
 	}
-	id, ok := req.str("id")
-	if !ok {
+	if _, ok := req.str("id"); !ok {
 		k.answer(map[string]any{"id": nil, "error": eBadRequest})
 		return
 	}
+	id := req["id"] // answered as it came
 	fail := func(e string) { k.answer(map[string]any{"id": id, "error": e}) }
 	op, ok := req.str("op")
 	if !ok {
@@ -207,7 +199,8 @@ func (k *Kit) handle(line []byte) {
 	case "ward":
 		seed, ok := req.str("seed")
 		t, name, ok2 := reach()
-		if !ok || !ok2 {
+		// a seed is hashed as its UTF-8 bytes, and a lone surrogate has none
+		if !ok || !ok2 || !utf8.ValidString(seed) {
 			fail(eBadRequest)
 			return
 		}
@@ -230,7 +223,8 @@ func (k *Kit) handle(line []byte) {
 		pk, ok := req.hexOf("ward", 128)
 		name, ok2 := req.str("heir")
 		t, rname, ok3 := reach()
-		if !ok || !ok2 || !ok3 {
+		at, ok4 := req.at()
+		if !ok || !ok2 || !ok3 || !ok4 {
 			fail(eBadRequest)
 			return
 		}
@@ -247,15 +241,26 @@ func (k *Kit) handle(line []byte) {
 		case rname == nil:
 			t = Targets["echo"]
 		}
-		inv, err := w.Invite(name, t)
+		if at == nil {
+			// the program's listeners, where the request gives no at
+			for _, scheme := range schemes {
+				if l, ok := k.listeners[scheme]; ok {
+					if at == nil {
+						at = []byte{'['}
+					} else {
+						at = append(at, ',')
+					}
+					at = append(at, Quote(l)...)
+				}
+			}
+			if at != nil {
+				at = append(at, ']')
+			}
+		}
+		inv, err := w.Invite(name, t, at)
 		if err != nil {
 			fail(eNameHeld)
 			return
-		}
-		for _, scheme := range schemes {
-			if at, ok := k.listeners[scheme]; ok {
-				inv.At = append(inv.At, at)
-			}
 		}
 		k.answer(map[string]any{"id": id, "invitation": inv})
 
@@ -274,7 +279,7 @@ func (k *Kit) handle(line []byte) {
 			return
 		}
 		if w.Release(name) {
-			k.answer(map[string]any{"id": id, "released": name})
+			k.answer(map[string]any{"id": id, "released": req["heir"]})
 		} else {
 			k.answer(map[string]any{"id": id, "released": nil})
 		}
@@ -399,7 +404,7 @@ func (k *Kit) standing(asker string, fresh *Standing) *Standing {
 
 // readAnswer writes a read answer by hand, so an object of any nesting is
 // carried as it was read.
-func (k *Kit) readAnswer(id string, r Read) {
+func (k *Kit) readAnswer(id json.RawMessage, r Read) {
 	if r.Kind != "object" {
 		k.answer(map[string]any{"id": id, "read": readJSON(r)})
 		return
@@ -408,10 +413,9 @@ func (k *Kit) readAnswer(id string, r Read) {
 	if r.Seen != nil {
 		seen, _ = json.Marshal(*r.Seen)
 	}
-	idText, _ := json.Marshal(id)
 	var line bytes.Buffer
 	line.WriteString(`{"id":`)
-	line.Write(idText)
+	line.Write(id)
 	line.WriteString(`,"read":{"object":`)
 	// the object's bytes as read, with any newline RFC 8259 allows between tokens made a space
 	line.Write(bytes.Map(func(r rune) rune {

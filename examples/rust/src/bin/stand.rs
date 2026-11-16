@@ -56,7 +56,7 @@ fn ward_field(n: &Object) -> Result<String, &'static str> {
 }
 
 fn invitation(n: &Object, line: &[u8]) -> Result<Invitation, &'static str> {
-    n.get("invitation").and_then(|i| Invitation::from_text(i.text(line))).ok_or(BAD)
+    n.get("invitation").and_then(|i| Invitation::from_json(i.text(line))).ok_or(BAD)
 }
 
 fn standing_key(ward: &str, inv: &Invitation) -> String {
@@ -76,6 +76,16 @@ fn method_args(n: &Object, line: &[u8]) -> Result<(Option<Vec<u8>>, Option<Vec<u
         Some(_) => return Err(BAD),
     };
     Ok((method, args))
+}
+
+/// `at` on `invite`, the JSON text of an array of strings as the caller gave it.
+fn at_field<'a>(n: &Object, line: &'a [u8]) -> Result<Option<&'a str>, &'static str> {
+    let Some(a) = n.get("at") else { return Ok(None) };
+    let t = a.text(line);
+    match json::elements(t) {
+        Some(es) if es.iter().all(|e| e.is_str()) => Ok(std::str::from_utf8(t).ok()),
+        _ => Err(BAD),
+    }
 }
 
 fn reach_of(r: Option<String>) -> Result<Option<Reach>, &'static str> {
@@ -105,15 +115,18 @@ fn handle(kit: &Shared, n: &Object, line: &[u8], op: &str, id: &str) -> Option<R
             let w = ward_field(n)?;
             let heir = s(n, "heir")?;
             let reach = opt_s(n, "reach")?;
+            let given = at_field(n, line)?;
             let mut k = kit.lock().unwrap();
             let door = k.wards.get_mut(&w).ok_or("no such ward")?;
             let reach = reach_of(reach)?.unwrap_or(Reach::Echo);
             if door.holds_name(&heir) {
                 return Err("name held");
             }
-            let at = k.at.iter().cloned().collect();
+            // Where the request gives no `at`, the program's listener is written there.
+            let listener = k.at.as_ref().map(|a| format!("[{}]", json::quote(a)));
+            let at = given.map(str::to_string).or(listener);
             let door = k.wards.get_mut(&w).ok_or("no such ward")?;
-            Ok(format!("\"invitation\":{}", door.invite(&heir, reach, at).to_json()))
+            Ok(format!("\"invitation\":{}", door.invite(&heir, reach, at.as_deref()).to_json()))
         })(),
         "release" => (|| {
             let w = ward_field(n)?;

@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"crypto/ed25519"
 	"encoding/hex"
 	"encoding/json"
 	"net"
@@ -42,17 +43,62 @@ func TestAddresses(t *testing.T) {
 	}
 }
 
-func TestAnInvitationHasNoTwoKeysOfOneName(t *testing.T) {
+// signedBy is an invitation of text, signed by w, as JSON text.
+func signedBy(w *Ward, text string) string {
+	sig := hex.EncodeToString(ed25519.Sign(w.Sign, invitationSigned([]byte(text))))
+	return `{"text":` + string(Quote(text)) + `,"sig":"` + sig + `"}`
+}
+
+// fiveOf is the text of a true invitation of w, without its closing brace.
+func fiveOf(t *testing.T, w *Ward) string {
+	t.Helper()
+	inv, err := w.Invite(t.Name()+hex.EncodeToString(draw(4)), Targets["echo"], nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return strings.TrimSuffix(inv.Text, "}")
+}
+
+func TestAnInvitationIsSigned(t *testing.T) {
 	w := NewWard(SeedOfText("keys"))
-	inv, _ := w.Invite("h", Targets["echo"])
-	text, _ := json.Marshal(inv)
-	for raw, want := range map[string]bool{
-		string(text): true,
-		strings.Replace(string(text), `"heir"`, `"heir":"","heir"`, 1):      false,
-		strings.Replace(string(text), `"heir"`, `"\u0068eir":"","heir"`, 1): false,
+	other := NewWard(SeedOfText("other"))
+	inv, _ := w.Invite("h", Targets["echo"], nil)
+	given, _ := json.Marshal(inv)
+	five := fiveOf(t, w)
+	alone := hex.EncodeToString(ed25519.Sign(w.Sign, []byte(five+"}")))
+	flipped := "f" + inv.Sig[1:]
+	if inv.Sig[0] == 'f' {
+		flipped = "e" + inv.Sig[1:]
+	}
+	with := func(text, sig string) string { return `{"text":` + string(Quote(text)) + `,"sig":"` + sig + `"}` }
+	for i, c := range []struct {
+		raw  string
+		want bool
+	}{
+		{string(given), true},
+		{signedBy(w, " \n"+five+"}\t "), true},
+		{signedBy(w, five+`,"says":"John"}`), true},
+		{signedBy(w, five+`,"x":"\ud800"}`), true},
+		{strings.Replace(signedBy(w, five+"}"), `"text":`, `"text" : `, 1), true},
+		{signedBy(other, five+"}"), false},
+		{with(five+"}", alone), false},
+		{with(inv.Text, flipped), false},
+		{with(inv.Text, strings.ToUpper(inv.Sig)), false},
+		{with(five+`,"says":"Alice"}`, inv.Sig), false},
+		{strings.TrimSuffix(with(inv.Text, inv.Sig), "}") + `,"at":[]}`, false},
+		{`{"text":` + string(Quote(inv.Text)) + `,"text":` + string(Quote(inv.Text)) + `,"sig":"` + inv.Sig + `"}`, false},
+		{`{"text":` + inv.Text + `,"sig":"` + inv.Sig + `"}`, false},
+		{`{"sig":"` + inv.Sig + `"}`, false},
+		{inv.Text, false},
+		{signedBy(w, five+`,"heir":"x"}`), false},
+		{signedBy(w, `{"\u0077ard":"",`+five[1:]+"}"), false},
+		{signedBy(w, five+"},"), false},
+		{signedBy(w, "["+five+"}]"), false},
+		// a text denoting a lone surrogate, signed over the bytes this kit keeps it as
+		{signedBy(w, five+`,"x":"`+"\xed\xa0\x80"+`"}`), false},
 	} {
-		if _, _, ok := (request{"invitation": []byte(raw)}).invitation(); ok != want {
-			t.Errorf("%.40s read as %v", raw, ok)
+		if _, _, ok := (request{"invitation": []byte(c.raw)}).invitation(); ok != c.want {
+			t.Errorf("invitation %d read as %v", i, ok)
 		}
 	}
 	if _, _, ok := (request{}).invitation(); ok {
@@ -62,26 +108,17 @@ func TestAnInvitationHasNoTwoKeysOfOneName(t *testing.T) {
 
 func TestInvitationAt(t *testing.T) {
 	w := NewWard(SeedOfText("at"))
-	inv, _ := w.Invite("h", Targets["echo"])
-	read := func(at any) ([]*address, bool) {
-		fields, _ := json.Marshal(inv)
-		var m map[string]any
-		json.Unmarshal(fields, &m)
-		if at != nil {
-			m["at"] = at
-		}
-		raw, _ := json.Marshal(map[string]any{"invitation": m})
-		var r request
-		json.Unmarshal(raw, &r)
-		_, addrs, ok := r.invitation()
+	five := fiveOf(t, w)
+	read := func(at string) ([]*address, bool) {
+		_, addrs, ok := (request{"invitation": []byte(signedBy(w, five+`,"at":`+at+"}"))}).invitation()
 		return addrs, ok
 	}
-	for _, at := range []any{"tcp://127.0.0.1:9", 5, map[string]any{}, []any{}} {
+	for _, at := range []string{`"tcp://127.0.0.1:9"`, `5`, `{}`, `[]`, `null`} {
 		if addrs, ok := read(at); !ok || len(addrs) != 0 {
 			t.Errorf("at %v: %v %d", at, ok, len(addrs))
 		}
 	}
-	addrs, ok := read([]any{"zz://nowhere", 5, nil, "127.0.0.1:9", "ws://127.0.0.1:2/", "tcp://127.0.0.1:1"})
+	addrs, ok := read(`["zz://nowhere", 5, null, [], "127.0.0.1:9", "\ud800", "ws://127.0.0.1:2/","tcp://127.0.0.1:1"]`)
 	if !ok || len(addrs) != 2 || addrs[0].form != "line" || addrs[1].form != "tcp" {
 		t.Fatalf("%v %+v", ok, addrs)
 	}
@@ -91,15 +128,16 @@ func TestInvitationAt(t *testing.T) {
 // door, carried to an address, and answers what each read.
 func relationOver(t *testing.T, k *Kit, w *Ward, at []*address) []Read {
 	t.Helper()
-	inv, err := w.Invite(t.Name()+hex.EncodeToString(draw(4)), Targets["echo"])
+	inv, err := w.Invite(t.Name()+hex.EncodeToString(draw(4)), Targets["echo"], nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	st, err := ParseInvitation(*inv)
+	given, _ := json.Marshal(inv)
+	st, _, err := ReadInvitation(given)
 	if err != nil {
 		t.Fatal(err)
 	}
-	wardPK, _ := hex.DecodeString(inv.Ward)
+	wardPK, _ := hex.DecodeString(w.PK())
 	var reads []Read
 	for range 2 {
 		m := "m"
@@ -184,15 +222,45 @@ func TestInviteWritesListenersTcpFirst(t *testing.T) {
 	k, w := standing(t)
 	k.Listen("ws")
 	k.Listen("tcp")
+	invite := func(line string) []any {
+		t.Helper()
+		var buf bytes.Buffer
+		k.out.Reset(&buf)
+		k.handle([]byte(line))
+		var a struct{ Invitation Invitation }
+		if err := json.Unmarshal(buf.Bytes(), &a); err != nil {
+			t.Fatal(err, buf.String())
+		}
+		var text struct{ At []any }
+		json.Unmarshal([]byte(a.Invitation.Text), &text)
+		return text.At
+	}
+	at := invite(`{"id":"1","op":"invite","ward":"` + w.PK() + `","heir":"h"}`)
+	if len(at) != 2 || at[0] != k.listeners["tcp"] || at[1] != k.listeners["ws"] {
+		t.Fatalf("at %v", at)
+	}
+	// where the request gives at, the text carries it as given, and no listener
+	at = invite(`{"id":"2","op":"invite","ward":"` + w.PK() + `","heir":"g","at":["zz://x", "tcp://127.0.0.1:9"]}`)
+	if len(at) != 2 || at[0] != "zz://x" || at[1] != "tcp://127.0.0.1:9" {
+		t.Fatalf("at %v", at)
+	}
+}
+
+func TestHarnessStringsKeepLoneSurrogates(t *testing.T) {
+	k, w := standing(t)
 	var buf bytes.Buffer
 	k.out.Reset(&buf)
-	k.handle([]byte(`{"id":"1","op":"invite","ward":"` + w.PK() + `","heir":"h"}`))
-	var a struct{ Invitation Invitation }
-	if err := json.Unmarshal(buf.Bytes(), &a); err != nil {
-		t.Fatal(err, buf.String())
+	for _, name := range []string{`\ud800`, `\ud801`} {
+		k.handle([]byte(`{"id":"\udc00","op":"invite","ward":"` + w.PK() + `","heir":"` + name + `"}`))
 	}
-	if at := a.Invitation.At; len(at) != 2 || at[0] != k.listeners["tcp"] || at[1] != k.listeners["ws"] {
-		t.Fatalf("at %v", at)
+	k.handle([]byte(`{"id":"r","op":"release","ward":"` + w.PK() + `","heir":"\ud801"}`))
+	lines := strings.Split(strings.TrimSpace(buf.String()), "\n")
+	if len(lines) != 3 || !strings.HasPrefix(lines[0], `{"id":"\udc00","invitation"`) ||
+		!strings.Contains(lines[1], `"invitation"`) || lines[2] != `{"id":"r","released":"\ud801"}` {
+		t.Fatalf("%q", lines)
+	}
+	if got := string(Quote("a\xed\xa0\x80\"")); got != `"a\ud800\""` {
+		t.Errorf("Quote wrote %s", got)
 	}
 }
 

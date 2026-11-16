@@ -98,18 +98,30 @@ answer is the kit's choice, with its reason. Each number is the number
 
 ## What a kit asks
 
-19. **Invitations.** Handed in and out as the harness's JSON object. The
-    minting ward keeps no copy. The standing reads it as a value, so two keys
-    of one name among its own keys are no invitation. It checks the four
-    fields' hex,
-    that the secret gives the heir pk, that the lock passes FIPS 203's
+19. **Invitations.** Handed in and out as the harness's JSON object,
+    `{ text, sig }`. The minting ward keeps no copy. It writes the text as
+    `{"ward":…,"heir":…,"secret":…,"lock":…}`, with `,"at":[…]` before the
+    closing brace when it writes addresses, as question 25 says, and with no
+    whitespace and no field beside the five. It signs the fourteen bytes
+    `quo-invitation`, then those bytes, with the ward's signing key, and
+    writes `sig` as 128 lowercase hex. The standing reads an invitation as a
+    value whose own keys are exactly `text` and `sig`, so two keys of one
+    name, or a third field, are no invitation. `text` must be a string that
+    denotes no lone surrogate, and `sig` 128 lowercase hex. The text, read
+    from the bytes `text` denotes, must be a value and one object. The kit
+    checks the four fields' hex, then `sig` under the signing pk of the
+    ward the text names, with the same check as every signature, then that
+    the secret gives the heir pk, that the lock passes FIPS 203's
     encapsulation key check, which `crypto/mlkem` makes, and that the
-    padlock takes a seal, and refuses anything else as `bad request`. `at`
+    padlock takes a seal. It refuses anything else as `bad request`. `at`
     is read as question 25 says, and nothing in it refuses an invitation.
-    Reason: the harness is the one route here, and a knock on an invitation
-    that cannot bind is better refused before it is sealed. The kit writes
-    no link and reads none, and it answers no reference, since the harness
-    hands every invitation whole.
+    Of the fields beside the five a text carries, the kit reads nothing but
+    their JSON grammar, keeps nothing and shows nothing, since `stand` has no
+    person to show them to. Reason: the harness is the one route here, a
+    knock on an invitation that cannot bind is better refused before it is
+    sealed, and a field Quo does not read is not this kit's to read either.
+    The kit writes no link and reads none, and it answers no reference,
+    since the harness hands every invitation whole.
 20. **A knock that brought no object back.** After nothing, the knock is
     sent again as the same bytes. After silence, a word or a reply that did
     not open, the standing asks under the key the knock announced and the
@@ -176,7 +188,8 @@ answer is the kit's choice, with its reason. Each number is the number
 25. **Where a ward is reached.** From `route`, and from an invitation's
     `at`; the kit learns no address any other way.
     - Where a ward has a route, the kit dials the route alone.
-    - Where it has none, the kit reads `at` in its order, skips every entry
+    - Where it has none, the kit reads the invitation's `at`, which the
+      ward signed with the rest of its text, in its order, skips every entry
       that is not a string, not a URI with a scheme, of a scheme it does not
       dial, or not written as that scheme's carrier writes it, and tries the
       rest one after another, never two at once, each given the waits of
@@ -201,11 +214,14 @@ answer is the kit's choice, with its reason. Each number is the number
       `["tcp://127.0.0.1:9"]` on every object as the harness fixes. The
       door never writes its listeners' addresses in a reply. Reason: its
       invitations already carry them, and no ward here moves.
-    - Once the program holds listeners, every invitation it mints carries
-      `at` with each listener's address, `tcp` first, then `http`, then
-      `ws`. With no listener, it writes no `at`. Reason: TCP carries the
-      bytes with the least around them, and a reader that stands only the
-      web still finds its own scheme further on.
+    - Where `invite` gives an `at`, the invitation text carries that `at`
+      as its bytes stood in the request, and no listener. Where it gives
+      none and the program holds listeners, the text carries `at` with
+      each listener's address, `tcp` first, then `http`, then `ws`. With
+      neither, it writes no `at`. The ward signs `at` with the rest of its
+      text. Reason: the harness asks for the first, TCP carries the bytes
+      with the least around them, and a reader that stands only the web
+      still finds its own scheme further on.
 
 ## What is not the kit's either
 
@@ -226,8 +242,8 @@ answer is the kit's choice, with its reason. Each number is the number
     there are taken. `echo`, `marked` and `moved` answer every such `args`
     with its bytes as they arrived; nothing is refused beyond the grammar,
     so a door here never answers silence for what stands there. A read `object`
-    is handed on as its bytes as they arrived. Among a payload's or a reply
-    text's own keys, a lone surrogate is kept as its code unit, so two keys
+    is handed on as its bytes as they arrived. Among the own keys of a payload,
+    a reply text, an invitation or an invitation text, a lone surrogate is kept as its code unit, so two keys
     are one name exactly when their code units are equal. Reason: reading
     nothing is the least code and the fewest refusals.
 

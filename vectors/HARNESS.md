@@ -66,7 +66,7 @@ on stderr.
 
 ```
 { id, op: "ward",    seed, reach? }               { id, ward: <128 hex> }
-{ id, op: "invite",  ward, heir, reach? }         { id, invitation }
+{ id, op: "invite",  ward, heir, reach?, at? }    { id, invitation }
 { id, op: "release", ward, heir }                 { id, released: <string> | null }
 { id, op: "arrive",  ward, box }                  { id, reply: <hex> | null }
 { id, op: "ask",     ward, invitation, method?, args? }
@@ -82,8 +82,11 @@ In every other request, `ward` is the 128 hex ward pk of a ward this
 program stands.
 
 **`invite`** holds a new heir of that ward under the name `heir`, a string
-the verifier chooses, and answers the invitation of `SPEC.md`. A released
-name may be invited again, and names a new heir.
+the verifier chooses, and answers the invitation of `SPEC.md`, signed by
+that ward. `at`, when present, is an array of strings, and the invitation
+text carries those strings, in their order, as its `at`. An empty `at` is
+given, and the text carries `[]`. A released name may be invited
+again, and names a new heir.
 
 **`release`** makes that ward stop holding the heir named `heir`. It
 answers that name, or `null` where the ward holds no heir of that name.
@@ -174,7 +177,7 @@ request`.
 
 **`invite`**, once the program holds a listener, may write that
 listener's address, or any of its listeners' addresses, in the
-invitation's `at`.
+invitation's `at`, where the request gives no `at`.
 
 **`route`** tells the program that the ward whose 128 hex ward pk is `far`
 is reached at `at`, one address. A second `route` for one `far` replaces
@@ -197,7 +200,8 @@ answer when nothing came back.
 
 The verifier stands a ward in one program and asks from a ward in another.
 It holds no kit. It routes the asking program's far ward to an address
-of its own, or hands it an invitation whose `at` names that address.
+of its own, or hands it an invitation the answering program signed, whose
+`at` the verifier asked to name that address.
 It forwards the frames to the answering program's listener.
 Standing between them, it may deliver a frame as it came, late, twice, out
 of order, altered, or not at all. No kit implements any of that.

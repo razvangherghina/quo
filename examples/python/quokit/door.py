@@ -1,7 +1,7 @@
 """A ward and its door: the thirteen cases in order, the move, the count."""
 
 from . import crypto as c
-from .box import (CT_LEN, SILENCE, SIZE, ZERO32, ZERO_EDGE, WardKey, follow,
+from .box import (CT_LEN, SILENCE, SIZE, ZERO32, ZERO_EDGE, WardKey, follow, invitation,
                   knock_edge, object_text, well_formed, word_text)
 from .values import Invalid, JObj, parse
 
@@ -66,16 +66,17 @@ class Ward:
     def pk_hex(self):
         return self.key.pk_hex
 
-    def invite(self, reach):
-        """Hold a new heir. Returns the invitation as a dict of hex."""
+    def invite(self, reach, at=None):
+        """Hold a new heir. Returns its pk and the invitation, signed, whose
+        text carries `at`, a list of strings, where it is not None."""
         if self.lock_seed is None:
             self.lock_seed = self.source.draw(64)
             self.lock_ek = c.mlkem_public(self.lock_seed)
         secret = self.source.draw(32)
         pk = c.ed_public(secret)
         self.heirs[pk] = Heir(pk, reach)
-        return {"ward": self.pk_hex, "heir": pk.hex(), "secret": secret.hex(),
-                "lock": self.lock_ek.hex()}
+        fields = {"ward": self.pk_hex, "heir": pk.hex(), "secret": secret.hex(), "lock": self.lock_ek.hex()}
+        return pk, invitation(self.key.sign_seed, fields, at)
 
     def release(self, pk):
         heir = self.heirs.pop(pk, None)

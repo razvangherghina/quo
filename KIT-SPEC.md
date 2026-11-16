@@ -71,8 +71,8 @@ of `SPEC.md`.
 - **Question 15. How is a reply text other than silence written?** The field
   order of `{ object, seen, at? }` and the whitespace between tokens are the
   kit's. Silence alone is fixed to sixteen bytes.
-- **Question 16. Does the kit pad what it seals with whitespace, and how
-  much?** Every kit reads padding.
+- **Question 16. Does the kit pad what it seals, or the invitation texts
+  it signs, with whitespace, and how much?** Every kit reads padding.
 - **Question 17. Does every refusal take the same time?** The time a case
   takes is on no wire.
 - **Question 18. What does the kit keep for its own eyes?** Which case
@@ -82,10 +82,12 @@ of `SPEC.md`.
 
 - **Question 19. How does an invitation reach its holder, and does the
   minting kit keep a copy? Does the kit write a link, and does it read
-  one? Whom does it answer a reference, how long and how often?** A door
-  reads no route from an invitation. `LINK.md` says how a link stands for
-  an invitation and how its holder redeems it, and a door reads none of
-  it.
+  one? Whom does it answer a reference, how long and how often? Does it
+  write fields beside the five in an invitation text, and what does it
+  show a person of those it reads?** A door reads no route from an
+  invitation. `LINK.md` says how a link stands for an invitation and how
+  its holder redeems it, and a door reads none of it. Quo reads no field
+  beside the five, and the ward's signature covers every one.
 - **Question 20. How does a standing recover a knock that brought no object
   back?** It may ask under its own key and the knock's edge key, or send the
   knock again as the same bytes. Which first, how often, and how long
@@ -115,8 +117,8 @@ of `SPEC.md`.
   it write `at` in its invitations and in its replies, and with which
   addresses? What does it do with an `at` a reply carries? How does it
   try the addresses it reads, and which does it refuse to try?** A
-  ward's name is its public key. An invitation goes anywhere, and whoever
-  carried it may have written its `at`. An
+  ward's name is its public key. An invitation goes anywhere, and its
+  ward signed its `at` with the rest of its text. An
   invitation may carry addresses in `at`, the first the minting side's
   preference, and a kit may learn others its own way. A reply may carry
   `at` too, signed by the ward with the reply. These are the kit's.

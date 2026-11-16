@@ -26,7 +26,9 @@ same.
 
 **Purple booths.** A purple booth faces outwards. The house builds it,
 fits its first lock, and gives its key to someone, any way it likes. The
-key can be copied a thousand times. Someone far away steps in there, and
+key travels on a card the house stamps with its ring, and nobody who
+carries the card can change a word on it. The key can be copied a
+thousand times. Someone far away steps in there, and
 the house sees that the booth is in use, and a key, never a name. The
 first one to step in with that key whom the house lets in changes the lock
 to a key of their own that nobody else has ever seen. From that moment
@@ -101,8 +103,10 @@ how far the door is.
 the door's, the red side is the **standing** that asks.
 
 **The first key** is the **heir**, and the card it is printed on is the
-**invitation**: `{ ward, heir, secret, lock, at? }`. It goes by any channel,
-and `at` may write on the card where the house is reached.
+**invitation**: `{ ward, heir, secret, lock, at? }`, stamped with the
+house's ring, so whoever carries the card cannot change a word of it.
+It goes by any channel, and `at` may write on the card where the house is
+reached.
 
 **Stepping in with the first key** is the **knock**. It announces the
 visitor's own key in `next`, and the first knock the door makes a choice

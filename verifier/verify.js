@@ -222,6 +222,37 @@ export function wardKeys(seedText) {
   return { seedText, signSeed, signPk, scalar, padlock, pk: hex(signPk) + hex(padlock) };
 }
 
+/** The bytes an invitation's `sig` covers: the fourteen bytes `quo-invitation`, then its text. */
+export const invitationSigned = (text) => Buffer.concat([Buffer.from('quo-invitation'), text]);
+
+/** An invitation of a ward of the verifier's: `text`, a string, signed under its signing key. */
+export function signInvitation(mine, text) {
+  return { text, sig: hex(edSign(mine.signSeed, invitationSigned(Buffer.from(text, 'utf8')))) };
+}
+
+/**
+ * Reads an invitation as SPEC.md reads one, the lock's modulus check aside:
+ * the fields of its text, or why it is no invitation.
+ */
+export function readInvitation(inv) {
+  if (!inv || typeof inv !== 'object' || Array.isArray(inv)) return { error: 'not one object' };
+  const keys = Object.keys(inv).toSorted().join(',');
+  if (keys !== 'sig,text') return { error: `its fields are ${keys}, not text and sig` };
+  if (typeof inv.text !== 'string') return { error: 'text is not a string' };
+  if (!inv.text.isWellFormed()) return { error: 'text denotes a lone surrogate' };
+  if (!isHex(inv.sig, 128)) return { error: 'sig is not 128 hex' };
+  const bytes = Buffer.from(inv.text, 'utf8');
+  const p = parseValue(bytes);
+  if (p.error) return { error: `its text is no value: ${p.error}` };
+  if (p.value.type !== 'object') return { error: 'its text is not one object' };
+  const f = JSON.parse(inv.text);
+  if (!isHex(f.ward, 128) || !isHex(f.heir, 64) || !isHex(f.secret, 64) || !isHex(f.lock, 2368))
+    return { error: 'its text lacks the four fields of their sizes' };
+  if (!edVerify(unhex(f.ward.slice(0, 64)), invitationSigned(bytes), unhex(inv.sig)))
+    return { error: 'its signature fails' };
+  return { fields: f };
+}
+
 export const newKey = (seed = rand(32)) => {
   const pk = edPub(seed);
   return { seed, pk, hex: hex(pk) };
@@ -308,28 +339,37 @@ export class Session {
     return { ...k, lock: null, reach };
   }
 
-  async invite(ward, name, reach) {
+  async invite(ward, name, reach, at) {
     // The scenarios name echo; null sends no reach, which HARNESS.md makes echo.
     reach = reach === undefined ? 'echo' : reach;
     const req = { op: 'invite', ward: ward.pk, heir: name };
     if (reach !== null) req.reach = reach;
+    if (at !== undefined) req.at = at;
     const a = await this.stand.request(req);
-    const inv = a.invitation;
+    const given = a.invitation;
     const label = `invitation ${J(name)}`;
     if (
       !this.check(
         `${label} is given`,
-        inv && typeof inv === 'object' && !Array.isArray(inv),
+        given && typeof given === 'object' && !Array.isArray(given),
         J(a).slice(0, 300),
         'harness',
       )
     ) {
       throw new Abort(`invite refused: ${J(a).slice(0, 200)}`);
     }
-    const shape =
-      inv.ward === ward.pk && isHex(inv.heir, 64) && isHex(inv.secret, 64) && isHex(inv.lock, 2368);
-    this.check(`${label} has the four fields of their sizes`, shape, J(inv).slice(0, 300));
-    if (!shape) throw new Abort('invitation malformed');
+    const r = readInvitation(given);
+    this.check(`${label} is a text and a sig, signed by its ward`, !r.error, r.error ?? '');
+    if (r.error) throw new Abort('invitation malformed');
+    const inv = r.fields;
+    this.check(`${label} names the ward that gave it`, inv.ward === ward.pk, inv.ward);
+    if (inv.ward !== ward.pk) throw new Abort('invitation malformed');
+    if (at !== undefined)
+      this.check(
+        `${label} carries the at it was asked for`,
+        isDeepStrictEqual(inv.at, at),
+        J(inv.at),
+      );
     if (inv.at !== undefined) {
       const addresses = Array.isArray(inv.at) && inv.at.every((s) => parseAddress(s) !== null);
       this.check(`${label} at is an array of addresses`, addresses, J(inv.at).slice(0, 300));
@@ -367,6 +407,7 @@ export class Session {
     const heir = {
       name,
       ward,
+      inv: given,
       at: inv.at,
       reach: reach ?? 'echo',
       pk: unhex(inv.heir),
@@ -1959,9 +2000,10 @@ export function verifierWard(seedText) {
 /** An invitation the verifier mints from its own ward, with `at` when given, and the relation it opens. */
 export function mint(mine, at) {
   const heir = newKey();
-  const inv = { ward: mine.pk, heir: heir.hex, secret: hex(heir.seed), lock: hex(mine.lock.ek) };
-  if (at !== undefined) inv.at = at;
-  return { inv, heir, state: 'fresh', knock: null, key: null, edge: null, movedAt: 0 };
+  const fields = { ward: mine.pk, heir: heir.hex, secret: hex(heir.seed), lock: hex(mine.lock.ek) };
+  if (at !== undefined) fields.at = at;
+  const inv = signInvitation(mine, J(fields));
+  return { inv, fields, heir, state: 'fresh', knock: null, key: null, edge: null, movedAt: 0 };
 }
 
 const SIL = { silence: true };
@@ -2536,6 +2578,16 @@ async function harnessErrors(v, spawnStand) {
   await errq('invite with a numeric heir', { op: 'invite', ward: pk, heir: 5 }, 'bad request');
   await errq('invite with a null heir', { op: 'invite', ward: pk, heir: null }, 'bad request');
   await errq(
+    'invite with an at that is not an array',
+    { op: 'invite', ward: pk, heir: 'n', at: 'tcp://127.0.0.1:9' },
+    'bad request',
+  );
+  await errq(
+    'invite with an at holding a number',
+    { op: 'invite', ward: pk, heir: 'n', at: [9] },
+    'bad request',
+  );
+  await errq(
     'invite with a null reach',
     { op: 'invite', ward: pk, heir: 'n', reach: null },
     'bad request',
@@ -2545,10 +2597,8 @@ async function harnessErrors(v, spawnStand) {
     { op: 'invite', ward: pk, heir: 'n', reach: 'no such reach' },
     'not reached',
   );
-  await ok(
-    'invite n',
-    { op: 'invite', ward: pk, heir: 'n' },
-    (a) => a.invitation && isHex(a.invitation.lock, 2368),
+  await ok('invite n', { op: 'invite', ward: pk, heir: 'n' }, (a) =>
+    isHex(readInvitation(a.invitation).fields?.lock, 2368),
   );
   await errq('invite n again', { op: 'invite', ward: pk, heir: 'n' }, 'name held');
   await errq(
@@ -2568,16 +2618,15 @@ async function harnessErrors(v, spawnStand) {
     { op: 'release', ward: pk, heir: 'n' },
     (a) => a.released === 'n',
   );
-  await ok(
-    'invite n again after release',
-    { op: 'invite', ward: pk, heir: 'n' },
-    (a) => a.invitation && isHex(a.invitation.heir, 64),
+  await ok('invite n again after release', { op: 'invite', ward: pk, heir: 'n' }, (a) =>
+    isHex(readInvitation(a.invitation).fields?.heir, 64),
   );
 
   // `ask` and `read`. A kit that does not serve them answers `bad request`,
   // which comes before every other error.
   const mine = verifierWard("harness errors, the verifier's ward");
-  const invitation = mint(mine).inv;
+  const minted = mint(mine);
+  const { inv: invitation, fields: five } = minted;
   const probe = await ok(
     'ask with a true invitation answers a box or bad request',
     { op: 'ask', ward: pk, invitation },
@@ -2586,7 +2635,10 @@ async function harnessErrors(v, spawnStand) {
   const serves = isHex(probe.box);
   const unserved = serves ? null : 'bad request';
   const noWard = unserved ?? 'no such ward';
-  const inv = (fields) => ({ ...invitation, ...fields });
+  // An invitation whose text is the five with `fields` laid over them, signed by the ward.
+  const inv = (fields) => signInvitation(mine, J({ ...five, ...fields }));
+  const other = verifierWard('harness errors, another ward');
+  const signed = Buffer.from(invitation.text, 'utf8');
   await errq('ask at no ward', { op: 'ask', ward: fakeWard, invitation }, noWard);
   await errq('ask at no ward with no invitation', { op: 'ask', ward: fakeWard }, 'bad request');
   await errq('ask with no invitation', { op: 'ask', ward: pk }, 'bad request');
@@ -2602,12 +2654,12 @@ async function harnessErrors(v, spawnStand) {
   );
   await errq(
     'ask with a lock one byte short',
-    { op: 'ask', ward: pk, invitation: inv({ lock: invitation.lock.slice(2) }) },
+    { op: 'ask', ward: pk, invitation: inv({ lock: five.lock.slice(2) }) },
     'bad request',
   );
   await errq(
     'ask with an uppercase lock',
-    { op: 'ask', ward: pk, invitation: inv({ lock: invitation.lock.toUpperCase() }) },
+    { op: 'ask', ward: pk, invitation: inv({ lock: five.lock.toUpperCase() }) },
     'bad request',
   );
   await errq(
@@ -2627,17 +2679,93 @@ async function harnessErrors(v, spawnStand) {
   );
   await errq(
     'ask with a short ward in the invitation',
-    { op: 'ask', ward: pk, invitation: inv({ ward: invitation.ward.slice(2) }) },
+    { op: 'ask', ward: pk, invitation: inv({ ward: five.ward.slice(2) }) },
     'bad request',
   );
-  // A field beside the five is ignored, and an invitation with one is still an
-  // invitation. An address no carrier stands is skipped, and an `at` that is
-  // not an array is read as absent. A lock the modulus check of FIPS 203 section 7.2 refuses is no
+  // An invitation is its text and its signature. A text changed, a signature
+  // that fails or is absent, a signature over the text alone, a field beside
+  // the two, and a text that is no value or denotes a lone surrogate, make no
   // invitation.
+  await errq(
+    'ask with the five and no text or sig',
+    { op: 'ask', ward: pk, invitation: five },
+    'bad request',
+  );
+  await errq(
+    'ask with an invitation with no sig',
+    { op: 'ask', ward: pk, invitation: { text: invitation.text } },
+    'bad request',
+  );
+  await errq(
+    'ask with an invitation whose text was changed after it was signed',
+    {
+      op: 'ask',
+      ward: pk,
+      invitation: { ...invitation, text: J({ ...five, says: 'Alice' }) },
+    },
+    'bad request',
+  );
+  await errq(
+    'ask with an invitation signed by another ward',
+    { op: 'ask', ward: pk, invitation: { ...signInvitation(other, invitation.text) } },
+    'bad request',
+  );
+  await errq(
+    'ask with an invitation signed over its text alone',
+    { op: 'ask', ward: pk, invitation: { ...invitation, sig: hex(edSign(mine.signSeed, signed)) } },
+    'bad request',
+  );
+  await errq(
+    'ask with an uppercase sig',
+    { op: 'ask', ward: pk, invitation: { ...invitation, sig: invitation.sig.toUpperCase() } },
+    'bad request',
+  );
+  await errq(
+    'ask with a field beside text and sig',
+    { op: 'ask', ward: pk, invitation: { ...invitation, at: ['tcp://127.0.0.1:9'] } },
+    'bad request',
+  );
+  await errq(
+    'ask with a text that is an object',
+    { op: 'ask', ward: pk, invitation: { ...invitation, text: five } },
+    'bad request',
+  );
+  await errq(
+    'ask with a signed text that is no JSON',
+    { op: 'ask', ward: pk, invitation: signInvitation(mine, `${invitation.text},`) },
+    'bad request',
+  );
+  await errq(
+    'ask with a signed text holding the ward twice',
+    {
+      op: 'ask',
+      ward: pk,
+      invitation: signInvitation(mine, `{"ward":${J(five.ward)},${invitation.text.slice(1)}`),
+    },
+    'bad request',
+  );
+  await errq(
+    'ask with a text that denotes a lone surrogate',
+    {
+      op: 'ask',
+      ward: pk,
+      invitation: { ...invitation, text: `${invitation.text.slice(0, -1)},"x":"\ud800"}` },
+    },
+    'bad request',
+  );
+  // A field beside the five is ignored, and an invitation whose text has one
+  // is still an invitation. Padding is read and signed. An address no carrier
+  // stands is skipped, and an `at` that is not an array is read as absent. A
+  // lock the modulus check of FIPS 203 section 7.2 refuses is no invitation.
   if (serves) {
     await ok(
-      'ask with a sixth field in the invitation answers a box',
-      { op: 'ask', ward: pk, invitation: inv({ route: 'nowhere' }) },
+      'ask with a sixth field in the invitation text answers a box',
+      { op: 'ask', ward: pk, invitation: inv({ says: 'John' }) },
+      (a) => isHex(a.box),
+    );
+    await ok(
+      'ask with a padded invitation text answers a box',
+      { op: 'ask', ward: pk, invitation: signInvitation(mine, ` \n${J(five)}\t `) },
       (a) => isHex(a.box),
     );
     await ok(
@@ -2651,7 +2779,7 @@ async function harnessErrors(v, spawnStand) {
       (a) => isHex(a.box),
     );
   }
-  const highLock = Buffer.from(unhex(invitation.lock));
+  const highLock = Buffer.from(unhex(five.lock));
   highLock[0] = 0xff;
   highLock[1] |= 0x0f;
   await errq(

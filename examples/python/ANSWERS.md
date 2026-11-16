@@ -84,8 +84,9 @@ is followed by its reason.
     `moved`, `object` is the bytes of `args` exactly as they arrived. A
     word is `{"quo":"<word>"}`. Reason: the shortest form, and echo keeps
     the bytes.
-16. **Padding.** None when writing. Padding is read everywhere. Reason: the
-    kit hides no lengths.
+16. **Padding.** None when writing, neither in what it seals nor in the
+    invitation text it signs. Padding is read everywhere, an invitation
+    text's included. Reason: the kit hides no lengths.
 17. **Time per refusal.** No effort is made. Refusals that fail earlier
     return earlier. Reason: this is an example kit, and time is on no wire.
 18. **What the kit keeps for its own eyes.** The door logs the case number
@@ -95,14 +96,24 @@ is followed by its reason.
 
 ## What a kit asks
 
-19. **How an invitation reaches its holder.** It is returned to the caller
-    as a dict, and the harness carries it. It carries `at` once the program
-    holds a listener, as question 25 says. The minting ward keeps only the
-    heir pk and the harness name. An invitation whose lock the library's
-    FIPS 203 check refuses is no invitation, and `ask`, `read` or `send` on
-    it answers `bad request`. Reason: a door reads no route from an
-    invitation, and the harness is the only holder here. So the kit writes
-    no link and reads none, and it answers no reference.
+19. **How an invitation reaches its holder.** The ward writes the
+    invitation text, `ward`, `heir`, `secret` and `lock` and then `at`
+    where there is one, with no whitespace, signs it, and returns
+    `{text, sig}` to the caller, and the harness carries it. The text
+    carries `at` as question 25 says. The minting ward keeps only the heir
+    pk and the harness name, and no copy of the invitation. The kit writes
+    no field beside the five. Of a text it reads, it reads the five alone,
+    and every other field it ignores and shows nobody. It refuses what is
+    no invitation: a field beside `text` and `sig`, a `sig` that is not 128
+    hex or that fails, a text that denotes a lone surrogate, is no value or
+    is not one object, one of the four absent or not hex of its length, or
+    a lock the library's FIPS 203 check refuses. `ask`, `read` or `send` on
+    it answers `bad request`.
+    Reason: a door reads no route from an invitation, and the harness is
+    the only holder here, so the kit writes no link and reads none, and it
+    answers no reference. Quo reads no field beside the five, so the kit
+    has nothing to write there, and the `stand` program has no person to
+    show one to.
 20. **Recovering a knock that brought no object back.** The next ask on the
     relation goes under the announced key and the knock's edge key, with no
     ciphertext, and carries the new method and args. If that ask also
@@ -183,14 +194,20 @@ is followed by its reason.
     reply. Each try waits as question 21 says. With no address left, the
     read is `nothing`. It carries the same box to the next address after
     one that gave nothing, whether or not that address may have heard it.
-    Once the program holds listeners, every invitation it mints carries
-    their addresses in `at`, the post first, then TCP. The door writes
+    An `invite` that gives `at` has its invitation text carry that `at`
+    as given, an array of strings, signed with the rest of the text, and
+    any other `at` is `bad request`. An `invite` that gives none, once the
+    program holds listeners, has the text carry their addresses in `at`,
+    the post first, then TCP, and with no listener no `at`. The kit reads
+    an invitation's `at` only from the text its ward signed. The door writes
     `at` in a reply only where its reach gives one, which `moved` alone
     does, on every object. It never writes its listeners there.
     Reason: a route is the harness's own word and beats what an invitation
-    carries, since whoever carried the invitation may have written its
-    `at`. A reply's `at` is signed by the ward, and the latest object the
-    standing moved on is the freshest word it has, so it goes first. A
+    carries. The ward signed its invitation's `at`, so no carrier of the
+    invitation wrote it, but the ward may have written addresses it no
+    longer listens at. A reply's `at` is signed by the ward too, and the
+    latest object the standing moved on is the freshest word it has, so
+    it goes first. A
     reply to an ask it did not move on may be late, so its `at` is not
     kept. The invitation's addresses stay behind it, so a reply address
     that fails costs one try and loses nothing. The order in `at` is the

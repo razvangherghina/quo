@@ -344,11 +344,63 @@ func CountOf(v any) (uint64, bool) {
 	return c, err == nil && c >= 1 && c <= MaxCount
 }
 
-// Quote writes a string as JSON text.
+// Elements reads JSON text that is one array, and answers each entry's bytes
+// exactly as they stand. It is false for any other text.
+func Elements(b []byte) ([][]byte, bool) {
+	if !utf8.Valid(b) {
+		return nil, false
+	}
+	p := &parser{s: b}
+	p.ws()
+	if !p.at('[') {
+		return nil, false
+	}
+	p.i++
+	p.ws()
+	var entries [][]byte
+	if p.at(']') {
+		p.i++
+	} else {
+		for {
+			p.ws()
+			start := p.i
+			if _, err := p.value(); err != nil {
+				return nil, false
+			}
+			entries = append(entries, p.s[start:p.i])
+			p.ws()
+			if p.at(',') {
+				p.i++
+				continue
+			}
+			if !p.at(']') {
+				return nil, false
+			}
+			p.i++
+			break
+		}
+	}
+	p.ws()
+	return entries, p.i == len(p.s)
+}
+
+// Quote writes a string as JSON text. A lone surrogate, kept as its
+// generalized UTF-8 bytes, is written as its escape.
 func Quote(s string) []byte {
+	const digits = "0123456789abcdef"
 	var sb strings.Builder
 	sb.WriteByte('"')
-	for _, r := range s {
+	for i := 0; i < len(s); {
+		if s[i] == 0xed && i+2 < len(s) && s[i+1] >= 0xa0 {
+			r := rune(s[i]&0x0f)<<12 | rune(s[i+1]&0x3f)<<6 | rune(s[i+2]&0x3f)
+			sb.WriteString(`\u`)
+			for shift := 12; shift >= 0; shift -= 4 {
+				sb.WriteByte(digits[r>>shift&15])
+			}
+			i += 3
+			continue
+		}
+		r, n := utf8.DecodeRuneInString(s[i:])
 		switch {
 		case r == '"':
 			sb.WriteString(`\"`)
@@ -356,11 +408,12 @@ func Quote(s string) []byte {
 			sb.WriteString(`\\`)
 		case r < 0x20:
 			sb.WriteString(`\u00`)
-			sb.WriteByte("0123456789abcdef"[r>>4])
-			sb.WriteByte("0123456789abcdef"[r&15])
+			sb.WriteByte(digits[r>>4])
+			sb.WriteByte(digits[r&15])
 		default:
-			sb.WriteRune(r)
+			sb.WriteString(s[i : i+n])
 		}
+		i += n
 	}
 	sb.WriteByte('"')
 	return []byte(sb.String())

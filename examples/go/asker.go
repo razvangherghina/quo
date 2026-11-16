@@ -8,6 +8,7 @@ import (
 	"errors"
 	"slices"
 	"strconv"
+	"unicode/utf8"
 )
 
 // A Standing is the standing's end of one relation, kept by the asking ward.
@@ -42,31 +43,68 @@ type Sent struct {
 
 var errBadInvitation = errors.New("no invitation")
 
-// ParseInvitation reads an invitation's four fields.
-func ParseInvitation(inv Invitation) (*Standing, error) {
-	hx := func(s string, n int) ([]byte, bool) {
-		if len(s) != 2*n || !isLowerHex(s) {
+// ReadInvitation reads an invitation as SPEC.md reads one: a value of two
+// fields, `text` and `sig`, whose text is a value and one object, signed by
+// the ward it names. It answers the standing the invitation opens, and the
+// addresses of its text's `at` this kit can dial, in their order. An `at`
+// that is not an array is absent, and an entry that is no address this kit
+// stands is skipped.
+func ReadInvitation(raw []byte) (*Standing, []*address, error) {
+	v, err := Parse(raw)
+	o, ok := v.(*Obj)
+	if err != nil || !ok || len(o.Keys) != 2 {
+		return nil, nil, errBadInvitation
+	}
+	text, ok1 := o.M["text"].(string)
+	sigHex, ok2 := o.M["sig"].(string)
+	// a lone surrogate is kept as bytes no UTF-8 spells: such a text has no UTF-8 bytes
+	if !ok1 || !ok2 || !utf8.ValidString(text) || len(sigHex) != 128 || !isLowerHex(sigHex) {
+		return nil, nil, errBadInvitation
+	}
+	tv, err := Parse([]byte(text))
+	t, ok := tv.(*Obj)
+	if err != nil || !ok {
+		return nil, nil, errBadInvitation
+	}
+	hx := func(key string, n int) ([]byte, bool) {
+		s, ok := t.M[key].(string)
+		if !ok || len(s) != 2*n || !isLowerHex(s) {
 			return nil, false
 		}
 		b, _ := hex.DecodeString(s)
 		return b, true
 	}
-	ward, ok1 := hx(inv.Ward, 64)
-	heirPK, ok2 := hx(inv.Heir, 32)
-	secret, ok3 := hx(inv.Secret, 32)
-	lock, ok4 := hx(inv.Lock, 1184)
+	ward, ok1 := hx("ward", 64)
+	heirPK, ok2 := hx("heir", 32)
+	secret, ok3 := hx("secret", 32)
+	lock, ok4 := hx("lock", 1184)
 	if !ok1 || !ok2 || !ok3 || !ok4 {
-		return nil, errBadInvitation
+		return nil, nil, errBadInvitation
+	}
+	sig, _ := hex.DecodeString(sigHex)
+	if !Verify(ward[:32], invitationSigned([]byte(text)), sig) {
+		return nil, nil, errBadInvitation
 	}
 	ek, err := mlkem.NewEncapsulationKey768(lock)
 	if err != nil || !takesSeal(ward[32:]) {
-		return nil, errBadInvitation
+		return nil, nil, errBadInvitation
 	}
 	heir := ed25519.NewKeyFromSeed(secret)
 	if !bytes.Equal(heir.Public().(ed25519.PublicKey), heirPK) {
-		return nil, errBadInvitation
+		return nil, nil, errBadInvitation
 	}
-	return &Standing{wardSignPK: ward[:32], padlock: ward[32:], heirPK: heirPK, heir: heir, lock: ek}, nil
+	var at []*address
+	entries, _ := Elements(t.Raw["at"])
+	for _, e := range entries {
+		if s, err := Parse(e); err == nil {
+			if text, isStr := s.(string); isStr {
+				if a, ok := parseAddress(text); ok {
+					at = append(at, a)
+				}
+			}
+		}
+	}
+	return &Standing{wardSignPK: ward[:32], padlock: ward[32:], heirPK: heirPK, heir: heir, lock: ek}, at, nil
 }
 
 func isLowerHex(s string) bool {

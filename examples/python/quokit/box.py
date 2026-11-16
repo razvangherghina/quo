@@ -1,4 +1,4 @@
-"""Keys, boxes, the payload's shape and the reply shapes."""
+"""Keys, boxes, the invitation, the payload's shape and the reply shapes."""
 
 from . import crypto as c
 from .address import address
@@ -188,3 +188,53 @@ def payload_text(to, by, nxt, seq, method=None, args=None):
     if args is not None:
         out += ',"args":' + args
     return (out + "}").encode("utf-8")
+
+
+# ---- the invitation ----
+
+INVITATION = b"quo-invitation"
+INVITED = (("ward", 128), ("heir", 64), ("secret", 64), ("lock", 2368))
+
+
+def is_hex(v, length):
+    return isinstance(v, str) and len(v) == length and set(v) <= HEX
+
+
+def invitation(sign_seed, fields, at=None):
+    """The invitation of `fields`, the four hex strings, with `at`, a list of
+    strings, written as given where it is not None. Signed by the ward."""
+    parts = ['"%s":"%s"' % (name, fields[name]) for name, _ in INVITED]
+    if at is not None:
+        parts.append('"at":[' + ",".join(json_string(a) for a in at) + "]")
+    text = "{" + ",".join(parts) + "}"
+    return {"text": text, "sig": c.ed_sign(sign_seed, INVITATION + text.encode("utf-8")).hex()}
+
+
+def read_invitation(inv):
+    """The four hex strings of an invitation, and its `at` as `items` reads it
+    where it is an array, or None where it is no invitation. Nothing else of
+    the text is read."""
+    if not isinstance(inv, dict) or set(inv) != {"text", "sig"}:
+        return None
+    text, sig = inv["text"], inv["sig"]
+    if not isinstance(text, str) or not is_hex(sig, 128):
+        return None
+    try:
+        data = text.encode("utf-8")  # a lone surrogate has no UTF-8 bytes
+        v, s = parse(data)
+    except (UnicodeEncodeError, Invalid):
+        return None
+    if not isinstance(v, JObj):
+        return None
+    fields = {}
+    for name, length in INVITED:
+        if not is_hex(v.get(name), length):
+            return None
+        fields[name] = v[name]
+    if not c.mlkem_valid(bytes.fromhex(fields["lock"])):
+        return None
+    if not c.ed_verify(bytes.fromhex(fields["ward"][:64]), INVITATION + data, bytes.fromhex(sig)):
+        return None
+    if isinstance(v.get("at"), Container) and v["at"].kind == "[":
+        fields["at"] = items(s, v.spans["at"][0])
+    return fields

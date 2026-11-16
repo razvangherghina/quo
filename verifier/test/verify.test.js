@@ -5,17 +5,22 @@ import { randomBytes } from 'node:crypto';
 import { join } from 'node:path';
 import { test } from 'node:test';
 
-import { aesOpen, edPub, edVerify, hkdf, x25519, x25519Pub } from '../primitives.js';
+import { aesOpen, edPub, edSign, edVerify, hkdf, x25519, x25519Pub } from '../primitives.js';
 import {
   follow,
+  invitationSigned,
+  mint,
   nest,
   newKey,
   payloadBytes,
+  readInvitation,
   sealAsk,
   Session,
+  signInvitation,
   SIZE,
   verify,
   Verifier,
+  verifierWard,
   wardKeys,
   writeReply,
 } from '../verify.js';
@@ -104,6 +109,36 @@ test('The signature. A key the verifier mints signs for its own public key alone
   assert.equal(a.hex.length, 64);
   assert.equal(edVerify(a.pk, Buffer.from('x'), Buffer.alloc(64)), false);
   assert.notEqual(a.hex, b.hex);
+});
+
+test('The invitation. An invitation the verifier mints reads as one, its five fields under its text', () => {
+  const mine = verifierWard('the invitation, read');
+  const { inv, fields } = mint(mine, ['tcp://127.0.0.1:9']);
+  assert.deepEqual(Object.keys(inv).toSorted(), ['sig', 'text']);
+  assert.deepEqual(readInvitation(inv).fields, fields);
+  const sig = Buffer.from(inv.sig, 'hex');
+  assert.equal(edVerify(mine.signPk, invitationSigned(Buffer.from(inv.text)), sig), true);
+  assert.equal(invitationSigned(Buffer.alloc(0)).toString(), 'quo-invitation');
+});
+
+test('The invitation. A word changed, a signature over the text alone or by another ward, no sig, a field beside the two, or a lone surrogate makes no invitation', () => {
+  const mine = verifierWard('the invitation, refused');
+  const { inv, fields } = mint(mine);
+  const text = JSON.stringify({ ...fields, says: 'John' });
+  assert.equal(readInvitation(signInvitation(mine, text)).error, undefined);
+  const forged = { ...signInvitation(mine, text), text: text.replace('John', 'Alice') };
+  assert.equal(readInvitation(forged).error, 'its signature fails');
+  const bare = { ...inv, sig: edSign(mine.signSeed, Buffer.from(inv.text)).toString('hex') };
+  assert.equal(readInvitation(bare).error, 'its signature fails');
+  const other = verifierWard('the invitation, another ward');
+  assert.equal(readInvitation(signInvitation(other, inv.text)).error, 'its signature fails');
+  assert.match(readInvitation({ text: inv.text }).error, /not text and sig/);
+  assert.match(readInvitation({ ...inv, at: [] }).error, /not text and sig/);
+  assert.match(readInvitation(fields).error, /not text and sig/);
+  const lone = signInvitation(mine, `${inv.text.slice(0, -1)},"x":"\ud800"}`);
+  assert.equal(readInvitation(lone).error, 'text denotes a lone surrogate');
+  const twice = signInvitation(mine, `{"ward":${JSON.stringify(fields.ward)},${inv.text.slice(1)}`);
+  assert.match(readInvitation(twice).error, /no value/);
 });
 
 test('Values. A nest of the depth asked is that many brackets', () => {

@@ -88,18 +88,21 @@ func (w *Ward) PK() string {
 
 var errNameHeld = errors.New("name held")
 
-// Invitation is the invitation of SPEC.md.
+// Invitation is the invitation of SPEC.md: its text, and the ward's
+// signature over `quo-invitation`, then that text.
 type Invitation struct {
-	Ward   string   `json:"ward"`
-	Heir   string   `json:"heir"`
-	Secret string   `json:"secret"`
-	Lock   string   `json:"lock"`
-	At     []string `json:"at,omitempty"`
+	Text string `json:"text"`
+	Sig  string `json:"sig"`
 }
 
-// Invite makes a heir, holds its pk under name, and gives its secret away.
-// The ward keeps no heir secret.
-func (w *Ward) Invite(name string, reach Target) (*Invitation, error) {
+// invitationSigned is what an invitation's sig covers.
+func invitationSigned(text []byte) []byte { return append([]byte("quo-invitation"), text...) }
+
+// Invite makes a heir, holds its pk under name, and gives its secret away in
+// an invitation it signs. at, when not nil, is the JSON text of an array of
+// strings, and the invitation text carries it as its `at`. The ward keeps no
+// heir secret.
+func (w *Ward) Invite(name string, reach Target, at []byte) (*Invitation, error) {
 	if _, held := w.heirs[name]; held {
 		return nil, errNameHeld
 	}
@@ -108,11 +111,16 @@ func (w *Ward) Invite(name string, reach Target) (*Invitation, error) {
 	h := &Heir{PK: pk, reach: reach}
 	w.heirs[name] = h
 	w.byPK[hex.EncodeToString(pk)] = h
+	text := []byte(`{"ward":"` + w.PK() + `","heir":"` + hex.EncodeToString(pk) +
+		`","secret":"` + hex.EncodeToString(secret) +
+		`","lock":"` + hex.EncodeToString(w.lock.EncapsulationKey().Bytes()) + `"`)
+	if at != nil {
+		text = append(append(text, `,"at":`...), at...)
+	}
+	text = append(text, '}')
 	return &Invitation{
-		Ward:   w.PK(),
-		Heir:   hex.EncodeToString(pk),
-		Secret: hex.EncodeToString(secret),
-		Lock:   hex.EncodeToString(w.lock.EncapsulationKey().Bytes()),
+		Text: string(text),
+		Sig:  hex.EncodeToString(ed25519.Sign(w.Sign, invitationSigned(text))),
 	}, nil
 }
 

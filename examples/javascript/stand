@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // The harness of HARNESS.md, parts one and two, on stdin and stdout.
 import { Ward, reaches, readInvitation, readJSON } from "./lib/quo.js";
-import { utf8, parse, compact, toJS } from "./lib/json.js";
+import { utf8, parse, compact } from "./lib/json.js";
 import { isHex, fromHex, hex } from "./lib/crypto.js";
 import { listen as listenTcp, Dialer } from "./lib/tcp.js";
 import { listenPost, askPost, listenLine, LineDialer } from "./lib/web.js";
@@ -55,10 +55,17 @@ const wardField = (f) => {
   if (!isHex(s, 128)) refuse("bad request");
   return s;
 };
-const invitationField = (f) => {
+const invitationField = (f, text) => {
   const n = f.get("invitation");
   if (!n || n.t !== "object") refuse("bad request");
-  return readInvitation(toJS(n)) ?? refuse("bad request");
+  return readInvitation(text.slice(n.s, n.e)) ?? refuse("bad request");
+};
+// An `at` given to `invite`: an array of strings, or absent.
+const atField = (f) => {
+  const n = f.get("at");
+  if (!n) return undefined;
+  if (n.t !== "array" || !n.items.every((i) => i.t === "string")) refuse("bad request");
+  return n.items.map((i) => i.v);
 };
 const askFields = (f, text) => {
   const method = str(f, "method", true);
@@ -83,12 +90,15 @@ const ops = {
     const pk = wardField(f);
     const name = str(f, "heir");
     const reachName = str(f, "reach", true);
+    const given = atField(f);
     const w = held(pk);
     const reach = reachOf(reachName) ?? reaches.echo;
     if (w.names.has(name)) refuse("name held");
-    const inv = w.ward.invite(reach, ours());
-    w.names.set(name, inv.heir);
-    return `"invitation":${JSON.stringify(inv)}`;
+    // The `at` the request gives, as given; else this program's listeners, where it holds any.
+    const at = given ?? (ours().length ? ours() : undefined);
+    const { heir, invitation } = w.ward.invite(reach, at);
+    w.names.set(name, heir);
+    return `"invitation":${JSON.stringify(invitation)}`;
   },
   release(f) {
     const pk = wardField(f);
@@ -110,15 +120,15 @@ const ops = {
   },
   ask(f, text) {
     const pk = wardField(f);
-    const inv = invitationField(f);
+    const inv = invitationField(f, text);
     const { method, args } = askFields(f, text);
     const w = held(pk);
     const box = w.ward.standing(inv).ask(method, args);
     return `"box":"${hex(box)}"`;
   },
-  read(f) {
+  read(f, text) {
     const pk = wardField(f);
-    const inv = invitationField(f);
+    const inv = invitationField(f, text);
     const n = f.get("reply");
     if (!n || !(n.t === "null" || (n.t === "string" && n.v.length % 2 === 0 && isHex(n.v, n.v.length)))) refuse("bad request");
     const w = held(pk);
@@ -147,7 +157,7 @@ const ops = {
   },
   async send(f, text) {
     const pk = wardField(f);
-    const inv = invitationField(f);
+    const inv = invitationField(f, text);
     const { method, args } = askFields(f, text);
     const w = held(pk);
     const s = w.ward.standing(inv);
@@ -175,8 +185,8 @@ async function handle(bytes) {
     text = utf8(bytes);
     if (text.endsWith("\r")) text = text.slice(0, -1);
     if (text === "") return;
-    // Three levels: the request, the invitation, and its `at`.
-    node = parse(text, { unique: false, depth: 3 });
+    // Two levels: the request, and its invitation, `at` or `args`.
+    node = parse(text, { unique: false });
   } catch {
     return error(null, "bad request");
   }

@@ -12,8 +12,8 @@ sys.path.insert(0, HERE)
 from quokit import crypto as c  # noqa: E402
 from quokit.address import address  # noqa: E402
 from quokit.web import post  # noqa: E402
-from quokit.box import (SILENCE, ZERO_EDGE, WardKey, knock_edge, open_reply, payload_text,  # noqa: E402
-                        read_reply_text, seal_ask)
+from quokit.box import (INVITATION, SILENCE, ZERO_EDGE, WardKey, invitation, knock_edge,  # noqa: E402
+                        open_reply, payload_text, read_invitation, read_reply_text, seal_ask)
 from quokit.carrier import ASK, NOTHING, REPLY, dial, frame  # noqa: E402
 from quokit.door import REACHES, Ward  # noqa: E402
 from quokit.entropy import OsSource  # noqa: E402
@@ -46,6 +46,11 @@ def unannounced(st, signer, edge):
     lid_secret = os.urandom(32)
     payload = written(st.heir_pk, c.ed_public(signer), None, st.seq, "echo", "{}")
     return seal_ask(st.padlock, st.heir_pk, payload, signer, edge, lid_secret), lid_secret
+
+
+def resigned(key, text):
+    """An invitation of `text`, signed by the WardKey `key`."""
+    return {"text": text, "sig": c.ed_sign(key.sign_seed, INVITATION + text.encode("utf-8")).hex()}
 
 
 def ward_reply(ward, text, lid_secret, edge, signed=None):
@@ -221,11 +226,59 @@ class Values(unittest.TestCase):
             self.assertEqual(read_reply_text(text), ("silence",), text)
 
 
+class Invitations(unittest.TestCase):
+    def setUp(self):
+        self.ward = Ward("inviter", OsSource())
+        self.heir, self.inv = self.ward.invite(REACHES["echo"])
+        self.fields = read_invitation(self.inv)
+
+    def test_written_and_read(self):
+        self.assertEqual(self.fields["ward"], self.ward.pk_hex)
+        self.assertEqual(self.fields["heir"], self.heir.hex())
+        self.assertNotIn("at", self.fields)
+        self.assertEqual(c.ed_public(bytes.fromhex(self.fields["secret"])), self.heir)
+        # `at` is written as given, a lone surrogate as its escape
+        at = ["tcp://127.0.0.1:1", "x\ud800"]
+        self.assertEqual(read_invitation(self.ward.invite(REACHES["echo"], at)[1])["at"], at)
+        self.assertEqual(read_invitation(self.ward.invite(REACHES["echo"], [])[1])["at"], [])
+
+    def test_the_signature(self):
+        key, text = self.ward.key, self.inv["text"]
+        for inv in (dict(self.inv, text=" " + text),
+                    resigned(WardKey("another"), text),
+                    {"text": text, "sig": c.ed_sign(key.sign_seed, text.encode()).hex()},
+                    dict(self.inv, sig=self.inv["sig"].upper()),
+                    {"text": text},
+                    dict(self.inv, at=[]),
+                    self.fields,
+                    dict(self.inv, text=self.fields)):
+            self.assertIsNone(read_invitation(inv))
+
+    def test_the_text(self):
+        key, text, body = self.ward.key, self.inv["text"], self.inv["text"][1:]
+        for bad in (text + ",", "[" + text + "]",
+                    '{"ward":"%s",%s' % (self.fields["ward"], body),
+                    '{"\\u0077ard":"%s",%s' % (self.fields["ward"], body)):
+            self.assertIsNone(read_invitation(resigned(key, bad)))
+        # a text that denotes a lone surrogate has no UTF-8 bytes
+        self.assertIsNone(read_invitation(dict(self.inv, text=text[:-1] + ',"x":"\ud800"}')))
+
+    def test_beside_the_five_and_padding(self):
+        key, body = self.ward.key, self.inv["text"][1:]
+        for text in ('{"says":"John",' + body, " \n" + self.inv["text"] + "\t ",
+                     '{"at":[5,"tcp://127.0.0.1:2",{"a":1}],' + body, '{"at":"nowhere",' + body):
+            fields = read_invitation(resigned(key, text))
+            self.assertEqual({k: fields[k] for k in self.fields}, self.fields)
+        self.assertEqual(read_invitation(resigned(key, '{"at":[5,"tcp://127.0.0.1:2"],' + body))["at"][1],
+                         "tcp://127.0.0.1:2")
+        self.assertNotIn("at", read_invitation(resigned(key, '{"at":"nowhere",' + body)))
+
+
 class Door(unittest.TestCase):
     def setUp(self):
         self.src = OsSource()
         self.ward = Ward("door", self.src)
-        self.inv = self.ward.invite(REACHES["echo"])
+        self.inv = read_invitation(self.ward.invite(REACHES["echo"])[1])
         self.st = Standing(self.inv, self.src)
         self.sign = self.ward.key.signing_pk
 
@@ -325,7 +378,7 @@ class Door(unittest.TestCase):
         st = Standing(dict(self.inv, secret=os.urandom(32).hex()), self.src)
         self.assertEqual(st.take(w.arrive(st.next_box("echo", "{}"))), ("silence",))
         other = Ward("other", self.src)
-        st = Standing(dict(self.inv, lock=other.invite(REACHES["echo"])["lock"]), self.src)
+        st = Standing(dict(self.inv, lock=read_invitation(other.invite(REACHES["echo"])[1])["lock"]), self.src)
         self.assertEqual(st.take(w.arrive(st.next_box("echo", "{}"))), ("silence",))
         self.assertTrue(w.heirs[self.st.heir_pk].fresh)
 
@@ -361,7 +414,7 @@ class Door(unittest.TestCase):
 
     def test_moved_at_is_kept_on_a_move(self):
         w = self.ward
-        st = Standing(w.invite(REACHES["moved"]), self.src)
+        st = Standing(read_invitation(w.invite(REACHES["moved"])[1]), self.src)
         knock = st.next_box("echo", '{"m":1}')
         reply = w.arrive(knock)
         r = st.take(reply)
@@ -511,17 +564,18 @@ class Harness(unittest.TestCase):
         self.assertEqual(o["w"], {"id": "w", "ward": pk})
         self.assertEqual(o["i2"], {"id": "i2", "error": "name held"})
         inv = o["i"]["invitation"]
-        self.assertEqual(sorted(inv), ["heir", "lock", "secret", "ward"])
+        self.assertEqual(sorted(inv), ["sig", "text"])
+        self.assertEqual(sorted(read_invitation(inv)), ["heir", "lock", "secret", "ward"])
 
         # One program asks, a door here answers, the program reads.
         door = Ward(c.sha256(b"bob"), OsSource())
-        dinv = door.invite(REACHES["marked"])
+        heir, dinv = door.invite(REACHES["marked"])
         code, out = stand([json.dumps({"id": "w", "op": "ward", "seed": "carol"}),
                            json.dumps({"id": "a", "op": "ask", "ward": WardKey("carol").pk_hex,
                                        "invitation": dinv, "method": "m", "args": {"k": [1, 1.5]}})])
         box = bytes.fromhex(by_id(out)["a"]["box"])
         reply = door.arrive(box)
-        self.assertFalse(door.heirs[bytes.fromhex(dinv["heir"])].fresh)
+        self.assertFalse(door.heirs[heir].fresh)
         carol = WardKey("carol").pk_hex
         code, out = stand([json.dumps({"id": "w", "op": "ward", "seed": "carol"}),
                            json.dumps({"id": "a", "op": "ask", "ward": carol, "invitation": dinv}),
@@ -578,8 +632,8 @@ class Harness(unittest.TestCase):
             tcp = address(at)
             self.assertEqual((tcp.scheme, tcp.host), ("tcp", "127.0.0.1"))
             inv = req({"id": "i", "op": "invite", "ward": pk, "heir": "h"})["invitation"]
-            self.assertEqual(inv["at"], [at])
-            st = Standing(inv, OsSource())
+            self.assertEqual(read_invitation(inv)["at"], [at])
+            st = Standing(read_invitation(inv), OsSource())
             reply = dial(tcp, bytes.fromhex(pk), st.next_box("echo", '{"x":1}'), 10)
             self.assertEqual(st.take(reply)[2], b'{"x":1}')
             self.assertIsNone(dial(tcp, os.urandom(64), st.next_box(), 10))
@@ -603,8 +657,8 @@ class Harness(unittest.TestCase):
             post_at = address(web)
             self.assertEqual((post_at.scheme, post_at.target), ("http", "/"))
             inv3 = req({"id": "i3", "op": "invite", "ward": pk, "heir": "f"})["invitation"]
-            self.assertEqual(inv3["at"], [web, at])
-            st = Standing(inv3, OsSource())
+            self.assertEqual(read_invitation(inv3)["at"], [web, at])
+            st = Standing(read_invitation(inv3), OsSource())
             self.assertEqual(st.take(post(post_at, bytes.fromhex(pk), st.next_box("e", '{"p":1}'), 10))[2],
                              b'{"p":1}')
             self.assertIsNone(post(post_at, os.urandom(64), st.next_box(), 10))
@@ -618,17 +672,21 @@ class Harness(unittest.TestCase):
             far = req({"id": "w3", "op": "ward", "seed": "fay"})["ward"]
             self.assertEqual(req({"id": "r2", "op": "route", "far": far, "at": "ws://127.0.0.1:1/"}),
                              {"id": "r2", "error": "bad request"})
-            inv4 = req({"id": "i4", "op": "invite", "ward": far, "heir": "k"})["invitation"]
-            inv4["at"] = ["zz://nowhere", "not a uri", 7, "ws://127.0.0.1:1/", web]
+            self.assertEqual(req({"id": "i0", "op": "invite", "ward": far, "heir": "k", "at": [7]}),
+                             {"id": "i0", "error": "bad request"})
+            inv4 = req({"id": "i4", "op": "invite", "ward": far, "heir": "k",
+                        "at": ["zz://nowhere", "not a uri", "ws://127.0.0.1:1/", web]})["invitation"]
             got = req({"id": "s3", "op": "send", "ward": me, "invitation": inv4, "method": "e", "args": {"a": 1}})
             self.assertEqual(got, {"id": "s3", "read": {"object": {"a": 1}, "seen": None}})
-            inv4["at"] = web  # not an array: read as absent
+            # the same relation, its text signed again with an `at` that is not an array: read as absent
+            text = invitation(WardKey("fay").sign_seed, read_invitation(inv4))["text"]
+            inv4 = resigned(WardKey("fay"), text[:-1] + ',"at":' + json.dumps(web) + "}")
             got = req({"id": "s4", "op": "send", "ward": me, "invitation": inv4})
             self.assertEqual(got, {"id": "s4", "read": {"nothing": True}})
 
             # a reply's at is read, and dialed before the invitation's
-            inv5 = req({"id": "i5", "op": "invite", "ward": far, "heir": "m", "reach": "moved"})["invitation"]
-            inv5["at"] = [web]
+            inv5 = req({"id": "i5", "op": "invite", "ward": far, "heir": "m", "reach": "moved",
+                        "at": [web]})["invitation"]
             got = req({"id": "s5", "op": "send", "ward": me, "invitation": inv5, "method": "e", "args": {"b": 1}})
             self.assertEqual(got, {"id": "s5", "read": {"object": {"b": 1}, "seen": None, "at": ["tcp://127.0.0.1:9"]}})
             got = req({"id": "s6", "op": "send", "ward": me, "invitation": inv5, "method": "e", "args": {"b": 2}})

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/ed25519"
 	"encoding/hex"
+	"encoding/json"
 	"io"
 	"slices"
 	"strings"
@@ -72,11 +73,12 @@ func TestVerifyRefusesSmallOrderKeys(t *testing.T) {
 func pair(t *testing.T, reach string) (*Ward, *Standing) {
 	t.Helper()
 	w := NewWard(SeedOfText("door"))
-	inv, err := w.Invite("h", Targets[reach])
+	inv, err := w.Invite("h", Targets[reach], nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	st, err := ParseInvitation(*inv)
+	given, _ := json.Marshal(inv)
+	st, _, err := ReadInvitation(given)
 	if err != nil {
 		t.Fatal(err)
 	}

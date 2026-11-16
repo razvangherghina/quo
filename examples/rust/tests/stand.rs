@@ -1,3 +1,5 @@
+use quokit::crypto::{ed_sign, hex, seed_from_text, WardKey};
+use quokit::json;
 use std::io::{BufRead, BufReader, Write};
 use std::process::{Child, ChildStdin, ChildStdout, Command, Stdio};
 
@@ -55,6 +57,18 @@ fn field(ans: &str, k: &str) -> String {
 
 fn invitation(ans: &str) -> String {
     ans.strip_prefix("\"invitation\":").unwrap().to_string()
+}
+
+/// The invitation text of an invitation.
+fn text_of(inv: &str) -> String {
+    json::object(inv.as_bytes()).unwrap().get("text").unwrap().as_str().unwrap()
+}
+
+/// An invitation whose text is `text`, signed by the ward stood from `seed`.
+fn signed(seed: &str, text: &str) -> String {
+    let k = WardKey::from_seed(&seed_from_text(seed));
+    let sig = ed_sign(&k.sign_secret, &[b"quo-invitation", text.as_bytes()].concat());
+    format!("{{\"text\":{},\"sig\":\"{}\"}}", json::quote(text), hex(&sig))
 }
 
 #[test]
@@ -197,7 +211,18 @@ fn addresses_and_at() {
 
     // before a listener, no at
     let bare = invitation(&a.req(&format!(r#""op":"invite","ward":"{wa}","heir":"bare""#)));
-    assert!(!bare.contains("\"at\""));
+    assert!(!text_of(&bare).contains("\"at\""));
+    // an at given is written as given; one that is no array of strings is a bad request
+    let given = invitation(&a.req(&format!(r#""op":"invite","ward":"{wa}","heir":"given","at":["zz://q", "tcp://h:1"]"#)));
+    assert!(text_of(&given).ends_with(r#","at":["zz://q", "tcp://h:1"]}"#), "{given}");
+    for bad in [r#""tcp://h:1""#, "[9]", "null", "{}"] {
+        assert_eq!(a.req(&format!(r#""op":"invite","ward":"{wa}","heir":"x","at":{bad}"#)), r#""error":"bad request""#);
+    }
+    // an invitation is its text and its signature
+    let text = text_of(&bare);
+    for bad in [text.clone(), signed("beta", &text), signed("alpha", &text).replacen('{', r#"{"at":[],"#, 1)] {
+        assert_eq!(b.req(&format!(r#""op":"ask","ward":"{wb}","invitation":{bad}"#)), r#""error":"bad request""#);
+    }
 
     // tcp alone is stood
     for scheme in ["http", "ws", "https", "wss", "udp"] {
@@ -211,21 +236,23 @@ fn addresses_and_at() {
         assert_eq!(b.req(&format!(r#""op":"route","far":"{wa}","at":"{bad}""#)), r#""error":"bad request""#);
     }
 
-    // after it, every invitation carries it in at
+    // after it, every invitation carries it in at, where the request gives none
     let inv = invitation(&a.req(&format!(r#""op":"invite","ward":"{wa}","heir":"h""#)));
     let tail = format!(r#","at":["{at}"]}}"#);
-    assert!(inv.ends_with(&tail), "{inv}");
+    assert!(text_of(&inv).ends_with(&tail), "{inv}");
+    let none = invitation(&a.req(&format!(r#""op":"invite","ward":"{wa}","heir":"none","at":[]"#)));
+    assert!(text_of(&none).ends_with(r#","at":[]}"#), "{none}");
 
     // with no route, at is tried in order: another scheme and a dead tcp address are passed over
     let dead = std::net::TcpListener::bind("127.0.0.1:0").unwrap().local_addr().unwrap();
     let lead = format!(r#","at":["ws://127.0.0.1:1/q","tcp://{dead}","not a uri",7,"{at}"]}}"#);
-    let tried = inv.replace(&tail, &lead);
+    let tried = signed("alpha", &text_of(&inv).replace(&tail, &lead));
     assert_eq!(
         b.req(&format!(r#""op":"send","ward":"{wb}","invitation":{tried},"method":"m","args":{{"n":1}}"#)),
         r#""read":{"object":{"n":1},"seen":null}"#
     );
     // an at that is not an array is absent: nothing is dialed
-    let flat = inv.replace(&tail, &format!(r#","at":"{at}"}}"#));
+    let flat = signed("alpha", &text_of(&inv).replace(&tail, &format!(r#","at":"{at}"}}"#)));
     assert_eq!(b.req(&format!(r#""op":"send","ward":"{wb}","invitation":{flat}"#)), r#""read":{"nothing":true}"#);
     // a route is dialed alone, even where at would deliver
     b.req(&format!(r#""op":"route","far":"{wa}","at":"tcp://{dead}""#));
@@ -234,7 +261,7 @@ fn addresses_and_at() {
     // a reply's at is read and kept, and its addresses are dialed in place of the invitation's
     let wm = field(&a.req(r#""op":"ward","seed":"moving""#), "ward");
     let moved = invitation(&a.req(&format!(r#""op":"invite","ward":"{wm}","heir":"m","reach":"moved""#)));
-    assert!(moved.ends_with(&tail), "{moved}");
+    assert!(text_of(&moved).ends_with(&tail), "{moved}");
     assert_eq!(
         b.req(&format!(r#""op":"send","ward":"{wb}","invitation":{moved},"method":"m""#)),
         r#""read":{"object":{},"seen":null,"at":["tcp://127.0.0.1:9"]}"#

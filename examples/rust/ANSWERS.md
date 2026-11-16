@@ -113,11 +113,20 @@ stranger.
 
 ## What a kit asks
 
-**19.** The invitation is returned on the `invite` answer and nowhere else.
-The minting kit keeps no copy, only the heir pk. The reason is that a door
-reads no route from an invitation. The ward needs nothing of it but the
-name of the heir. The kit writes no link and reads none, and it answers no
-reference: the harness hands every invitation whole.
+**19.** The invitation is returned on the `invite` answer and nowhere else,
+its text signed by the ward. The minting kit keeps no copy, only the heir
+pk. The reason is that a door reads no route from an invitation. The ward
+needs nothing of it but the name of the heir. The kit writes no link and
+reads none, and it answers no reference: the harness hands every invitation
+whole.
+
+The kit writes no field beside the five in an invitation text: `ward`,
+`heir`, `secret`, `lock`, and `at` where it has one. Of a field beside the
+five in a text it reads, it shows nothing and reads nothing. The field stays
+in the text the standing holds, under the ward's signature. The reason is
+that Quo reads no field beside the five, so a sixth would tell another kit
+nothing. A field would be shown to a person, and the stand program answers
+the harness alone and has no person to show one to.
 
 **20.** After a knock that brought no object back, the next ask is a
 recovery ask. It is signed by the announced key, under the knock's edge
@@ -174,12 +183,16 @@ memory. The second is the `at` of a reply, kept on the relation's standing.
 The third is the `at` of the invitation a send is made on. A route is
 trusted first and is dialed alone. Next come the addresses of the last
 reply that gave any, and last the invitation's. The reason for that order
-is that a route is the kit's own word, and a reply's `at` is signed by the
-ward. An invitation's `at` may have been written by whoever carried it.
+is that a route is the kit's own word. A reply's `at` and an invitation's
+are both signed by the ward, the invitation's with the rest of its text, but
+a reply's is the later word. It says where the ward is reached now, and the
+invitation's says where it was reached when the invitation was minted.
 
-Once the program holds its listener, every invitation it mints carries
-that listener's `tcp://127.0.0.1:port` as the one address in `at`. Before
-that it writes no `at`. Its door writes `at` in a reply only under the
+Where the `invite` request gives an `at`, the invitation text carries it as
+the request wrote it, byte for byte, and the ward signs it with the rest.
+Where the request gives none and the program holds its listener, the
+invitation carries that listener's `tcp://127.0.0.1:port` as the one address
+in `at`. With neither it writes no `at`. Its door writes `at` in a reply only under the
 moved reach, which writes `["tcp://127.0.0.1:9"]` on every object. No other
 reach writes one. The reason is that the harness fixes what moved writes,
 and a door that answers its own ward's listener gives an asker no address
@@ -228,7 +241,8 @@ lies beyond what the kit reads, and nothing there is answered otherwise.
 The asker reads `object` the same way, at any depth, lone surrogates and
 repeated keys included. It hands it on as the text that came, with whitespace outside
 strings removed. On the channel, `method` and `args` are taken by the same
-grammar and sent byte for byte. The reason is that Quo reads nothing there.
+grammar and sent byte for byte, and so is the `at` of `invite`, written into
+the invitation text. The reason is that Quo reads nothing there.
 Refusing a text the grammar allows would put the kit's taste in front of
 the spec's silence.
 

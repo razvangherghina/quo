@@ -34,11 +34,11 @@ The notation reads this way:
 
 An enum value in lowercase is written on the wire exactly so. An enum
 value in capitals never crosses a door. The fields of `Invitation`,
-`Payload`, `Answer`, `Silence`, `WordReply`, `Describe` and `Entry` are the
-keys of their JSON text, spelt as on the wire.
+`InvitationText`, `Payload`, `Answer`, `Silence`, `WordReply`, `Describe`
+and `Entry` are the keys of their JSON text, spelt as on the wire.
 
 A key pair is named by its public key. A secret is a field only where it
-crosses, which is `Invitation.secret` alone.
+crosses, which is `InvitationText.secret` alone.
 
 ## Where the notation stops
 
@@ -150,11 +150,29 @@ An invitation goes by any channel. Everything else crosses as a box.
 
 ```graphql
 """
-An invitation is a value of this shape. A field beside the five is
-ignored. A door reads no route from it.
+An invitation is a value of this shape: its text, signed by its ward.
+A field beside the two makes no invitation.
 """
 type Invitation {
-  "The pk of the ward that made the heir."
+  """
+  A string. The UTF-8 bytes of the string it denotes, its escapes read,
+  are the invitation text. A lone surrogate in it makes no invitation.
+  """
+  text: InvitationText!
+  """
+  128 hex: Ed25519 by the signing key of the ward the text names, over
+  the fourteen bytes quo-invitation, then the invitation text. A
+  signature that fails makes no invitation.
+  """
+  sig: Hex!
+}
+
+"""
+The invitation text: a value of this shape. A field beside the five is
+ignored, and is signed. A door reads no route from it.
+"""
+type InvitationText {
+  "The pk of the ward that made the heir and signed the invitation."
   ward: WardPk!
   "The heir pk. It names the relation for as long as the relation lasts."
   heir: Pk!
@@ -597,12 +615,12 @@ is this reading's, and it binds no kit.
 | ward | a house | `Ward` |
 | door | the porter | `Door` |
 | signing pk and padlock | the ring and the seal | `Ward.signingPk`, `Ward.padlock` |
-| lock | the lock printed on the card | `Ward.lock`, `Invitation.lock` |
+| lock | the lock printed on the card | `Ward.lock`, `InvitationText.lock` |
 | relation | a booth | `Relation` |
 | occupant | the purple side | `Occupant` |
 | standing | the red side | `Standing` |
-| heir | the first key | `Invitation.heir`, `Occupant.heir` |
-| invitation | the card | `Invitation` |
+| heir | the first key | `InvitationText.heir`, `Occupant.heir` |
+| invitation | the card, signed by the house | `Invitation`, `InvitationText` |
 | knock | stepping in with the first key | `KnockBox` |
 | ask | asking | `AskBox`, `Payload` |
 | `next`, the key held, the key vouched for | a key that keeps moving | `Payload.next`, `Occupant.held`, `Occupant.vouched` |
@@ -625,15 +643,15 @@ is this reading's, and it binds no kit.
 | Terms | every type's sentence |
 | The algorithms | not typed |
 | The ward key | `Ward` |
-| The lock | `Ward.lock`, `Invitation.lock` |
+| The lock | `Ward.lock`, `InvitationText.lock` |
 | The other keys | not typed |
 | Values | `Value`, `Count`, `Hex`; duplicate keys and padding are not typed |
-| The invitation | `Invitation`, `Address` |
+| The invitation | `Invitation`, `InvitationText`, `Address` |
 | The relation | `Relation`, `Occupant`, `Standing` |
 | The box | `AskBox`, `KnockBox`, `ReplyBox` |
 | Sealing | `Sealed`, Sizes; the derivations are not typed |
 | The edge key | The edge keys |
-| The signature | `ReplyBox.body`, `Payload.by`; the check is not typed |
+| The signature | `ReplyBox.body`, `Payload.by`, `Invitation.sig`; the check is not typed |
 | The size | Sizes |
 | The payload | `Payload` |
 | The count | `Count`, `Occupant.honoured` |

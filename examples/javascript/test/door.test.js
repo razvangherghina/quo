@@ -1,18 +1,62 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { Ward, Standing, reaches, readReply } from '../lib/quo.js';
+import { Ward, Standing, reaches, readReply, readInvitation } from '../lib/quo.js';
 import { sealAsk, sealReply, follow, openReply, edgeSealKey } from '../lib/box.js';
 import { edSecret, draw, hex, fromHex, xSecret, agree, seal, sign, ZERO32 } from '../lib/crypto.js';
 
 const setup = (reach, zero = null) => {
   const w = new Ward(draw(32), { zero });
-  const inv = w.invite(reach);
+  const inv = readInvitation(JSON.stringify(w.invite(reach).invitation));
   return { w, inv, s: new Standing(inv) };
 };
 const read = (s, box) => {
   const r = s.read(box);
   return r.kind === 'object' ? { object: r.text.slice(r.node.s, r.node.e), seen: r.seen } : r;
 };
+
+void test('an invitation: a text and the sig its ward made over it, and nothing beside', () => {
+  const w = new Ward(draw(32));
+  const { heir, invitation } = w.invite(reaches.echo, ['tcp://127.0.0.1:9']);
+  const five = JSON.parse(invitation.text);
+  assert.deepEqual(Object.keys(five), ['ward', 'heir', 'secret', 'lock', 'at']);
+  assert.equal(five.heir, heir);
+  assert.deepEqual(readInvitation(JSON.stringify(invitation)), five);
+  const signed = (text, signer = w.signer) => ({
+    text,
+    sig: hex(sign(signer, Buffer.concat([Buffer.from('quo-invitation'), Buffer.from(text)]))),
+  });
+  const reads = (o) => readInvitation(typeof o === 'string' ? o : JSON.stringify(o));
+  // A field beside the five is ignored and signed, padding is read and signed, and an `at`
+  // that is not an array is read as absent.
+  const { at, ...four } = five;
+  void at;
+  assert.deepEqual(reads(signed(JSON.stringify({ ...four, says: 'John' }))), four);
+  assert.deepEqual(reads(signed(` \n${JSON.stringify(four)}\t `)), four);
+  assert.deepEqual(reads(signed(JSON.stringify({ ...four, at: 'tcp://127.0.0.1:9' }))), four);
+  const text = JSON.stringify(four);
+  for (const no of [
+    four,
+    { text },
+    { ...invitation, text },
+    signed(text, edSecret(draw(32))),
+    { text, sig: hex(sign(w.signer, Buffer.from(text))) },
+    { ...signed(text), sig: signed(text).sig.toUpperCase() },
+    { ...signed(text), at: [] },
+    { text: four, sig: signed(text).sig },
+    signed(`${text},`),
+    signed(`[${text}]`),
+    signed(`{"ward":${JSON.stringify(four.ward)},${text.slice(1)}`),
+    signed(JSON.stringify({ ...four, lock: four.lock.toUpperCase() })),
+    signed(JSON.stringify({ ...four, secret: undefined })),
+  ])
+    assert.equal(reads(no), null, JSON.stringify(no).slice(0, 80));
+  // Two keys of one name in the invitation, and a text that denotes a lone surrogate. A lone
+  // surrogate escaped inside the text, in a field beside the five, is the text's to carry.
+  const { sig } = signed(text);
+  assert.equal(reads(`{"text":${JSON.stringify(text)},"sig":"${sig}","sig":"${sig}"}`), null);
+  assert.equal(reads(signed(`${text.slice(0, -1)},"x":"\ud800"}`)), null);
+  assert.deepEqual(reads(signed(`${text.slice(0, -1)},"x":"\\ud800"}`)), four);
+});
 
 void test('box lengths', () => {
   const { w, inv, s } = setup();

@@ -612,23 +612,91 @@ pub fn lockPasses(ek: *const [ek_len]u8) bool {
     return true;
 }
 
+/// What `sig` covers: the fourteen bytes `quo-invitation`, then the invitation text.
+fn invitationSigned(a: Allocator, text: []const u8) ![]u8 {
+    const out = try a.alloc(u8, 14 + text.len);
+    out[0..14].* = "quo-invitation".*;
+    @memcpy(out[14..], text);
+    return out;
+}
+
+/// Writes JSON text as a JSON string that denotes it. JSON text holds no control
+/// character but the whitespace between its tokens, so those three are all it escapes
+/// beside `"` and `\`.
+pub fn writeString(w: *std.Io.Writer, text: []const u8) !void {
+    try w.writeByte('"');
+    for (text) |ch| switch (ch) {
+        '"', '\\' => try w.print("\\{c}", .{ch}),
+        '\n' => try w.writeAll("\\n"),
+        '\r' => try w.writeAll("\\r"),
+        '\t' => try w.writeAll("\\t"),
+        else => try w.writeByte(ch),
+    };
+    try w.writeByte('"');
+}
+
+/// `n` bytes from the lowercase hex of the string at `key`, or null.
+fn hexIn(comptime n: usize, obj: Json.Node, key: []const u8) ?[n]u8 {
+    const v = obj.get(key) orelse return null;
+    if (v.kind != .string or !isLowerHex(v.str, 2 * n)) return null;
+    var out: [n]u8 = undefined;
+    _ = std.fmt.hexToBytes(&out, v.str) catch return null;
+    return out;
+}
+
 pub const Invitation = struct {
     ward: [64]u8,
     heir: [32]u8,
     secret: [32]u8,
     lock: [ek_len]u8,
 
-    /// Writes the invitation, with `at` naming `address` when there is one. An
-    /// address is written as JSON string content, so it holds no `"` and no `\`.
-    pub fn write(self: Invitation, w: *std.Io.Writer, address: ?[]const u8) !void {
-        try w.print("{{\"ward\":\"{s}\",\"heir\":\"{s}\",\"secret\":\"{s}\",\"lock\":\"{s}\"", .{
+    /// An invitation read: its five fields, and its text with its own keys read.
+    pub const Signed = struct { inv: Invitation, text: Json.Node };
+
+    /// Writes the invitation `{ text, sig }`, signed by `signer`, the ward's signing key.
+    /// `at`, when given, is a JSON array written in the text as it stands.
+    pub fn write(self: Invitation, a: Allocator, w: *std.Io.Writer, signer: KeyPair, at: ?[]const u8) !void {
+        var t: std.Io.Writer.Allocating = .init(a);
+        try t.writer.print("{{\"ward\":\"{s}\",\"heir\":\"{s}\",\"secret\":\"{s}\",\"lock\":\"{s}\"", .{
             &std.fmt.bytesToHex(self.ward, .lower),
             &std.fmt.bytesToHex(self.heir, .lower),
             &std.fmt.bytesToHex(self.secret, .lower),
             &std.fmt.bytesToHex(self.lock, .lower),
         });
-        if (address) |at| try w.print(",\"at\":[\"{s}\"]", .{at});
-        try w.writeAll("}");
+        if (at) |x| try t.writer.print(",\"at\":{s}", .{x});
+        try t.writer.writeAll("}");
+        const text = t.written();
+        const sig = sign(signer, try invitationSigned(a, text));
+        try w.writeAll("{\"text\":");
+        try writeString(w, text);
+        try w.print(",\"sig\":\"{x}\"}}", .{&sig});
+    }
+
+    /// Reads an invitation as SPEC.md reads one, from its object with its own keys read.
+    /// Null where it is no invitation.
+    pub fn read(a: Allocator, node: Json.Node) !?Signed {
+        if (node.kind != .object or node.keys.len != 2) return null;
+        const t = node.get("text") orelse return null;
+        const s = node.get("sig") orelse return null;
+        if (t.kind != .string) return null;
+        var sig: [64]u8 = undefined;
+        if (s.kind != .string or !isLowerHex(s.str, 128)) return null;
+        _ = std.fmt.hexToBytes(&sig, s.str) catch return null;
+        // A text that denotes a lone surrogate holds its three bytes, which are not UTF-8.
+        const text = Json.parse(a, t.str, 1) catch |e| switch (e) {
+            error.OutOfMemory => return e,
+            else => return null,
+        };
+        if (text.kind != .object) return null;
+        const inv: Invitation = .{
+            .ward = hexIn(64, text, "ward") orelse return null,
+            .heir = hexIn(32, text, "heir") orelse return null,
+            .secret = hexIn(32, text, "secret") orelse return null,
+            .lock = hexIn(ek_len, text, "lock") orelse return null,
+        };
+        if (!lockPasses(&inv.lock)) return null;
+        if (!verify(inv.ward[0..32].*, try invitationSigned(a, t.str), &sig)) return null;
+        return .{ .inv = inv, .text = text };
     }
 };
 

@@ -86,15 +86,15 @@ fixes them. Nothing else a kit wrote is held against stored bytes.
 The verifier stands a ward from a seed it chooses, and derives from that
 seed the signing key and the padlock. It holds the padlock's secret.
 
-It checks the ward pk against the seed. It asks for an invitation. It
-checks that the heir pk is the public key of the heir secret the
-invitation carries, and that the lock is an ML-KEM-768 encapsulation
-key. When the invitation carries `at`, it checks that `at` is an array
-of addresses. It checks that each address of a scheme a published
-carrier names is written as that carrier writes it. It hands the kit
-invitations whose
-`at` holds a scheme no carrier names, or is not an array, and they are
-still invitations.
+It checks the ward pk against the seed. It asks for an invitation. It checks
+that the invitation is a text and a `sig`, and that the `sig` is the ward's
+signature over `quo-invitation`, then the text. It checks that the heir pk is
+the public key of the heir secret the invitation carries, and that the lock is
+an ML-KEM-768 encapsulation key. When the invitation carries `at`, it checks
+that `at` is an array of addresses. It checks that each address of a scheme a
+published carrier names is written as that carrier writes it. It hands the kit
+invitations whose `at` holds a scheme no carrier names, or is not an array, and
+they are still invitations.
 
 It writes every ask itself, keeps each ask's lid secret, delivers the box
 with `arrive`, and opens what comes back:
@@ -137,8 +137,8 @@ both.
 
 ## The kit as an asker
 
-The verifier stands its own ward, mints an invitation, and hands it to the
-kit with `ask`. It takes apart the box the kit sealed, as the kit's door
+The verifier stands its own ward, mints an invitation it signs, and hands
+it to the kit with `ask`. It takes apart the box the kit sealed, as the kit's door
 would:
 
 - on a knock, the ciphertext decapsulates under the verifier's lock, and
@@ -174,6 +174,14 @@ back to an ask above that highest. It checks that it moved neither when
 an object came back to an ask at or below it. It runs two relations at
 once, answering each ask after
 the other's, and holds the kit to keeping them apart.
+
+It hands the kit, with `ask`, what is no invitation, and holds the kit to
+`bad request`: the five with no text, a text with no `sig`, a text changed
+after it was signed, a text signed by another ward, a `sig` over the text
+alone, an uppercase `sig`, a field beside the two, a text that is an
+object, is no JSON, holds a key twice or denotes a lone surrogate. It hands
+it a text with a sixth field and a padded text, each signed, and holds the
+kit to sealing a box.
 
 A kit that answers `ask` with `bad request` is judged as a door alone.
 
@@ -346,12 +354,12 @@ altered box is a stranger's. A frame not delivered is nothing.
 Over the post and the held line, the second program is routed to the
 verifier's listener, and a knock and an ask are forwarded as they came.
 
-In every pass, the second program then holds an invitation from a ward no
-route names, and whose `at` the verifier writes with its listener's address
-alone. A second program that reaches the listener is judged over a knock
-and an ask as they came. One that reaches nothing and reads nothing is
-accepted, and the verifier prints whether it reached the first program
-through `at`.
+In every pass, the second program then holds an invitation from a ward no route
+names, which the first program signed, and whose `at` the verifier asked it to
+write with the verifier's listener's address alone. A second program that
+reaches the listener is judged over a knock and an ask as they came. One that
+reaches nothing and reads nothing is accepted, and the verifier prints whether
+it reached the first program through `at`.
 
 ## Vectors
 

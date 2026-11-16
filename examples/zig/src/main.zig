@@ -109,19 +109,29 @@ pub const Stand = struct {
     }
 
     fn op_invite(self: *Stand, a: Allocator, req: Json.Node, id: []const u8, out: *Writer) !void {
-        _ = a;
         const pk = try hexField(req, "ward", 64);
         const name = try str(req, "heir");
         const reach_name = try optStr(req, "reach");
+        // The `at` given is an array of strings, carried as it is given.
+        var at: ?[]const u8 = null;
+        if (req.get("at")) |x| {
+            if (x.kind != .array) return error.BadRequest;
+            for (x.items) |item| if (item.kind != .string) return error.BadRequest;
+            at = x.raw;
+        }
         self.enter();
         defer self.leave();
         const w = self.wards.get(pk) orelse return error.NoSuchWard;
         const reach: quo.Reach = if (reach_name) |r| quo.Reach.fromName(r) orelse return error.NotReached else .echo;
         if (w.door.holdsName(name)) return error.NameHeld;
         const inv = try w.door.invite(&self.ent, name, reach);
+        // With no `at` given, the listener's address, once the program holds one.
         var buf: [address_max]u8 = undefined;
+        if (at == null) {
+            if (self.listenerAddress(&buf)) |l| at = try std.fmt.allocPrint(a, "[\"{s}\"]", .{l});
+        }
         try out.print("{{\"id\":{s},\"invitation\":", .{id});
-        try inv.write(out, self.listenerAddress(&buf));
+        try inv.write(a, out, w.door.keys.sign, at);
         try out.writeAll("}\n");
     }
 
@@ -158,8 +168,8 @@ pub const Stand = struct {
 
     fn askFields(a: Allocator, req: Json.Node) !AskFields {
         const pk = try hexField(req, "ward", 64);
-        const inv = try invitationOf(req);
-        const at = try tcpAt(a, req.get("invitation").?);
+        const signed = try invitationOf(a, req);
+        const at = try tcpAt(a, signed.text);
         var method: ?[]const u8 = null;
         if (req.get("method")) |m| {
             if (m.kind != .string) return error.BadRequest;
@@ -170,7 +180,7 @@ pub const Stand = struct {
             if (x.kind != .object) return error.BadRequest;
             args = x.raw;
         }
-        return .{ .ward = pk, .inv = inv, .at = at, .method = method, .args = args };
+        return .{ .ward = pk, .inv = signed.inv, .at = at, .method = method, .args = args };
     }
 
     /// The listener's address, once the program holds one.
@@ -204,7 +214,7 @@ pub const Stand = struct {
 
     fn op_read(self: *Stand, a: Allocator, req: Json.Node, id: []const u8, out: *Writer) !void {
         const pk = try hexField(req, "ward", 64);
-        const inv = try invitationOf(req);
+        const inv = (try invitationOf(a, req)).inv;
         const reply_node = req.get("reply") orelse return error.BadRequest;
         const reply: ?[]u8 = if (reply_node.kind == .null) null else try anyHex(a, req, "reply");
         self.enter();
@@ -324,23 +334,16 @@ fn anyHex(a: Allocator, obj: Json.Node, key: []const u8) ![]u8 {
     return out;
 }
 
-fn invitationOf(req: Json.Node) Fail!quo.Invitation {
+/// The invitation a request hands, signed by its ward. One that is not one is `bad request`.
+fn invitationOf(a: Allocator, req: Json.Node) !quo.Invitation.Signed {
     const inv = req.get("invitation") orelse return error.BadRequest;
-    if (inv.kind != .object) return error.BadRequest;
-    const out: quo.Invitation = .{
-        .ward = try hexField(inv, "ward", 64),
-        .heir = try hexField(inv, "heir", 32),
-        .secret = try hexField(inv, "secret", 32),
-        .lock = try hexField(inv, "lock", quo.ek_len),
-    };
-    if (!quo.lockPasses(&out.lock)) return error.BadRequest;
-    return out;
+    return try quo.Invitation.read(a, inv) orelse error.BadRequest;
 }
 
-/// The `tcp` addresses an invitation's `at` names, in order. Every other string is
+/// The `tcp` addresses an invitation text's `at` names, in order. Every other string is
 /// skipped, and an `at` that is not an array is absent.
-fn tcpAt(a: Allocator, inv: Json.Node) ![]tcp.Address {
-    const at = inv.get("at") orelse return &.{};
+fn tcpAt(a: Allocator, text: Json.Node) ![]tcp.Address {
+    const at = text.get("at") orelse return &.{};
     if (at.kind != .array) return &.{};
     const list = Json.parse(a, at.raw, 1) catch |e| switch (e) {
         error.OutOfMemory => return e,
@@ -414,6 +417,12 @@ fn run(stand: *Stand, a: Allocator, text: []const u8) ![]const u8 {
     return w.written();
 }
 
+/// The invitation an `invite` answer carries.
+fn invitationIn(answer: []const u8) []const u8 {
+    const at = std.mem.indexOf(u8, answer, "\"invitation\":").? + 13;
+    return answer[at .. answer.len - 2];
+}
+
 test "the requests and their errors" {
     var arena = std.heap.ArenaAllocator.init(testing.allocator);
     defer arena.deinit();
@@ -431,7 +440,9 @@ test "the requests and their errors" {
     try testing.expectEqualStrings("{\"id\":null,\"error\":\"bad request\"}\n", try run(&stand, a, "{\"id\":5,\"op\":\"ward\"}"));
 
     const inv_line = try run(&stand, a, try std.fmt.allocPrint(a, "{{\"id\":\"6\",\"op\":\"invite\",\"ward\":\"{s}\",\"heir\":\"x\"}}", .{pk}));
-    try testing.expect(std.mem.indexOf(u8, inv_line, "\"lock\":\"") != null);
+    try testing.expect(std.mem.startsWith(u8, invitationIn(inv_line), "{\"text\":\"{\\\"ward\\\":\\\""));
+    try testing.expect(std.mem.indexOf(u8, inv_line, "\\\"lock\\\":\\\"") != null);
+    try testing.expect(std.mem.indexOf(u8, inv_line, "\",\"sig\":\"") != null);
     try testing.expectEqualStrings("{\"id\":\"7\",\"error\":\"name held\"}\n", try run(&stand, a, try std.fmt.allocPrint(a, "{{\"id\":\"7\",\"op\":\"invite\",\"ward\":\"{s}\",\"heir\":\"x\"}}", .{pk})));
     try testing.expectEqualStrings("{\"id\":\"8\",\"released\":\"x\"}\n", try run(&stand, a, try std.fmt.allocPrint(a, "{{\"id\":\"8\",\"op\":\"release\",\"ward\":\"{s}\",\"heir\":\"x\"}}", .{pk})));
     try testing.expectEqualStrings("{\"id\":\"9\",\"released\":null}\n", try run(&stand, a, try std.fmt.allocPrint(a, "{{\"id\":\"9\",\"op\":\"release\",\"ward\":\"{s}\",\"heir\":\"x\"}}", .{pk})));
@@ -451,12 +462,16 @@ test "a padlock that takes no seal cannot be asked, and the program stands" {
 
     const asker = try run(&stand, a, "{\"id\":\"1\",\"op\":\"ward\",\"seed\":\"asker\"}");
     const asker_pk = asker[18 .. 18 + 128];
-    const door = try run(&stand, a, "{\"id\":\"2\",\"op\":\"ward\",\"seed\":\"door\"}");
-    const door_pk = door[18 .. 18 + 128];
-    const inv_line = try run(&stand, a, try std.fmt.allocPrint(a, "{{\"id\":\"3\",\"op\":\"invite\",\"ward\":\"{s}\",\"heir\":\"h\"}}", .{door_pk}));
-    const inv_at = std.mem.indexOf(u8, inv_line, "{\"ward\"").?;
-    const inv = try a.dupe(u8, inv_line[inv_at .. inv_line.len - 2]);
-    @memset(inv[9 + 64 .. 9 + 128], '0');
+    // An invitation its ward signed, whose ward pk names a padlock of thirty-two zero bytes.
+    var ent: quo.Entropy = .{ .fixed = true, .state = 2 };
+    const keys = quo.WardKeys.fromText("door");
+    var door = quo.Door.init(testing.allocator, keys, null);
+    defer door.deinit();
+    var minted = try door.invite(&ent, "h", .echo);
+    minted.ward[32..64].* = quo.zero32;
+    var w: Writer.Allocating = .init(a);
+    try minted.write(a, &w.writer, keys.sign, null);
+    const inv = w.written();
     const got = try run(&stand, a, try std.fmt.allocPrint(a, "{{\"id\":\"4\",\"op\":\"ask\",\"ward\":\"{s}\",\"invitation\":{s}}}", .{ asker_pk, inv }));
     try testing.expectEqualStrings("{\"id\":\"4\",\"error\":\"bad request\"}\n", got);
 }
@@ -476,7 +491,13 @@ test "listen and route stand tcp alone, and send reaches a ward through at" {
 
     // Before any listener, an invitation carries no at.
     const bare = try run(&stand, a, try std.fmt.allocPrint(a, "{{\"id\":\"3\",\"op\":\"invite\",\"ward\":\"{s}\",\"heir\":\"bare\"}}", .{door_pk}));
-    try testing.expect(std.mem.indexOf(u8, bare, "\"at\"") == null);
+    try testing.expect(std.mem.indexOf(u8, bare, "\\\"at\\\"") == null);
+
+    // An at given is an array of strings, and anything else is a bad request.
+    for ([_][]const u8{ "\"tcp://127.0.0.1:9\"", "[9]", "null", "[\"tcp://127.0.0.1:9\",null]" }) |at| {
+        const got = try run(&stand, a, try std.fmt.allocPrint(a, "{{\"id\":\"3\",\"op\":\"invite\",\"ward\":\"{s}\",\"heir\":\"no\",\"at\":{s}}}", .{ door_pk, at }));
+        try testing.expectEqualStrings("{\"id\":\"3\",\"error\":\"bad request\"}\n", got);
+    }
 
     for ([_][]const u8{ "http", "ws", "wss", "" }) |scheme| {
         const got = try run(&stand, a, try std.fmt.allocPrint(a, "{{\"id\":\"4\",\"op\":\"listen\",\"scheme\":\"{s}\"}}", .{scheme}));
@@ -496,22 +517,23 @@ test "listen and route stand tcp alone, and send reaches a ward through at" {
         try testing.expectEqualStrings("{\"id\":\"7\",\"error\":\"bad request\"}\n", got);
     }
 
-    // Once the program listens, the invitation's at names the listener.
+    // Once the program listens, an invitation given no at names the listener.
     const inv_line = try run(&stand, a, try std.fmt.allocPrint(a, "{{\"id\":\"8\",\"op\":\"invite\",\"ward\":\"{s}\",\"heir\":\"h\"}}", .{door_pk}));
-    try testing.expect(std.mem.endsWith(u8, inv_line, try std.fmt.allocPrint(a, ",\"at\":[\"{s}\"]}}}}\n", .{address})));
-    const inv_at = std.mem.indexOf(u8, inv_line, "{\"ward\"").?;
-    const inv = inv_line[inv_at .. inv_line.len - 2];
-    const fields = inv[0..std.mem.indexOf(u8, inv, ",\"at\"").?];
+    try testing.expect(std.mem.indexOf(u8, inv_line, try std.fmt.allocPrint(a, ",\\\"at\\\":[\\\"{s}\\\"]}}\",\"sig\":", .{address})) != null);
+    const inv = invitationIn(inv_line);
 
     // With no route and no tcp address, nothing is delivered, and a malformed at is absent.
-    for ([_][]const u8{ "", ",\"at\":\"tcp://127.0.0.1:1\"", ",\"at\":[7,null,\"zz://nowhere\",\"ws://127.0.0.1:1\"]" }) |at| {
-        const got = try run(&stand, a, try std.fmt.allocPrint(a, "{{\"id\":\"9\",\"op\":\"send\",\"ward\":\"{s}\",\"invitation\":{s}{s}}},\"method\":\"m\"}}", .{ asker_pk, fields, at }));
+    // Each at is the one the invitation was asked for, signed with the rest of its text.
+    for ([_][]const u8{ "[]", "[\"tcp://127.0.0.1:1x\"]", "[\"zz://nowhere\",\"ws://127.0.0.1:1\"]" }, 0..) |at, i| {
+        const given = try run(&stand, a, try std.fmt.allocPrint(a, "{{\"id\":\"9\",\"op\":\"invite\",\"ward\":\"{s}\",\"heir\":\"none {d}\",\"at\":{s}}}", .{ door_pk, i, at }));
+        const got = try run(&stand, a, try std.fmt.allocPrint(a, "{{\"id\":\"9\",\"op\":\"send\",\"ward\":\"{s}\",\"invitation\":{s},\"method\":\"m\"}}", .{ asker_pk, invitationIn(given) }));
         try testing.expectEqualStrings("{\"id\":\"9\",\"read\":{\"nothing\":true}}\n", got);
     }
 
     // Past an address of no carrier, and past one that reaches nothing, the listener answers.
-    const at = try std.fmt.allocPrint(a, ",\"at\":[\"zz://nowhere\",\"tcp://127.0.0.1:1\",\"{s}\"]", .{address});
-    const read = try run(&stand, a, try std.fmt.allocPrint(a, "{{\"id\":\"10\",\"op\":\"send\",\"ward\":\"{s}\",\"invitation\":{s}{s}}},\"method\":\"m\",\"args\":{{\"via\":\"at\"}}}}", .{ asker_pk, fields, at }));
+    const through = try run(&stand, a, try std.fmt.allocPrint(a, "{{\"id\":\"10\",\"op\":\"invite\",\"ward\":\"{s}\",\"heir\":\"through\",\"at\":[\"zz://nowhere\", \"tcp://127.0.0.1:1\",\"{s}\"]}}", .{ door_pk, address }));
+    try testing.expect(std.mem.indexOf(u8, through, "\\\"at\\\":[\\\"zz://nowhere\\\", \\\"tcp://127.0.0.1:1\\\",") != null);
+    const read = try run(&stand, a, try std.fmt.allocPrint(a, "{{\"id\":\"10\",\"op\":\"send\",\"ward\":\"{s}\",\"invitation\":{s},\"method\":\"m\",\"args\":{{\"via\":\"at\"}}}}", .{ asker_pk, invitationIn(through) }));
     try testing.expectEqualStrings("{\"id\":\"10\",\"read\":{\"object\":{\"via\":\"at\"},\"seen\":null}}\n", read);
 
     // A route is dialled alone, whatever at names.
@@ -519,6 +541,65 @@ test "listen and route stand tcp alone, and send reaches a ward through at" {
     try testing.expectEqualStrings(try std.fmt.allocPrint(a, "{{\"id\":\"11\",\"routed\":\"{s}\"}}\n", .{door_pk}), routed);
     const missed = try run(&stand, a, try std.fmt.allocPrint(a, "{{\"id\":\"12\",\"op\":\"send\",\"ward\":\"{s}\",\"invitation\":{s},\"method\":\"m\"}}", .{ asker_pk, inv }));
     try testing.expectEqualStrings("{\"id\":\"12\",\"read\":{\"nothing\":true}}\n", missed);
+}
+
+test "an invitation is its text and its ward's signature, and nothing else" {
+    var arena = std.heap.ArenaAllocator.init(testing.allocator);
+    defer arena.deinit();
+    const a = arena.allocator();
+    var stand: Stand = .{ .gpa = testing.allocator };
+    defer stand.deinit();
+
+    const door = try run(&stand, a, "{\"id\":\"1\",\"op\":\"ward\",\"seed\":\"signer\"}");
+    const door_pk = door[18 .. 18 + 128];
+    const asker = try run(&stand, a, "{\"id\":\"2\",\"op\":\"ward\",\"seed\":\"holder\"}");
+    const asker_pk = asker[18 .. 18 + 128];
+    const inv = invitationIn(try run(&stand, a, try std.fmt.allocPrint(a, "{{\"id\":\"3\",\"op\":\"invite\",\"ward\":\"{s}\",\"heir\":\"h\"}}", .{door_pk})));
+    const sig_at = std.mem.indexOf(u8, inv, ",\"sig\":").?;
+    const text = inv[0..sig_at];
+    const sig = inv[sig_at + 8 .. inv.len - 2];
+
+    // The text's own bytes, its escapes read, and a ward that signs them.
+    const node = try Json.parse(a, inv, 1);
+    const five = node.get("text").?.str;
+    const keys = quo.WardKeys.fromText("signer");
+    const resign = struct {
+        fn f(al: Allocator, k: quo.WardKeys, t: []const u8) ![]const u8 {
+            const signed = try std.fmt.allocPrint(al, "quo-invitation{s}", .{t});
+            var quoted: Writer.Allocating = .init(al);
+            try quo.writeString(&quoted.writer, t);
+            return std.fmt.allocPrint(al, "{{\"text\":{s},\"sig\":\"{x}\"}}", .{ quoted.written(), &quo.sign(k.sign, signed) });
+        }
+    }.f;
+
+    const refused = [_][]const u8{
+        five,
+        try std.fmt.allocPrint(a, "{s}}}", .{text}),
+        try std.fmt.allocPrint(a, "{s},\"sig\":\"{s}\",\"at\":[]}}", .{ text, sig }),
+        try std.fmt.allocPrint(a, "{s},\"sig\":\"{s}\"}}", .{ text, try std.ascii.allocUpperString(a, sig) }),
+        try std.fmt.allocPrint(a, "{{\"text\":{s},\"sig\":\"{s}\"}}", .{ five, sig }),
+        try std.fmt.allocPrint(a, "{s},\"sig\":\"{x}\"}}", .{ text, &quo.sign(keys.sign, five) }),
+        try std.fmt.allocPrint(a, "{s},\"sig\":\"{x}\"}}", .{ text, &quo.sign(quo.WardKeys.fromText("other").sign, try std.fmt.allocPrint(a, "quo-invitation{s}", .{five})) }),
+        try resign(a, keys, try std.fmt.allocPrint(a, "{s},", .{five})),
+        try resign(a, keys, try std.fmt.allocPrint(a, "[{s}]", .{five})),
+        try resign(a, keys, try std.fmt.allocPrint(a, "{{\"ward\":\"{s}\",{s}", .{ door_pk, five[1..] })),
+        try std.fmt.allocPrint(a, "{s},\\\"x\\\":\\\"\\ud800\\\"}}\",\"sig\":\"{s}\"}}", .{ text[0 .. text.len - 2], sig }),
+    };
+    for (refused) |bad| {
+        const got = try run(&stand, a, try std.fmt.allocPrint(a, "{{\"id\":\"4\",\"op\":\"ask\",\"ward\":\"{s}\",\"invitation\":{s}}}", .{ asker_pk, bad }));
+        try testing.expectEqualStrings("{\"id\":\"4\",\"error\":\"bad request\"}\n", got);
+    }
+    const unread = try run(&stand, a, try std.fmt.allocPrint(a, "{{\"id\":\"5\",\"op\":\"read\",\"ward\":\"{s}\",\"invitation\":{s},\"reply\":null}}", .{ asker_pk, five }));
+    try testing.expectEqualStrings("{\"id\":\"5\",\"error\":\"bad request\"}\n", unread);
+
+    // A field beside the five, and padding, are signed and read.
+    for ([_][]const u8{
+        try std.fmt.allocPrint(a, "{s},\"says\":\"John\"}}", .{five[0 .. five.len - 1]}),
+        try std.fmt.allocPrint(a, " \n{s}\t ", .{five}),
+    }) |good| {
+        const got = try run(&stand, a, try std.fmt.allocPrint(a, "{{\"id\":\"6\",\"op\":\"ask\",\"ward\":\"{s}\",\"invitation\":{s}}}", .{ asker_pk, try resign(a, keys, good) }));
+        try testing.expect(std.mem.startsWith(u8, got, "{\"id\":\"6\",\"box\":\""));
+    }
 }
 
 test "one stand asks another ward it stands, through ask, arrive and read" {
@@ -533,8 +614,7 @@ test "one stand asks another ward it stands, through ask, arrive and read" {
     const asker = try run(&stand, a, "{\"id\":\"2\",\"op\":\"ward\",\"seed\":\"asker\"}");
     const asker_pk = asker[18 .. 18 + 128];
     const inv_line = try run(&stand, a, try std.fmt.allocPrint(a, "{{\"id\":\"3\",\"op\":\"invite\",\"ward\":\"{s}\",\"heir\":\"h\",\"reach\":\"marked\"}}", .{door_pk}));
-    const inv_at = std.mem.indexOf(u8, inv_line, "{\"ward\"").?;
-    const inv = inv_line[inv_at .. inv_line.len - 2];
+    const inv = invitationIn(inv_line);
 
     for (0..3) |i| {
         const box_line = try run(&stand, a, try std.fmt.allocPrint(a, "{{\"id\":\"a{d}\",\"op\":\"ask\",\"ward\":\"{s}\",\"invitation\":{s},\"method\":\"m\",\"args\":{{\"i\":{d}}}}}", .{ i, asker_pk, inv, i }));

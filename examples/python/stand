@@ -47,18 +47,12 @@ def hexstr(req, name, length=None):
 
 
 def invitation(req):
-    inv = req.get("invitation")
-    if not isinstance(inv, dict):
+    """The fields of the signed invitation a request carries."""
+    from quokit.box import read_invitation
+    inv = read_invitation(req.get("invitation"))
+    if inv is None:
         raise BadRequest()
-    for name, length in (("ward", 128), ("heir", 64), ("secret", 64), ("lock", 2368)):
-        hexstr(inv, name, length)
-    from quokit.crypto import mlkem_valid
-    if not mlkem_valid(bytes.fromhex(inv["lock"])):
-        raise BadRequest()
-    out = {k: inv[k] for k in ("ward", "heir", "secret", "lock")}
-    if isinstance(inv.get("at"), list):
-        out["at"] = inv["at"]
-    return out
+    return inv
 
 
 def dial(at, ward_pk, box):
@@ -200,15 +194,17 @@ class Program:
         pk = hexstr(req, "ward", 128)
         name = string(req, "heir")
         reach = string(req, "reach", optional=True)
+        at = req.get("at")
+        if "at" in req and not (isinstance(at, list) and all(isinstance(a, str) for a in at)):
+            raise BadRequest()
         ward = self.ward_of(pk)
         self.reach(reach)
         if name in self.names[pk]:
             raise Refused("name held")
-        inv = ward.invite(self.reaches[reach or "echo"])
-        self.names[pk][name] = bytes.fromhex(inv["heir"])
-        at = [self.listeners[s].at for s in LISTENED if s in self.listeners]
-        if at:
-            inv["at"] = at
+        if at is None:
+            at = [self.listeners[s].at for s in LISTENED if s in self.listeners] or None
+        heir, inv = ward.invite(self.reaches[reach or "echo"], at)
+        self.names[pk][name] = heir
         return {"invitation": inv}
 
     def op_release(self, req):

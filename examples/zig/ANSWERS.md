@@ -116,21 +116,34 @@ stderr.
 
 ## What a kit asks
 
-**Question 19. How does an invitation reach its holder, and does the minting kit keep a copy? Does the kit write a link, and does it read one? Whom does it answer a reference, how long and how often?**
+**Question 19. How does an invitation reach its holder, and does the minting kit keep a copy? Does the kit write a link, and does it read one? Whom does it answer a reference, how long and how often? Does it write fields beside the five in an invitation text, and what does it show a person of those it reads?**
 The `invite` answer carries it, and the harness takes it from there. The
-minting door keeps no copy: it keeps the heir pk and the name only. The
-asking side keeps what it needs in its `Standing`, keyed by the
-invitation's ward pk and heir pk. That is the heir key pair (the secret
+invitation is `{"text":…,"sig":…}`. The text is the five written in the
+order `ward`, `heir`, `secret`, `lock`, `at`, with no whitespace of the
+kit's own, and `sig` is the ward's signature over `quo-invitation`, then
+that text. The minting door keeps no copy: it keeps the heir pk and the
+name only. The asking side keeps what it needs in its `Standing`, keyed by
+the invitation's ward pk and heir pk. That is the heir key pair (the secret
 included), the ward's signing key and padlock, and the lock. Every request
-that reads an invitation reads it through one function, which holds the
-lock to 2368 lowercase hex and to the modulus check of FIPS 203 section
-7.2, every twelve-bit coefficient of the first 1152 bytes below q = 3329.
-A lock that check refuses is no invitation, and the kit answers `bad
-request` to the `ask` or `send` that hands it one. A padlock of small order
+that reads an invitation reads it through one function,
+`Invitation.read`. It takes `text` and `sig` and nothing beside them. It
+reads the text as UTF-8 JSON text that is one object with no two keys of
+one name, so a text that denotes a lone surrogate is refused. It checks
+`sig`, 128 lowercase hex, under the signing pk at the head of the text's
+`ward`, against the text's bytes as `text` denotes them. It holds the lock
+to 2368 lowercase hex and to the modulus check of FIPS 203 section 7.2,
+every twelve-bit coefficient of the first 1152 bytes below q = 3329. What
+fails any of this is no invitation, and the kit answers `bad request` to
+the `ask`, `read` or `send` that hands it one. A padlock of small order
 takes no seal, so the `ask` or `send` that would seal to it answers `bad
 request` too. The kit writes no link and reads none, and it answers no
 reference: the harness hands every invitation whole, so nothing here needs
 a short one.
+
+It writes no field beside the five. Of the fields beside the five it reads,
+it takes none and shows nothing: the signature covers them and they are
+then let be. Reason: `SPEC.md` reads none of them, and the `stand` program
+has no person to show one to.
 
 **Question 20. How does a standing recover a knock that brought no object back?**
 It alternates. After the knock, the next ask is sealed under the standing's
@@ -227,12 +240,18 @@ closed connection, a refused dial or eight seconds without an answer moves
 it to the next. So a box does go on to the next address after one that may
 have heard it, and the door honours its number once whichever address
 carried it. With no route and no
-`tcp` address, nothing is delivered. Once the program holds its listener,
-every invitation it gives carries `at` with that listener's one address,
-`tcp://127.0.0.1:<port>`. Before then it writes no `at`. Reason: the
-listener is the one place this program is reached, and trying in order
-keeps the minting side's preference and sends each box to one address at
-a time.
+`tcp` address, nothing is delivered. It reads an invitation's `at` only
+once the ward's signature over the whole text has held, so every address it
+dials from an invitation is one that ward signed.
+
+An `invite` that gives `at` gets an invitation whose text carries that `at`
+exactly as the request wrote it. An `at` that is not an array of strings is
+`bad request`. Where the request gives no `at` and the program holds its
+listener, the invitation carries `at` with that listener's one address,
+`tcp://127.0.0.1:<port>`. With neither, it writes no `at`. Either way the
+ward signs its `at` with the rest of its text. Reason: the listener is the
+one place this program is reached, and trying in order keeps the minting
+side's preference and sends each box to one address at a time.
 
 The door writes `at` in a reply under the `moved` reach alone, on every
 object, as the one address `tcp://127.0.0.1:9` the harness fixes. Under
@@ -259,8 +278,8 @@ names no `lang`, so its asks mean what `SPEC.md` says of them and nothing more.
 
 **Question 27. How deep, how long and how strange a JSON text does the kit read where Quo reads nothing, and what does it answer beyond that?**
 Any depth and any length the size allows, so nothing lies beyond it. The
-kit reads into nodes only the outer object of a payload or a reply text
-(and two levels of a harness line). Inside `args`, inside `object` beyond
+kit reads into nodes only the outer object of a payload, a reply text or an
+invitation text (and two levels of a harness line). Inside `args`, inside `object` beyond
 what a describe names, in an entry of `at` that is not a string, and in
 every field `SPEC.md` does not name, it holds the text to the RFC 8259
 grammar with a loop and a stack of brackets, not recursion, so depth costs
