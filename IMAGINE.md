@@ -28,12 +28,11 @@ same.
 fits its first lock, and gives its key to someone, any way it likes. The
 key travels on a card the house stamps with its ring, and nobody who
 carries the card can change a word on it. The key can be copied a
-thousand times. Someone far away steps in there, and
-the house sees that the booth is in use, and a key, never a name. The
-first one to step in with that key whom the house lets in changes the lock
-to a key of their own that nobody else has ever seen. From that moment
-every copy of the first key is dead. The house can tear a purple booth
-down.
+thousand times. Someone far away steps in, and the house sees that the
+booth is in use, and a key, never a name. The first one to step in with
+that key whom the house lets in changes the lock to a key of their own
+that nobody else has ever seen. From that moment every copy of the first
+key is dead. The house can tear a purple booth down.
 
 **Red booths.** A red booth is one where this house holds the key. Its
 other side is in someone else's house. Nobody appears in it unless this

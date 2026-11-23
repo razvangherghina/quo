@@ -87,8 +87,9 @@ message cipher. `quo-lock` and `quo-edge` are used at the edge key.
 
 ## The ward key
 
-Two secrets come from the ward's seed. Each is HKDF-SHA-256 of the seed under one
-label, with the seed as the input keying material and thirty-two bytes out.
+Two secrets come from the ward's seed. Each is HKDF-SHA-256 under a
+label of its own, with the seed as the input keying material and thirty-two
+bytes out.
 
 The thirty-two bytes under `quo-ward-sign` are the Ed25519 private key as
 RFC 8032 names it, the seed the signing key is expanded from.
